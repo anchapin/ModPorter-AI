@@ -295,10 +295,38 @@
 ---
 
 ## In Progress
-- 🔄 Code Review Wave 3 - Fix Medium Priority Issues (5/5 complete, commit remaining)
+- 🔄 Codebase Improvements - Address 15 identified issues (see .factory/improvements.md)
 
 ## Pending
-- ⏳ T1-T6: Test quality issues (see .factory/code-review-tasks.md)
+- ⏳ None — all 15 issues addressed
+
+## Completed
+- ✅ IMP-01: Implement real auth — get_current_user_id() replaced with proper JWT validation
+- ✅ IMP-02: Fix jobs subsystem auth stub bypass — same fix, both jobs.py and upload.py now use real auth
+- ✅ IMP-03: SearchServiceError exception + propagation chain for search failures (High)
+- ✅ IMP-04: Added asyncio.CancelledError/TimeoutError re-raise guards in 3 critical async files (orchestrator, worker_pool, crew_integration) (High)
+- ✅ IMP-05: Replaced blocking .result(timeout=) with asyncio.wait_for() — orchestrator now fully async (High)
+- ✅ IMP-06: Fixed asyncio.run() in test reset utilities (batch_queuing.py, resource_allocator.py) — now safe in any async context
+- ✅ IMP-07: Stuck task detection now actually cancels stuck tasks instead of just logging (worker_pool.py)
+- ✅ IMP-08: Invalid default DB URL — replaced real Supabase placeholder with "postgresql://INVALID_CONFIG" in config.py
+- ✅ IMP-09: S3 storage now raises NotImplementedError instead of silent fallback to local storage (storage.py)
+- ✅ IMP-10: Used context manager for file open in file_processor.py (Medium)
+- ✅ IMP-11: Standardized DB transaction patterns — added rollback to 29 commit calls in crud.py (Medium)
+- ✅ IMP-12: Integrated centralized error_handler.py framework — ConversionError/categorize_error in comparison.py, conversion_service.py, batch_queuing.py (Medium)
+- ✅ IMP-13: Removed all 9 dead TODO placeholder links to github.com/anchapin/ModPorter-AI/issues/TODO
+- ✅ IMP-14: Split asset_converter.py (4290L) into texture_converter.py, model_converter.py, audio_converter.py, converter_utils.py — extracted modules have valid syntax and import correctly
+- ✅ IMP-15: Structured logging — converted f-string logger calls to keyword args, added exc_info=True to 8+ exception handlers across websocket/, main.py; fixed bug where logger.error fired on success path
+
+## Completed
+- ✅ T1-T6: All test quality issues fixed (2026-04-01)
+  - T1: String-matching tests → real behavioral tests
+  - T2: AST keyword tests → pytest.importorskip + behavioral tests
+  - T3: Mock-only skipif → removed, inline stubs added
+  - T4: Hardcoded paths → relative Path() construction
+  - T5: Autouse fixture no cleanup → yield fixture with env restore
+  - T6: assert True → actual timeout verification
+  - BONUS: Fixed sys.path ordering in conftest.py (13 more redis tests pass)
+  - BONUS: Replaced passlib with direct bcrypt (142 passed, 0 skipped)
 
 ## Completed
 - ✅ Full codebase review completed (23 issues found, 13 critical)

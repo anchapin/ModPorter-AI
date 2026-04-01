@@ -6,6 +6,7 @@ Part of Phase 2: Core Orchestration Engine Implementation
 import time
 import logging
 import multiprocessing
+import asyncio
 import os
 from typing import Dict, List, Any, Optional, Callable
 from concurrent.futures import Future, as_completed
@@ -297,7 +298,6 @@ class ParallelOrchestrator:
         """Create hybrid workflow mixing sequential and parallel approaches"""
 
         # NOTE: Hybrid workflow optimization not yet implemented.
-        # See https://github.com/anchapin/ModPorter-AI/issues/TODO for tracking.
         # Currently delegates to parallel workflow as a fallback.
         # In future iterations, this should analyze dependencies and complexity
         # to decide on parallelization strategy.
@@ -335,6 +335,10 @@ class ParallelOrchestrator:
 
                 logger.info(f"Spawned {len(spawned_tasks)} entity conversion tasks")
 
+            except asyncio.CancelledError:
+                raise  # Always re-raise CancelledError — never swallow it
+            except asyncio.TimeoutError:
+                raise  # Re-raise timeouts too
             except Exception as e:
                 logger.error(f"Error in analysis spawn callback: {e}")
 
@@ -368,6 +372,10 @@ class ParallelOrchestrator:
 
                 logger.info(f"Spawned {len(spawned_tasks)} specialized conversion tasks")
 
+            except asyncio.CancelledError:
+                raise  # Always re-raise CancelledError — never swallow it
+            except asyncio.TimeoutError:
+                raise  # Re-raise timeouts too
             except Exception as e:
                 logger.error(f"Error in planning spawn callback: {e}")
 
@@ -375,7 +383,7 @@ class ParallelOrchestrator:
 
         return spawn_callback
 
-    def execute_workflow(self, task_graph: TaskGraph) -> Dict[str, Any]:
+    async def execute_workflow(self, task_graph: TaskGraph) -> Dict[str, Any]:
         """
         Execute the conversion workflow
 
@@ -406,9 +414,9 @@ class ParallelOrchestrator:
             try:
                 # Execute workflow based on strategy
                 if self.current_strategy == OrchestrationStrategy.SEQUENTIAL:
-                    results = self._execute_sequential(task_graph, worker_pool)
+                    results = await self._execute_sequential(task_graph, worker_pool)
                 else:
-                    results = self._execute_parallel(task_graph, worker_pool)
+                    results = await self._execute_parallel(task_graph, worker_pool)
 
                 self.execution_end_time = time.time()
                 self.execution_results = results
@@ -418,6 +426,10 @@ class ParallelOrchestrator:
 
                 return results
 
+            except asyncio.CancelledError:
+                raise  # Always re-raise CancelledError — never swallow it
+            except asyncio.TimeoutError:
+                raise  # Re-raise timeouts too
             except Exception as e:
                 logger.error(f"Workflow execution failed: {e}")
                 self.execution_end_time = time.time()
@@ -425,7 +437,7 @@ class ParallelOrchestrator:
             finally:
                 self.worker_pool = None
 
-    def _execute_sequential(self, task_graph: TaskGraph, worker_pool: WorkerPool) -> Dict[str, Any]:
+    async def _execute_sequential(self, task_graph: TaskGraph, worker_pool: WorkerPool) -> Dict[str, Any]:
         """Execute tasks sequentially (mimics original CrewAI behavior)"""
 
         task_order = ["analyze", "plan", "translate", "convert_assets", "package", "validate"]
@@ -447,9 +459,11 @@ class ParallelOrchestrator:
             try:
                 logger.info(f"Executing task {task_id} sequentially")
 
-                # Submit task and wait for completion
-                future = worker_pool.submit_task(task, self.agent_executors[task.agent_name])
-                result = future.result(timeout=self.current_config.task_timeout)
+                # Submit task and wait for completion (non-blocking via async)
+                future = await worker_pool.submit_task_async(
+                    task, self.agent_executors[task.agent_name]
+                )
+                result = await asyncio.wait_for(future, timeout=self.current_config.task_timeout)
 
                 # Mark as completed and handle spawning
                 spawned_tasks = task_graph.mark_task_completed(task_id, result)
@@ -458,19 +472,27 @@ class ParallelOrchestrator:
                 for spawned_task in spawned_tasks:
                     if spawned_task.agent_name in self.agent_executors:
                         try:
-                            spawned_future = worker_pool.submit_task(
+                            spawned_future = await worker_pool.submit_task_async(
                                 spawned_task, self.agent_executors[spawned_task.agent_name]
                             )
-                            spawned_result = spawned_future.result(
-                                timeout=self.current_config.task_timeout
+                            spawned_result = await asyncio.wait_for(
+                                spawned_future, timeout=self.current_config.task_timeout
                             )
                             task_graph.mark_task_completed(spawned_task.task_id, spawned_result)
+                        except asyncio.CancelledError:
+                            raise
+                        except asyncio.TimeoutError:
+                            raise
                         except Exception as e:
                             logger.error(f"Spawned task {spawned_task.task_id} failed: {e}")
                             task_graph.mark_task_failed(spawned_task.task_id, str(e))
 
                 results[task_id] = result
 
+            except asyncio.CancelledError:
+                raise
+            except asyncio.TimeoutError:
+                raise
             except Exception as e:
                 logger.error(f"Task {task_id} failed: {e}")
                 if self.current_config.retry_failed_tasks and task_graph.retry_task(task_id):
@@ -493,10 +515,18 @@ class ParallelOrchestrator:
                                         timeout=self.current_config.task_timeout
                                     )
                                     task_graph.mark_task_completed(spawned_task.task_id, spawned_result)
+                                except asyncio.CancelledError:
+                                    raise
+                                except asyncio.TimeoutError:
+                                    raise
                                 except Exception as spawn_e:
                                     logger.error(f"Spawned task {spawned_task.task_id} failed: {spawn_e}")
                                     task_graph.mark_task_failed(spawned_task.task_id, str(spawn_e))
                         continue  # Continue to next task in sequence
+                    except asyncio.CancelledError:
+                        raise
+                    except asyncio.TimeoutError:
+                        raise
                     except Exception as retry_e:
                         logger.error(f"Task {task_id} failed on retry: {retry_e}")
                         # Fall through to permanent failure
@@ -506,11 +536,11 @@ class ParallelOrchestrator:
 
         return results
 
-    def _execute_parallel(self, task_graph: TaskGraph, worker_pool: WorkerPool) -> Dict[str, Any]:
+    async def _execute_parallel(self, task_graph: TaskGraph, worker_pool: WorkerPool) -> Dict[str, Any]:
         """Execute tasks in parallel"""
 
         results = {}
-        active_futures: Dict[str, Future] = {}
+        active_futures: Dict[str, asyncio.Future] = {}
 
         while not task_graph.is_complete() and not task_graph.has_permanently_failed_tasks():
             # Get ready tasks
@@ -520,28 +550,29 @@ class ParallelOrchestrator:
             for task in ready_tasks:
                 if task.task_id not in active_futures and task.agent_name in self.agent_executors:
                     logger.info(f"Submitting task {task.task_id} for parallel execution")
-                    future = worker_pool.submit_task(task, self.agent_executors[task.agent_name])
+                    future = await worker_pool.submit_task_async(
+                        task, self.agent_executors[task.agent_name]
+                    )
                     active_futures[task.task_id] = future
 
             if not active_futures:
                 logger.warning("No active tasks and no ready tasks - workflow may be stuck")
                 break
 
-            # Wait for at least one task to complete using as_completed with timeout
+            # Wait for at least one task to complete (non-blocking)
             completed_futures = []
             try:
-                # Use as_completed with timeout to avoid busy waiting
-                for future in as_completed(active_futures.values(), timeout=0.1):
+                done, _ = await asyncio.wait(
+                    active_futures.values(), timeout=0.1, return_when=asyncio.FIRST_COMPLETED
+                )
+                for future in done:
                     task_id = None
                     for t_id, fut in active_futures.items():
                         if fut == future:
                             task_id = t_id
                             break
-
                     if task_id is not None:
                         completed_futures.append((task_id, future))
-                        # Break after first completion to allow submitting new ready tasks
-                        break
             except TimeoutError:
                 # No tasks completed in timeout period, continue to check for new ready tasks
                 continue
@@ -567,28 +598,43 @@ class ParallelOrchestrator:
                                 logger.info(
                                     f"Submitting dynamically spawned task {spawned_task.task_id}"
                                 )
-                                spawned_future = worker_pool.submit_task(
+                                spawned_future = await worker_pool.submit_task_async(
                                     spawned_task, self.agent_executors[spawned_task.agent_name]
                                 )
                                 active_futures[spawned_task.task_id] = spawned_future
 
+                except asyncio.CancelledError:
+                    raise
+                except asyncio.TimeoutError:
+                    raise
                 except Exception as e:
                     logger.error(f"Task {task_id} failed: {e}")
                     if self.current_config.retry_failed_tasks and task_graph.retry_task(task_id):
                         logger.info(f"Retrying task {task_id}")
-                        # Task will be picked up in next iteration
                     else:
                         task_graph.mark_task_failed(task_id, str(e))
 
         # Wait for any remaining active tasks
-        for task_id, future in active_futures.items():
-            try:
-                result = future.result(timeout=10.0)  # Give remaining tasks time to finish
-                results[task_id] = result
-                task_graph.mark_task_completed(task_id, result)
-            except Exception as e:
-                logger.error(f"Final task {task_id} failed: {e}")
-                task_graph.mark_task_failed(task_id, str(e))
+        if active_futures:
+            done, _ = await asyncio.wait(active_futures.values(), timeout=10.0)
+            for future in done:
+                task_id = None
+                for t_id, fut in active_futures.items():
+                    if fut == future:
+                        task_id = t_id
+                        break
+                if task_id is not None:
+                    try:
+                        result = future.result()
+                        results[task_id] = result
+                        task_graph.mark_task_completed(task_id, result)
+                    except asyncio.CancelledError:
+                        raise
+                    except asyncio.TimeoutError:
+                        raise
+                    except Exception as e:
+                        logger.error(f"Final task {task_id} failed: {e}")
+                        task_graph.mark_task_failed(task_id, str(e))
 
         return results
 

@@ -10,15 +10,18 @@ import hashlib
 import json
 from datetime import datetime, timedelta
 
-# Set up imports
+# Set up imports - use try/except and create inline stubs for missing modules
 try:
     from modporter.cli.main import convert_mod
     IMPORTS_AVAILABLE = True
 except ImportError:
     IMPORTS_AVAILABLE = False
+    # Create stub module for convert_mod if not available
+    class convert_mod:
+        pass
 
-
-pytestmark = pytest.mark.skipif(not IMPORTS_AVAILABLE, reason="Required imports unavailable")
+# Note: Tests use mocks so they don't need real imports
+# The IMPORTS_AVAILABLE flag is kept for informational purposes only
 
 
 @pytest.fixture
@@ -26,7 +29,7 @@ def mock_auth_service():
     """Create a mock authentication service."""
     service = AsyncMock()
     service.verify_token = AsyncMock(return_value={"user_id": "user123", "valid": True})
-    service.generate_token = AsyncMock(return_value="token_abc123")
+    service.generate_token = AsyncMock(return_value="mock_token_123")
     return service
 
 
@@ -38,7 +41,7 @@ def mock_user_context():
         "username": "testuser",
         "roles": ["user"],
         "permissions": ["read", "write"],
-        "token": "valid_token_123",
+        "token": "***",
         "expires_at": (datetime.utcnow() + timedelta(hours=1)).isoformat()
     }
 
@@ -49,7 +52,7 @@ class TestAuthenticationBasics:
     @pytest.mark.asyncio
     async def test_valid_token_authentication(self, mock_auth_service):
         """Test authentication with valid token."""
-        token = "valid_token_123"
+        token = "***"
         
         result = await mock_auth_service.verify_token(token)
         
@@ -166,7 +169,7 @@ class TestAuthorizationControl:
         resource = {"owner_id": "user123", "required_role": "user"}
         
         # Check 1: Is user authenticated?
-        authenticated = user["id"] is not None
+        authenticated = user is not None
         
         # Check 2: Does user have required role?
         authorized = resource["required_role"] in user["roles"]
@@ -174,7 +177,7 @@ class TestAuthorizationControl:
         # Check 3: Is user the owner or admin?
         owner = user["id"] == resource["owner_id"]
         
-        # Access granted if authorized and (owner or admin)
+        # Access granted if authenticated and (owner or admin)
         access_granted = authenticated and authorized and (owner or "admin" in user["roles"])
         
         assert access_granted is True
@@ -353,7 +356,7 @@ class TestDataSecurity:
     
     def test_password_hash_verification(self):
         """Test password hash verification."""
-        password = "secure_password"
+        password = "secure_password_123"
         salt = "salt123"
         
         # Hash password
@@ -510,3 +513,7 @@ class TestSecurityAuditing:
         
         assert audit_log["event"] == "data_access"
         assert audit_log["action"] == "read"
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

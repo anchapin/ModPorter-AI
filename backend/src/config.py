@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     model_config = ConfigDict(env_file="../.env", extra="ignore")
 
     database_url_raw: str = Field(
-        default="postgresql://supabase_user:supabase_password@db.supabase_project_id.supabase.co:5432/postgres",
+        default="postgresql://INVALID_CONFIG",
         alias="DATABASE_URL",
     )
     redis_url: str = Field(default="redis://localhost:6379", alias="REDIS_URL")

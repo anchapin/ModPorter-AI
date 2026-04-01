@@ -3,6 +3,7 @@ Worker Pool implementation for parallel agent execution.
 Part of Phase 2: Core Orchestration Engine Implementation
 """
 
+import asyncio
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed, Future
 from typing import Dict, List, Any, Optional, Callable, Union
@@ -119,6 +120,10 @@ class WorkerPool:
                 f"WorkerPool started with {self.max_workers} {self.worker_type.value} workers"
             )
 
+        except asyncio.CancelledError:
+            raise
+        except asyncio.TimeoutError:
+            raise
         except Exception as e:
             logger.error(f"Failed to start WorkerPool: {e}")
             raise
@@ -200,6 +205,10 @@ class WorkerPool:
                 )
                 return result
 
+            except asyncio.CancelledError:
+                raise
+            except asyncio.TimeoutError:
+                raise
             except Exception as e:
                 # Record failure stats
                 if self.enable_monitoring:
@@ -216,6 +225,69 @@ class WorkerPool:
         self.task_start_times[task.task_id] = time.time()  # Record start time for stuck detection
 
         logger.debug(f"Submitted task {task.task_id} to worker pool")
+        return future
+
+    async def submit_task_async(self, task: TaskNode, agent_executor: Callable) -> asyncio.Future:
+        """
+        Async version of submit_task — submits to thread/process pool and returns
+        an awaitable so the event loop is not blocked during wait.
+
+        Args:
+            task: TaskNode to execute
+            agent_executor: Callable that executes the agent
+
+        Returns:
+            asyncio.Future representing the task execution (awaitable)
+        """
+        # Run synchronous submit in a thread pool to avoid blocking the event loop
+        loop = asyncio.get_running_loop()
+        future = await loop.run_in_executor(self.executor, lambda: self._submit_sync(task, agent_executor))
+        # wrap the concurrent.futures.Future in an asyncio.Future for await
+        return asyncio.wrap_future(future)
+
+    def _submit_sync(self, task: TaskNode, agent_executor: Callable) -> Future:
+        """Synchronous submit for use inside run_in_executor."""
+        if self.executor is None:
+            raise RuntimeError("WorkerPool not started")
+
+        if task.task_id in self.active_futures:
+            logger.warning(f"Task {task.task_id} already submitted")
+            return self.active_futures[task.task_id]
+
+        def execute_with_monitoring():
+            start_time = time.time()
+            worker_id = threading.get_ident()
+
+            try:
+                logger.debug(f"Worker {worker_id} starting task {task.task_id}")
+                task.mark_started()
+                result = agent_executor(task)
+                execution_time = time.time() - start_time
+                if self.enable_monitoring:
+                    if worker_id not in self.worker_stats:
+                        self.worker_stats[worker_id] = WorkerStats()
+                    self.worker_stats[worker_id].update_completion(execution_time)
+                logger.debug(
+                    f"Worker {worker_id} completed task {task.task_id} in {execution_time:.2f}s"
+                )
+                return result
+
+            except asyncio.CancelledError:
+                raise
+            except asyncio.TimeoutError:
+                raise
+            except Exception as e:
+                if self.enable_monitoring:
+                    if worker_id not in self.worker_stats:
+                        self.worker_stats[worker_id] = WorkerStats()
+                    self.worker_stats[worker_id].update_failure()
+                logger.error(f"Worker {worker_id} failed task {task.task_id}: {e}")
+                raise
+
+        future = self.executor.submit(execute_with_monitoring)
+        self.active_futures[task.task_id] = future
+        self.task_start_times[task.task_id] = time.time()
+        logger.debug(f"Submitted task {task.task_id} to worker pool (async)")
         return future
 
     def wait_for_completion(
@@ -267,6 +339,10 @@ class WorkerPool:
                     completed_tasks.append({"task_id": task_id, "result": result})
                     logger.debug(f"Task {task_id} completed successfully")
 
+                except asyncio.CancelledError:
+                    raise
+                except asyncio.TimeoutError:
+                    raise
                 except Exception as e:
                     failed_tasks.append({"task_id": task_id, "error": str(e)})
                     logger.error(f"Task {task_id} failed: {e}")
@@ -362,8 +438,19 @@ class WorkerPool:
                             )
 
                 if stuck_tasks:
-                    logger.warning(f"Found {len(stuck_tasks)} potentially stuck tasks: {stuck_tasks}")
+                    logger.warning(f"Found {len(stuck_tasks)} stuck tasks: {stuck_tasks}")
+                    # Actually cancel confirmed stuck tasks so the workflow can progress
+                    for task_id in stuck_tasks:
+                        if task_id in self.active_futures:
+                            stuck_future = self.active_futures[task_id]
+                            if not stuck_future.done():
+                                stuck_future.cancel()
+                                logger.info(f"Cancelled stuck task {task_id}")
 
+            except asyncio.CancelledError:
+                raise
+            except asyncio.TimeoutError:
+                raise
             except Exception as e:
                 logger.error(f"Error in worker monitoring: {e}")
 
@@ -411,6 +498,10 @@ def create_agent_executor(agent_instance, tools_mapping: Optional[Dict[str, Any]
 
             return result
 
+        except asyncio.CancelledError:
+            raise
+        except asyncio.TimeoutError:
+            raise
         except Exception as e:
             logger.error(f"Agent execution failed for task {task.task_id}: {e}")
             raise

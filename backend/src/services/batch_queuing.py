@@ -26,6 +26,7 @@ from concurrent.futures import ThreadPoolExecutor
 import heapq
 
 from models.conversion_mode import ConversionMode, ModeClassificationResult
+from services.error_handler import ConversionError, categorize_error, get_error_handler
 
 logger = logging.getLogger(__name__)
 
@@ -689,9 +690,20 @@ class IntelligentBatchQueue:
         try:
             result = await processor_func(job)
             return result
+        except ConversionError as e:
+            # Record via error handler framework
+            error_handler = get_error_handler()
+            error_handler.record_error(e, job_id=job.job_id)
+            categorized = categorize_error(e)
+            logger.error(f"Conversion error processing job {job.job_id}: {e}")
+            return {"success": False, "error": categorized["user_message"]}
         except Exception as e:
+            # Unexpected error - record via error handler framework
+            error_handler = get_error_handler()
+            error_handler.record_error(e, job_id=job.job_id)
+            categorized = categorize_error(e)
             logger.error(f"Error processing job {job.job_id}: {e}")
-            return {"success": False, "error": str(e)}
+            return {"success": False, "error": categorized["user_message"]}
 
     async def close(self):
         """Clean up resources."""
@@ -715,5 +727,12 @@ def reset_batch_queue():
     """Reset the global batch queue (for testing)."""
     global _batch_queue
     if _batch_queue:
-        asyncio.run(_batch_queue.close())
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            # No running loop — safe to use asyncio.run()
+            asyncio.run(_batch_queue.close())
+        else:
+            # Already in async context — schedule close without blocking
+            loop.create_task(_batch_queue.close())
     _batch_queue = None

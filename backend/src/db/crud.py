@@ -37,8 +37,12 @@ async def create_job(
     job.progress = models.JobProgress(progress=0)
     session.add(job)
     if commit:
-        await session.commit()
-        await session.refresh(job)
+        try:
+            await session.commit()
+            await session.refresh(job)
+        except Exception:
+            await session.rollback()
+            raise
     else:
         await session.flush()  # Flush to get the ID without committing
     return job
@@ -77,7 +81,11 @@ async def update_job_status(
     )
     await session.execute(stmt)
     if commit:
-        await session.commit()
+        try:
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
     # Refresh the job object
     stmt = select(models.ConversionJob).where(models.ConversionJob.id == job_uuid)
@@ -108,7 +116,11 @@ async def update_job_progress(
     result = await session.execute(stmt)
     prog = result.scalar_one()
     if commit:
-        await session.commit()
+        try:
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
     return prog
 
 
@@ -141,8 +153,12 @@ async def create_result(
     )
     session.add(result)
     if commit:
-        await session.commit()
-        await session.refresh(result)
+        try:
+            await session.commit()
+            await session.refresh(result)
+        except Exception:
+            await session.rollback()
+            raise
     else:
         await session.flush()
     return result
@@ -176,8 +192,12 @@ async def create_enhanced_feedback(
     )
     session.add(feedback)
     if commit:
-        await session.commit()
-        await session.refresh(feedback)
+        try:
+            await session.commit()
+            await session.refresh(feedback)
+        except Exception:
+            await session.rollback()
+            raise
     else:
         await session.flush()
     return feedback
@@ -225,8 +245,12 @@ async def create_document_embedding(
     )
     db.add(db_embedding)
     if commit:
-        await db.commit()
-        await db.refresh(db_embedding)
+        try:
+            await db.commit()
+            await db.refresh(db_embedding)
+        except Exception:
+            await db.rollback()
+            raise
     else:
         await db.flush()
     return db_embedding
@@ -272,8 +296,12 @@ async def update_document_embedding(
         update(DocumentEmbedding).where(DocumentEmbedding.id == embedding_id).values(**update_data)
     )
     await db.execute(stmt)
-    await db.commit()
-    await db.refresh(db_embedding)
+    try:
+        await db.commit()
+        await db.refresh(db_embedding)
+    except Exception:
+        await db.rollback()
+        raise
     return db_embedding
 
 
@@ -288,7 +316,11 @@ async def delete_document_embedding(db: AsyncSession, embedding_id: PyUUID) -> b
 
     stmt = delete(DocumentEmbedding).where(DocumentEmbedding.id == embedding_id)
     await db.execute(stmt)
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
     return True
 
 
@@ -342,7 +374,11 @@ async def create_document_with_chunks(
         db.add(chunk)
         created_chunks.append(chunk)
 
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
     for chunk in created_chunks:
         await db.refresh(chunk)
     await db.refresh(parent_doc)
@@ -456,8 +492,12 @@ async def create_experiment(
     )
     session.add(experiment)
     if commit:
-        await session.commit()
-        await session.refresh(experiment)
+        try:
+            await session.commit()
+            await session.refresh(experiment)
+        except Exception:
+            await session.rollback()
+            raise
     else:
         await session.flush()
     return experiment
@@ -524,7 +564,11 @@ async def update_experiment(
     )
     await session.execute(stmt)
     if commit:
-        await session.commit()
+        try:
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
     # Refresh the experiment object
     stmt = select(models.Experiment).where(models.Experiment.id == experiment_id)
@@ -539,7 +583,11 @@ async def delete_experiment(session: AsyncSession, experiment_id: PyUUID) -> boo
 
     stmt = delete(models.Experiment).where(models.Experiment.id == experiment_id)
     await session.execute(stmt)
-    await session.commit()
+    try:
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
     return True
 
 
@@ -584,8 +632,12 @@ async def create_experiment_variant(
     )
     session.add(variant)
     if commit:
-        await session.commit()
-        await session.refresh(variant)
+        try:
+            await session.commit()
+            await session.refresh(variant)
+        except Exception:
+            await session.rollback()
+            raise
     else:
         await session.flush()
     return variant
@@ -668,7 +720,11 @@ async def update_experiment_variant(
     )
     await session.execute(stmt)
     if commit:
-        await session.commit()
+        try:
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
     # Refresh the variant object
     stmt = select(models.ExperimentVariant).where(models.ExperimentVariant.id == variant_id)
@@ -683,7 +739,11 @@ async def delete_experiment_variant(session: AsyncSession, variant_id: PyUUID) -
 
     stmt = delete(models.ExperimentVariant).where(models.ExperimentVariant.id == variant_id)
     await session.execute(stmt)
-    await session.commit()
+    try:
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
     return True
 
 
@@ -712,8 +772,12 @@ async def create_experiment_result(
     )
     session.add(result)
     if commit:
-        await session.commit()
-        await session.refresh(result)
+        try:
+            await session.commit()
+            await session.refresh(result)
+        except Exception:
+            await session.rollback()
+            raise
     else:
         await session.flush()
     return result
@@ -775,8 +839,12 @@ async def create_behavior_file(
     )
     session.add(behavior_file)
     if commit:
-        await session.commit()
-        await session.refresh(behavior_file)
+        try:
+            await session.commit()
+            await session.refresh(behavior_file)
+        except Exception:
+            await session.rollback()
+            raise
     else:
         await session.flush()
     return behavior_file
@@ -834,7 +902,11 @@ async def update_behavior_file_content(
     updated_file = result.scalar_one_or_none()
 
     if commit and updated_file:
-        await session.commit()
+        try:
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
     return updated_file
 
@@ -848,7 +920,11 @@ async def delete_behavior_file(session: AsyncSession, file_id: str) -> bool:
 
     stmt = delete(models.BehaviorFile).where(models.BehaviorFile.id == file_uuid)
     result = await session.execute(stmt)
-    await session.commit()
+    try:
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
     return result.rowcount > 0
 
 
@@ -957,8 +1033,12 @@ async def create_addon_asset(
     )
     session.add(asset)
     if commit:
-        await session.commit()
-        await session.refresh(asset)
+        try:
+            await session.commit()
+            await session.refresh(asset)
+        except Exception:
+            await session.rollback()
+            raise
     else:
         await session.flush()
     return asset
@@ -1005,7 +1085,11 @@ async def update_addon_asset(
         )
         result = await session.execute(stmt)
         if commit:
-            await session.commit()
+            try:
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
         asset = result.scalar_one_or_none()
 
     return asset
@@ -1025,7 +1109,11 @@ async def delete_addon_asset(session: AsyncSession, asset_id: str) -> bool:
 
     stmt = delete(models.AddonAsset).where(models.AddonAsset.id == asset_uuid)
     result = await session.execute(stmt)
-    await session.commit()
+    try:
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
     return result.rowcount > 0
 
 
@@ -1101,8 +1189,12 @@ async def create_asset(
     )
     session.add(asset)
     if commit:
-        await session.commit()
-        await session.refresh(asset)
+        try:
+            await session.commit()
+            await session.refresh(asset)
+        except Exception:
+            await session.rollback()
+            raise
     else:
         await session.flush()
     return asset
@@ -1133,7 +1225,11 @@ async def update_asset_status(
     )
     result = await session.execute(stmt)
     if commit:
-        await session.commit()
+        try:
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
     return result.scalar_one_or_none()
 
 
@@ -1162,7 +1258,11 @@ async def update_asset_metadata(
     )
     result = await session.execute(stmt)
     if commit:
-        await session.commit()
+        try:
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
     return result.scalar_one_or_none()
 
 
@@ -1180,7 +1280,11 @@ async def delete_asset(session: AsyncSession, asset_id: str) -> bool:
 
     stmt = delete(models.Asset).where(models.Asset.id == asset_uuid)
     result = await session.execute(stmt)
-    await session.commit()
+    try:
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
     return result.rowcount > 0
 
 
@@ -1252,8 +1356,12 @@ async def create_pattern_submission(
         status="pending",
     )
     session.add(submission)
-    await session.commit()
-    await session.refresh(submission)
+    try:
+        await session.commit()
+        await session.refresh(submission)
+    except Exception:
+        await session.rollback()
+        raise
     return submission
 
 
@@ -1346,8 +1454,12 @@ async def update_pattern_submission_status(
     submission.review_notes = notes
     submission.reviewed_at = datetime.now(timezone.utc)
 
-    await session.commit()
-    await session.refresh(submission)
+    try:
+        await session.commit()
+        await session.refresh(submission)
+    except Exception:
+        await session.rollback()
+        raise
     return submission
 
 
@@ -1386,6 +1498,10 @@ async def vote_on_pattern(
     else:
         submission.downvotes += 1
 
-    await session.commit()
-    await session.refresh(submission)
+    try:
+        await session.commit()
+        await session.refresh(submission)
+    except Exception:
+        await session.rollback()
+        raise
     return submission

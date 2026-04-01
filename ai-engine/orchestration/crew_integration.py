@@ -3,6 +3,7 @@ Integration layer for connecting the parallel orchestrator with existing CrewAI 
 Part of Phase 3: Agent and Crew Integration
 """
 
+import asyncio
 import logging
 from typing import Dict, Any, Optional
 from pathlib import Path
@@ -165,6 +166,8 @@ class EnhancedConversionCrew:
                                     analysis_result["framework"] = structure.get(
                                         "framework", "unknown"
                                     )
+                    except asyncio.CancelledError:
+                        raise
                     except Exception as tool_error:
                         logger.warning(f"Tool execution failed: {tool_error}")
                         continue
@@ -172,6 +175,8 @@ class EnhancedConversionCrew:
                 logger.info(f"Java analysis completed for {mod_path}")
                 return analysis_result
 
+            except asyncio.CancelledError:
+                raise
             except Exception as e:
                 logger.error(f"Java analyzer execution failed: {e}")
                 raise
@@ -211,6 +216,8 @@ class EnhancedConversionCrew:
                                 )
                                 if assumptions:
                                     planning_result["smart_assumptions"] = assumptions
+                    except asyncio.CancelledError:
+                        raise
                     except Exception as tool_error:
                         logger.warning(f"Planning tool execution failed: {tool_error}")
                         continue
@@ -218,6 +225,8 @@ class EnhancedConversionCrew:
                 logger.info("Bedrock architecture planning completed")
                 return planning_result
 
+            except asyncio.CancelledError:
+                raise
             except Exception as e:
                 logger.error(f"Bedrock architect execution failed: {e}")
                 raise
@@ -254,6 +263,8 @@ class EnhancedConversionCrew:
                                 )
                                 if scripts:
                                     translation_result["converted_scripts"] = scripts
+                    except asyncio.CancelledError:
+                        raise
                     except Exception as tool_error:
                         logger.warning(f"Translation tool execution failed: {tool_error}")
                         continue
@@ -261,6 +272,8 @@ class EnhancedConversionCrew:
                 logger.info("Logic translation completed")
                 return translation_result
 
+            except asyncio.CancelledError:
+                raise
             except Exception as e:
                 logger.error(f"Logic translator execution failed: {e}")
                 raise
@@ -298,6 +311,8 @@ class EnhancedConversionCrew:
                                 models = tool.run(assets=assets)
                                 if models:
                                     conversion_result["converted_assets"].extend(models)
+                    except asyncio.CancelledError:
+                        raise
                     except Exception as tool_error:
                         logger.warning(f"Asset conversion tool execution failed: {tool_error}")
                         continue
@@ -305,6 +320,8 @@ class EnhancedConversionCrew:
                 logger.info("Asset conversion completed")
                 return conversion_result
 
+            except asyncio.CancelledError:
+                raise
             except Exception as e:
                 logger.error(f"Asset converter execution failed: {e}")
                 raise
@@ -349,6 +366,8 @@ class EnhancedConversionCrew:
                                 )
                                 if package_info:
                                     packaging_result.update(package_info)
+                    except asyncio.CancelledError:
+                        raise
                     except Exception as tool_error:
                         logger.warning(f"Packaging tool execution failed: {tool_error}")
                         continue
@@ -356,6 +375,8 @@ class EnhancedConversionCrew:
                 logger.info("Packaging completed")
                 return packaging_result
 
+            except asyncio.CancelledError:
+                raise
             except Exception as e:
                 logger.error(f"Packaging agent execution failed: {e}")
                 raise
@@ -396,6 +417,8 @@ class EnhancedConversionCrew:
                                 tests = tool.run(package_path=package_path)
                                 if tests:
                                     validation_result["functionality_tests"] = tests
+                    except asyncio.CancelledError:
+                        raise
                     except Exception as tool_error:
                         logger.warning(f"QA tool execution failed: {tool_error}")
                         continue
@@ -403,6 +426,8 @@ class EnhancedConversionCrew:
                 logger.info("QA validation completed")
                 return validation_result
 
+            except asyncio.CancelledError:
+                raise
             except Exception as e:
                 logger.error(f"QA validator execution failed: {e}")
                 raise
@@ -432,6 +457,8 @@ class EnhancedConversionCrew:
                 logger.info(f"Specialized entity conversion completed for entity {entity_index}")
                 return conversion_result
 
+            except asyncio.CancelledError:
+                raise
             except Exception as e:
                 logger.error(f"Entity converter execution failed: {e}")
                 raise
@@ -492,6 +519,8 @@ class EnhancedConversionCrew:
             logger.info("Enhanced conversion completed successfully")
             return formatted_results
 
+        except asyncio.CancelledError:
+            raise
         except Exception as e:
             logger.error(f"Enhanced conversion failed: {e}")
             return {

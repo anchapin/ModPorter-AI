@@ -173,10 +173,10 @@ class StorageManager:
     ) -> str:
         """Save file to S3 (placeholder - needs boto3)"""
         # NOTE: S3 storage not yet implemented.
-        # See https://github.com/anchapin/ModPorter-AI/issues/TODO for tracking.
-        # For now, fall back to local
-        logger.warning("S3 storage not implemented, using local storage")
-        return await self._save_local(content, job_id, filename, user_id, category)
+        raise NotImplementedError(
+            "S3 storage backend is not yet implemented. "
+            "Set STORAGE_BACKEND=local or implement S3 support."
+        )
 
     async def get_file(
         self, job_id: str, filename: str, user_id: str = "default"
@@ -217,8 +217,10 @@ class StorageManager:
 
     async def _get_s3(self, job_id: str, filename: str, user_id: str) -> Optional[bytes]:
         """Get file from S3 (placeholder)"""
-        logger.warning("S3 storage not implemented")
-        return None
+        raise NotImplementedError(
+            "S3 storage backend is not yet implemented. "
+            "Set STORAGE_BACKEND=local or implement S3 support."
+        )
 
     async def get_upload_status(self, job_id: str) -> Optional[Dict[str, Any]]:
         """

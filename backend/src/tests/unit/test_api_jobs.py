@@ -15,10 +15,36 @@ def mock_manager():
 
 @pytest.fixture
 def client(mock_manager):
-    from api.jobs import get_job_manager_dep, get_current_user_id
+    from api.jobs import get_job_manager_dep, security
+    from db.base import get_db as real_get_db
+    from unittest.mock import MagicMock, patch
+    from fastapi.security import HTTPAuthorizationCredentials
+
+    mock_user = MagicMock()
+    mock_user.id = "test-user-id"
+    mock_user.email = "test@example.com"
+    mock_user.is_verified = True
+
+    mock_session = MagicMock()
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = mock_user
+
+    async def mock_execute(*args, **kwargs):
+        return mock_result
+
+    mock_session.execute = mock_execute
+
     app.dependency_overrides[get_job_manager_dep] = lambda: mock_manager
-    app.dependency_overrides[get_current_user_id] = lambda: "default_user"
-    yield TestClient(app)
+    app.dependency_overrides[real_get_db] = lambda: mock_session
+
+    # Override security to provide a valid mock token
+    mock_credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials="mock-token")
+    app.dependency_overrides[security] = lambda: mock_credentials
+
+    # Patch verify_token to return our test user id
+    with patch("security.auth.verify_token", return_value="test-user-id"):
+        yield TestClient(app)
+
     app.dependency_overrides.clear()
 
 class TestJobsAPI:
@@ -44,7 +70,7 @@ class TestJobsAPI:
     def test_list_jobs(self, mock_manager, client):
         mock_job = MagicMock()
         mock_job.job_id = "job-123"
-        mock_job.user_id = "default_user"
+        mock_job.user_id = "test-user-id"
         mock_job.original_filename = "mod.jar"
         mock_job.status = JobStatus.PENDING
         mock_job.progress = 0
@@ -68,7 +94,7 @@ class TestJobsAPI:
         job_id = str(uuid.uuid4())
         mock_job = MagicMock()
         mock_job.job_id = job_id
-        mock_job.user_id = "default_user"
+        mock_job.user_id = "test-user-id"
         mock_job.original_filename = "mod.jar"
         mock_job.status = JobStatus.PROCESSING
         mock_job.progress = 50
@@ -98,7 +124,7 @@ class TestJobsAPI:
         job_id = str(uuid.uuid4())
         mock_job = MagicMock()
         mock_job.job_id = job_id
-        mock_job.user_id = "default_user"
+        mock_job.user_id = "test-user-id"
         mock_job.status = JobStatus.PROCESSING
         mock_manager.get_job.return_value = mock_job
         mock_manager.cancel_job.return_value = True

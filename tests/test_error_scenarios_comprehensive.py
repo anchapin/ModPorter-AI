@@ -10,7 +10,7 @@ from typing import List, Optional
 import random
 import logging
 
-# Set up imports
+# Set up imports - use try/except and create inline stubs for missing modules
 try:
     from modporter.cli.main import convert_mod
     from services.conversion_service import ConversionService
@@ -18,9 +18,18 @@ try:
     IMPORTS_AVAILABLE = True
 except ImportError:
     IMPORTS_AVAILABLE = False
+    # Create stub classes for ConversionService and TaskQueue if not available
+    class ConversionService:
+        pass
+    class TaskQueue:
+        pass
+    class TaskPriority:
+        HIGH = 1
+        NORMAL = 0
+        LOW = -1
 
-
-pytestmark = pytest.mark.skipif(not IMPORTS_AVAILABLE, reason="Required imports unavailable")
+# Note: Tests use mocks so they don't need real imports
+# The IMPORTS_AVAILABLE flag is kept for informational purposes only
 
 
 @pytest.fixture
@@ -86,22 +95,26 @@ class TestCascadingFailures:
     @pytest.mark.asyncio
     async def test_cascading_timeout(self, mock_conversion_service):
         """Test timeout cascading through operations."""
-        async def slow_task():
+        timeout_duration = 0.1
+        
+        async def slow_task(*args, **kwargs):
             await asyncio.sleep(10)
         
         mock_conversion_service.convert = slow_task
         
         # First operation times out
+        start_time = asyncio.get_event_loop().time() if hasattr(asyncio.get_event_loop(), 'time') else 0
         with pytest.raises(asyncio.TimeoutError):
             await asyncio.wait_for(
                 mock_conversion_service.convert("test.jar", "conservative"),
-                timeout=0.1
+                timeout=timeout_duration
             )
+        end_time = asyncio.get_event_loop().time() if hasattr(asyncio.get_event_loop(), 'time') else 0
         
-        # Subsequent operations should also be affected
-        start = asyncio.time.time() if hasattr(asyncio, 'time') else 0
-        # Verify timeout is enforced
-        assert True
+        # Verify timeout was enforced - elapsed time should be close to timeout
+        if end_time > 0 and start_time > 0:
+            elapsed = end_time - start_time
+            assert elapsed < 1.0, f"Operation should timeout quickly, took {elapsed}s"
     
     @pytest.mark.asyncio
     async def test_resource_exhaustion_cascade(self, mock_conversion_service):

@@ -16,6 +16,14 @@ logger = logging.getLogger(__name__)
 __version__ = "2.0.0"
 
 
+class SearchServiceError(Exception):
+    """Raised when the DuckDuckGo search service fails (rate limit, network, etc.)."""
+
+    def __init__(self, message: str, cause: Optional[Exception] = None):
+        super().__init__(message)
+        self.cause = cause
+
+
 class WebSearchTool(BaseTool):
     """
     WebSearchTool for performing real web searches as a fallback mechanism.
@@ -62,7 +70,7 @@ class WebSearchTool(BaseTool):
             if not query or not query.strip():
                 return json.dumps({"error": "Query cannot be empty", "results": []})
 
-            # Perform the search
+            # Perform the search (raises SearchServiceError on service failure)
             search_results = self._search_duckduckgo(query.strip())
 
             if not search_results:
@@ -91,6 +99,10 @@ class WebSearchTool(BaseTool):
                 f"Web search completed for query: {query}, found {len(formatted_results)} results"
             )
             return json.dumps(response, indent=2)
+
+        except SearchServiceError:
+            # Re-raise so callers can handle explicitly — do not return empty []
+            raise
 
         except Exception as e:
             logger.error(f"Web search failed: {str(e)}")
@@ -131,12 +143,10 @@ class WebSearchTool(BaseTool):
             if "rate" in str(e).lower() or "202" in str(e):
                 logger.info("Rate limit detected, waiting before retry...")
                 time.sleep(5)
-            # Return empty list on error - caller should handle this case
-            # Do NOT return mock data as it masks real failures in production
-            return []
+            # Raise SearchServiceError so callers can distinguish service failure
+            # from genuinely empty results. Silent [] masks production failures.
+            raise SearchServiceError(f"DuckDuckGo search service unavailable: {e}", cause=e)
 
-        # If search fails, return empty list - do NOT return mock data
-        # Mock data masks real failures and gives false confidence
         logger.warning("DuckDuckGo search returned no results")
         return []
 

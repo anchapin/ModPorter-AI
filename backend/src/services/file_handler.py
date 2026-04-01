@@ -368,7 +368,6 @@ class FileHandler:
         Placeholder for virus scanning integration.
 
         NOTE: Antivirus integration not yet implemented.
-        See https://github.com/anchapin/ModPorter-AI/issues/TODO for tracking.
 
         Returns:
             True if scan passes (or not available), False if scan fails

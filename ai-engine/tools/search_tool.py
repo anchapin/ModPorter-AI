@@ -480,6 +480,12 @@ class SearchTool:
             )
             return []
         except Exception as e:
+            # Re-raise SearchServiceError so callers distinguish service failure
+            # from genuinely empty results. Other exceptions still return [].
+            from tools.web_search_tool import SearchServiceError
+
+            if isinstance(e, SearchServiceError):
+                raise
             logger.error(f"Error during fallback to {tool_name}: {str(e)}")
             return []
 

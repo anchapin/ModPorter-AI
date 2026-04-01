@@ -16,19 +16,22 @@ print(f"[ROOT CONFTEST] Current sys.path: {sys.path[:3]}")
 # Add ai-engine to path for module imports
 project_root = Path(__file__).parent.resolve()
 
-# Add backend to path FIRST for higher priority
+# Add backend to path FIRST (higher priority for config resolution)
 backend_path = project_root / "backend" / "src"
 if backend_path.exists():
-    if str(backend_path) not in sys.path:
-        sys.path.insert(0, str(backend_path))
-        print(f"[ROOT CONFTEST] Added backend/src to sys.path: {backend_path}")
+    # Remove if already present (avoid duplicates)
+    if str(backend_path) in sys.path:
+        sys.path.remove(str(backend_path))
+    sys.path.insert(0, str(backend_path))
+    print(f"[ROOT CONFTEST] Added backend/src to sys.path (priority): {backend_path}")
 
-# Add ai-engine to path (BEFORE project root to ensure modules are found)
+# Add ai-engine to path AFTER backend (lower priority to avoid config conflicts)
 ai_engine_path = project_root / "ai-engine"
 if ai_engine_path.exists():
-    if str(ai_engine_path) not in sys.path:
-        sys.path.insert(0, str(ai_engine_path))
-        print(f"[ROOT CONFTEST] Added ai-engine to sys.path: {ai_engine_path}")
+    if str(ai_engine_path) in sys.path:
+        sys.path.remove(str(ai_engine_path))
+    sys.path.insert(1, str(ai_engine_path))
+    print(f"[ROOT CONFTEST] Added ai-engine to sys.path (secondary): {ai_engine_path}")
 
 # Add project root
 if str(project_root) not in sys.path:
@@ -70,11 +73,17 @@ def event_loop():
 @pytest.fixture(autouse=True)
 def setup_env():
     """Setup environment variables for all tests"""
+    original_env = {k: os.environ.get(k) for k in ["SECRET_KEY", "DEBUG", "TESTING"]}
     os.environ.setdefault("SECRET_KEY", "test-secret-key-do-not-use-in-production")
     os.environ.setdefault("DEBUG", "True")
     os.environ.setdefault("TESTING", "True")
     yield
-    # Cleanup (optional)
+    # Restore original values
+    for k, v in original_env.items():
+        if v is None:
+            os.environ.pop(k, None)
+        else:
+            os.environ[k] = v
 
 @pytest.fixture(scope="function")
 def django_settings_override():

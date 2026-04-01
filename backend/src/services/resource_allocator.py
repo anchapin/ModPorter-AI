@@ -914,5 +914,12 @@ def reset_resource_allocator():
     """Reset the global resource allocator (for testing)."""
     global _resource_allocator
     if _resource_allocator:
-        asyncio.run(_resource_allocator.close())
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            # No running loop — safe to use asyncio.run()
+            asyncio.run(_resource_allocator.close())
+        else:
+            # Already in async context — schedule close without blocking
+            loop.create_task(_resource_allocator.close())
     _resource_allocator = None

@@ -224,7 +224,6 @@ class SemanticAnalyzer:
 
         # NOTE: Method and field extraction from class body is not yet implemented.
         # This requires traversing the full AST tree structure.
-        # See https://github.com/anchapin/ModPorter-AI/issues/TODO for tracking.
 
     def _resolve_types(self):
         """Resolve type references and build type hierarchy."""
@@ -240,19 +239,16 @@ class SemanticAnalyzer:
     def _extract_method_calls(self):
         """Extract method invocations from AST."""
         # NOTE: AST traversal for method_invocation nodes not yet implemented.
-        # See https://github.com/anchapin/ModPorter-AI/issues/TODO for tracking.
         pass
 
     def _extract_field_accesses(self):
         """Extract field accesses from AST."""
         # NOTE: AST traversal for field_access nodes not yet implemented.
-        # See https://github.com/anchapin/ModPorter-AI/issues/TODO for tracking.
         pass
 
     def _build_inheritance_graph(self):
         """Build inheritance graph from type information."""
         # NOTE: Graph structure for inheritance hierarchy not yet implemented.
-        # See https://github.com/anchapin/ModPorter-AI/issues/TODO for tracking.
         pass
 
     def _get_inheritance_info(self) -> Dict[str, Any]:
