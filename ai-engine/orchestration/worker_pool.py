@@ -88,6 +88,7 @@ class WorkerPool:
         self.max_workers = max_workers
         self.executor: Optional[Union[ThreadPoolExecutor, ProcessPoolExecutor]] = None
         self.active_futures: Dict[str, Future] = {}
+        self.task_start_times: Dict[str, float] = {}  # Track task start times for stuck detection
         self.worker_stats: Dict[int, WorkerStats] = {}
         self.task_queue = queue.PriorityQueue()
         self.shutdown_event = threading.Event()
@@ -212,6 +213,7 @@ class WorkerPool:
         # Submit task with timeout
         future = self.executor.submit(execute_with_monitoring)
         self.active_futures[task.task_id] = future
+        self.task_start_times[task.task_id] = time.time()  # Record start time for stuck detection
 
         logger.debug(f"Submitted task {task.task_id} to worker pool")
         return future
@@ -269,9 +271,11 @@ class WorkerPool:
                     failed_tasks.append({"task_id": task_id, "error": str(e)})
                     logger.error(f"Task {task_id} failed: {e}")
 
-                # Clean up future reference
+                # Clean up future and start time references
                 if task_id in self.active_futures:
                     del self.active_futures[task_id]
+                if task_id in self.task_start_times:
+                    del self.task_start_times[task_id]
 
         except TimeoutError:
             # Handle timeout - identify which tasks didn't complete
@@ -342,18 +346,23 @@ class WorkerPool:
                 )
 
                 # Check for stuck tasks (running longer than 2x timeout)
-                time.time()
-                self.task_timeout * 2
-
                 stuck_tasks = []
+                stuck_threshold = self.task_timeout * 2
+                current_time = time.time()
+
                 for task_id, future in list(self.active_futures.items()):
                     if not future.done():
-                        # This is a simplified check - in practice you'd track start times
-                        # For now, just log active tasks
-                        continue
+                        start_time = self.task_start_times.get(task_id, current_time)
+                        elapsed = current_time - start_time
+                        if elapsed > stuck_threshold:
+                            stuck_tasks.append(task_id)
+                            logger.warning(
+                                f"Task {task_id} has been running for {elapsed:.1f}s "
+                                f"(exceeds {stuck_threshold:.1f}s threshold)"
+                            )
 
                 if stuck_tasks:
-                    logger.warning(f"Found {len(stuck_tasks)} potentially stuck tasks")
+                    logger.warning(f"Found {len(stuck_tasks)} potentially stuck tasks: {stuck_tasks}")
 
             except Exception as e:
                 logger.error(f"Error in worker monitoring: {e}")

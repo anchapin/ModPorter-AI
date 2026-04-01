@@ -360,8 +360,8 @@ class StorageManager:
                     for f in files:
                         try:
                             total += os.path.getsize(os.path.join(root, f))
-                        except:
-                            pass
+                        except (OSError, FileNotFoundError, PermissionError) as e:
+                            logger.debug(f"Could not get size for file {f}: {e}")
         return total
 
     def _get_local_file_count(self) -> int:

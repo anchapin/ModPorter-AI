@@ -294,6 +294,19 @@
 
 ---
 
+## In Progress
+- 🔄 Code Review Wave 1 - Fix Critical Bugs (5/5 complete, testing remaining)
+
+## Pending
+- ⏳ H1-H6: High priority issues (see .factory/code-review-tasks.md)
+- ⏳ M1-M5: Medium priority issues (see .factory/code-review-tasks.md)
+- ⏳ T1-T6: Test quality issues (see .factory/code-review-tasks.md)
+
+## Completed
+- ✅ Full codebase review completed (23 issues found, 13 critical)
+
+---
+
 ## AI Agent Automation Patterns
 
 ### Quick Reference

@@ -127,21 +127,18 @@ class WebSearchTool(BaseTool):
                 return []
 
         except Exception as e:
-            logger.warning(f"DuckDuckGo search failed: {str(e)}")
+            logger.error(f"DuckDuckGo search failed: {str(e)}")
             if "rate" in str(e).lower() or "202" in str(e):
                 logger.info("Rate limit detected, waiting before retry...")
                 time.sleep(5)
-                return []
+            # Return empty list on error - caller should handle this case
+            # Do NOT return mock data as it masks real failures in production
+            return []
 
-        # If search fails, return mock data for testing
-        logger.warning("DuckDuckGo search failed, returning mock results for testing")
-        return [
-            {
-                "title": f"Mock Search Result for: {query}",
-                "href": "https://example.com/mock-result",
-                "body": f"This is a mock search result for the query '{query}'. In a real scenario, this would contain actual web search results from DuckDuckGo.",
-            }
-        ]
+        # If search fails, return empty list - do NOT return mock data
+        # Mock data masks real failures and gives false confidence
+        logger.warning("DuckDuckGo search returned no results")
+        return []
 
     def _format_search_results(self, raw_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
