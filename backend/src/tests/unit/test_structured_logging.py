@@ -762,14 +762,15 @@ class TestModuleLevelLogger:
 class TestContextVarsIntegration:
     """Tests for context variables integration with structlog."""
 
-    @pytest.mark.xfail(reason="Permission denied on /var/log/modporter in CI environment", strict=False)
     @patch("services.structured_logging.structlog.contextvars.merge_contextvars")
     def test_contextvars_in_configure(self, mock_merge):
         """Test that merge_contextvars is used in configuration."""
         with patch("services.structured_logging.structlog.configure") as mock_configure:
             with patch("services.structured_logging.logging.getLogger"):
-                mock_configure.return_value = None
-                structured_logging.configure_structlog()
+                with patch("services.structured_logging.os.makedirs"):
+                    with patch("services.structured_logging.RotatingFileHandler"):
+                        mock_configure.return_value = None
+                        structured_logging.configure_structlog()
 
         # Verify merge_contextvars was included in processors
         call_kwargs = mock_configure.call_args[1]

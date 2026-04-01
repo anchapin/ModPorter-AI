@@ -503,11 +503,9 @@ class TestCacheServiceExport:
         with patch("services.cache.aioredis") as mock_redis:
             mock_redis.from_url.return_value = mock_client
 
-            from importlib import reload
-            import services.cache
-            reload(services.cache)
+            from services.cache import CacheService
 
-            service = services.cache.CacheService()
+            service = CacheService()
             service._client = mock_client
             service._redis_available = True
 
@@ -623,11 +621,9 @@ class TestCacheServiceAIEngine:
         # Patch aioredis to return our mock client
         with patch("services.cache.aioredis") as mock_aioredis:
             mock_aioredis.from_url.return_value = mock_client
-            from importlib import reload
-            import services.cache
-            reload(services.cache)
+            from services.cache import CacheService
 
-            service = services.cache.CacheService()
+            service = CacheService()
             service._client = mock_client
             service._redis_available = True
 
