@@ -62,10 +62,16 @@
     "dompurify": "^3.3.2",
     "lodash-es": "^4.17.23",
     "axios": "^1.13.5",
-    "react-router-dom": "^7.12.0"
+    "react-router-dom": "^7.12.0",
+    "brace-expansion@<1.1.13": "1.1.13"
   },
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=7.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "brace-expansion@<1.1.13": "1.1.13"
+    }
   }
 }
