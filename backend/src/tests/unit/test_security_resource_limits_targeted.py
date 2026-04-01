@@ -18,7 +18,16 @@ from security.resource_limits import (
     ResourceLimiter,
     DiskSpaceMonitor,
     get_resource_limiter,
+    reset_resource_limiter,
 )
+
+
+@pytest.fixture(autouse=True)
+def reset_limiter_global():
+    """Reset the global resource limiter before each test."""
+    reset_resource_limiter()
+    yield
+    reset_resource_limiter()
 
 
 class TestResourceLimits:
@@ -152,7 +161,7 @@ class TestResourceLimiter:
         assert usage.open_files >= 0
         limiter.stop_tracking()
 
-    @pytest.mark.xfail(reason="Singleton pollution - ResourceLimiter() uses global state modified by earlier tests")
+    @pytest.mark.xfail(reason="Singleton pollution - ResourceLimiter() state modified by earlier tests in suite")
     def test_check_limits_no_exceeded(self):
         """Test check_limits when nothing exceeded."""
         limiter = ResourceLimiter()
@@ -167,7 +176,7 @@ class TestResourceLimiter:
             limiter.check_limits()
         assert exc_info.value.resource_type == "memory"
 
-    @pytest.mark.xfail(reason="Singleton pollution - ResourceLimiter() uses global state modified by earlier tests")
+    @pytest.mark.xfail(reason="Singleton pollution - ResourceLimiter() state modified by earlier tests in suite")
     def test_check_limits_disk_exceeded(self):
         """Test check_limits when disk exceeded."""
         limits = ResourceLimits(max_disk_usage_mb=0)
@@ -181,7 +190,7 @@ class TestResourceLimiter:
             assert exc_info.value.resource_type == "disk"
             limiter.stop_tracking()
 
-    @pytest.mark.xfail(reason="Singleton pollution - ResourceLimiter() uses global state modified by earlier tests")
+    @pytest.mark.xfail(reason="Singleton pollution - ResourceLimiter() state modified by earlier tests in suite")
     def test_check_limits_open_files_exceeded(self):
         """Test check_limits when open files exceeded."""
         limits = ResourceLimits(max_open_files=0)
@@ -200,7 +209,7 @@ class TestResourceLimiter:
             result = limiter.check_available_disk_space(path, required_mb=1)
             assert isinstance(result, bool)
 
-    @pytest.mark.xfail(reason="Singleton pollution - ResourceLimiter() uses global state modified by earlier tests")
+    @pytest.mark.xfail(reason="Singleton pollution - ResourceLimiter() state modified by earlier tests in suite")
     def test_track_operation_upload(self):
         """Test tracking upload operation."""
         limiter = ResourceLimiter()
@@ -208,7 +217,7 @@ class TestResourceLimiter:
             assert limiter._active_operations["uploads"] == 1
         assert limiter._active_operations["uploads"] == 0
 
-    @pytest.mark.xfail(reason="Singleton pollution - ResourceLimiter() uses global state modified by earlier tests")
+    @pytest.mark.xfail(reason="Singleton pollution - ResourceLimiter() state modified by earlier tests in suite")
     def test_track_operation_extraction(self):
         """Test tracking extraction operation."""
         limiter = ResourceLimiter()
@@ -216,15 +225,17 @@ class TestResourceLimiter:
             assert limiter._active_operations["extractions"] == 1
         assert limiter._active_operations["extractions"] == 0
 
-    @pytest.mark.xfail(reason="Singleton pollution - ResourceLimiter() uses global state modified by earlier tests")
+    @pytest.mark.xfail(reason="Singleton pollution - ResourceLimiter() state modified by earlier tests in suite")
     def test_track_operation_concurrent_limit(self):
         """Test concurrent operations limit."""
-        limiter = ResourceLimiter(limits=ResourceLimits(max_concurrent_uploads=1))
+        limits = ResourceLimits(max_concurrent_uploads=1)
+        limiter = ResourceLimiter(limits=limits)
 
-        with pytest.raises(ResourceLimitExceeded):
-            limiter.track_operation("upload")
+        with limiter.track_operation("upload"):
+            with pytest.raises(ResourceLimitExceeded):
+                limiter.track_operation("upload").__enter__()
 
-    @pytest.mark.xfail(reason="Singleton pollution - ResourceLimiter() uses global state modified by earlier tests")
+    @pytest.mark.xfail(reason="Singleton pollution - ResourceLimiter() state modified by earlier tests in suite")
     def test_track_operation_unknown_type(self):
         """Test track_operation with unknown type."""
         limiter = ResourceLimiter()
@@ -348,15 +359,9 @@ class TestGlobalLimiter:
 
     def test_get_resource_limiter_creates_instance(self):
         """Test creating new limiter instance."""
-        from security import resource_limits
-
-        original = resource_limits._resource_limiter
-        resource_limits._resource_limiter = None
-
+        # The autouse fixture resets the global before each test
         limiter = get_resource_limiter()
         assert isinstance(limiter, ResourceLimiter)
-
-        resource_limits._resource_limiter = original
 
 
 class TestEdgeCases:
@@ -368,7 +373,7 @@ class TestEdgeCases:
         usage = limiter.get_current_usage()
         assert usage.processing_time_seconds == 0.0
 
-    @pytest.mark.xfail(reason="Singleton pollution - ResourceLimiter() uses global state modified by earlier tests")
+    @pytest.mark.xfail(reason="Singleton pollution - ResourceLimiter() state modified by earlier tests in suite")
     def test_check_limits_processing_time_exceeded(self):
         """Test check_limits with processing time exceeded."""
         limits = ResourceLimits(max_processing_time_seconds=0)
@@ -379,7 +384,7 @@ class TestEdgeCases:
             limiter.check_limits()
         assert exc_info.value.resource_type == "processing_time"
 
-    @pytest.mark.xfail(reason="Singleton pollution - ResourceLimiter() uses global state modified by earlier tests")
+    @pytest.mark.xfail(reason="Singleton pollution - ResourceLimiter() state modified by earlier tests in suite")
     def test_track_operation_concurrent_extractions(self):
         """Test concurrent extraction limit."""
         limits = ResourceLimits(max_concurrent_extractions=1)
