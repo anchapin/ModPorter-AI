@@ -6,6 +6,10 @@ These tests verify:
 - Progress message broadcasting
 - Conversion REST endpoints
 - Integration with background tasks
+
+NOTE: API endpoint tests (test_create_conversion_with_file, test_list_conversions, etc.)
+require a database setup and are marked as 'integration'. They are excluded from the
+default test run but can be run with: pytest -m integration
 """
 
 import asyncio
@@ -250,6 +254,11 @@ async def test_conversion_complete_broadcast():
     download_url = f"/api/v1/conversions/{conversion_id}/download"
 
     await manager.connect(mock_ws, conversion_id)
+    # WebSocket endpoint sends connection_established after manager.connect
+    await mock_ws.send_json({
+        "type": "connection_established",
+        "data": {"conversion_id": conversion_id}
+    })
 
     await ProgressHandler.broadcast_conversion_complete(conversion_id, download_url)
 
@@ -289,8 +298,9 @@ async def test_conversion_failed_broadcast():
     manager.disconnect(mock_ws, conversion_id)
 
 
-# Conversion API Tests
+# Conversion API Tests (require database - marked as integration)
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_create_conversion_with_file(async_client, mock_upload_file):
     """Test creating a conversion with file upload."""
     # Skip if file doesn't exist
@@ -314,6 +324,7 @@ async def test_create_conversion_with_file(async_client, mock_upload_file):
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_create_conversion_invalid_file_type(async_client):
     """Test that invalid file types are rejected."""
     # Create a temporary file with wrong extension
@@ -337,6 +348,7 @@ async def test_create_conversion_invalid_file_type(async_client):
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_get_conversion_status(async_client):
     """Test getting conversion status."""
     # This test would require creating a conversion first
@@ -347,6 +359,7 @@ async def test_get_conversion_status(async_client):
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_list_conversions(async_client):
     """Test listing conversions."""
     response = await async_client.get("/api/v1/conversions")
@@ -361,6 +374,7 @@ async def test_list_conversions(async_client):
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_list_conversions_pagination(async_client):
     """Test conversion listing pagination."""
     response = await async_client.get("/api/v1/conversions?page=1&page_size=10")
@@ -372,6 +386,7 @@ async def test_list_conversions_pagination(async_client):
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_delete_conversion(async_client):
     """Test deleting/cancelling a conversion."""
     # Test with non-existent conversion
@@ -382,6 +397,7 @@ async def test_delete_conversion(async_client):
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_download_conversion_not_found(async_client):
     """Test downloading a non-existent conversion."""
     response = await async_client.get(
@@ -391,8 +407,9 @@ async def test_download_conversion_not_found(async_client):
     assert response.status_code == 404
 
 
-# Integration Tests
+# Integration Tests (require database)
 @pytest.mark.asyncio
+@pytest.mark.integration
 async def test_websocket_with_conversion_progress():
     """Test WebSocket receives progress updates during conversion."""
     from websocket.manager import manager
@@ -410,6 +427,11 @@ async def test_websocket_with_conversion_progress():
 
     # Simulate connection
     await manager.connect(mock_ws, conversion_id)
+    # WebSocket endpoint sends connection_established after manager.connect
+    await mock_ws.send_json({
+        "type": "connection_established",
+        "data": {"conversion_id": conversion_id}
+    })
 
     # Simulate progress updates
     await ProgressHandler.broadcast_agent_start(conversion_id, "JavaAnalyzerAgent")

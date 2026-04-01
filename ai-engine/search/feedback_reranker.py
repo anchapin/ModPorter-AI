@@ -7,9 +7,9 @@ allowing the search system to learn from user feedback.
 
 import uuid
 import sys
-from typing import List, Optional, Dict, Any, Tuple
+from typing import List, Optional, Dict
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 ai_engine_path = str(Path(__file__).parent.parent.parent)

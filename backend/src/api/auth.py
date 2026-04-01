@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -53,8 +53,9 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=128)
 
-    @validator("password")
-    def validate_password(self, v):
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v):
         """Validate password strength"""
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters")
@@ -113,8 +114,9 @@ class PasswordResetConfirmRequest(BaseModel):
 
     password: str = Field(..., min_length=8, max_length=128)
 
-    @validator("password")
-    def validate_password(self, v):
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v):
         """Validate password strength"""
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters")

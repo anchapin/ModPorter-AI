@@ -408,3 +408,9 @@ def get_resource_limiter() -> ResourceLimiter:
     if _resource_limiter is None:
         _resource_limiter = ResourceLimiter()
     return _resource_limiter
+
+
+def reset_resource_limiter() -> None:
+    """Reset the global resource limiter instance. For testing purposes."""
+    global _resource_limiter
+    _resource_limiter = None

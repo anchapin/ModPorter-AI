@@ -451,10 +451,74 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
 
 
 def register_exception_handlers(app):
-    """Register all exception handlers with the FastAPI app"""
+    """Register all exception handlers with the FastAPI app
+
+    Validates that all handlers are callable with the correct signature before registration.
+    This prevents issues where incorrectly defined handlers cause runtime errors.
+    """
+    import inspect
     from fastapi.exceptions import RequestValidationError
 
-    app.add_exception_handler(ModPorterException, modporter_exception_handler)
-    app.add_exception_handler(HTTPException, http_exception_handler)
-    app.add_exception_handler(RequestValidationError, validation_exception_handler)
-    app.add_exception_handler(Exception, generic_exception_handler)
+    # Define handlers to register with their expected signatures
+    handlers_to_register = [
+        (ModPorterException, modporter_exception_handler, "ModPorterException"),
+        (HTTPException, http_exception_handler, "HTTPException"),
+        (RequestValidationError, validation_exception_handler, "RequestValidationError"),
+        (Exception, generic_exception_handler, "Exception"),
+    ]
+
+    for exception_class, handler_func, handler_name in handlers_to_register:
+        # Validate handler is callable
+        if not callable(handler_func):
+            raise TypeError(
+                f"Cannot register handler '{handler_name}': not callable. "
+                f"Got type: {type(handler_func)}"
+            )
+
+        # Validate handler has the correct signature (request, exc)
+        try:
+            sig = inspect.signature(handler_func)
+            params = list(sig.parameters.keys())
+            if len(params) < 2:
+                raise TypeError(
+                    f"Cannot register handler '{handler_name}': expected at least 2 parameters "
+                    f"(request, exc), but handler has {len(params)} parameter(s): {params}. "
+                    f"Full signature: {sig}"
+                )
+        except ValueError as e:
+            # Some callable objects don't support inspect.signature
+            # In this case, we'll try to register anyway and let FastAPI handle it
+            pass
+
+        # Register the handler
+        app.add_exception_handler(exception_class, handler_func)
+
+
+def verify_exception_handlers(app) -> Dict[str, bool]:
+    """Verify that exception handlers are properly registered.
+
+    Returns a dictionary showing the registration status of each handler type.
+
+    Args:
+        app: The FastAPI application instance to verify.
+
+    Returns:
+        Dictionary mapping handler names to their registration status.
+    """
+    from fastapi.exceptions import RequestValidationError
+
+    handlers_to_check = [
+        ("ModPorterException", ModPorterException),
+        ("HTTPException", HTTPException),
+        ("RequestValidationError", RequestValidationError),
+        ("Generic Exception", Exception),
+    ]
+
+    result = {}
+    for name, exc_class in handlers_to_check:
+        # Check if there's a handler for this exception class
+        # FastAPI stores handlers in exception_handlers dict
+        has_handler = exc_class in getattr(app, "exception_handlers", {})
+        result[name] = has_handler
+
+    return result

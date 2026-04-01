@@ -66,16 +66,16 @@ def configure_structlog(
         structlog.processors.TimeStamper(fmt="iso"),
     ]
 
+    # Add exception info processor - MUST be before renderers
+    processors.append(structlog.processors.StackInfoRenderer())
+    processors.append(structlog.processors.format_exc_info)
+
     if debug_mode:
         processors.append(structlog.dev.ConsoleRenderer())
     elif json_format:
         processors.append(structlog.processors.JSONRenderer())
     else:
         processors.append(structlog.dev.ConsoleRenderer(colors=False))
-
-    # Add exception info processor
-    processors.append(structlog.processors.StackInfoRenderer())
-    processors.append(structlog.processors.format_exc_info)
 
     # Configure structlog
     structlog.configure(

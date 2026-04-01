@@ -297,6 +297,79 @@ public class TestMod {
         # Should have logged parsing errors
         # Note: The exact behavior might depend on how we handle parsing errors in the implementation
 
+    def test_get_tools(self, analyzer):
+        """Test get_tools returns proper list of tools"""
+        tools = analyzer.get_tools()
+        assert isinstance(tools, list)
+        assert len(tools) > 0
+
+    def test_file_patterns(self, analyzer):
+        """Test that file patterns are defined"""
+        assert "mod_files" in analyzer.file_patterns
+        assert "source_files" in analyzer.file_patterns
+        assert ".jar" in analyzer.file_patterns["mod_files"]
+
+    def test_framework_indicators(self, analyzer):
+        """Test that framework indicators are defined"""
+        assert "forge" in analyzer.framework_indicators
+        assert "fabric" in analyzer.framework_indicators
+        assert (
+            "net.minecraft.block.Block" not in analyzer.framework_indicators["forge"]
+        )  # Not in the actual indicators
+        assert "net.minecraftforge" in analyzer.framework_indicators["forge"]
+
+    def test_feature_patterns(self, analyzer):
+        """Test that feature patterns are defined"""
+        assert "blocks" in analyzer.feature_patterns
+        assert "items" in analyzer.feature_patterns
+        assert "Block" in analyzer.feature_patterns["blocks"]
+
+    def test_extract_features_from_ast_with_no_classes(self, analyzer):
+        """Test feature extraction with AST that has no classes"""
+        java_code = """
+        public class Test {
+            public void test() {}
+        }
+        """
+        tree = analyzer._parse_java_source(java_code)
+        features = analyzer._extract_features_from_ast(tree)
+        assert features is not None
+
+    def test_analyze_mod_file_with_directory(self, analyzer, tmp_path):
+        """Test analyze_mod_file with a directory"""
+        # Create a temporary directory with Java files
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+
+        java_file = src_dir / "Test.java"
+        java_file.write_text("""
+        package com.example.test;
+        
+        public class Test {
+            public void test() {}
+        }
+        """)
+
+        result = analyzer.analyze_mod_file(str(src_dir))
+        result_dict = json.loads(result)
+        assert "errors" in result_dict
+
+    def test_get_file_size(self, analyzer):
+        """Test _get_file_size method"""
+        size = analyzer._get_file_size("/fake/path/file.jar")
+        assert size == 0  # Non-existent file returns 0
+
+    def test_analyze_jar_with_ast_invalid_path(self, analyzer):
+        """Test analyze_jar_with_ast with invalid path"""
+        result = analyzer.analyze_jar_with_ast("/nonexistent/path.jar")
+        assert result["success"] is False
+
+    def test_singleton_pattern(self):
+        """Test singleton pattern"""
+        agent1 = JavaAnalyzerAgent.get_instance()
+        agent2 = JavaAnalyzerAgent.get_instance()
+        assert agent1 is agent2
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

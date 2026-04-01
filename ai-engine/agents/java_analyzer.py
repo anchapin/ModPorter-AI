@@ -121,11 +121,11 @@ class JavaAnalyzerAgent:
         Returns:
             JSON string with analysis results
         """
-        self.logger.log_operation_start(
-            "mod_file_analysis", mod_path=mod_path, file_size=self._get_file_size(mod_path)
-        )
-
         try:
+            self.logger.log_operation_start(
+                "mod_file_analysis", mod_path=mod_path, file_size=self._get_file_size(mod_path)
+            )
+
             # Initialize result structure
             result = {
                 "mod_info": {"name": "unknown", "framework": "unknown", "version": "1.0.0"},
@@ -268,15 +268,16 @@ class JavaAnalyzerAgent:
         dependency_keywords = {"import", "package"}
 
         for i, source_path in enumerate(java_sources[:max_files]):
+            # Determine needs before try block to avoid UnboundLocalError in except
+            need_features = i < FEATURE_ANALYSIS_FILE_LIMIT
+            need_deps = i < DEPENDENCY_ANALYSIS_FILE_LIMIT
+            need_metadata = i < METADATA_AST_FILE_LIMIT
+
             try:
                 # Read source file
                 source_code = jar.read(source_path).decode("utf-8")
 
                 # Optimization: Keyword Pre-check
-                need_features = i < FEATURE_ANALYSIS_FILE_LIMIT
-                need_deps = i < DEPENDENCY_ANALYSIS_FILE_LIMIT
-                need_metadata = i < METADATA_AST_FILE_LIMIT
-
                 should_parse = False
 
                 # Check keywords based on needs
@@ -1192,7 +1193,7 @@ class JavaAnalyzerAgent:
             for path, node in javalang.ast.walk_tree(class_node):
                 # Look for method invocations like .strength(), .sound(), etc.
                 if isinstance(node, javalang.tree.MethodInvocation):
-                    method_name = node.name.lower()
+                    method_name = node.member.lower()
 
                     # Extract hardness and resistance from .strength(hardness, resistance)
                     if method_name == "strength":
@@ -1528,8 +1529,9 @@ class JavaAnalyzerAgent:
                 # Check for Class.forName calls
                 if isinstance(node, javalang.tree.MethodInvocation):
                     member = node.member.lower() if hasattr(node, "member") else ""
+                    qualifier = node.qualifier.lower() if hasattr(node, "qualifier") and node.qualifier else ""
 
-                    if member == "class_forname":
+                    if member == "forname" and qualifier == "class":
                         reflection_info["detected"] = True
                         # Try to extract the class name argument
                         if node.arguments and len(node.arguments) > 0:
@@ -1568,7 +1570,7 @@ class JavaAnalyzerAgent:
                     pass
 
                 # Check for type cast to Class<?>
-                elif isinstance(node, javalang.tree.TypeCast):
+                elif isinstance(node, javalang.tree.Cast):
                     if hasattr(node, "type") and hasattr(node.type, "name"):
                         if node.type.name == "Class":
                             reflection_info["warnings"].append(

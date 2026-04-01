@@ -8,7 +8,7 @@ import logging
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Path
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from db.base import get_db
 from db import crud
@@ -44,13 +44,14 @@ class AssetUploadRequest(BaseModel):
     asset_type: str
     metadata: Optional[Dict[str, Any]] = None
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "asset_type": "texture",
                 "metadata": {"category": "blocks", "resolution": "16x16"},
             }
         }
+    )
 
 
 class AssetStatusUpdate(BaseModel):

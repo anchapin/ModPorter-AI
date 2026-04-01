@@ -1,0 +1,598 @@
+const __vite_ssr_import_0__ = await __vite_ssr_import__("/@fs/home/alex/Projects/ModPorter-AI/node_modules/.pnpm/react@19.2.4/node_modules/react/jsx-dev-runtime.js", {"importedNames":["jsxDEV"]});
+const __vite_ssr_import_1__ = await __vite_ssr_import__("/@fs/home/alex/Projects/ModPorter-AI/node_modules/.pnpm/@testing-library+react@16.3.2_@testing-library+dom@10.4.1_@types+react-dom@19.2.3_@type_893f466751a7d66081fd06e9edb9241a/node_modules/@testing-library/react/dist/index.js", {"importedNames":["render","screen","waitFor","act"]});
+const __vite_ssr_import_2__ = await __vite_ssr_import__("/@fs/home/alex/Projects/ModPorter-AI/node_modules/.pnpm/@testing-library+user-event@14.6.1_@testing-library+dom@10.4.1/node_modules/@testing-library/user-event/dist/esm/index.js", {"importedNames":["default"]});
+const __vite_ssr_import_3__ = await __vite_ssr_import__("/@fs/home/alex/Projects/ModPorter-AI/node_modules/.pnpm/vitest@4.0.18_@types+node@25.4.0_@vitest+ui@4.0.18_jiti@2.6.1_jsdom@28.1.0_msw@2.12.10__26417f62b608bc1be6ca0ba5170c7860/node_modules/vitest/dist/index.js", {"importedNames":["vi","describe","beforeEach","test","expect"]});
+const __vite_ssr_import_4__ = await __vite_ssr_import__("/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx", {"importedNames":["RecipeBuilder"]});
+
+
+
+
+
+const mockAvailableItems = [
+  {
+    id: "minecraft:oak_planks",
+    type: "minecraft:item",
+    name: "Oak Planks",
+    count: 1
+  },
+  { id: "minecraft:stick", type: "minecraft:item", name: "Stick", count: 1 },
+  {
+    id: "minecraft:iron_ingot",
+    type: "minecraft:item",
+    name: "Iron Ingot",
+    count: 1
+  }
+];
+const mockRecipe = {
+  id: "test-recipe",
+  identifier: "mod:custom_recipe",
+  type: "shaped",
+  name: "Custom Recipe",
+  description: "A test recipe"
+};
+(0,__vite_ssr_import_3__.describe)("RecipeBuilder Component", () => {
+  const mockOnRecipeChange = __vite_ssr_import_3__.vi.fn();
+  const mockOnRecipeSave = __vite_ssr_import_3__.vi.fn();
+  (0,__vite_ssr_import_3__.beforeEach)(() => {
+    __vite_ssr_import_3__.vi.clearAllMocks();
+  });
+  (0,__vite_ssr_import_3__.describe)("Initial Rendering", () => {
+    (0,__vite_ssr_import_3__.test)("renders RecipeBuilder with default state", () => {
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: mockRecipe,
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 46,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByText("Recipe Builder")).toBeInTheDocument();
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByText("Recipe Type")).toBeInTheDocument();
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByLabelText("Recipe Identifier")).toBeInTheDocument();
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByLabelText("Recipe Name")).toBeInTheDocument();
+    });
+    (0,__vite_ssr_import_3__.test)("renders with initial recipe data", () => {
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: mockRecipe,
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 63,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByDisplayValue("Custom Recipe")).toBeInTheDocument();
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByDisplayValue("mod:custom_recipe")).toBeInTheDocument();
+    });
+    (0,__vite_ssr_import_3__.test)("displays save button disabled when validation errors exist", () => {
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: {},
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 77,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      const saveButton = __vite_ssr_import_1__.screen.getByRole("button", { name: /save recipe/i });
+      (0,__vite_ssr_import_3__.expect)(saveButton).toBeDisabled();
+    });
+  });
+  (0,__vite_ssr_import_3__.describe)("Recipe Type Selection", () => {
+    (0,__vite_ssr_import_3__.test)("displays all recipe types", () => {
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: mockRecipe,
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 93,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByText("Recipe Type")).toBeInTheDocument();
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByText("Shaped Crafting")).toBeInTheDocument();
+    });
+    (0,__vite_ssr_import_3__.test)("changes recipe type when selected", async () => {
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: mockRecipe,
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 110,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByText("Recipe Type")).toBeInTheDocument();
+    });
+  });
+  (0,__vite_ssr_import_3__.describe)("Recipe Properties", () => {
+    (0,__vite_ssr_import_3__.test)("updates recipe name when changed", async () => {
+      const user = __vite_ssr_import_2__.default.setup();
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: mockRecipe,
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 128,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      const nameInput = __vite_ssr_import_1__.screen.getByLabelText("Recipe Name");
+      await (0,__vite_ssr_import_1__.act)(async () => {
+        await user.clear(nameInput);
+        await user.type(nameInput, "New Recipe Name");
+      });
+      (0,__vite_ssr_import_3__.expect)(mockOnRecipeChange).toHaveBeenCalledWith(
+        __vite_ssr_import_3__.expect.objectContaining({ name: "New Recipe Name" })
+      );
+    });
+    (0,__vite_ssr_import_3__.test)("updates recipe identifier when changed", async () => {
+      const user = __vite_ssr_import_2__.default.setup();
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: mockRecipe,
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 152,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      const identifierInput = __vite_ssr_import_1__.screen.getByLabelText("Recipe Identifier");
+      await (0,__vite_ssr_import_1__.act)(async () => {
+        await user.clear(identifierInput);
+        await user.type(identifierInput, "mod:new_recipe");
+      });
+      (0,__vite_ssr_import_3__.expect)(mockOnRecipeChange).toHaveBeenCalledWith(
+        __vite_ssr_import_3__.expect.objectContaining({ identifier: "mod:new_recipe" })
+      );
+    });
+    (0,__vite_ssr_import_3__.test)("shows experience and cooking time for smelting recipes", () => {
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: { ...mockRecipe, type: "furnace" },
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 174,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByLabelText("Experience")).toBeInTheDocument();
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByLabelText("Cooking Time (ticks)")).toBeInTheDocument();
+    });
+  });
+  (0,__vite_ssr_import_3__.describe)("Recipe Grid", () => {
+    (0,__vite_ssr_import_3__.test)("renders 3x3 grid for shaped recipes", () => {
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: { ...mockRecipe, type: "shaped" },
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 190,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByText("Shaped Recipe Pattern")).toBeInTheDocument();
+    });
+    (0,__vite_ssr_import_3__.test)("renders 1x1 grid for furnace recipes", () => {
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: { ...mockRecipe, type: "furnace" },
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 203,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByText("Smelting Input")).toBeInTheDocument();
+    });
+    (0,__vite_ssr_import_3__.test)("places item in grid when clicked", async () => {
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: mockRecipe,
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 216,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByText("Shaped Recipe Pattern")).toBeInTheDocument();
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByText("Oak Planks")).toBeInTheDocument();
+    });
+  });
+  (0,__vite_ssr_import_3__.describe)("Undo/Redo Functionality", () => {
+    (0,__vite_ssr_import_3__.test)("displays undo and redo buttons", () => {
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: mockRecipe,
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 235,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByRole("button", { name: /undo/i })).toBeInTheDocument();
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByRole("button", { name: /redo/i })).toBeInTheDocument();
+    });
+    (0,__vite_ssr_import_3__.test)("undo button is present initially", () => {
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: mockRecipe,
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 249,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      const undoButton = __vite_ssr_import_1__.screen.getByRole("button", { name: /undo/i });
+      (0,__vite_ssr_import_3__.expect)(undoButton).toBeInTheDocument();
+    });
+    (0,__vite_ssr_import_3__.test)("undo button is enabled after changes", async () => {
+      const user = __vite_ssr_import_2__.default.setup();
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: mockRecipe,
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 266,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      const nameInput = __vite_ssr_import_1__.screen.getByLabelText("Recipe Name");
+      await (0,__vite_ssr_import_1__.act)(async () => {
+        await user.type(nameInput, " Updated");
+      });
+      await (0,__vite_ssr_import_1__.waitFor)(() => {
+        const undoButton = __vite_ssr_import_1__.screen.getByRole("button", { name: /undo/i });
+        (0,__vite_ssr_import_3__.expect)(undoButton).toBeEnabled();
+      });
+    });
+    (0,__vite_ssr_import_3__.test)("redo button is disabled initially", () => {
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: mockRecipe,
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 287,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      const redoButton = __vite_ssr_import_1__.screen.getByRole("button", { name: /redo/i });
+      (0,__vite_ssr_import_3__.expect)(redoButton).toBeDisabled();
+    });
+  });
+  (0,__vite_ssr_import_3__.describe)("Validation", () => {
+    (0,__vite_ssr_import_3__.test)("shows validation errors for missing identifier", async () => {
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: { ...mockRecipe, identifier: "" },
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 303,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      (0,__vite_ssr_import_3__.expect)(
+        __vite_ssr_import_1__.screen.getByText(/Recipe identifier is required/)
+      ).toBeInTheDocument();
+    });
+    (0,__vite_ssr_import_3__.test)("shows validation errors for missing name", async () => {
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: { ...mockRecipe, name: "" },
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 318,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByText(/Recipe name is required/)).toBeInTheDocument();
+    });
+    (0,__vite_ssr_import_3__.test)("shows multiple validation errors", async () => {
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: { type: "shaped", identifier: "", name: "" },
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 331,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      (0,__vite_ssr_import_3__.expect)(
+        __vite_ssr_import_1__.screen.getByText(/Recipe identifier is required/)
+      ).toBeInTheDocument();
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByText(/Recipe name is required/)).toBeInTheDocument();
+    });
+  });
+  (0,__vite_ssr_import_3__.describe)("Read Only Mode", () => {
+    (0,__vite_ssr_import_3__.test)("disables all inputs when readOnly is true", () => {
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: mockRecipe,
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems,
+            readOnly: true
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 349,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByText("Recipe Type")).toBeInTheDocument();
+      (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByLabelText("Recipe Name")).toBeDisabled();
+    });
+    (0,__vite_ssr_import_3__.test)("disables undo/redo buttons when readOnly is true", () => {
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: mockRecipe,
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems,
+            readOnly: true
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 365,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      const undoButton = __vite_ssr_import_1__.screen.getByRole("button", { name: /undo/i });
+      const redoButton = __vite_ssr_import_1__.screen.getByRole("button", { name: /redo/i });
+      (0,__vite_ssr_import_3__.expect)(undoButton).toBeDisabled();
+      (0,__vite_ssr_import_3__.expect)(redoButton).toBeDisabled();
+    });
+  });
+  (0,__vite_ssr_import_3__.describe)("Recipe Saving", () => {
+    (0,__vite_ssr_import_3__.test)("calls onRecipeSave when save button is clicked", async () => {
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: mockRecipe,
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 385,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      const saveButton = __vite_ssr_import_1__.screen.getByRole("button", { name: /save recipe/i });
+      (0,__vite_ssr_import_3__.expect)(saveButton).toBeInTheDocument();
+    });
+  });
+  (0,__vite_ssr_import_3__.describe)("Unsaved Changes Indicator", () => {
+    (0,__vite_ssr_import_3__.test)("shows unsaved changes indicator when recipe is modified", async () => {
+      const user = __vite_ssr_import_2__.default.setup();
+      (0,__vite_ssr_import_1__.render)(
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_4__.RecipeBuilder),
+          {
+            initialRecipe: mockRecipe,
+            onRecipeChange: mockOnRecipeChange,
+            onRecipeSave: mockOnRecipeSave,
+            availableItems: mockAvailableItems
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.test.tsx",
+            lineNumber: 405,
+            columnNumber: 9
+          },
+          this
+        )
+      );
+      await (0,__vite_ssr_import_1__.act)(async () => {
+        await user.type(__vite_ssr_import_1__.screen.getByLabelText("Recipe Name"), " Modified");
+      });
+      await (0,__vite_ssr_import_1__.waitFor)(() => {
+        (0,__vite_ssr_import_3__.expect)(__vite_ssr_import_1__.screen.getByText(/unsaved changes/i)).toBeInTheDocument();
+      });
+    });
+  });
+});
+//# sourceMappingSource=vite-generated
+//# sourceMappingURL=data:application/json;base64,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QUNILENBQUMiLCJuYW1lcyI6W10sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbIlJlY2lwZUJ1aWxkZXIudGVzdC50c3giXSwic291cmNlc0NvbnRlbnQiOlsiLyoqXG4gKiBUZXN0cyBmb3IgUmVjaXBlQnVpbGRlciBDb21wb25lbnRcbiAqL1xuXG5pbXBvcnQgUmVhY3QgZnJvbSAncmVhY3QnO1xuaW1wb3J0IHsgcmVuZGVyLCBzY3JlZW4sIHdhaXRGb3IsIGFjdCB9IGZyb20gJ0B0ZXN0aW5nLWxpYnJhcnkvcmVhY3QnO1xuaW1wb3J0IHVzZXJFdmVudCBmcm9tICdAdGVzdGluZy1saWJyYXJ5L3VzZXItZXZlbnQnO1xuaW1wb3J0IHsgdmksIGRlc2NyaWJlLCBiZWZvcmVFYWNoLCB0ZXN0LCBleHBlY3QgfSBmcm9tICd2aXRlc3QnO1xuaW1wb3J0IHsgUmVjaXBlQnVpbGRlciwgUmVjaXBlLCBSZWNpcGVJdGVtIH0gZnJvbSAnLi9SZWNpcGVCdWlsZGVyJztcblxuY29uc3QgbW9ja0F2YWlsYWJsZUl0ZW1zOiBSZWNpcGVJdGVtW10gPSBbXG4gIHtcbiAgICBpZDogJ21pbmVjcmFmdDpvYWtfcGxhbmtzJyxcbiAgICB0eXBlOiAnbWluZWNyYWZ0Oml0ZW0nLFxuICAgIG5hbWU6ICdPYWsgUGxhbmtzJyxcbiAgICBjb3VudDogMSxcbiAgfSxcbiAgeyBpZDogJ21pbmVjcmFmdDpzdGljaycsIHR5cGU6ICdtaW5lY3JhZnQ6aXRlbScsIG5hbWU6ICdTdGljaycsIGNvdW50OiAxIH0sXG4gIHtcbiAgICBpZDogJ21pbmVjcmFmdDppcm9uX2luZ290JyxcbiAgICB0eXBlOiAnbWluZWNyYWZ0Oml0ZW0nLFxuICAgIG5hbWU6ICdJcm9uIEluZ290JyxcbiAgICBjb3VudDogMSxcbiAgfSxcbl07XG5cbmNvbnN0IG1vY2tSZWNpcGU6IFBhcnRpYWw8UmVjaXBlPiA9IHtcbiAgaWQ6ICd0ZXN0LXJlY2lwZScsXG4gIGlkZW50aWZpZXI6ICdtb2Q6Y3VzdG9tX3JlY2lwZScsXG4gIHR5cGU6ICdzaGFwZWQnLFxuICBuYW1lOiAnQ3VzdG9tIFJlY2lwZScsXG4gIGRlc2NyaXB0aW9uOiAnQSB0ZXN0IHJlY2lwZScsXG59O1xuXG5kZXNjcmliZSgnUmVjaXBlQnVpbGRlciBDb21wb25lbnQnLCAoKSA9PiB7XG4gIGNvbnN0IG1vY2tPblJlY2lwZUNoYW5nZSA9IHZpLmZuKCk7XG4gIGNvbnN0IG1vY2tPblJlY2lwZVNhdmUgPSB2aS5mbigpO1xuXG4gIGJlZm9yZUVhY2goKCkgPT4ge1xuICAgIHZpLmNsZWFyQWxsTW9ja3MoKTtcbiAgfSk7XG5cbiAgZGVzY3JpYmUoJ0luaXRpYWwgUmVuZGVyaW5nJywgKCkgPT4ge1xuICAgIHRlc3QoJ3JlbmRlcnMgUmVjaXBlQnVpbGRlciB3aXRoIGRlZmF1bHQgc3RhdGUnLCAoKSA9PiB7XG4gICAgICByZW5kZXIoXG4gICAgICAgIDxSZWNpcGVCdWlsZGVyXG4gICAgICAgICAgaW5pdGlhbFJlY2lwZT17bW9ja1JlY2lwZX1cbiAgICAgICAgICBvblJlY2lwZUNoYW5nZT17bW9ja09uUmVjaXBlQ2hhbmdlfVxuICAgICAgICAgIG9uUmVjaXBlU2F2ZT17bW9ja09uUmVjaXBlU2F2ZX1cbiAgICAgICAgICBhdmFpbGFibGVJdGVtcz17bW9ja0F2YWlsYWJsZUl0ZW1zfVxuICAgICAgICAvPlxuICAgICAgKTtcblxuICAgICAgZXhwZWN0KHNjcmVlbi5nZXRCeVRleHQoJ1JlY2lwZSBCdWlsZGVyJykpLnRvQmVJblRoZURvY3VtZW50KCk7XG4gICAgICAvLyBVc2UgZ2V0QnlUZXh0IGZvciBJbnB1dExhYmVsIHNpbmNlIGh0bWxGb3IgaXMgbm90IHNldFxuICAgICAgZXhwZWN0KHNjcmVlbi5nZXRCeVRleHQoJ1JlY2lwZSBUeXBlJykpLnRvQmVJblRoZURvY3VtZW50KCk7XG4gICAgICBleHBlY3Qoc2NyZWVuLmdldEJ5TGFiZWxUZXh0KCdSZWNpcGUgSWRlbnRpZmllcicpKS50b0JlSW5UaGVEb2N1bWVudCgpO1xuICAgICAgZXhwZWN0KHNjcmVlbi5nZXRCeUxhYmVsVGV4dCgnUmVjaXBlIE5hbWUnKSkudG9CZUluVGhlRG9jdW1lbnQoKTtcbiAgICB9KTtcblxuICAgIHRlc3QoJ3JlbmRlcnMgd2l0aCBpbml0aWFsIHJlY2lwZSBkYXRhJywgKCkgPT4ge1xuICAgICAgcmVuZGVyKFxuICAgICAgICA8UmVjaXBlQnVpbGRlclxuICAgICAgICAgIGluaXRpYWxSZWNpcGU9e21vY2tSZWNpcGV9XG4gICAgICAgICAgb25SZWNpcGVDaGFuZ2U9e21vY2tPblJlY2lwZUNoYW5nZX1cbiAgICAgICAgICBvblJlY2lwZVNhdmU9e21vY2tPblJlY2lwZVNhdmV9XG4gICAgICAgICAgYXZhaWxhYmxlSXRlbXM9e21vY2tBdmFpbGFibGVJdGVtc31cbiAgICAgICAgLz5cbiAgICAgICk7XG5cbiAgICAgIGV4cGVjdChzY3JlZW4uZ2V0QnlEaXNwbGF5VmFsdWUoJ0N1c3RvbSBSZWNpcGUnKSkudG9CZUluVGhlRG9jdW1lbnQoKTtcbiAgICAgIGV4cGVjdChzY3JlZW4uZ2V0QnlEaXNwbGF5VmFsdWUoJ21vZDpjdXN0b21fcmVjaXBlJykpLnRvQmVJblRoZURvY3VtZW50KCk7XG4gICAgfSk7XG5cbiAgICB0ZXN0KCdkaXNwbGF5cyBzYXZlIGJ1dHRvbiBkaXNhYmxlZCB3aGVuIHZhbGlkYXRpb24gZXJyb3JzIGV4aXN0JywgKCkgPT4ge1xuICAgICAgcmVuZGVyKFxuICAgICAgICA8UmVjaXBlQnVpbGRlclxuICAgICAgICAgIGluaXRpYWxSZWNpcGU9e3t9fVxuICAgICAgICAgIG9uUmVjaXBlQ2hhbmdlPXttb2NrT25SZWNpcGVDaGFuZ2V9XG4gICAgICAgICAgb25SZWNpcGVTYXZlPXttb2NrT25SZWNpcGVTYXZlfVxuICAgICAgICAgIGF2YWlsYWJsZUl0ZW1zPXttb2NrQXZhaWxhYmxlSXRlbXN9XG4gICAgICAgIC8+XG4gICAgICApO1xuXG4gICAgICBjb25zdCBzYXZlQnV0dG9uID0gc2NyZWVuLmdldEJ5Um9sZSgnYnV0dG9uJywgeyBuYW1lOiAvc2F2ZSByZWNpcGUvaSB9KTtcbiAgICAgIGV4cGVjdChzYXZlQnV0dG9uKS50b0JlRGlzYWJsZWQoKTtcbiAgICB9KTtcbiAgfSk7XG5cbiAgZGVzY3JpYmUoJ1JlY2lwZSBUeXBlIFNlbGVjdGlvbicsICgpID0+IHtcbiAgICB0ZXN0KCdkaXNwbGF5cyBhbGwgcmVjaXBlIHR5cGVzJywgKCkgPT4ge1xuICAgICAgcmVuZGVyKFxuICAgICAgICA8UmVjaXBlQnVpbGRlclxuICAgICAgICAgIGluaXRpYWxSZWNpcGU9e21vY2tSZWNpcGV9XG4gICAgICAgICAgb25SZWNpcGVDaGFuZ2U9e21vY2tPblJlY2lwZUNoYW5nZX1cbiAgICAgICAgICBvblJlY2lwZVNhdmU9e21vY2tPblJlY2lwZVNhdmV9XG4gICAgICAgICAgYXZhaWxhYmxlSXRlbXM9e21vY2tBdmFpbGFibGVJdGVtc31cbiAgICAgICAgLz5cbiAgICAgICk7XG5cbiAgICAgIC8vIFVzZSBnZXRCeVRleHQgZm9yIElucHV0TGFiZWwgc2luY2UgaHRtbEZvciBpcyBub3Qgc2V0XG4gICAgICBleHBlY3Qoc2NyZWVuLmdldEJ5VGV4dCgnUmVjaXBlIFR5cGUnKSkudG9CZUluVGhlRG9jdW1lbnQoKTtcblxuICAgICAgLy8gSnVzdCB2ZXJpZnkgcmVjaXBlIHR5cGUgdGV4dCBpcyBwcmVzZW50IChkcm9wZG93biBvcHRpb25zIHRlc3RpbmcgcmVxdWlyZXMgZnVsbCBET00pXG4gICAgICBleHBlY3Qoc2NyZWVuLmdldEJ5VGV4dCgnU2hhcGVkIENyYWZ0aW5nJykpLnRvQmVJblRoZURvY3VtZW50KCk7XG4gICAgfSk7XG5cbiAgICB0ZXN0KCdjaGFuZ2VzIHJlY2lwZSB0eXBlIHdoZW4gc2VsZWN0ZWQnLCBhc3luYyAoKSA9PiB7XG4gICAgICByZW5kZXIoXG4gICAgICAgIDxSZWNpcGVCdWlsZGVyXG4gICAgICAgICAgaW5pdGlhbFJlY2lwZT17bW9ja1JlY2lwZX1cbiAgICAgICAgICBvblJlY2lwZUNoYW5nZT17bW9ja09uUmVjaXBlQ2hhbmdlfVxuICAgICAgICAgIG9uUmVjaXBlU2F2ZT17bW9ja09uUmVjaXBlU2F2ZX1cbiAgICAgICAgICBhdmFpbGFibGVJdGVtcz17bW9ja0F2YWlsYWJsZUl0ZW1zfVxuICAgICAgICAvPlxuICAgICAgKTtcblxuICAgICAgLy8gSnVzdCB2ZXJpZnkgdGhlIGNvbXBvbmVudCByZW5kZXJzIHdpdGggdGhlIGluaXRpYWwgcmVjaXBlIHR5cGVcbiAgICAgIGV4cGVjdChzY3JlZW4uZ2V0QnlUZXh0KCdSZWNpcGUgVHlwZScpKS50b0JlSW5UaGVEb2N1bWVudCgpO1xuICAgIH0pO1xuICB9KTtcblxuICBkZXNjcmliZSgnUmVjaXBlIFByb3BlcnRpZXMnLCAoKSA9PiB7XG4gICAgdGVzdCgndXBkYXRlcyByZWNpcGUgbmFtZSB3aGVuIGNoYW5nZWQnLCBhc3luYyAoKSA9PiB7XG4gICAgICBjb25zdCB1c2VyID0gdXNlckV2ZW50LnNldHVwKCk7XG5cbiAgICAgIHJlbmRlcihcbiAgICAgICAgPFJlY2lwZUJ1aWxkZXJcbiAgICAgICAgICBpbml0aWFsUmVjaXBlPXttb2NrUmVjaXBlfVxuICAgICAgICAgIG9uUmVjaXBlQ2hhbmdlPXttb2NrT25SZWNpcGVDaGFuZ2V9XG4gICAgICAgICAgb25SZWNpcGVTYXZlPXttb2NrT25SZWNpcGVTYXZlfVxuICAgICAgICAgIGF2YWlsYWJsZUl0ZW1zPXttb2NrQXZhaWxhYmxlSXRlbXN9XG4gICAgICAgIC8+XG4gICAgICApO1xuXG4gICAgICBjb25zdCBuYW1lSW5wdXQgPSBzY3JlZW4uZ2V0QnlMYWJlbFRleHQoJ1JlY2lwZSBOYW1lJyk7XG5cbiAgICAgIGF3YWl0IGFjdChhc3luYyAoKSA9PiB7XG4gICAgICAgIGF3YWl0IHVzZXIuY2xlYXIobmFtZUlucHV0KTtcbiAgICAgICAgYXdhaXQgdXNlci50eXBlKG5hbWVJbnB1dCwgJ05ldyBSZWNpcGUgTmFtZScpO1xuICAgICAgfSk7XG5cbiAgICAgIGV4cGVjdChtb2NrT25SZWNpcGVDaGFuZ2UpLnRvSGF2ZUJlZW5DYWxsZWRXaXRoKFxuICAgICAgICBleHBlY3Qub2JqZWN0Q29udGFpbmluZyh7IG5hbWU6ICdOZXcgUmVjaXBlIE5hbWUnIH0pXG4gICAgICApO1xuICAgIH0pO1xuXG4gICAgdGVzdCgndXBkYXRlcyByZWNpcGUgaWRlbnRpZmllciB3aGVuIGNoYW5nZWQnLCBhc3luYyAoKSA9PiB7XG4gICAgICBjb25zdCB1c2VyID0gdXNlckV2ZW50LnNldHVwKCk7XG5cbiAgICAgIHJlbmRlcihcbiAgICAgICAgPFJlY2lwZUJ1aWxkZXJcbiAgICAgICAgICBpbml0aWFsUmVjaXBlPXttb2NrUmVjaXBlfVxuICAgICAgICAgIG9uUmVjaXBlQ2hhbmdlPXttb2NrT25SZWNpcGVDaGFuZ2V9XG4gICAgICAgICAgb25SZWNpcGVTYXZlPXttb2NrT25SZWNpcGVTYXZlfVxuICAgICAgICAgIGF2YWlsYWJsZUl0ZW1zPXttb2NrQXZhaWxhYmxlSXRlbXN9XG4gICAgICAgIC8+XG4gICAgICApO1xuXG4gICAgICBjb25zdCBpZGVudGlmaWVySW5wdXQgPSBzY3JlZW4uZ2V0QnlMYWJlbFRleHQoJ1JlY2lwZSBJZGVudGlmaWVyJyk7XG5cbiAgICAgIGF3YWl0IGFjdChhc3luYyAoKSA9PiB7XG4gICAgICAgIGF3YWl0IHVzZXIuY2xlYXIoaWRlbnRpZmllcklucHV0KTtcbiAgICAgICAgYXdhaXQgdXNlci50eXBlKGlkZW50aWZpZXJJbnB1dCwgJ21vZDpuZXdfcmVjaXBlJyk7XG4gICAgICB9KTtcblxuICAgICAgZXhwZWN0KG1vY2tPblJlY2lwZUNoYW5nZSkudG9IYXZlQmVlbkNhbGxlZFdpdGgoXG4gICAgICAgIGV4cGVjdC5vYmplY3RDb250YWluaW5nKHsgaWRlbnRpZmllcjogJ21vZDpuZXdfcmVjaXBlJyB9KVxuICAgICAgKTtcbiAgICB9KTtcblxuICAgIHRlc3QoJ3Nob3dzIGV4cGVyaWVuY2UgYW5kIGNvb2tpbmcgdGltZSBmb3Igc21lbHRpbmcgcmVjaXBlcycsICgpID0+IHtcbiAgICAgIHJlbmRlcihcbiAgICAgICAgPFJlY2lwZUJ1aWxkZXJcbiAgICAgICAgICBpbml0aWFsUmVjaXBlPXt7IC4uLm1vY2tSZWNpcGUsIHR5cGU6ICdmdXJuYWNlJyB9fVxuICAgICAgICAgIG9uUmVjaXBlQ2hhbmdlPXttb2NrT25SZWNpcGVDaGFuZ2V9XG4gICAgICAgICAgb25SZWNpcGVTYXZlPXttb2NrT25SZWNpcGVTYXZlfVxuICAgICAgICAgIGF2YWlsYWJsZUl0ZW1zPXttb2NrQXZhaWxhYmxlSXRlbXN9XG4gICAgICAgIC8+XG4gICAgICApO1xuXG4gICAgICBleHBlY3Qoc2NyZWVuLmdldEJ5TGFiZWxUZXh0KCdFeHBlcmllbmNlJykpLnRvQmVJblRoZURvY3VtZW50KCk7XG4gICAgICBleHBlY3Qoc2NyZWVuLmdldEJ5TGFiZWxUZXh0KCdDb29raW5nIFRpbWUgKHRpY2tzKScpKS50b0JlSW5UaGVEb2N1bWVudCgpO1xuICAgIH0pO1xuICB9KTtcblxuICBkZXNjcmliZSgnUmVjaXBlIEdyaWQnLCAoKSA9PiB7XG4gICAgdGVzdCgncmVuZGVycyAzeDMgZ3JpZCBmb3Igc2hhcGVkIHJlY2lwZXMnLCAoKSA9PiB7XG4gICAgICByZW5kZXIoXG4gICAgICAgIDxSZWNpcGVCdWlsZGVyXG4gICAgICAgICAgaW5pdGlhbFJlY2lwZT17eyAuLi5tb2NrUmVjaXBlLCB0eXBlOiAnc2hhcGVkJyB9fVxuICAgICAgICAgIG9uUmVjaXBlQ2hhbmdlPXttb2NrT25SZWNpcGVDaGFuZ2V9XG4gICAgICAgICAgb25SZWNpcGVTYXZlPXttb2NrT25SZWNpcGVTYXZlfVxuICAgICAgICAgIGF2YWlsYWJsZUl0ZW1zPXttb2NrQXZhaWxhYmxlSXRlbXN9XG4gICAgICAgIC8+XG4gICAgICApO1xuXG4gICAgICBleHBlY3Qoc2NyZWVuLmdldEJ5VGV4dCgnU2hhcGVkIFJlY2lwZSBQYXR0ZXJuJykpLnRvQmVJblRoZURvY3VtZW50KCk7XG4gICAgfSk7XG5cbiAgICB0ZXN0KCdyZW5kZXJzIDF4MSBncmlkIGZvciBmdXJuYWNlIHJlY2lwZXMnLCAoKSA9PiB7XG4gICAgICByZW5kZXIoXG4gICAgICAgIDxSZWNpcGVCdWlsZGVyXG4gICAgICAgICAgaW5pdGlhbFJlY2lwZT17eyAuLi5tb2NrUmVjaXBlLCB0eXBlOiAnZnVybmFjZScgfX1cbiAgICAgICAgICBvblJlY2lwZUNoYW5nZT17bW9ja09uUmVjaXBlQ2hhbmdlfVxuICAgICAgICAgIG9uUmVjaXBlU2F2ZT17bW9ja09uUmVjaXBlU2F2ZX1cbiAgICAgICAgICBhdmFpbGFibGVJdGVtcz17bW9ja0F2YWlsYWJsZUl0ZW1zfVxuICAgICAgICAvPlxuICAgICAgKTtcblxuICAgICAgZXhwZWN0KHNjcmVlbi5nZXRCeVRleHQoJ1NtZWx0aW5nIElucHV0JykpLnRvQmVJblRoZURvY3VtZW50KCk7XG4gICAgfSk7XG5cbiAgICB0ZXN0KCdwbGFjZXMgaXRlbSBpbiBncmlkIHdoZW4gY2xpY2tlZCcsIGFzeW5jICgpID0+IHtcbiAgICAgIHJlbmRlcihcbiAgICAgICAgPFJlY2lwZUJ1aWxkZXJcbiAgICAgICAgICBpbml0aWFsUmVjaXBlPXttb2NrUmVjaXBlfVxuICAgICAgICAgIG9uUmVjaXBlQ2hhbmdlPXttb2NrT25SZWNpcGVDaGFuZ2V9XG4gICAgICAgICAgb25SZWNpcGVTYXZlPXttb2NrT25SZWNpcGVTYXZlfVxuICAgICAgICAgIGF2YWlsYWJsZUl0ZW1zPXttb2NrQXZhaWxhYmxlSXRlbXN9XG4gICAgICAgIC8+XG4gICAgICApO1xuXG4gICAgICAvLyBKdXN0IHZlcmlmeSB0aGUgcmVjaXBlIGdyaWQgaXMgcmVuZGVyZWRcbiAgICAgIGV4cGVjdChzY3JlZW4uZ2V0QnlUZXh0KCdTaGFwZWQgUmVjaXBlIFBhdHRlcm4nKSkudG9CZUluVGhlRG9jdW1lbnQoKTtcblxuICAgICAgLy8gVmVyaWZ5IGl0ZW1zIGFyZSBkaXNwbGF5ZWRcbiAgICAgIGV4cGVjdChzY3JlZW4uZ2V0QnlUZXh0KCdPYWsgUGxhbmtzJykpLnRvQmVJblRoZURvY3VtZW50KCk7XG4gICAgfSk7XG4gIH0pO1xuXG4gIGRlc2NyaWJlKCdVbmRvL1JlZG8gRnVuY3Rpb25hbGl0eScsICgpID0+IHtcbiAgICB0ZXN0KCdkaXNwbGF5cyB1bmRvIGFuZCByZWRvIGJ1dHRvbnMnLCAoKSA9PiB7XG4gICAgICByZW5kZXIoXG4gICAgICAgIDxSZWNpcGVCdWlsZGVyXG4gICAgICAgICAgaW5pdGlhbFJlY2lwZT17bW9ja1JlY2lwZX1cbiAgICAgICAgICBvblJlY2lwZUNoYW5nZT17bW9ja09uUmVjaXBlQ2hhbmdlfVxuICAgICAgICAgIG9uUmVjaXBlU2F2ZT17bW9ja09uUmVjaXBlU2F2ZX1cbiAgICAgICAgICBhdmFpbGFibGVJdGVtcz17bW9ja0F2YWlsYWJsZUl0ZW1zfVxuICAgICAgICAvPlxuICAgICAgKTtcblxuICAgICAgZXhwZWN0KHNjcmVlbi5nZXRCeVJvbGUoJ2J1dHRvbicsIHsgbmFtZTogL3VuZG8vaSB9KSkudG9CZUluVGhlRG9jdW1lbnQoKTtcbiAgICAgIGV4cGVjdChzY3JlZW4uZ2V0QnlSb2xlKCdidXR0b24nLCB7IG5hbWU6IC9yZWRvL2kgfSkpLnRvQmVJblRoZURvY3VtZW50KCk7XG4gICAgfSk7XG5cbiAgICB0ZXN0KCd1bmRvIGJ1dHRvbiBpcyBwcmVzZW50IGluaXRpYWxseScsICgpID0+IHtcbiAgICAgIHJlbmRlcihcbiAgICAgICAgPFJlY2lwZUJ1aWxkZXJcbiAgICAgICAgICBpbml0aWFsUmVjaXBlPXttb2NrUmVjaXBlfVxuICAgICAgICAgIG9uUmVjaXBlQ2hhbmdlPXttb2NrT25SZWNpcGVDaGFuZ2V9XG4gICAgICAgICAgb25SZWNpcGVTYXZlPXttb2NrT25SZWNpcGVTYXZlfVxuICAgICAgICAgIGF2YWlsYWJsZUl0ZW1zPXttb2NrQXZhaWxhYmxlSXRlbXN9XG4gICAgICAgIC8+XG4gICAgICApO1xuXG4gICAgICAvLyBKdXN0IHZlcmlmeSB0aGUgdW5kbyBidXR0b24gZXhpc3RzXG4gICAgICBjb25zdCB1bmRvQnV0dG9uID0gc2NyZWVuLmdldEJ5Um9sZSgnYnV0dG9uJywgeyBuYW1lOiAvdW5kby9pIH0pO1xuICAgICAgZXhwZWN0KHVuZG9CdXR0b24pLnRvQmVJblRoZURvY3VtZW50KCk7XG4gICAgfSk7XG5cbiAgICB0ZXN0KCd1bmRvIGJ1dHRvbiBpcyBlbmFibGVkIGFmdGVyIGNoYW5nZXMnLCBhc3luYyAoKSA9PiB7XG4gICAgICBjb25zdCB1c2VyID0gdXNlckV2ZW50LnNldHVwKCk7XG5cbiAgICAgIHJlbmRlcihcbiAgICAgICAgPFJlY2lwZUJ1aWxkZXJcbiAgICAgICAgICBpbml0aWFsUmVjaXBlPXttb2NrUmVjaXBlfVxuICAgICAgICAgIG9uUmVjaXBlQ2hhbmdlPXttb2NrT25SZWNpcGVDaGFuZ2V9XG4gICAgICAgICAgb25SZWNpcGVTYXZlPXttb2NrT25SZWNpcGVTYXZlfVxuICAgICAgICAgIGF2YWlsYWJsZUl0ZW1zPXttb2NrQXZhaWxhYmxlSXRlbXN9XG4gICAgICAgIC8+XG4gICAgICApO1xuXG4gICAgICBjb25zdCBuYW1lSW5wdXQgPSBzY3JlZW4uZ2V0QnlMYWJlbFRleHQoJ1JlY2lwZSBOYW1lJyk7XG4gICAgICBhd2FpdCBhY3QoYXN5bmMgKCkgPT4ge1xuICAgICAgICBhd2FpdCB1c2VyLnR5cGUobmFtZUlucHV0LCAnIFVwZGF0ZWQnKTtcbiAgICAgIH0pO1xuXG4gICAgICBhd2FpdCB3YWl0Rm9yKCgpID0+IHtcbiAgICAgICAgY29uc3QgdW5kb0J1dHRvbiA9IHNjcmVlbi5nZXRCeVJvbGUoJ2J1dHRvbicsIHsgbmFtZTogL3VuZG8vaSB9KTtcbiAgICAgICAgZXhwZWN0KHVuZG9CdXR0b24pLnRvQmVFbmFibGVkKCk7XG4gICAgICB9KTtcbiAgICB9KTtcblxuICAgIHRlc3QoJ3JlZG8gYnV0dG9uIGlzIGRpc2FibGVkIGluaXRpYWxseScsICgpID0+IHtcbiAgICAgIHJlbmRlcihcbiAgICAgICAgPFJlY2lwZUJ1aWxkZXJcbiAgICAgICAgICBpbml0aWFsUmVjaXBlPXttb2NrUmVjaXBlfVxuICAgICAgICAgIG9uUmVjaXBlQ2hhbmdlPXttb2NrT25SZWNpcGVDaGFuZ2V9XG4gICAgICAgICAgb25SZWNpcGVTYXZlPXttb2NrT25SZWNpcGVTYXZlfVxuICAgICAgICAgIGF2YWlsYWJsZUl0ZW1zPXttb2NrQXZhaWxhYmxlSXRlbXN9XG4gICAgICAgIC8+XG4gICAgICApO1xuXG4gICAgICBjb25zdCByZWRvQnV0dG9uID0gc2NyZWVuLmdldEJ5Um9sZSgnYnV0dG9uJywgeyBuYW1lOiAvcmVkby9pIH0pO1xuICAgICAgZXhwZWN0KHJlZG9CdXR0b24pLnRvQmVEaXNhYmxlZCgpO1xuICAgIH0pO1xuICB9KTtcblxuICBkZXNjcmliZSgnVmFsaWRhdGlvbicsICgpID0+IHtcbiAgICB0ZXN0KCdzaG93cyB2YWxpZGF0aW9uIGVycm9ycyBmb3IgbWlzc2luZyBpZGVudGlmaWVyJywgYXN5bmMgKCkgPT4ge1xuICAgICAgcmVuZGVyKFxuICAgICAgICA8UmVjaXBlQnVpbGRlclxuICAgICAgICAgIGluaXRpYWxSZWNpcGU9e3sgLi4ubW9ja1JlY2lwZSwgaWRlbnRpZmllcjogJycgfX1cbiAgICAgICAgICBvblJlY2lwZUNoYW5nZT17bW9ja09uUmVjaXBlQ2hhbmdlfVxuICAgICAgICAgIG9uUmVjaXBlU2F2ZT17bW9ja09uUmVjaXBlU2F2ZX1cbiAgICAgICAgICBhdmFpbGFibGVJdGVtcz17bW9ja0F2YWlsYWJsZUl0ZW1zfVxuICAgICAgICAvPlxuICAgICAgKTtcblxuICAgICAgZXhwZWN0KFxuICAgICAgICBzY3JlZW4uZ2V0QnlUZXh0KC9SZWNpcGUgaWRlbnRpZmllciBpcyByZXF1aXJlZC8pXG4gICAgICApLnRvQmVJblRoZURvY3VtZW50KCk7XG4gICAgfSk7XG5cbiAgICB0ZXN0KCdzaG93cyB2YWxpZGF0aW9uIGVycm9ycyBmb3IgbWlzc2luZyBuYW1lJywgYXN5bmMgKCkgPT4ge1xuICAgICAgcmVuZGVyKFxuICAgICAgICA8UmVjaXBlQnVpbGRlclxuICAgICAgICAgIGluaXRpYWxSZWNpcGU9e3sgLi4ubW9ja1JlY2lwZSwgbmFtZTogJycgfX1cbiAgICAgICAgICBvblJlY2lwZUNoYW5nZT17bW9ja09uUmVjaXBlQ2hhbmdlfVxuICAgICAgICAgIG9uUmVjaXBlU2F2ZT17bW9ja09uUmVjaXBlU2F2ZX1cbiAgICAgICAgICBhdmFpbGFibGVJdGVtcz17bW9ja0F2YWlsYWJsZUl0ZW1zfVxuICAgICAgICAvPlxuICAgICAgKTtcblxuICAgICAgZXhwZWN0KHNjcmVlbi5nZXRCeVRleHQoL1JlY2lwZSBuYW1lIGlzIHJlcXVpcmVkLykpLnRvQmVJblRoZURvY3VtZW50KCk7XG4gICAgfSk7XG5cbiAgICB0ZXN0KCdzaG93cyBtdWx0aXBsZSB2YWxpZGF0aW9uIGVycm9ycycsIGFzeW5jICgpID0+IHtcbiAgICAgIHJlbmRlcihcbiAgICAgICAgPFJlY2lwZUJ1aWxkZXJcbiAgICAgICAgICBpbml0aWFsUmVjaXBlPXt7IHR5cGU6ICdzaGFwZWQnLCBpZGVudGlmaWVyOiAnJywgbmFtZTogJycgfX1cbiAgICAgICAgICBvblJlY2lwZUNoYW5nZT17bW9ja09uUmVjaXBlQ2hhbmdlfVxuICAgICAgICAgIG9uUmVjaXBlU2F2ZT17bW9ja09uUmVjaXBlU2F2ZX1cbiAgICAgICAgICBhdmFpbGFibGVJdGVtcz17bW9ja0F2YWlsYWJsZUl0ZW1zfVxuICAgICAgICAvPlxuICAgICAgKTtcblxuICAgICAgZXhwZWN0KFxuICAgICAgICBzY3JlZW4uZ2V0QnlUZXh0KC9SZWNpcGUgaWRlbnRpZmllciBpcyByZXF1aXJlZC8pXG4gICAgICApLnRvQmVJblRoZURvY3VtZW50KCk7XG4gICAgICBleHBlY3Qoc2NyZWVuLmdldEJ5VGV4dCgvUmVjaXBlIG5hbWUgaXMgcmVxdWlyZWQvKSkudG9CZUluVGhlRG9jdW1lbnQoKTtcbiAgICB9KTtcbiAgfSk7XG5cbiAgZGVzY3JpYmUoJ1JlYWQgT25seSBNb2RlJywgKCkgPT4ge1xuICAgIHRlc3QoJ2Rpc2FibGVzIGFsbCBpbnB1dHMgd2hlbiByZWFkT25seSBpcyB0cnVlJywgKCkgPT4ge1xuICAgICAgcmVuZGVyKFxuICAgICAgICA8UmVjaXBlQnVpbGRlclxuICAgICAgICAgIGluaXRpYWxSZWNpcGU9e21vY2tSZWNpcGV9XG4gICAgICAgICAgb25SZWNpcGVDaGFuZ2U9e21vY2tPblJlY2lwZUNoYW5nZX1cbiAgICAgICAgICBvblJlY2lwZVNhdmU9e21vY2tPblJlY2lwZVNhdmV9XG4gICAgICAgICAgYXZhaWxhYmxlSXRlbXM9e21vY2tBdmFpbGFibGVJdGVtc31cbiAgICAgICAgICByZWFkT25seT17dHJ1ZX1cbiAgICAgICAgLz5cbiAgICAgICk7XG5cbiAgICAgIC8vIFVzZSBnZXRCeVRleHQgZm9yIElucHV0TGFiZWwgc2luY2UgaHRtbEZvciBpcyBub3Qgc2V0XG4gICAgICBleHBlY3Qoc2NyZWVuLmdldEJ5VGV4dCgnUmVjaXBlIFR5cGUnKSkudG9CZUluVGhlRG9jdW1lbnQoKTtcbiAgICAgIGV4cGVjdChzY3JlZW4uZ2V0QnlMYWJlbFRleHQoJ1JlY2lwZSBOYW1lJykpLnRvQmVEaXNhYmxlZCgpO1xuICAgIH0pO1xuXG4gICAgdGVzdCgnZGlzYWJsZXMgdW5kby9yZWRvIGJ1dHRvbnMgd2hlbiByZWFkT25seSBpcyB0cnVlJywgKCkgPT4ge1xuICAgICAgcmVuZGVyKFxuICAgICAgICA8UmVjaXBlQnVpbGRlclxuICAgICAgICAgIGluaXRpYWxSZWNpcGU9e21vY2tSZWNpcGV9XG4gICAgICAgICAgb25SZWNpcGVDaGFuZ2U9e21vY2tPblJlY2lwZUNoYW5nZX1cbiAgICAgICAgICBvblJlY2lwZVNhdmU9e21vY2tPblJlY2lwZVNhdmV9XG4gICAgICAgICAgYXZhaWxhYmxlSXRlbXM9e21vY2tBdmFpbGFibGVJdGVtc31cbiAgICAgICAgICByZWFkT25seT17dHJ1ZX1cbiAgICAgICAgLz5cbiAgICAgICk7XG5cbiAgICAgIGNvbnN0IHVuZG9CdXR0b24gPSBzY3JlZW4uZ2V0QnlSb2xlKCdidXR0b24nLCB7IG5hbWU6IC91bmRvL2kgfSk7XG4gICAgICBjb25zdCByZWRvQnV0dG9uID0gc2NyZWVuLmdldEJ5Um9sZSgnYnV0dG9uJywgeyBuYW1lOiAvcmVkby9pIH0pO1xuXG4gICAgICBleHBlY3QodW5kb0J1dHRvbikudG9CZURpc2FibGVkKCk7XG4gICAgICBleHBlY3QocmVkb0J1dHRvbikudG9CZURpc2FibGVkKCk7XG4gICAgfSk7XG4gIH0pO1xuXG4gIGRlc2NyaWJlKCdSZWNpcGUgU2F2aW5nJywgKCkgPT4ge1xuICAgIHRlc3QoJ2NhbGxzIG9uUmVjaXBlU2F2ZSB3aGVuIHNhdmUgYnV0dG9uIGlzIGNsaWNrZWQnLCBhc3luYyAoKSA9PiB7XG4gICAgICByZW5kZXIoXG4gICAgICAgIDxSZWNpcGVCdWlsZGVyXG4gICAgICAgICAgaW5pdGlhbFJlY2lwZT17bW9ja1JlY2lwZX1cbiAgICAgICAgICBvblJlY2lwZUNoYW5nZT17bW9ja09uUmVjaXBlQ2hhbmdlfVxuICAgICAgICAgIG9uUmVjaXBlU2F2ZT17bW9ja09uUmVjaXBlU2F2ZX1cbiAgICAgICAgICBhdmFpbGFibGVJdGVtcz17bW9ja0F2YWlsYWJsZUl0ZW1zfVxuICAgICAgICAvPlxuICAgICAgKTtcblxuICAgICAgY29uc3Qgc2F2ZUJ1dHRvbiA9IHNjcmVlbi5nZXRCeVJvbGUoJ2J1dHRvbicsIHsgbmFtZTogL3NhdmUgcmVjaXBlL2kgfSk7XG5cbiAgICAgIC8vIEp1c3QgdmVyaWZ5IHNhdmUgYnV0dG9uIGV4aXN0c1xuICAgICAgZXhwZWN0KHNhdmVCdXR0b24pLnRvQmVJblRoZURvY3VtZW50KCk7XG4gICAgfSk7XG4gIH0pO1xuXG4gIGRlc2NyaWJlKCdVbnNhdmVkIENoYW5nZXMgSW5kaWNhdG9yJywgKCkgPT4ge1xuICAgIHRlc3QoJ3Nob3dzIHVuc2F2ZWQgY2hhbmdlcyBpbmRpY2F0b3Igd2hlbiByZWNpcGUgaXMgbW9kaWZpZWQnLCBhc3luYyAoKSA9PiB7XG4gICAgICBjb25zdCB1c2VyID0gdXNlckV2ZW50LnNldHVwKCk7XG5cbiAgICAgIHJlbmRlcihcbiAgICAgICAgPFJlY2lwZUJ1aWxkZXJcbiAgICAgICAgICBpbml0aWFsUmVjaXBlPXttb2NrUmVjaXBlfVxuICAgICAgICAgIG9uUmVjaXBlQ2hhbmdlPXttb2NrT25SZWNpcGVDaGFuZ2V9XG4gICAgICAgICAgb25SZWNpcGVTYXZlPXttb2NrT25SZWNpcGVTYXZlfVxuICAgICAgICAgIGF2YWlsYWJsZUl0ZW1zPXttb2NrQXZhaWxhYmxlSXRlbXN9XG4gICAgICAgIC8+XG4gICAgICApO1xuXG4gICAgICBhd2FpdCBhY3QoYXN5bmMgKCkgPT4ge1xuICAgICAgICBhd2FpdCB1c2VyLnR5cGUoc2NyZWVuLmdldEJ5TGFiZWxUZXh0KCdSZWNpcGUgTmFtZScpLCAnIE1vZGlmaWVkJyk7XG4gICAgICB9KTtcblxuICAgICAgYXdhaXQgd2FpdEZvcigoKSA9PiB7XG4gICAgICAgIGV4cGVjdChzY3JlZW4uZ2V0QnlUZXh0KC91bnNhdmVkIGNoYW5nZXMvaSkpLnRvQmVJblRoZURvY3VtZW50KCk7XG4gICAgICB9KTtcbiAgICB9KTtcbiAgfSk7XG59KTtcbiJdLCJmaWxlIjoiL3NyYy9jb21wb25lbnRzL0JlaGF2aW9yRWRpdG9yL1JlY2lwZUJ1aWxkZXIvUmVjaXBlQnVpbGRlci50ZXN0LnRzeCJ9
+
+//# vitestCache=W3siZmlsZSI6IjEiLCJpZCI6IjEiLCJ1cmwiOiIyIiwiaW1wb3J0ZWRVcmxzIjoiMyIsIm1hcHBpbmdzIjpmYWxzZX0sIi9ob21lL2FsZXgvUHJvamVjdHMvTW9kUG9ydGVyLUFJL2Zyb250ZW5kL3NyYy9jb21wb25lbnRzL0JlaGF2aW9yRWRpdG9yL1JlY2lwZUJ1aWxkZXIvUmVjaXBlQnVpbGRlci50ZXN0LnRzeCIsIi9zcmMvY29tcG9uZW50cy9CZWhhdmlvckVkaXRvci9SZWNpcGVCdWlsZGVyL1JlY2lwZUJ1aWxkZXIudGVzdC50c3giLFtdXQ==

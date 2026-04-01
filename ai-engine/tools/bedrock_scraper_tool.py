@@ -111,12 +111,12 @@ class BedrockScraperTool(BaseTool):
             for doc in documents[:50]:  # Limit results for JSON response
                 results.append(
                     {
-                        "content": doc.content[:500] + "..."
-                        if len(doc.content) > 500
-                        else doc.content,
-                        "source": doc.source,
-                        "doc_type": doc.doc_type,
-                        "metadata": doc.metadata,
+                        "content": doc.content_text[:500] + "..."
+                        if len(doc.content_text) > 500
+                        else doc.content_text,
+                        "source": doc.source_path,
+                        "doc_type": doc.content_type,
+                        "metadata": doc.content_metadata,
                     }
                 )
 
@@ -161,12 +161,12 @@ class BedrockScraperTool(BaseTool):
             for doc in documents[:20]:  # Limit results
                 results.append(
                     {
-                        "content": doc.content[:300] + "..."
-                        if len(doc.content) > 300
-                        else doc.content,
-                        "source": doc.source,
-                        "doc_type": doc.doc_type,
-                        "metadata": doc.metadata,
+                        "content": doc.content_text[:300] + "..."
+                        if len(doc.content_text) > 300
+                        else doc.content_text,
+                        "source": doc.source_path,
+                        "doc_type": doc.content_type,
+                        "metadata": doc.content_metadata,
                     }
                 )
 
@@ -203,10 +203,10 @@ class BedrockScraperTool(BaseTool):
             for example in api_examples[:10]:  # Limit results
                 results.append(
                     {
-                        "content": example.content,
-                        "source": example.source,
-                        "doc_type": example.doc_type,
-                        "metadata": example.metadata,
+                        "content": example.content_text,
+                        "source": example.source_path,
+                        "doc_type": example.content_type,
+                        "metadata": example.content_metadata,
                     }
                 )
 
@@ -241,12 +241,12 @@ class BedrockScraperTool(BaseTool):
             for schema in schemas[:10]:  # Limit results
                 results.append(
                     {
-                        "content": schema.content[:1000] + "..."
-                        if len(schema.content) > 1000
-                        else schema.content,
-                        "source": schema.source,
-                        "doc_type": schema.doc_type,
-                        "metadata": schema.metadata,
+                        "content": schema.content_text[:1000] + "..."
+                        if len(schema.content_text) > 1000
+                        else schema.content_text,
+                        "source": schema.source_path,
+                        "doc_type": schema.content_type,
+                        "metadata": schema.content_metadata,
                     }
                 )
 

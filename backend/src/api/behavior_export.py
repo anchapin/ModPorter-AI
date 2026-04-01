@@ -5,11 +5,15 @@ from pydantic import BaseModel, Field
 from db.base import get_db
 from db import crud
 from services import addon_exporter
+from services.cache import CacheService
 from fastapi.responses import StreamingResponse
 from io import BytesIO
 import uuid
 import json
 from datetime import datetime, timezone
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -139,7 +143,6 @@ async def export_behavior_pack(
     elif request.export_format == "zip":
         # Create ZIP archive
         import zipfile
-        from services.cache import CacheService
 
         zip_buffer = BytesIO()
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
@@ -254,8 +257,6 @@ async def download_exported_pack(
         raise HTTPException(status_code=404, detail="Conversion not found")
 
     # Get export data from cache
-    from services.cache import CacheService
-
     cache = CacheService()
     export_data = await cache.get_export_data(conversion_id)
 

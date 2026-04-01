@@ -6,10 +6,11 @@ by caching results for repeated queries.
 """
 
 import logging
+import time
 import hashlib
 from typing import Optional, Dict, Any, Protocol
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import OrderedDict
 import threading
 
@@ -20,10 +21,20 @@ logger = logging.getLogger(__name__)
 class CachedResult:
     """Cached result from pipeline execution."""
 
-    results: Any
-    query_analysis: Any
+    data: Any = None
+    results: Any = None  # For backwards compatibility
+    query_analysis: Any = None
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     ttl: int = 3600
+
+    def is_expired(self) -> bool:
+        """Check if the cached result is expired."""
+        # Handle both float timestamps and datetime objects
+        if isinstance(self.timestamp, (int, float)):
+            age = time.time() - self.timestamp
+        else:
+            age = (datetime.now(timezone.utc) - self.timestamp).total_seconds()
+        return age > self.ttl
 
 
 class CacheBackend(Protocol):
@@ -67,16 +78,34 @@ class MemoryCache:
             self._hits += 1
             return cached
 
-    def set(self, key: str, result: CachedResult) -> None:
+    def set(self, key: str, result: Any, ttl: int = None) -> None:
         """Set cached result."""
         with self._lock:
+            # Handle both CachedResult and dict input
+            if isinstance(result, dict):
+                cached = CachedResult(
+                    data=result,
+                    results=result.get("results", result),
+                    ttl=ttl if ttl is not None else self.ttl
+                )
+            elif isinstance(result, CachedResult):
+                cached = result
+            else:
+                cached = CachedResult(data=result, ttl=ttl if ttl is not None else self.ttl)
+            
             if key in self._cache:
                 self._cache.move_to_end(key)
 
-            self._cache[key] = result
+            self._cache[key] = cached
 
             while len(self._cache) > self.max_size:
                 self._cache.popitem(last=False)
+
+    def delete(self, key: str) -> None:
+        """Delete a specific key from cache."""
+        with self._lock:
+            if key in self._cache:
+                del self._cache[key]
 
     def invalidate(self, pattern: str = None) -> None:
         """Invalidate cache entries."""
@@ -214,11 +243,20 @@ class PipelineCache:
         """Get cached result."""
         return self._backend.get(key)
 
-    def set(self, key: str, result: Any) -> None:
+    def set(self, key: str, result: Any, ttl: int = None) -> None:
         """Set cached result."""
-        cached = CachedResult(
-            results=result.results, query_analysis=result.query_analysis, ttl=self.ttl
-        )
+        # Handle both dict and CachedResult input
+        if isinstance(result, dict):
+            cached = CachedResult(
+                data=result,
+                results=result.get("results", result),
+                ttl=ttl if ttl is not None else self.ttl
+            )
+        elif isinstance(result, CachedResult):
+            cached = result
+        else:
+            cached = CachedResult(data=result, ttl=ttl if ttl is not None else self.ttl)
+        
         self._backend.set(key, cached)
 
     def invalidate(self, pattern: str = None) -> None:

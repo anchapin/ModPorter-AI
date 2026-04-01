@@ -5,8 +5,9 @@ Issue: #574 - Backend: Task Queue System - Background Job Processing
 """
 
 import pytest
+import pytest_asyncio
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from services.task_queue_enhanced import (
@@ -332,7 +333,7 @@ class TestRetryLogic:
 class TestAsyncTaskQueueIntegration:
     """Integration tests for AsyncTaskQueue with Redis."""
 
-    @pytest.fixture
+    @pytest_asyncio.fixture
     async def queue(self):
         """Create a queue with mocked Redis."""
         queue = AsyncTaskQueue()

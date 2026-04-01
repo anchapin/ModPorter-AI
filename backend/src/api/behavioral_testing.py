@@ -111,9 +111,9 @@ async def create_behavioral_test(
         test_id = uuid4()
 
         # Convert Pydantic models to dictionaries for the framework
-        scenarios = [scenario.dict() for scenario in test_request.test_scenarios]
+        scenarios = [scenario.model_dump() for scenario in test_request.test_scenarios]
         behaviors = (
-            [behavior.dict() for behavior in test_request.expected_behaviors]
+            [behavior.model_dump() for behavior in test_request.expected_behaviors]
             if test_request.expected_behaviors
             else None
         )

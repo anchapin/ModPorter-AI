@@ -35,5 +35,14 @@ if str(ai_engine_root) in sys.path:
 # Set testing environment
 os.environ["TESTING"] = "true"
 
+# Load test fixtures
+# NOTE: Use relative import for fixtures to work from both ai-engine and root test runs
+# pytest_plugins expects module paths, not relative paths
+# This is commented out for now as it causes issues with fixture discovery
+# Instead, conftest.py in tests/fixtures/__init__.py will handle fixture imports
+# pytest_plugins = [
+#     "tests.fixtures.search_fixtures",
+# ]
+
 # Explicitly exclude the problematic test file from collection
 collect_ignore = ["test_smart_assumptions.py"]

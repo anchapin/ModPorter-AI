@@ -348,7 +348,7 @@ def create_ollama_llm(model_name: str = "llama3.2", base_url: str = None, **kwar
                         response_metadata={
                             "model": self.model,
                             "finish_reason": response.choices[0].finish_reason,
-                            "usage": response.usage.dict() if response.usage else {},
+                            "usage": response.usage.model_dump() if response.usage else {},
                         },
                     )
 

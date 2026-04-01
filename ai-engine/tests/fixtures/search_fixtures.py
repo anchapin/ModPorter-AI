@@ -9,6 +9,7 @@ import pytest
 from typing import Dict, List
 import sys
 from pathlib import Path
+import hashlib
 
 # Add ai-engine to path
 ai_engine_root = Path(__file__).parent.parent.parent
@@ -18,6 +19,11 @@ from schemas.multimodal_schema import (
     MultiModalDocument,
     ContentType,
 )
+
+
+def compute_content_hash(content: str) -> str:
+    """Compute MD5 hash of content."""
+    return hashlib.md5(content.encode()).hexdigest()
 
 
 @pytest.fixture
@@ -30,9 +36,11 @@ def mock_documents() -> Dict[str, MultiModalDocument]:
     documents = {
         "doc1": MultiModalDocument(
             id="doc1",
-            content="How to create a custom block in Minecraft Forge. Blocks are fundamental building units in Minecraft.",
+            content_hash=compute_content_hash("Howto create a custom block in Minecraft Forge. Blocks are fundamental building units in Minecraft."),
+            source_path="/test/docs/doc1.txt",
             content_type=ContentType.TEXT,
-            metadata={
+            content_text="Howto create a custom block in Minecraft Forge. Blocks are fundamental building units in Minecraft.",
+            content_metadata={
                 "title": "Creating Custom Blocks",
                 "type": "tutorial",
                 "tags": ["blocks", "forge", "tutorial"],
@@ -42,9 +50,11 @@ def mock_documents() -> Dict[str, MultiModalDocument]:
         ),
         "doc2": MultiModalDocument(
             id="doc2",
-            content="Creating custom items in Minecraft Fabric involves extending the Item class and registering with Registry.register().",
+            content_hash=compute_content_hash("Creating custom items in Minecraft Fabric involves extending the Item class and registering with Registry.register()."),
+            source_path="/test/docs/doc2.txt",
             content_type=ContentType.TEXT,
-            metadata={
+            content_text="Creating custom items in Minecraft Fabric involves extending the Item class and registering with Registry.register().",
+            content_metadata={
                 "title": "Creating Custom Items",
                 "type": "tutorial",
                 "tags": ["items", "fabric", "registry"],
@@ -54,9 +64,11 @@ def mock_documents() -> Dict[str, MultiModalDocument]:
         ),
         "doc3": MultiModalDocument(
             id="doc3",
-            content="Bedrock Edition uses JSON files for behavior packs and JavaScript for Script API. Blocks are defined in behavior_packs/blocks/",
+            content_hash=compute_content_hash("Bedrock Edition uses JSON files for behavior packs and JavaScript for Script API. Blocks are defined in behavior_packs/blocks/"),
+            source_path="/test/docs/doc3.txt",
             content_type=ContentType.TEXT,
-            metadata={
+            content_text="Bedrock Edition uses JSON files for behavior packs and JavaScript for Script API. Blocks are defined in behavior_packs/blocks/",
+            content_metadata={
                 "title": "Bedrock Block System",
                 "type": "reference",
                 "tags": ["bedrock", "blocks", "json", "javascript"],
@@ -66,9 +78,11 @@ def mock_documents() -> Dict[str, MultiModalDocument]:
         ),
         "doc4": MultiModalDocument(
             id="doc4",
-            content="Java Edition modding requires ForgeGradle for build automation. Gradle handles dependency management and obfuscation.",
+            content_hash=compute_content_hash("Java Edition modding requires ForgeGradle for build automation. Gradle handles dependency management and obfuscation."),
+            source_path="/test/docs/doc4.txt",
             content_type=ContentType.TEXT,
-            metadata={
+            content_text="Java Edition modding requires ForgeGradle for build automation. Gradle handles dependency management and obfuscation.",
+            content_metadata={
                 "title": "ForgeGradle Setup",
                 "type": "tutorial",
                 "tags": ["gradle", "forge", "build", "dependencies"],
@@ -78,9 +92,11 @@ def mock_documents() -> Dict[str, MultiModalDocument]:
         ),
         "doc5": MultiModalDocument(
             id="doc5",
-            content="Minecraft entities extend the Entity class. Custom entities require attributes, AI goals, and spawn rules.",
+            content_hash=compute_content_hash("Minecraft entities extend the Entity class. Custom entities require attributes, AI goals, and spawn rules."),
+            source_path="/test/docs/doc5.txt",
             content_type=ContentType.TEXT,
-            metadata={
+            content_text="Minecraft entities extend the Entity class. Custom entities require attributes, AI goals, and spawn rules.",
+            content_metadata={
                 "title": "Creating Custom Entities",
                 "type": "tutorial",
                 "tags": ["entities", "ai", "spawn", "attributes"],
@@ -90,9 +106,11 @@ def mock_documents() -> Dict[str, MultiModalDocument]:
         ),
         "doc6": MultiModalDocument(
             id="doc6",
-            content="Recipe system in Minecraft uses JSON files. Crafting recipes define ingredients, pattern, and result item.",
+            content_hash=compute_content_hash("Recipe system in Minecraft uses JSON files. Crafting recipes define ingredients, pattern, and result item."),
+            source_path="/test/docs/doc6.txt",
             content_type=ContentType.TEXT,
-            metadata={
+            content_text="Recipe system in Minecraft uses JSON files. Crafting recipes define ingredients, pattern, and result item.",
+            content_metadata={
                 "title": "Recipe System",
                 "type": "reference",
                 "tags": ["recipes", "crafting", "json"],
@@ -102,9 +120,11 @@ def mock_documents() -> Dict[str, MultiModalDocument]:
         ),
         "doc7": MultiModalDocument(
             id="doc7",
-            content="NeoForge is the continuation of Forge after 1.20. It maintains API compatibility with Forge mods.",
+            content_hash=compute_content_hash("NeoForge is the continuation of Forge after 1.20. It maintains API compatibility with Forge mods."),
+            source_path="/test/docs/doc7.txt",
             content_type=ContentType.TEXT,
-            metadata={
+            content_text="NeoForge is the continuation of Forge after 1.20. It maintains API compatibility with Forge mods.",
+            content_metadata={
                 "title": "NeoForge Overview",
                 "type": "reference",
                 "tags": ["neoforge", "forge", "migration"],
@@ -114,9 +134,11 @@ def mock_documents() -> Dict[str, MultiModalDocument]:
         ),
         "doc8": MultiModalDocument(
             id="doc8",
-            content="Texture mapping in Bedrock uses resource packs. Textures are PNG files in textures/blocks/ directory.",
+            content_hash=compute_content_hash("Texture mapping in Bedrock uses resource packs. Textures are PNG files in textures/blocks/ directory."),
+            source_path="/test/docs/doc8.txt",
             content_type=ContentType.TEXT,
-            metadata={
+            content_text="Texture mapping in Bedrock uses resource packs. Textures are PNG files in textures/blocks/ directory.",
+            content_metadata={
                 "title": "Texture Mapping",
                 "type": "tutorial",
                 "tags": ["textures", "resources", "png", "bedrock"],
@@ -126,9 +148,11 @@ def mock_documents() -> Dict[str, MultiModalDocument]:
         ),
         "doc9": MultiModalDocument(
             id="doc9",
-            content="Event handling in Forge uses the @SubscribeEvent annotation. Events fire on specific game actions.",
+            content_hash=compute_content_hash("Event handling in Forge uses the @SubscribeEvent annotation. Events fire on specific game actions."),
+            source_path="/test/docs/doc9.txt",
             content_type=ContentType.TEXT,
-            metadata={
+            content_text="Event handling in Forge uses the @SubscribeEvent annotation. Events fire on specific game actions.",
+            content_metadata={
                 "title": "Event System",
                 "type": "tutorial",
                 "tags": ["events", "annotations", "forge"],
@@ -138,9 +162,11 @@ def mock_documents() -> Dict[str, MultiModalDocument]:
         ),
         "doc10": MultiModalDocument(
             id="doc10",
-            content="Script API in Bedrock allows JavaScript code to run in-game. Use @minecraft/server module for server-side scripts.",
+            content_hash=compute_content_hash("Script API in Bedrock allows JavaScript code to run in-game. Use @minecraft/server module for server-side scripts."),
+            source_path="/test/docs/doc10.txt",
             content_type=ContentType.TEXT,
-            metadata={
+            content_text="Script API in Bedrock allows JavaScript code to run in-game. Use @minecraft/server module for server-side scripts.",
+            content_metadata={
                 "title": "Script API Introduction",
                 "type": "tutorial",
                 "tags": ["javascript", "scripting", "bedrock", "api"],

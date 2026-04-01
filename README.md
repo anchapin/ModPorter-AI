@@ -271,12 +271,25 @@ docker-compose -f docker-compose.test.yml up -d test-postgres
 ```
 
 ### Run Tests
+
+**Important:** The test suite uses a parallel/serial split architecture:
+- Most tests run in **parallel** for speed (2772 tests)
+- A few tests with module-level state pollution run **serially** (4 tests)
+
 ```bash
-# Run all tests
+# Run all tests (parallel + serial)
 pnpm run test
 
-# Backend tests
+# Backend tests - parallel run (default, ~2772 tests)
+# These run with: -n auto --dist=loadscope -m "not integration and not serial"
 cd backend && pytest
+
+# Backend tests - serial run (4 tests with module-level state issues)
+# These run with: -n0 -m serial
+cd backend && pytest -m serial
+
+# Backend tests - serial mode only (for debugging)
+cd backend && pytest -n0
 
 # Frontend tests
 cd frontend && pnpm test
@@ -284,6 +297,16 @@ cd frontend && pnpm test
 # AI Engine and RAG tests
 cd ai-engine && pytest
 ```
+
+**Test Stability:** The parallel test suite runs with ZERO flaky failures. The serial tests (`-m serial`) handle tests that pollute module-level state.
+
+### Test Markers
+| Marker | Description |
+|--------|-------------|
+| `integration` | Integration tests (excluded from default run) |
+| `serial` | Tests that must run serially (not in parallel) due to module-level state pollution |
+| `unit` | Unit tests |
+| `asyncio` | Async tests |
 
 ### Test Database Management
 ```bash
@@ -309,10 +332,14 @@ pytest tests/test_mvp_conversion.py
 
 ### Docker Tests
 ```bash
-# Run tests in Docker containers
+# Run tests in Docker containers (parallel mode - default)
 docker compose exec backend pytest
-docker compose exec frontend pnpm test
-docker compose exec ai-engine pytest
+
+# Run serial tests only
+docker compose exec backend pytest -m serial
+
+# Run tests in serial mode (for debugging)
+docker compose exec backend pytest -n0
 
 # Run tests with coverage
 docker compose exec backend pytest --cov=src

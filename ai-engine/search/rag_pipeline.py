@@ -7,7 +7,7 @@ search, reranking, and fusion into a coherent multi-stage system.
 
 import logging
 import time
-from typing import List, Dict, Any, Optional, Protocol, Callable
+from typing import List, Dict, Any, Optional, Protocol
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -310,7 +310,7 @@ class RAGPipeline:
     def _init_cache(self):
         """Initialize caching layer."""
         try:
-            from search.pipeline_cache import PipelineCache, MemoryCache
+            from search.pipeline_cache import PipelineCache
 
             self.cache = PipelineCache(backend=self.config.cache_backend, ttl=self.config.cache_ttl)
         except ImportError:

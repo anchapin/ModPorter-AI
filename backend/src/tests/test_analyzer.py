@@ -320,6 +320,8 @@ authors="Test Author"
             result = analyzer.analyze_jar_for_mvp(str(fixture_path))
 
             assert result["success"] is True
+            # Registry name is mod_id + block_name derived from class name
+            # Block suffix is stripped per Java naming convention
             assert result["registry_name"] == "simple_copper:polished_copper"
             assert (
                 result["texture_path"]

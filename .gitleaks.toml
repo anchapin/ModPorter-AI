@@ -1,0 +1,134 @@
+[]
+# =============================================================================
+# Gitleaks Configuration for ModPorter-AI
+# =============================================================================
+# Allowlist patterns for known safe secrets in this project
+
+# ----------------------------------------------------------------
+# General Rules
+# ----------------------------------------------------------------
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key"
+regex = '''(?i)(api[_-]?key|apikey|api[_-]?secret)[''"]?\s*[:=]\s*['"]?[a-zA-Z0-9]{16,64}['"]?'''
+
+[[rules]]
+id = "generic-secret"
+description = "Generic Secret"
+regex = '''(?i)(secret|password|passwd|pwd)[''"]?\s*[:=]\s*['"]?[a-zA-Z0-9]{8,64}['"]?'''
+
+[[rules]]
+id = "aws-access-key"
+description = "AWS Access Key"
+regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+
+[[rules]]
+id = "aws-secret-key"
+description = "AWS Secret Key"
+regex = '''(?i)aws[_-]?secret[_-]?access[_-]?key\s*[:=]\s*['"]?[A-Za-z0-9/+=]{40}['"]?'''
+
+[[rules]]
+id = "github-token"
+description = "GitHub Personal Access Token"
+regex = '''gh[pousr]_[A-Za-z0-9_]{36,255}'''
+
+[[rules]]
+id = "gitlab-token"
+description = "GitLab Personal Access Token"
+regex = '''glpat-[A-Za-z0-9\-]{20}'''
+
+[[rules]]
+id = "slack-token"
+description = "Slack Token"
+regex = '''xox[baprs]-[0-9]{10,13}-[0-9]{10,13}[a-zA-Z0-9-]*'''
+
+[[rules]]
+id = "stripe-api-key"
+description = "Stripe API Key"
+regex = '''sk_live_[0-9a-zA-Z]{24,64}'''
+
+[[rules]]
+id = "discord-api-key"
+description = "Discord API Key"
+regex = '''[MN][A-Za-z\d]{23,24}\.[\w-]{6}\.[\w-]{27}'''
+
+[[rules]]
+id = "jwt-token"
+description = "JWT Token"
+regex = '''eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+'''
+
+[[rules]]
+id = "private-key"
+description = "Private Key"
+regex = '''-----BEGIN (RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----'''
+
+[[rules]]
+id = "google-api-key"
+description = "Google API Key"
+regex = '''AIza[0-9A-Za-z\\-_]{35}'''
+
+[[rules]]
+id = "openai-api-key"
+description = "OpenAI API Key"
+regex = '''sk-[A-Za-z0-9]{48}'''
+
+[[rules]]
+id = "openai-token"
+description = "OpenAI Token"
+regex = '''sk-proj-[A-Za-z0-9_-]{48,}'''
+
+# ----------------------------------------------------------------
+# Allowlist (false positives)
+# ----------------------------------------------------------------
+[[rules.allowlist]]
+description = "Test/example placeholders"
+regex = '''test[_-]?secret[_-]?key[_-]?for[_-]?testing[_-]?only'''
+
+[[rules.allowlist]]
+description = "Example passwords in documentation"
+regex = '''password\s*=\s*['"]?example'''
+
+[[rules.allowlist]]
+description = "Placeholder values"
+regex = '''['"]?changeme['"]?'''
+
+[[rules.allowlist]]
+description = "Dummy values"
+regex = '''['"]?dummy[_-]?value['"]?'''
+
+# Files to always skip
+[[rules.allowlist]]
+files = [
+  "^\\.git/",
+  "^\\.venv/",
+  "^node_modules/",
+  "^\\.pytest_cache/",
+  "^\\.ruff_cache/",
+  "^coverage\\.json",
+  "^\\.coverage",
+  "passwords\\.txt",
+  "secrets\\.txt",
+  "\\.log$",
+  "\\.tmp$"
+]
+
+# ----------------------------------------------------------------
+# Path Allowlist (don't scan these paths)
+# ----------------------------------------------------------------
+[allowlist]
+paths = [
+  "^\\.git/",
+  "^\\.venv/",
+  "^node_modules/",
+  "^frontend/node_modules/",
+  "^ai-engine/src/",
+  "^\\.pytest_cache/",
+  "^\\.ruff_cache/",
+  "^tests/",
+  "^docs/",
+  "^docker/",
+  "^\\.github/",
+  "^\\.worktrees/",
+  "coverage\\.json",
+  "\\.log$"
+]

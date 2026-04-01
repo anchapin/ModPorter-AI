@@ -367,18 +367,19 @@ def get_memory_report() -> Dict:
 class MemoryTracker:
     """Context manager for tracking memory usage of a code block"""
 
-    def __init__(self, label: str = "", metadata: Dict[str, Any] = None):
+    def __init__(self, label: str = "", metadata: Dict[str, Any] = None, monitor: MemoryMonitor = None):
         self.label = label
         self.metadata = metadata or {}
+        self.monitor = monitor or memory_monitor
         self.start_snapshot = None
         self.end_snapshot = None
 
     def __enter__(self):
-        self.start_snapshot = memory_monitor.take_snapshot(f"{self.label}_start", self.metadata)
+        self.start_snapshot = self.monitor.take_snapshot(f"{self.label}_start", self.metadata)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.end_snapshot = memory_monitor.take_snapshot(f"{self.label}_end", self.metadata)
+        self.end_snapshot = self.monitor.take_snapshot(f"{self.label}_end", self.metadata)
         return False
 
     @property

@@ -367,14 +367,14 @@ class FileHandler:
         """
         Placeholder for virus scanning integration.
 
-        TODO: Integrate with ClamAV or similar antivirus
+        NOTE: Antivirus integration not yet implemented.
 
         Returns:
             True if scan passes (or not available), False if scan fails
         """
         # Placeholder - always returns True
         # In production, this would:
-        # 1. Submit file to antivirus scanner
+        # 1. Submit file to antivirus scanner (e.g., ClamAV)
         # 2. Wait for scan result
         # 3. Return True if clean, False if infected
 

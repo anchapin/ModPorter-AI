@@ -10,10 +10,16 @@ Endpoints:
 - POST /api/query-monitor/reset - Reset monitoring data
 - GET /api/query-monitor/slowest - Get slowest queries
 - GET /api/query-monitor/frequent - Get most executed queries
+- GET /api/query-monitor/stats - Get query statistics
+- GET /api/query-monitor/slow-queries - Get slow queries list
 """
 
+import logging
+from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
+from pydantic import BaseModel, Field
+
 from db.query_monitor import (
     get_query_report,
     reset_query_monitor,
@@ -21,7 +27,27 @@ from db.query_monitor import (
     disable_query_monitoring,
 )
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/query-monitor", tags=["query-monitoring"])
+
+
+# Response Models
+class QueryStatsResponse(BaseModel):
+    """Response model for query statistics."""
+    total_queries: int = Field(description="Total number of unique queries")
+    slow_queries: int = Field(description="Number of slow queries (above threshold)")
+    avg_execution_time_ms: float = Field(description="Average query execution time in milliseconds")
+    cache_hit_ratio: float = Field(description="Cache hit ratio (0.0 to 1.0)")
+
+
+class SlowQueryResponse(BaseModel):
+    """Response model for a slow query."""
+    query_id: str = Field(description="Unique identifier for the query")
+    query_text: str = Field(description="The SQL query text")
+    execution_time_ms: float = Field(description="Execution time in milliseconds")
+    timestamp: datetime = Field(description="Timestamp when query was executed")
+    user_id: Optional[str] = Field(default=None, description="User ID if available")
 
 
 @router.get("/report", summary="Get Query Performance Report")

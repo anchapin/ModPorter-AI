@@ -7,13 +7,21 @@ import logging
 import asyncio
 from typing import Dict, List, Any, Optional
 from crewai.tools import BaseTool
-from ddgs import DDGS
+from duckduckgo_search import DDGS
 import json
 from pydantic import Field
 
 logger = logging.getLogger(__name__)
 
 __version__ = "2.0.0"
+
+
+class SearchServiceError(Exception):
+    """Raised when the DuckDuckGo search service fails (rate limit, network, etc.)."""
+
+    def __init__(self, message: str, cause: Optional[Exception] = None):
+        super().__init__(message)
+        self.cause = cause
 
 
 class WebSearchTool(BaseTool):
@@ -62,7 +70,7 @@ class WebSearchTool(BaseTool):
             if not query or not query.strip():
                 return json.dumps({"error": "Query cannot be empty", "results": []})
 
-            # Perform the search
+            # Perform the search (raises SearchServiceError on service failure)
             search_results = self._search_duckduckgo(query.strip())
 
             if not search_results:
@@ -91,6 +99,10 @@ class WebSearchTool(BaseTool):
                 f"Web search completed for query: {query}, found {len(formatted_results)} results"
             )
             return json.dumps(response, indent=2)
+
+        except SearchServiceError:
+            # Re-raise so callers can handle explicitly — do not return empty []
+            raise
 
         except Exception as e:
             logger.error(f"Web search failed: {str(e)}")
@@ -127,21 +139,16 @@ class WebSearchTool(BaseTool):
                 return []
 
         except Exception as e:
-            logger.warning(f"DuckDuckGo search failed: {str(e)}")
+            logger.error(f"DuckDuckGo search failed: {str(e)}")
             if "rate" in str(e).lower() or "202" in str(e):
                 logger.info("Rate limit detected, waiting before retry...")
                 time.sleep(5)
-                return []
+            # Raise SearchServiceError so callers can distinguish service failure
+            # from genuinely empty results. Silent [] masks production failures.
+            raise SearchServiceError(f"DuckDuckGo search service unavailable: {e}", cause=e)
 
-        # If search fails, return mock data for testing
-        logger.warning("DuckDuckGo search failed, returning mock results for testing")
-        return [
-            {
-                "title": f"Mock Search Result for: {query}",
-                "href": "https://example.com/mock-result",
-                "body": f"This is a mock search result for the query '{query}'. In a real scenario, this would contain actual web search results from DuckDuckGo.",
-            }
-        ]
+        logger.warning("DuckDuckGo search returned no results")
+        return []
 
     def _format_search_results(self, raw_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """

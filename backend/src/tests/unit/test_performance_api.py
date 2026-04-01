@@ -1,3 +1,4 @@
+import pytest
 from unittest.mock import patch
 
 from api.performance import mock_benchmark_runs, mock_benchmark_reports, mock_scenarios
@@ -10,7 +11,6 @@ class TestPerformanceAPI:
         """Clear mock data before each test."""
         mock_benchmark_runs.clear()
         mock_benchmark_reports.clear()
-        # Reset scenarios to default state
         mock_scenarios.clear()
         mock_scenarios.update(
             {
@@ -34,7 +34,7 @@ class TestPerformanceAPI:
             "conversion_id": "test_conversion_123",
         }
 
-        response = client.post("/performance/run", json=request_data)
+        response = client.post("/api/v1/performance/run", json=request_data)
 
         assert response.status_code == 202
         data = response.json()
@@ -52,10 +52,10 @@ class TestPerformanceAPI:
         """Test benchmark run with invalid scenario ID."""
         request_data = {"scenario_id": "nonexistent_scenario", "device_type": "desktop"}
 
-        response = client.post("/performance/run", json=request_data)
+        response = client.post("/api/v1/performance/run", json=request_data)
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"]
+        assert "not found" in response.json()["message"]
 
     def test_get_benchmark_status_success(self, client):
         """Test successful benchmark status retrieval."""
@@ -68,7 +68,7 @@ class TestPerformanceAPI:
             "current_stage": "collecting_baseline",
         }
 
-        response = client.get(f"/performance/status/{run_id}")
+        response = client.get(f"/api/v1/performance/status/{run_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -79,10 +79,10 @@ class TestPerformanceAPI:
 
     def test_get_benchmark_status_not_found(self, client):
         """Test benchmark status for non-existent run."""
-        response = client.get("/performance/status/nonexistent_run")
+        response = client.get("/api/v1/performance/status/nonexistent_run")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"]
+        assert "not found" in response.json()["message"]
 
     def test_get_benchmark_report_success(self, client):
         """Test successful benchmark report retrieval."""
@@ -127,7 +127,7 @@ class TestPerformanceAPI:
             "report_text": "Test report",
         }
 
-        response = client.get(f"/performance/report/{run_id}")
+        response = client.get(f"/api/v1/performance/report/{run_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -144,7 +144,7 @@ class TestPerformanceAPI:
             "scenario_id": "baseline_idle_001",
         }
 
-        response = client.get(f"/performance/report/{run_id}")
+        response = client.get(f"/api/v1/performance/report/{run_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -154,7 +154,7 @@ class TestPerformanceAPI:
 
     def test_list_scenarios_success(self, client):
         """Test successful scenario listing."""
-        response = client.get("/performance/scenarios")
+        response = client.get("/api/v1/performance/scenarios")
 
         assert response.status_code == 200
         data = response.json()
@@ -174,7 +174,7 @@ class TestPerformanceAPI:
             "thresholds": {"cpu": 70, "memory": 80},
         }
 
-        response = client.post("/performance/scenarios", json=request_data)
+        response = client.post("/api/v1/performance/scenarios", json=request_data)
 
         assert response.status_code == 201
         data = response.json()
@@ -224,7 +224,7 @@ class TestPerformanceAPI:
             }
         }
 
-        response = client.get("/performance/history")
+        response = client.get("/api/v1/performance/history")
 
         assert response.status_code == 200
         data = response.json()
@@ -258,7 +258,7 @@ class TestPerformanceAPI:
             }
 
         # Test with limit and offset
-        response = client.get("/performance/history?limit=2&offset=1")
+        response = client.get("/api/v1/performance/history?limit=2&offset=1")
 
         assert response.status_code == 200
         data = response.json()
@@ -276,7 +276,7 @@ class TestPerformanceAPI:
             "scenario_id": "baseline_idle_001",
         }
 
-        response = client.get("/performance/history")
+        response = client.get("/api/v1/performance/history")
 
         assert response.status_code == 200
         data = response.json()
@@ -287,7 +287,7 @@ class TestPerformanceAPI:
         """Test that benchmark run properly triggers background task."""
         request_data = {"scenario_id": "baseline_idle_001", "device_type": "desktop"}
 
-        response = client.post("/performance/run", json=request_data)
+        response = client.post("/api/v1/performance/run", json=request_data)
 
         assert response.status_code == 202
         # Note: In actual tests, background tasks don't execute immediately
@@ -297,10 +297,10 @@ class TestPerformanceAPI:
         """Test benchmark run with missing required fields."""
         request_data = {}  # Missing scenario_id
 
-        response = client.post("/performance/run", json=request_data)
+        response = client.post("/api/v1/performance/run", json=request_data)
 
         assert response.status_code == 422  # Validation error
-        assert "Field required" in response.json()["detail"][0]["msg"]
+        assert "Field required" in response.json()["message"]
 
     def test_create_custom_scenario_validation(self, client):
         """Test custom scenario creation with validation errors."""
@@ -310,6 +310,6 @@ class TestPerformanceAPI:
             "type": "custom",
         }
 
-        response = client.post("/performance/scenarios", json=request_data)
+        response = client.post("/api/v1/performance/scenarios", json=request_data)
 
         assert response.status_code == 422  # Validation error

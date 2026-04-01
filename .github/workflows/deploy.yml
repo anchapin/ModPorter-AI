@@ -52,7 +52,7 @@ jobs:
         python-version: '3.11'
 
     - name: Install pnpm
-      uses: pnpm/action-setup@v4
+      uses: pnpm/action-setup@v5
       with:
         version: 9
 
@@ -179,7 +179,7 @@ jobs:
         pnpm run build
 
     - name: Upload coverage reports
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v6
       with:
         files: ./backend/coverage.xml,./ai-engine/coverage.xml
 
@@ -285,7 +285,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: perf-metrics-build
         path: .github/perf-metrics/*.json
@@ -306,7 +306,7 @@ jobs:
         echo "DEPLOY_START=$(date +%s)" >> $GITHUB_ENV
 
     - name: Setup SSH
-      uses: webfactory/ssh-agent@v0.9.1
+      uses: webfactory/ssh-agent@v0.10.0
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
@@ -377,7 +377,7 @@ jobs:
 
     - name: Upload performance metrics
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: perf-metrics-deploy
         path: .github/perf-metrics/*.json

@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 import json
 from pathlib import Path
 
+from .task_graph import TaskNode
 from .strategy_selector import OrchestrationStrategy
 
 logger = logging.getLogger(__name__)

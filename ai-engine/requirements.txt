@@ -10,8 +10,8 @@ crewai>=0.11.0,<1.0.0
 langchain>=0.3.0,<1.0.0
 langchain-openai>=0.2.0,<1.0.0
 langchain-ollama>=0.1.0,<1.0.0
-openai>=1.0.0,<2.0.0
-sentence-transformers>=2.2.0,<3.0.0
+openai>=1.0.0,<3.0.0
+sentence-transformers>=2.2.0,<6.0.0
 
 # Vector Database (pin version for embedchain compatibility)
 # Note: chromadb may require Python <3.13
@@ -19,7 +19,7 @@ chromadb<1.6.0
 
 # Data Processing - align with backend version
 numpy
-python-dotenv~=1.1.1
+python-dotenv~=1.2.1
 
 # Java analysis - align with backend version
 javalang==0.13.0
@@ -43,8 +43,8 @@ ddgs>=5.3.0
 redis>=7.1.0
 
 # Configuration Management - align with backend version
-pydantic~=2.11.9
-pydantic-settings~=2.10.1
+pydantic~=2.12.5
+pydantic-settings~=2.11.0
 
 # Monitoring - align with backend version
 prometheus_client>=0.17.0
@@ -62,4 +62,4 @@ opentelemetry-instrumentation-httpx>=0.45b0
 opentelemetry-instrumentation-redis>=0.45b0
 
 # Modal for CodeT5+ model deployment - pin version
-modal>=0.60,<1.0.0
+modal>=0.60,<2.0.0

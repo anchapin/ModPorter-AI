@@ -20,8 +20,11 @@ from fastapi import (
     Path,
     status,
 )
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from db.base import get_db
 from services.job_manager import (
     JobManager,
     JobStatus,
@@ -33,6 +36,9 @@ from services.job_manager import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Security scheme for auth dependency
+security = HTTPBearer()
 
 router = APIRouter(prefix="/api/v1/jobs", tags=["jobs"])
 
@@ -107,15 +113,41 @@ class JobDeleteResponse(BaseModel):
 # Dependency
 
 
-def get_current_user_id() -> str:
+async def get_current_user_id(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db),
+) -> str:
     """
-    Get current user ID from auth.
+    Get current user ID from the authenticated request context.
 
-    In production, this would extract user from JWT token.
-    For now, returns a default user ID.
+    Uses the JWT Bearer token from the Authorization header.
+    Raises HTTPException 401 if the token is invalid or user not found.
     """
-    # TODO: Implement proper auth
-    return "default_user"
+    from security.auth import verify_token
+    from db.models import User
+    from sqlalchemy import select
+
+    token = credentials.credentials
+    user_id = verify_token(token, "access")
+
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return str(user.id)
 
 
 async def get_job_manager_dep() -> JobManager:

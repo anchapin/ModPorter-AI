@@ -1,0 +1,178 @@
+__vite_ssr_exportName__("ConversionOptions", () => { try { return ConversionOptions } catch {} });
+__vite_ssr_exportName__("default", () => { try { return __vite_ssr_export_default__ } catch {} });
+const __vite_ssr_import_0__ = await __vite_ssr_import__("/@fs/home/alex/Projects/ModPorter-AI/node_modules/.pnpm/react@19.2.4/node_modules/react/jsx-dev-runtime.js", {"importedNames":["jsxDEV"]});
+const __vite_ssr_import_1__ = await __vite_ssr_import__("/@fs/home/alex/Projects/ModPorter-AI/node_modules/.pnpm/react@19.2.4/node_modules/react/index.js", {"importedNames":["useState","memo"]});
+const __vite_ssr_import_2__ = await __vite_ssr_import__("/src/components/ConversionUpload/ConversionUpload.css");
+"use strict";
+
+
+
+const ConversionOptions = (0,__vite_ssr_import_1__.memo)(
+  ({
+    smartAssumptions,
+    onSmartAssumptionsChange,
+    includeDependencies,
+    onIncludeDependenciesChange,
+    disabled
+  }) => {
+    const [showSmartAssumptionsInfo, setShowSmartAssumptionsInfo] = (0,__vite_ssr_import_1__.useState)(false);
+    return /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+      "div",
+      {
+        className: `conversion-options ${disabled ? "disabled-options" : ""}`,
+        children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "option-group", children: [
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "checkbox-with-info", children: [
+              /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("label", { className: "checkbox-label", children: [
+                /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+                  "input",
+                  {
+                    type: "checkbox",
+                    checked: smartAssumptions,
+                    onChange: (e) => onSmartAssumptionsChange(e.target.checked),
+                    disabled
+                  },
+                  void 0,
+                  false,
+                  {
+                    fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionUpload/ConversionOptions.tsx",
+                    lineNumber: 31,
+                    columnNumber: 15
+                  },
+                  this
+                ),
+                /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("span", { className: "checkmark" }, void 0, false, {
+                  fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionUpload/ConversionOptions.tsx",
+                  lineNumber: 37,
+                  columnNumber: 15
+                }, this),
+                "Enable Smart Assumptions"
+              ] }, void 0, true, {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionUpload/ConversionOptions.tsx",
+                lineNumber: 30,
+                columnNumber: 13
+              }, this),
+              /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+                "button",
+                {
+                  type: "button",
+                  className: "info-button",
+                  onClick: () => setShowSmartAssumptionsInfo(!showSmartAssumptionsInfo),
+                  "aria-label": "Learn more about smart assumptions",
+                  "aria-expanded": showSmartAssumptionsInfo,
+                  "aria-controls": "smart-assumptions-info",
+                  disabled,
+                  children: "?"
+                },
+                void 0,
+                false,
+                {
+                  fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionUpload/ConversionOptions.tsx",
+                  lineNumber: 40,
+                  columnNumber: 13
+                },
+                this
+              )
+            ] }, void 0, true, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionUpload/ConversionOptions.tsx",
+              lineNumber: 29,
+              columnNumber: 11
+            }, this),
+            showSmartAssumptionsInfo && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "info-panel", id: "smart-assumptions-info", children: [
+              /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h4", { children: "Smart Assumptions" }, void 0, false, {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionUpload/ConversionOptions.tsx",
+                lineNumber: 57,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { children: "When enabled, our AI will make intelligent assumptions to convert incompatible features:" }, void 0, false, {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionUpload/ConversionOptions.tsx",
+                lineNumber: 58,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("ul", { children: [
+                /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("li", { children: "Custom dimensions → Large structures in existing dimensions" }, void 0, false, {
+                  fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionUpload/ConversionOptions.tsx",
+                  lineNumber: 63,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("li", { children: "Complex machinery → Simplified blocks with similar functionality" }, void 0, false, {
+                  fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionUpload/ConversionOptions.tsx",
+                  lineNumber: 66,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("li", { children: "Custom GUIs → Book or sign-based interfaces" }, void 0, false, {
+                  fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionUpload/ConversionOptions.tsx",
+                  lineNumber: 70,
+                  columnNumber: 17
+                }, this)
+              ] }, void 0, true, {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionUpload/ConversionOptions.tsx",
+                lineNumber: 62,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { children: "This increases conversion success rate but may alter some mod features." }, void 0, false, {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionUpload/ConversionOptions.tsx",
+                lineNumber: 72,
+                columnNumber: 15
+              }, this)
+            ] }, void 0, true, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionUpload/ConversionOptions.tsx",
+              lineNumber: 56,
+              columnNumber: 13
+            }, this)
+          ] }, void 0, true, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionUpload/ConversionOptions.tsx",
+            lineNumber: 28,
+            columnNumber: 9
+          }, this),
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "option-group", children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("label", { className: "checkbox-label", children: [
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+              "input",
+              {
+                type: "checkbox",
+                checked: includeDependencies,
+                onChange: (e) => onIncludeDependenciesChange(e.target.checked),
+                disabled
+              },
+              void 0,
+              false,
+              {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionUpload/ConversionOptions.tsx",
+                lineNumber: 82,
+                columnNumber: 13
+              },
+              this
+            ),
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("span", { className: "checkmark" }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionUpload/ConversionOptions.tsx",
+              lineNumber: 88,
+              columnNumber: 13
+            }, this),
+            "Include Dependencies"
+          ] }, void 0, true, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionUpload/ConversionOptions.tsx",
+            lineNumber: 81,
+            columnNumber: 11
+          }, this) }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionUpload/ConversionOptions.tsx",
+            lineNumber: 80,
+            columnNumber: 9
+          }, this)
+        ]
+      },
+      void 0,
+      true,
+      {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionUpload/ConversionOptions.tsx",
+        lineNumber: 25,
+        columnNumber: 7
+      },
+      this
+    );
+  }
+);
+const __vite_ssr_export_default__ = ConversionOptions;
+//# sourceMappingSource=vite-generated
+//# sourceMappingURL=data:application/json;base64,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QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQSxJQW1FQTtBQUFBLEVBRUo7QUFDRjtBQUVBLG9DQUFlIiwibmFtZXMiOltdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJDb252ZXJzaW9uT3B0aW9ucy50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IFJlYWN0LCB7IHVzZVN0YXRlLCBtZW1vIH0gZnJvbSAncmVhY3QnO1xuaW1wb3J0ICcuL0NvbnZlcnNpb25VcGxvYWQuY3NzJztcblxuaW50ZXJmYWNlIENvbnZlcnNpb25PcHRpb25zUHJvcHMge1xuICBzbWFydEFzc3VtcHRpb25zOiBib29sZWFuO1xuICBvblNtYXJ0QXNzdW1wdGlvbnNDaGFuZ2U6IChjaGVja2VkOiBib29sZWFuKSA9PiB2b2lkO1xuICBpbmNsdWRlRGVwZW5kZW5jaWVzOiBib29sZWFuO1xuICBvbkluY2x1ZGVEZXBlbmRlbmNpZXNDaGFuZ2U6IChjaGVja2VkOiBib29sZWFuKSA9PiB2b2lkO1xuICBkaXNhYmxlZDogYm9vbGVhbjtcbn1cblxuLy8gTWVtb2l6ZWQgdG8gcHJldmVudCByZS1yZW5kZXJzIHdoZW4gcGFyZW50IHN0YXRlIChsaWtlIHVwbG9hZCBwcm9ncmVzcykgY2hhbmdlcyBmcmVxdWVudGx5XG5leHBvcnQgY29uc3QgQ29udmVyc2lvbk9wdGlvbnM6IFJlYWN0LkZDPENvbnZlcnNpb25PcHRpb25zUHJvcHM+ID0gbWVtbyhcbiAgKHtcbiAgICBzbWFydEFzc3VtcHRpb25zLFxuICAgIG9uU21hcnRBc3N1bXB0aW9uc0NoYW5nZSxcbiAgICBpbmNsdWRlRGVwZW5kZW5jaWVzLFxuICAgIG9uSW5jbHVkZURlcGVuZGVuY2llc0NoYW5nZSxcbiAgICBkaXNhYmxlZCxcbiAgfSkgPT4ge1xuICAgIGNvbnN0IFtzaG93U21hcnRBc3N1bXB0aW9uc0luZm8sIHNldFNob3dTbWFydEFzc3VtcHRpb25zSW5mb10gPVxuICAgICAgdXNlU3RhdGUoZmFsc2UpO1xuXG4gICAgcmV0dXJuIChcbiAgICAgIDxkaXZcbiAgICAgICAgY2xhc3NOYW1lPXtgY29udmVyc2lvbi1vcHRpb25zICR7ZGlzYWJsZWQgPyAnZGlzYWJsZWQtb3B0aW9ucycgOiAnJ31gfVxuICAgICAgPlxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cIm9wdGlvbi1ncm91cFwiPlxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiY2hlY2tib3gtd2l0aC1pbmZvXCI+XG4gICAgICAgICAgICA8bGFiZWwgY2xhc3NOYW1lPVwiY2hlY2tib3gtbGFiZWxcIj5cbiAgICAgICAgICAgICAgPGlucHV0XG4gICAgICAgICAgICAgICAgdHlwZT1cImNoZWNrYm94XCJcbiAgICAgICAgICAgICAgICBjaGVja2VkPXtzbWFydEFzc3VtcHRpb25zfVxuICAgICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gb25TbWFydEFzc3VtcHRpb25zQ2hhbmdlKGUudGFyZ2V0LmNoZWNrZWQpfVxuICAgICAgICAgICAgICAgIGRpc2FibGVkPXtkaXNhYmxlZH1cbiAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwiY2hlY2ttYXJrXCI+PC9zcGFuPlxuICAgICAgICAgICAgICBFbmFibGUgU21hcnQgQXNzdW1wdGlvbnNcbiAgICAgICAgICAgIDwvbGFiZWw+XG4gICAgICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgICAgIHR5cGU9XCJidXR0b25cIlxuICAgICAgICAgICAgICBjbGFzc05hbWU9XCJpbmZvLWJ1dHRvblwiXG4gICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+XG4gICAgICAgICAgICAgICAgc2V0U2hvd1NtYXJ0QXNzdW1wdGlvbnNJbmZvKCFzaG93U21hcnRBc3N1bXB0aW9uc0luZm8pXG4gICAgICAgICAgICAgIH1cbiAgICAgICAgICAgICAgYXJpYS1sYWJlbD1cIkxlYXJuIG1vcmUgYWJvdXQgc21hcnQgYXNzdW1wdGlvbnNcIlxuICAgICAgICAgICAgICBhcmlhLWV4cGFuZGVkPXtzaG93U21hcnRBc3N1bXB0aW9uc0luZm99XG4gICAgICAgICAgICAgIGFyaWEtY29udHJvbHM9XCJzbWFydC1hc3N1bXB0aW9ucy1pbmZvXCJcbiAgICAgICAgICAgICAgZGlzYWJsZWQ9e2Rpc2FibGVkfVxuICAgICAgICAgICAgPlxuICAgICAgICAgICAgICA/XG4gICAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgIHtzaG93U21hcnRBc3N1bXB0aW9uc0luZm8gJiYgKFxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJpbmZvLXBhbmVsXCIgaWQ9XCJzbWFydC1hc3N1bXB0aW9ucy1pbmZvXCI+XG4gICAgICAgICAgICAgIDxoND5TbWFydCBBc3N1bXB0aW9uczwvaDQ+XG4gICAgICAgICAgICAgIDxwPlxuICAgICAgICAgICAgICAgIFdoZW4gZW5hYmxlZCwgb3VyIEFJIHdpbGwgbWFrZSBpbnRlbGxpZ2VudCBhc3N1bXB0aW9ucyB0b1xuICAgICAgICAgICAgICAgIGNvbnZlcnQgaW5jb21wYXRpYmxlIGZlYXR1cmVzOlxuICAgICAgICAgICAgICA8L3A+XG4gICAgICAgICAgICAgIDx1bD5cbiAgICAgICAgICAgICAgICA8bGk+XG4gICAgICAgICAgICAgICAgICBDdXN0b20gZGltZW5zaW9ucyDihpIgTGFyZ2Ugc3RydWN0dXJlcyBpbiBleGlzdGluZyBkaW1lbnNpb25zXG4gICAgICAgICAgICAgICAgPC9saT5cbiAgICAgICAgICAgICAgICA8bGk+XG4gICAgICAgICAgICAgICAgICBDb21wbGV4IG1hY2hpbmVyeSDihpIgU2ltcGxpZmllZCBibG9ja3Mgd2l0aCBzaW1pbGFyXG4gICAgICAgICAgICAgICAgICBmdW5jdGlvbmFsaXR5XG4gICAgICAgICAgICAgICAgPC9saT5cbiAgICAgICAgICAgICAgICA8bGk+Q3VzdG9tIEdVSXMg4oaSIEJvb2sgb3Igc2lnbi1iYXNlZCBpbnRlcmZhY2VzPC9saT5cbiAgICAgICAgICAgICAgPC91bD5cbiAgICAgICAgICAgICAgPHA+XG4gICAgICAgICAgICAgICAgVGhpcyBpbmNyZWFzZXMgY29udmVyc2lvbiBzdWNjZXNzIHJhdGUgYnV0IG1heSBhbHRlciBzb21lIG1vZFxuICAgICAgICAgICAgICAgIGZlYXR1cmVzLlxuICAgICAgICAgICAgICA8L3A+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICApfVxuICAgICAgICA8L2Rpdj5cblxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cIm9wdGlvbi1ncm91cFwiPlxuICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJjaGVja2JveC1sYWJlbFwiPlxuICAgICAgICAgICAgPGlucHV0XG4gICAgICAgICAgICAgIHR5cGU9XCJjaGVja2JveFwiXG4gICAgICAgICAgICAgIGNoZWNrZWQ9e2luY2x1ZGVEZXBlbmRlbmNpZXN9XG4gICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gb25JbmNsdWRlRGVwZW5kZW5jaWVzQ2hhbmdlKGUudGFyZ2V0LmNoZWNrZWQpfVxuICAgICAgICAgICAgICBkaXNhYmxlZD17ZGlzYWJsZWR9XG4gICAgICAgICAgICAvPlxuICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwiY2hlY2ttYXJrXCI+PC9zcGFuPlxuICAgICAgICAgICAgSW5jbHVkZSBEZXBlbmRlbmNpZXNcbiAgICAgICAgICA8L2xhYmVsPlxuICAgICAgICA8L2Rpdj5cbiAgICAgIDwvZGl2PlxuICAgICk7XG4gIH1cbik7XG5cbmV4cG9ydCBkZWZhdWx0IENvbnZlcnNpb25PcHRpb25zO1xuIl0sImZpbGUiOiIvc3JjL2NvbXBvbmVudHMvQ29udmVyc2lvblVwbG9hZC9Db252ZXJzaW9uT3B0aW9ucy50c3gifQ==
+
+//# vitestCache=W3siZmlsZSI6IjEiLCJpZCI6IjEiLCJ1cmwiOiIyIiwiaW1wb3J0ZWRVcmxzIjoiMyIsIm1hcHBpbmdzIjpmYWxzZX0sIi9ob21lL2FsZXgvUHJvamVjdHMvTW9kUG9ydGVyLUFJL2Zyb250ZW5kL3NyYy9jb21wb25lbnRzL0NvbnZlcnNpb25VcGxvYWQvQ29udmVyc2lvbk9wdGlvbnMudHN4IiwiL3NyYy9jb21wb25lbnRzL0NvbnZlcnNpb25VcGxvYWQvQ29udmVyc2lvbk9wdGlvbnMudHN4IixbXV0=

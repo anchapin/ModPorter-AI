@@ -28,6 +28,7 @@ from pydantic import BaseModel, Field
 
 from core.storage import StorageManager
 from services.file_handler import FileHandler
+from api.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -114,6 +115,7 @@ def validate_file_type(filename: str, content_type: str) -> bool:
 async def upload_jar_file(
     file: UploadFile = File(...),
     background_tasks: BackgroundTasks = None,
+    current_user=Depends(get_current_user),
 ) -> UploadCompleteResponse:
     """
     Upload a JAR file for processing.
@@ -124,6 +126,7 @@ async def upload_jar_file(
 
     Maximum file size: 100MB
     """
+    user_id = str(current_user.id)
     # Validate file type
     if not validate_file_type(file.filename, file.content_type):
         raise HTTPException(
@@ -156,7 +159,7 @@ async def upload_jar_file(
             content=content,
             job_id=job_id,
             filename=saved_filename,
-            user_id="default",  # TODO: Get from auth
+            user_id=user_id,
         )
 
         # Process file in background (validation, metadata extraction)

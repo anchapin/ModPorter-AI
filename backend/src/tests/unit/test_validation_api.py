@@ -133,7 +133,7 @@ class TestValidationAPI:
         response = client.post("/api/v1/validation/", json=request_data)
 
         assert response.status_code == 400
-        assert ValidationMessages.CONVERSION_ID_REQUIRED in response.json()["detail"]
+        assert ValidationMessages.CONVERSION_ID_REQUIRED in response.json()["message"]
 
     def test_start_validation_job_minimal_request(self, client):
         """Test validation job creation with minimal request data"""
@@ -170,7 +170,7 @@ class TestValidationAPI:
         response = client.get(f"/api/v1/validation/{fake_job_id}/status")
 
         assert response.status_code == 404
-        assert ValidationMessages.JOB_NOT_FOUND in response.json()["detail"]
+        assert ValidationMessages.JOB_NOT_FOUND in response.json()["message"]
 
     def test_get_validation_job_status_thread_safety(
         self, client, sample_validation_request
@@ -221,7 +221,7 @@ class TestValidationAPI:
             assert "retrieved_at" in data
         elif response.status_code == 400:
             # Job still processing
-            assert ValidationMessages.REPORT_NOT_AVAILABLE in response.json()["detail"]
+            assert ValidationMessages.REPORT_NOT_AVAILABLE in response.json()["message"]
 
     def test_get_validation_report_not_found(self, client):
         """Test getting report for non-existent job"""
@@ -230,7 +230,7 @@ class TestValidationAPI:
         response = client.get(f"/api/v1/validation/{fake_job_id}/report")
 
         assert response.status_code == 404
-        assert ValidationMessages.JOB_NOT_FOUND in response.json()["detail"]
+        assert ValidationMessages.JOB_NOT_FOUND in response.json()["message"]
 
     @patch("fastapi.BackgroundTasks.add_task")
     def test_get_validation_report_job_not_completed(
@@ -251,7 +251,7 @@ class TestValidationAPI:
         response = client.get(f"/api/v1/validation/{job_id}/report")
 
         assert response.status_code == 400
-        assert ValidationMessages.REPORT_NOT_AVAILABLE in response.json()["detail"]
+        assert ValidationMessages.REPORT_NOT_AVAILABLE in response.json()["message"]
 
     @patch("fastapi.BackgroundTasks.add_task")
     def test_validation_job_status_transitions(
@@ -437,4 +437,4 @@ class TestValidationAPIErrorHandling:
         response = client.get(f"/api/v1/validation/{invalid_job_id}/status")
 
         assert response.status_code == 404
-        assert ValidationMessages.JOB_NOT_FOUND in response.json()["detail"]
+        assert ValidationMessages.JOB_NOT_FOUND in response.json()["message"]

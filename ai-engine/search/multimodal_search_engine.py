@@ -8,7 +8,7 @@ This module extends the hybrid search engine to support:
 """
 
 import logging
-from typing import List, Dict, Any, Optional, Set
+from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -118,7 +118,7 @@ class MultiModalSearchEngine:
 
         logger.info(f"MultiModalSearchEngine initialized with cross_modal={enable_cross_modal}")
 
-    def search(
+    async def search(
         self,
         query: SearchQuery,
         documents: Dict[str, MultiModalDocument],
@@ -155,7 +155,7 @@ class MultiModalSearchEngine:
         # Use embedding-based search
         # If hybrid engine is available with embeddings, use it
         if hasattr(self.hybrid_engine, "search") and embeddings and query_embedding:
-            results = self.hybrid_engine.search(
+            results = await self.hybrid_engine.search(
                 query=query,
                 documents=filtered_docs,
                 embeddings=embeddings,
@@ -167,7 +167,7 @@ class MultiModalSearchEngine:
             # Generate embeddings for query
             query_emb = self._generate_query_embedding(query.query_text)
             if query_emb:
-                results = self.hybrid_engine.search(
+                results = await self.hybrid_engine.search(
                     query=query,
                     documents=filtered_docs,
                     embeddings={},  # Will use query embedding for similarity
@@ -176,7 +176,7 @@ class MultiModalSearchEngine:
                 )
             else:
                 # No embedding generation available - use hybrid without embeddings
-                results = self.hybrid_engine.search(
+                results = await self.hybrid_engine.search(
                     query=query,
                     documents=filtered_docs,
                     embeddings={},
@@ -471,13 +471,40 @@ class MultiModalSearchEngine:
         """
         Search specifically by modalities.
 
+        This method performs a filtered search that only returns results matching
+        the specified content modalities. It's useful when you want to narrow down
+        search results to a specific type of content (e.g., only textures, only code, etc.).
+
+        The function maps the requested modalities to internal content types and
+        delegates to the main search method with the appropriate filters applied.
+
         Args:
-            query_text: The search query text
-            modalities: List of modalities to search (texture, model, code, text, documentation)
-            top_k: Number of results to return
+            query_text: The search query text. This is the text that will be used
+                to match against document content using both keyword and embedding
+                similarity scoring.
+            modalities: List of modalities to search. Supported values are:
+                - "texture": Image-based texture content
+                - "model": 3D model or multimodal content
+                - "code": Source code or programming content
+                - "text": Plain text or prose content
+                - "documentation": Documentation or technical writing
+                Case-insensitive; can be mixed case.
+            top_k: Number of results to return. Defaults to 10. This controls
+                the maximum number of top-scoring documents to return.
 
         Returns:
-            Ranked list of search results
+            List[SearchResult]: Ranked list of search results filtered to only
+                include content matching the specified modalities. Results are
+                sorted by relevance score (highest first).
+
+        Example:
+            >>> engine = MultiModalSearchEngine()
+            >>> results = await engine.search_by_modality(
+            ...     query_text="how to optimize shaders",
+            ...     modalities=["code", "documentation"],
+            ...     top_k=5
+            ... )
+            >>> # Returns up to 5 results containing code or documentation about shader optimization
         """
         # Convert modalities to content types
         content_types = []

@@ -8,3 +8,25 @@ repos:
         files: \.(js|jsx|ts|tsx|py|java)$
         pass_filenames: true
         always_run: false
+
+  # Security static analysis with Bandit
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.10
+    hooks:
+      - id: bandit
+        name: Bandit Security Linter
+        args: ["-f", "json", "-o", "bandist-results.json"]
+        pass_filenames: false
+        always_run: true
+        types: ["python"]
+
+  # Secret scanning with Gitleaks
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.3
+    hooks:
+      - id: gitleaks
+        name: Gitleaks Secret Detection
+        description: Detect secrets in your code
+        entry: gitleaks detect --source . --verbose
+        pass_filenames: false
+        always_run: true

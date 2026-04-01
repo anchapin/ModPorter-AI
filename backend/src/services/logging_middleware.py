@@ -106,7 +106,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
             log.error(
                 "request_failed",
-                event="request",
+                log_event="request",
                 path=request.url.path,
                 method=request.method,
                 error=str(e),

@@ -1,0 +1,901 @@
+__vite_ssr_exportName__("PerformanceBenchmark", () => { try { return PerformanceBenchmark } catch {} });
+const __vite_ssr_import_0__ = await __vite_ssr_import__("/@fs/home/alex/Projects/ModPorter-AI/node_modules/.pnpm/react@19.2.4/node_modules/react/jsx-dev-runtime.js", {"importedNames":["jsxDEV"]});
+const __vite_ssr_import_1__ = await __vite_ssr_import__("/@fs/home/alex/Projects/ModPorter-AI/node_modules/.pnpm/react@19.2.4/node_modules/react/index.js", {"importedNames":["useState","useEffect","useCallback"]});
+const __vite_ssr_import_2__ = await __vite_ssr_import__("/src/services/api.ts", {"importedNames":["performanceBenchmarkAPI"]});
+const __vite_ssr_import_3__ = await __vite_ssr_import__("/src/components/PerformanceBenchmark/PerformanceBenchmark.css");
+"use strict";
+
+
+
+
+const PerformanceBenchmark = () => {
+  const [scenarios, setScenarios] = (0,__vite_ssr_import_1__.useState)([]);
+  const [selectedScenario, setSelectedScenario] = (0,__vite_ssr_import_1__.useState)("");
+  const [deviceType, setDeviceType] = (0,__vite_ssr_import_1__.useState)("desktop");
+  const [conversionId, setConversionId] = (0,__vite_ssr_import_1__.useState)("");
+  const [currentRun, setCurrentRun] = (0,__vite_ssr_import_1__.useState)(null);
+  const [currentReport, setCurrentReport] = (0,__vite_ssr_import_1__.useState)(
+    null
+  );
+  const [isRunning, setIsRunning] = (0,__vite_ssr_import_1__.useState)(false);
+  const [error, setError] = (0,__vite_ssr_import_1__.useState)(null);
+  const [showCreateScenario, setShowCreateScenario] = (0,__vite_ssr_import_1__.useState)(false);
+  const [customScenario, setCustomScenario] = (0,__vite_ssr_import_1__.useState)({
+    scenario_name: "",
+    description: "",
+    type: "custom",
+    duration_seconds: 300,
+    parameters: {},
+    thresholds: {}
+  });
+  const loadScenarios = async () => {
+    try {
+      const response = await __vite_ssr_import_2__.performanceBenchmarkAPI.getScenarios();
+      setScenarios(response.data);
+    } catch (err) {
+      setError("Failed to load scenarios");
+      console.error("Error loading scenarios:", err);
+    }
+  };
+  const loadBenchmarkReport = (0,__vite_ssr_import_1__.useCallback)(async (runId) => {
+    try {
+      const response = await __vite_ssr_import_2__.performanceBenchmarkAPI.getBenchmarkReport(runId);
+      setCurrentReport(response.data);
+    } catch (err) {
+      setError("Failed to load benchmark report");
+      console.error("Error loading report:", err);
+    }
+  }, []);
+  const pollBenchmarkStatus = (0,__vite_ssr_import_1__.useCallback)(async () => {
+    if (!currentRun) return;
+    try {
+      const response = await __vite_ssr_import_2__.performanceBenchmarkAPI.getBenchmarkStatus(
+        currentRun.run_id
+      );
+      const status = response.data;
+      setCurrentRun(status);
+      if (status.status === "completed") {
+        setIsRunning(false);
+        await loadBenchmarkReport(currentRun.run_id);
+      } else if (status.status === "failed") {
+        setIsRunning(false);
+        setError("Benchmark failed");
+      }
+    } catch (err) {
+      console.error("Error polling benchmark status:", err);
+    }
+  }, [currentRun, loadBenchmarkReport]);
+  (0,__vite_ssr_import_1__.useEffect)(() => {
+    setTimeout(loadScenarios, 0);
+  }, []);
+  (0,__vite_ssr_import_1__.useEffect)(() => {
+    if (isRunning && currentRun) {
+      const interval = setInterval(() => {
+        pollBenchmarkStatus();
+      }, 2e3);
+      return () => clearInterval(interval);
+    }
+  }, [isRunning, currentRun, pollBenchmarkStatus]);
+  const runBenchmark = async () => {
+    if (!selectedScenario) {
+      setError("Please select a scenario");
+      return;
+    };
+    setIsRunning(true);
+    setError(null);
+    setCurrentReport(null);
+    try {
+      const response = await __vite_ssr_import_2__.performanceBenchmarkAPI.runBenchmark({
+        scenario_id: selectedScenario,
+        device_type: deviceType,
+        conversion_id: conversionId || void 0
+      });
+      setCurrentRun({
+        run_id: response.data.run_id,
+        status: "pending",
+        progress: 0,
+        current_stage: "initializing"
+      });
+      setTimeout(pollBenchmarkStatus, 1e3);
+    } catch (err) {
+      setError("Failed to start benchmark");
+      setIsRunning(false);
+      console.error("Error starting benchmark:", err);
+    }
+  };
+  const createCustomScenario = async () => {
+    if (!customScenario.scenario_name || !customScenario.description) {
+      setError("Please provide scenario name and description");
+      return;
+    };
+    try {
+      const response = await __vite_ssr_import_2__.performanceBenchmarkAPI.createCustomScenario(customScenario);
+      setScenarios([...scenarios, response.data]);
+      setShowCreateScenario(false);
+      setCustomScenario({
+        scenario_name: "",
+        description: "",
+        type: "custom",
+        duration_seconds: 300,
+        parameters: {},
+        thresholds: {}
+      });
+    } catch (err) {
+      setError("Failed to create custom scenario");
+      console.error("Error creating scenario:", err);
+    }
+  };
+  const selectedScenarioData = scenarios.find(
+    (s) => s.scenario_id === selectedScenario
+  );
+  return /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "performance-benchmark", children: [
+    /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h2", { children: "Performance Benchmarking" }, void 0, false, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+      lineNumber: 208,
+      columnNumber: 7
+    }, this),
+    error && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "error-message", children: [
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("span", { className: "error-icon", children: "⚠️" }, void 0, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 212,
+        columnNumber: 11
+      }, this),
+      error
+    ] }, void 0, true, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+      lineNumber: 211,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "benchmark-controls", children: [
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "control-group", children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("label", { htmlFor: "scenario-select", children: "Select Scenario:" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 219,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          "select",
+          {
+            id: "scenario-select",
+            value: selectedScenario,
+            onChange: (e) => setSelectedScenario(e.target.value),
+            disabled: isRunning,
+            children: [
+              /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("option", { value: "", children: "-- Choose a scenario --" }, void 0, false, {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+                lineNumber: 226,
+                columnNumber: 13
+              }, this),
+              scenarios.map((scenario) => /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("option", { value: scenario.scenario_id, children: [
+                scenario.scenario_name,
+                " (",
+                scenario.type,
+                ")"
+              ] }, scenario.scenario_id, true, {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+                lineNumber: 228,
+                columnNumber: 15
+              }, this))
+            ]
+          },
+          void 0,
+          true,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 220,
+            columnNumber: 11
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 218,
+        columnNumber: 9
+      }, this),
+      selectedScenarioData && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "scenario-details", children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h3", { children: "Scenario Details" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 237,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("strong", { children: "Description:" }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 239,
+            columnNumber: 15
+          }, this),
+          " ",
+          selectedScenarioData.description
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 238,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("strong", { children: "Type:" }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 242,
+            columnNumber: 15
+          }, this),
+          " ",
+          selectedScenarioData.type
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 241,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("strong", { children: "Duration:" }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 245,
+            columnNumber: 15
+          }, this),
+          " ",
+          selectedScenarioData.duration_seconds,
+          " ",
+          "seconds"
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 244,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("strong", { children: "Parameters:" }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 249,
+            columnNumber: 15
+          }, this),
+          " ",
+          JSON.stringify(selectedScenarioData.parameters)
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 248,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("strong", { children: "Thresholds:" }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 253,
+            columnNumber: 15
+          }, this),
+          " ",
+          JSON.stringify(selectedScenarioData.thresholds)
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 252,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 236,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "control-group", children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("label", { htmlFor: "device-type", children: "Device Type:" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 260,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          "select",
+          {
+            id: "device-type",
+            value: deviceType,
+            onChange: (e) => setDeviceType(e.target.value),
+            disabled: isRunning,
+            children: [
+              /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("option", { value: "desktop", children: "Desktop" }, void 0, false, {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+                lineNumber: 267,
+                columnNumber: 13
+              }, this),
+              /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("option", { value: "mobile", children: "Mobile" }, void 0, false, {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+                lineNumber: 268,
+                columnNumber: 13
+              }, this),
+              /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("option", { value: "server", children: "Server" }, void 0, false, {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+                lineNumber: 269,
+                columnNumber: 13
+              }, this)
+            ]
+          },
+          void 0,
+          true,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 261,
+            columnNumber: 11
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 259,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "control-group", children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("label", { htmlFor: "conversion-id", children: "Conversion ID (optional):" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 274,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          "input",
+          {
+            id: "conversion-id",
+            type: "text",
+            value: conversionId,
+            onChange: (e) => setConversionId(e.target.value),
+            placeholder: "Enter conversion ID to link benchmark",
+            disabled: isRunning
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 275,
+            columnNumber: 11
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 273,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "button-group", children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          "button",
+          {
+            onClick: runBenchmark,
+            disabled: isRunning || !selectedScenario,
+            className: "run-benchmark-btn",
+            children: isRunning ? "Running..." : "Run Benchmark"
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 286,
+            columnNumber: 11
+          },
+          this
+        ),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          "button",
+          {
+            onClick: () => setShowCreateScenario(true),
+            disabled: isRunning,
+            className: "create-scenario-btn",
+            children: "Create Custom Scenario"
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 294,
+            columnNumber: 11
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 285,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+      lineNumber: 217,
+      columnNumber: 7
+    }, this),
+    showCreateScenario && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "custom-scenario-modal", children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "modal-content", children: [
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h3", { children: "Create Custom Scenario" }, void 0, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 308,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "form-group", children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("label", { children: "Scenario Name:" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 311,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          "input",
+          {
+            type: "text",
+            value: customScenario.scenario_name,
+            onChange: (e) => setCustomScenario({
+              ...customScenario,
+              scenario_name: e.target.value
+            }),
+            placeholder: "Enter scenario name"
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 312,
+            columnNumber: 15
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 310,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "form-group", children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("label", { children: "Description:" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 326,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          "textarea",
+          {
+            value: customScenario.description,
+            onChange: (e) => setCustomScenario({
+              ...customScenario,
+              description: e.target.value
+            }),
+            placeholder: "Describe the scenario"
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 327,
+            columnNumber: 15
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 325,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "form-group", children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("label", { children: "Type:" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 340,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          "select",
+          {
+            value: customScenario.type,
+            onChange: (e) => setCustomScenario({ ...customScenario, type: e.target.value }),
+            children: [
+              /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("option", { value: "custom", children: "Custom" }, void 0, false, {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+                lineNumber: 347,
+                columnNumber: 17
+              }, this),
+              /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("option", { value: "stress", children: "Stress Test" }, void 0, false, {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+                lineNumber: 348,
+                columnNumber: 17
+              }, this),
+              /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("option", { value: "load", children: "Load Test" }, void 0, false, {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+                lineNumber: 349,
+                columnNumber: 17
+              }, this),
+              /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("option", { value: "memory", children: "Memory Test" }, void 0, false, {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+                lineNumber: 350,
+                columnNumber: 17
+              }, this)
+            ]
+          },
+          void 0,
+          true,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 341,
+            columnNumber: 15
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 339,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "form-group", children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("label", { children: "Duration (seconds):" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 355,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          "input",
+          {
+            type: "number",
+            value: customScenario.duration_seconds,
+            onChange: (e) => setCustomScenario({
+              ...customScenario,
+              duration_seconds: parseInt(e.target.value)
+            }),
+            min: "60",
+            max: "3600"
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 356,
+            columnNumber: 15
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 354,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "modal-buttons", children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("button", { onClick: createCustomScenario, children: "Create Scenario" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 371,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("button", { onClick: () => setShowCreateScenario(false), children: "Cancel" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 372,
+          columnNumber: 15
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 370,
+        columnNumber: 13
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+      lineNumber: 307,
+      columnNumber: 11
+    }, this) }, void 0, false, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+      lineNumber: 306,
+      columnNumber: 9
+    }, this),
+    currentRun && isRunning && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "benchmark-progress", children: [
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h3", { children: "Benchmark Progress" }, void 0, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 383,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "progress-bar", children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+        "div",
+        {
+          className: "progress-fill",
+          style: { width: `${currentRun.progress}%` }
+        },
+        void 0,
+        false,
+        {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 385,
+          columnNumber: 13
+        },
+        this
+      ) }, void 0, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 384,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { children: [
+        "Status: ",
+        currentRun.status
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 390,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { children: [
+        "Stage: ",
+        currentRun.current_stage
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 391,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { children: [
+        "Progress: ",
+        currentRun.progress,
+        "%"
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 392,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+      lineNumber: 382,
+      columnNumber: 9
+    }, this),
+    currentReport && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "benchmark-report", children: [
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h3", { children: "Benchmark Report" }, void 0, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 399,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "score-summary", children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "score-item", children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("span", { className: "score-label", children: "Overall Score:" }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 403,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("span", { className: "score-value", children: [
+            currentReport.benchmark.overall_score,
+            "/100"
+          ] }, void 0, true, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 404,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 402,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "score-item", children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("span", { className: "score-label", children: "CPU Score:" }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 409,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("span", { className: "score-value", children: [
+            currentReport.benchmark.cpu_score,
+            "/100"
+          ] }, void 0, true, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 410,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 408,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "score-item", children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("span", { className: "score-label", children: "Memory Score:" }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 415,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("span", { className: "score-value", children: [
+            currentReport.benchmark.memory_score,
+            "/100"
+          ] }, void 0, true, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 416,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 414,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "score-item", children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("span", { className: "score-label", children: "Network Score:" }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 421,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("span", { className: "score-value", children: [
+            currentReport.benchmark.network_score,
+            "/100"
+          ] }, void 0, true, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 422,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 420,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 401,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "metrics-table", children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h4", { children: "Performance Metrics" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 429,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("table", { children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("thead", { children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("tr", { children: [
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("th", { children: "Metric" }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+              lineNumber: 433,
+              columnNumber: 19
+            }, this),
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("th", { children: "Category" }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+              lineNumber: 434,
+              columnNumber: 19
+            }, this),
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("th", { children: "Java Value" }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+              lineNumber: 435,
+              columnNumber: 19
+            }, this),
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("th", { children: "Bedrock Value" }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+              lineNumber: 436,
+              columnNumber: 19
+            }, this),
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("th", { children: "Improvement" }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+              lineNumber: 437,
+              columnNumber: 19
+            }, this)
+          ] }, void 0, true, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 432,
+            columnNumber: 17
+          }, this) }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 431,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("tbody", { children: currentReport.metrics.map((metric, index) => /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("tr", { children: [
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("td", { children: metric.metric_name }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+              lineNumber: 443,
+              columnNumber: 21
+            }, this),
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("td", { children: metric.metric_category }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+              lineNumber: 444,
+              columnNumber: 21
+            }, this),
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("td", { children: [
+              metric.java_value,
+              " ",
+              metric.unit
+            ] }, void 0, true, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+              lineNumber: 445,
+              columnNumber: 21
+            }, this),
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("td", { children: [
+              metric.bedrock_value,
+              " ",
+              metric.unit
+            ] }, void 0, true, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+              lineNumber: 448,
+              columnNumber: 21
+            }, this),
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+              "td",
+              {
+                className: metric.improvement_percentage < 0 ? "improvement" : "regression",
+                children: [
+                  metric.improvement_percentage.toFixed(1),
+                  "%"
+                ]
+              },
+              void 0,
+              true,
+              {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+                lineNumber: 451,
+                columnNumber: 21
+              },
+              this
+            )
+          ] }, index, true, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 442,
+            columnNumber: 19
+          }, this)) }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 440,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 430,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 428,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "analysis-section", children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h4", { children: "Analysis" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 467,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "issues", children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h5", { children: "Identified Issues:" }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 469,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("ul", { children: currentReport.analysis.identified_issues.map(
+            (issue, index) => /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("li", { children: issue }, index, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+              lineNumber: 473,
+              columnNumber: 21
+            }, this)
+          ) }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 470,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 468,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "suggestions", children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h5", { children: "Optimization Suggestions:" }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 479,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("ul", { children: currentReport.analysis.optimization_suggestions.map(
+            (suggestion, index) => /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("li", { children: suggestion }, index, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+              lineNumber: 483,
+              columnNumber: 21
+            }, this)
+          ) }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+            lineNumber: 480,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 478,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 466,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: "report-text", children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h4", { children: "Detailed Report" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 491,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("pre", { children: currentReport.report_text }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+          lineNumber: 492,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+        lineNumber: 490,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+      lineNumber: 398,
+      columnNumber: 9
+    }, this)
+  ] }, void 0, true, {
+    fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/PerformanceBenchmark/PerformanceBenchmark.tsx",
+    lineNumber: 207,
+    columnNumber: 5
+  }, this);
+};
+//# sourceMappingSource=vite-generated
+//# sourceMappingURL=data:application/json;base64,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UixPQUFUO0FBQUE7QUFBQTtBQUFBO0FBQUEsbUJBQTRCO0FBQUEsVUFFaEMsS0FMRjtBQUFBO0FBQUE7QUFBQTtBQUFBLGlCQU1BO0FBQUEsYUFSRjtBQUFBO0FBQUE7QUFBQTtBQUFBLGVBU0E7QUFBQSxXQXJCRjtBQUFBO0FBQUE7QUFBQTtBQUFBLGFBc0JBO0FBQUEsTUFFQSxpREFBQyxTQUFJLFdBQVUsZUFDYjtBQUFBLHlEQUFDLFFBQUcsK0JBQUo7QUFBQTtBQUFBO0FBQUE7QUFBQSxlQUFtQjtBQUFBLFFBQ25CLGlEQUFDLFNBQUssd0JBQWMsZUFBcEI7QUFBQTtBQUFBO0FBQUE7QUFBQSxlQUFnQztBQUFBLFdBRmxDO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFHQTtBQUFBLFNBL0ZGO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0FnR0E7QUFBQSxPQS9SSjtBQUFBO0FBQUE7QUFBQTtBQUFBLFNBaVNBO0FBRUoiLCJuYW1lcyI6W10sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbIlBlcmZvcm1hbmNlQmVuY2htYXJrLnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyIvKipcbiAqIFBlcmZvcm1hbmNlIEJlbmNobWFyayBDb21wb25lbnRcbiAqIFByb3ZpZGVzIGludGVyZmFjZSBmb3IgcnVubmluZyBwZXJmb3JtYW5jZSBiZW5jaG1hcmtzIGFuZCB2aWV3aW5nIHJlc3VsdHNcbiAqL1xuXG5pbXBvcnQgUmVhY3QsIHsgdXNlU3RhdGUsIHVzZUVmZmVjdCwgdXNlQ2FsbGJhY2sgfSBmcm9tICdyZWFjdCc7XG5pbXBvcnQgeyBwZXJmb3JtYW5jZUJlbmNobWFya0FQSSB9IGZyb20gJy4uLy4uL3NlcnZpY2VzL2FwaSc7XG5pbXBvcnQgJy4vUGVyZm9ybWFuY2VCZW5jaG1hcmsuY3NzJztcblxuaW50ZXJmYWNlIFNjZW5hcmlvIHtcbiAgc2NlbmFyaW9faWQ6IHN0cmluZztcbiAgc2NlbmFyaW9fbmFtZTogc3RyaW5nO1xuICBkZXNjcmlwdGlvbjogc3RyaW5nO1xuICB0eXBlOiBzdHJpbmc7XG4gIGR1cmF0aW9uX3NlY29uZHM6IG51bWJlcjtcbiAgcGFyYW1ldGVyczogUmVjb3JkPHN0cmluZywgYW55PjtcbiAgdGhyZXNob2xkczogUmVjb3JkPHN0cmluZywgbnVtYmVyPjtcbn1cblxuaW50ZXJmYWNlIEJlbmNobWFya1J1biB7XG4gIHJ1bl9pZDogc3RyaW5nO1xuICBzdGF0dXM6IHN0cmluZztcbiAgcHJvZ3Jlc3M6IG51bWJlcjtcbiAgY3VycmVudF9zdGFnZTogc3RyaW5nO1xuICBlc3RpbWF0ZWRfY29tcGxldGlvbj86IHN0cmluZztcbn1cblxuaW50ZXJmYWNlIEJlbmNobWFya1JlcG9ydCB7XG4gIHJ1bl9pZDogc3RyaW5nO1xuICBiZW5jaG1hcms6IHtcbiAgICBvdmVyYWxsX3Njb3JlOiBudW1iZXI7XG4gICAgY3B1X3Njb3JlOiBudW1iZXI7XG4gICAgbWVtb3J5X3Njb3JlOiBudW1iZXI7XG4gICAgbmV0d29ya19zY29yZTogbnVtYmVyO1xuICAgIHNjZW5hcmlvX25hbWU6IHN0cmluZztcbiAgICBkZXZpY2VfdHlwZTogc3RyaW5nO1xuICB9O1xuICBtZXRyaWNzOiBBcnJheTx7XG4gICAgbWV0cmljX25hbWU6IHN0cmluZztcbiAgICBtZXRyaWNfY2F0ZWdvcnk6IHN0cmluZztcbiAgICBqYXZhX3ZhbHVlOiBudW1iZXI7XG4gICAgYmVkcm9ja192YWx1ZTogbnVtYmVyO1xuICAgIHVuaXQ6IHN0cmluZztcbiAgICBpbXByb3ZlbWVudF9wZXJjZW50YWdlOiBudW1iZXI7XG4gIH0+O1xuICBhbmFseXNpczoge1xuICAgIGlkZW50aWZpZWRfaXNzdWVzOiBzdHJpbmdbXTtcbiAgICBvcHRpbWl6YXRpb25fc3VnZ2VzdGlvbnM6IHN0cmluZ1tdO1xuICB9O1xuICByZXBvcnRfdGV4dDogc3RyaW5nO1xuICBvcHRpbWl6YXRpb25fc3VnZ2VzdGlvbnM6IHN0cmluZ1tdO1xufVxuXG5pbnRlcmZhY2UgQ3VzdG9tU2NlbmFyaW9EYXRhIHtcbiAgc2NlbmFyaW9fbmFtZTogc3RyaW5nO1xuICBkZXNjcmlwdGlvbjogc3RyaW5nO1xuICB0eXBlOiBzdHJpbmc7XG4gIGR1cmF0aW9uX3NlY29uZHM6IG51bWJlcjtcbiAgcGFyYW1ldGVyczogUmVjb3JkPHN0cmluZywgYW55PjtcbiAgdGhyZXNob2xkczogUmVjb3JkPHN0cmluZywgbnVtYmVyPjtcbn1cblxuZXhwb3J0IGNvbnN0IFBlcmZvcm1hbmNlQmVuY2htYXJrOiBSZWFjdC5GQyA9ICgpID0+IHtcbiAgY29uc3QgW3NjZW5hcmlvcywgc2V0U2NlbmFyaW9zXSA9IHVzZVN0YXRlPFNjZW5hcmlvW10+KFtdKTtcbiAgY29uc3QgW3NlbGVjdGVkU2NlbmFyaW8sIHNldFNlbGVjdGVkU2NlbmFyaW9dID0gdXNlU3RhdGU8c3RyaW5nPignJyk7XG4gIGNvbnN0IFtkZXZpY2VUeXBlLCBzZXREZXZpY2VUeXBlXSA9IHVzZVN0YXRlPHN0cmluZz4oJ2Rlc2t0b3AnKTtcbiAgY29uc3QgW2NvbnZlcnNpb25JZCwgc2V0Q29udmVyc2lvbklkXSA9IHVzZVN0YXRlPHN0cmluZz4oJycpO1xuICBjb25zdCBbY3VycmVudFJ1biwgc2V0Q3VycmVudFJ1bl0gPSB1c2VTdGF0ZTxCZW5jaG1hcmtSdW4gfCBudWxsPihudWxsKTtcbiAgY29uc3QgW2N1cnJlbnRSZXBvcnQsIHNldEN1cnJlbnRSZXBvcnRdID0gdXNlU3RhdGU8QmVuY2htYXJrUmVwb3J0IHwgbnVsbD4oXG4gICAgbnVsbFxuICApO1xuICBjb25zdCBbaXNSdW5uaW5nLCBzZXRJc1J1bm5pbmddID0gdXNlU3RhdGUoZmFsc2UpO1xuICBjb25zdCBbZXJyb3IsIHNldEVycm9yXSA9IHVzZVN0YXRlPHN0cmluZyB8IG51bGw+KG51bGwpO1xuICBjb25zdCBbc2hvd0NyZWF0ZVNjZW5hcmlvLCBzZXRTaG93Q3JlYXRlU2NlbmFyaW9dID0gdXNlU3RhdGUoZmFsc2UpO1xuICBjb25zdCBbY3VzdG9tU2NlbmFyaW8sIHNldEN1c3RvbVNjZW5hcmlvXSA9IHVzZVN0YXRlPEN1c3RvbVNjZW5hcmlvRGF0YT4oe1xuICAgIHNjZW5hcmlvX25hbWU6ICcnLFxuICAgIGRlc2NyaXB0aW9uOiAnJyxcbiAgICB0eXBlOiAnY3VzdG9tJyxcbiAgICBkdXJhdGlvbl9zZWNvbmRzOiAzMDAsXG4gICAgcGFyYW1ldGVyczoge30sXG4gICAgdGhyZXNob2xkczoge30sXG4gIH0pO1xuXG4gIGNvbnN0IGxvYWRTY2VuYXJpb3MgPSBhc3luYyAoKSA9PiB7XG4gICAgdHJ5IHtcbiAgICAgIGNvbnN0IHJlc3BvbnNlID0gYXdhaXQgcGVyZm9ybWFuY2VCZW5jaG1hcmtBUEkuZ2V0U2NlbmFyaW9zKCk7XG4gICAgICBzZXRTY2VuYXJpb3MocmVzcG9uc2UuZGF0YSk7XG4gICAgfSBjYXRjaCAoZXJyKSB7XG4gICAgICBzZXRFcnJvcignRmFpbGVkIHRvIGxvYWQgc2NlbmFyaW9zJyk7XG4gICAgICBjb25zb2xlLmVycm9yKCdFcnJvciBsb2FkaW5nIHNjZW5hcmlvczonLCBlcnIpO1xuICAgIH1cbiAgfTtcblxuICBjb25zdCBsb2FkQmVuY2htYXJrUmVwb3J0ID0gdXNlQ2FsbGJhY2soYXN5bmMgKHJ1bklkOiBzdHJpbmcpID0+IHtcbiAgICB0cnkge1xuICAgICAgY29uc3QgcmVzcG9uc2UgPSBhd2FpdCBwZXJmb3JtYW5jZUJlbmNobWFya0FQSS5nZXRCZW5jaG1hcmtSZXBvcnQocnVuSWQpO1xuICAgICAgc2V0Q3VycmVudFJlcG9ydChyZXNwb25zZS5kYXRhKTtcbiAgICB9IGNhdGNoIChlcnIpIHtcbiAgICAgIHNldEVycm9yKCdGYWlsZWQgdG8gbG9hZCBiZW5jaG1hcmsgcmVwb3J0Jyk7XG4gICAgICBjb25zb2xlLmVycm9yKCdFcnJvciBsb2FkaW5nIHJlcG9ydDonLCBlcnIpO1xuICAgIH1cbiAgfSwgW10pO1xuXG4gIGNvbnN0IHBvbGxCZW5jaG1hcmtTdGF0dXMgPSB1c2VDYWxsYmFjayhhc3luYyAoKSA9PiB7XG4gICAgaWYgKCFjdXJyZW50UnVuKSByZXR1cm47XG5cbiAgICB0cnkge1xuICAgICAgY29uc3QgcmVzcG9uc2UgPSBhd2FpdCBwZXJmb3JtYW5jZUJlbmNobWFya0FQSS5nZXRCZW5jaG1hcmtTdGF0dXMoXG4gICAgICAgIGN1cnJlbnRSdW4ucnVuX2lkXG4gICAgICApO1xuICAgICAgY29uc3Qgc3RhdHVzID0gcmVzcG9uc2UuZGF0YTtcblxuICAgICAgc2V0Q3VycmVudFJ1bihzdGF0dXMpO1xuXG4gICAgICBpZiAoc3RhdHVzLnN0YXR1cyA9PT0gJ2NvbXBsZXRlZCcpIHtcbiAgICAgICAgc2V0SXNSdW5uaW5nKGZhbHNlKTtcbiAgICAgICAgYXdhaXQgbG9hZEJlbmNobWFya1JlcG9ydChjdXJyZW50UnVuLnJ1bl9pZCk7XG4gICAgICB9IGVsc2UgaWYgKHN0YXR1cy5zdGF0dXMgPT09ICdmYWlsZWQnKSB7XG4gICAgICAgIHNldElzUnVubmluZyhmYWxzZSk7XG4gICAgICAgIHNldEVycm9yKCdCZW5jaG1hcmsgZmFpbGVkJyk7XG4gICAgICB9XG4gICAgfSBjYXRjaCAoZXJyKSB7XG4gICAgICBjb25zb2xlLmVycm9yKCdFcnJvciBwb2xsaW5nIGJlbmNobWFyayBzdGF0dXM6JywgZXJyKTtcbiAgICB9XG4gIH0sIFtjdXJyZW50UnVuLCBsb2FkQmVuY2htYXJrUmVwb3J0XSk7XG5cbiAgLy8gTG9hZCBzY2VuYXJpb3Mgb24gY29tcG9uZW50IG1vdW50XG4gIHVzZUVmZmVjdCgoKSA9PiB7XG4gICAgLy8gRGVmZXIgc3RhdGUgdXBkYXRlIHRvIGF2b2lkIHNldHRpbmcgc3RhdGUgZGlyZWN0bHkgaW4gZWZmZWN0XG4gICAgc2V0VGltZW91dChsb2FkU2NlbmFyaW9zLCAwKTtcbiAgfSwgW10pO1xuXG4gIC8vIFBvbGwgZm9yIHVwZGF0ZXMgd2hlbiBhIGJlbmNobWFyayBpcyBydW5uaW5nXG4gIHVzZUVmZmVjdCgoKSA9PiB7XG4gICAgaWYgKGlzUnVubmluZyAmJiBjdXJyZW50UnVuKSB7XG4gICAgICBjb25zdCBpbnRlcnZhbCA9IHNldEludGVydmFsKCgpID0+IHtcbiAgICAgICAgcG9sbEJlbmNobWFya1N0YXR1cygpO1xuICAgICAgfSwgMjAwMCk7XG5cbiAgICAgIHJldHVybiAoKSA9PiBjbGVhckludGVydmFsKGludGVydmFsKTtcbiAgICB9XG4gIH0sIFtpc1J1bm5pbmcsIGN1cnJlbnRSdW4sIHBvbGxCZW5jaG1hcmtTdGF0dXNdKTtcblxuICBjb25zdCBydW5CZW5jaG1hcmsgPSBhc3luYyAoKSA9PiB7XG4gICAgaWYgKCFzZWxlY3RlZFNjZW5hcmlvKSB7XG4gICAgICBzZXRFcnJvcignUGxlYXNlIHNlbGVjdCBhIHNjZW5hcmlvJyk7XG4gICAgICByZXR1cm47XG4gICAgfVxuXG4gICAgc2V0SXNSdW5uaW5nKHRydWUpO1xuICAgIHNldEVycm9yKG51bGwpO1xuICAgIHNldEN1cnJlbnRSZXBvcnQobnVsbCk7XG5cbiAgICB0cnkge1xuICAgICAgY29uc3QgcmVzcG9uc2UgPSBhd2FpdCBwZXJmb3JtYW5jZUJlbmNobWFya0FQSS5ydW5CZW5jaG1hcmsoe1xuICAgICAgICBzY2VuYXJpb19pZDogc2VsZWN0ZWRTY2VuYXJpbyxcbiAgICAgICAgZGV2aWNlX3R5cGU6IGRldmljZVR5cGUsXG4gICAgICAgIGNvbnZlcnNpb25faWQ6IGNvbnZlcnNpb25JZCB8fCB1bmRlZmluZWQsXG4gICAgICB9KTtcblxuICAgICAgc2V0Q3VycmVudFJ1bih7XG4gICAgICAgIHJ1bl9pZDogcmVzcG9uc2UuZGF0YS5ydW5faWQsXG4gICAgICAgIHN0YXR1czogJ3BlbmRpbmcnLFxuICAgICAgICBwcm9ncmVzczogMCxcbiAgICAgICAgY3VycmVudF9zdGFnZTogJ2luaXRpYWxpemluZycsXG4gICAgICB9KTtcblxuICAgICAgLy8gU3RhcnQgcG9sbGluZyBmb3Igc3RhdHVzIHVwZGF0ZXNcbiAgICAgIHNldFRpbWVvdXQocG9sbEJlbmNobWFya1N0YXR1cywgMTAwMCk7XG4gICAgfSBjYXRjaCAoZXJyKSB7XG4gICAgICBzZXRFcnJvcignRmFpbGVkIHRvIHN0YXJ0IGJlbmNobWFyaycpO1xuICAgICAgc2V0SXNSdW5uaW5nKGZhbHNlKTtcbiAgICAgIGNvbnNvbGUuZXJyb3IoJ0Vycm9yIHN0YXJ0aW5nIGJlbmNobWFyazonLCBlcnIpO1xuICAgIH1cbiAgfTtcblxuICBjb25zdCBjcmVhdGVDdXN0b21TY2VuYXJpbyA9IGFzeW5jICgpID0+IHtcbiAgICBpZiAoIWN1c3RvbVNjZW5hcmlvLnNjZW5hcmlvX25hbWUgfHwgIWN1c3RvbVNjZW5hcmlvLmRlc2NyaXB0aW9uKSB7XG4gICAgICBzZXRFcnJvcignUGxlYXNlIHByb3ZpZGUgc2NlbmFyaW8gbmFtZSBhbmQgZGVzY3JpcHRpb24nKTtcbiAgICAgIHJldHVybjtcbiAgICB9XG5cbiAgICB0cnkge1xuICAgICAgY29uc3QgcmVzcG9uc2UgPVxuICAgICAgICBhd2FpdCBwZXJmb3JtYW5jZUJlbmNobWFya0FQSS5jcmVhdGVDdXN0b21TY2VuYXJpbyhjdXN0b21TY2VuYXJpbyk7XG4gICAgICBzZXRTY2VuYXJpb3MoWy4uLnNjZW5hcmlvcywgcmVzcG9uc2UuZGF0YV0pO1xuICAgICAgc2V0U2hvd0NyZWF0ZVNjZW5hcmlvKGZhbHNlKTtcbiAgICAgIHNldEN1c3RvbVNjZW5hcmlvKHtcbiAgICAgICAgc2NlbmFyaW9fbmFtZTogJycsXG4gICAgICAgIGRlc2NyaXB0aW9uOiAnJyxcbiAgICAgICAgdHlwZTogJ2N1c3RvbScsXG4gICAgICAgIGR1cmF0aW9uX3NlY29uZHM6IDMwMCxcbiAgICAgICAgcGFyYW1ldGVyczoge30sXG4gICAgICAgIHRocmVzaG9sZHM6IHt9LFxuICAgICAgfSk7XG4gICAgfSBjYXRjaCAoZXJyKSB7XG4gICAgICBzZXRFcnJvcignRmFpbGVkIHRvIGNyZWF0ZSBjdXN0b20gc2NlbmFyaW8nKTtcbiAgICAgIGNvbnNvbGUuZXJyb3IoJ0Vycm9yIGNyZWF0aW5nIHNjZW5hcmlvOicsIGVycik7XG4gICAgfVxuICB9O1xuXG4gIGNvbnN0IHNlbGVjdGVkU2NlbmFyaW9EYXRhID0gc2NlbmFyaW9zLmZpbmQoXG4gICAgKHMpID0+IHMuc2NlbmFyaW9faWQgPT09IHNlbGVjdGVkU2NlbmFyaW9cbiAgKTtcblxuICByZXR1cm4gKFxuICAgIDxkaXYgY2xhc3NOYW1lPVwicGVyZm9ybWFuY2UtYmVuY2htYXJrXCI+XG4gICAgICA8aDI+UGVyZm9ybWFuY2UgQmVuY2htYXJraW5nPC9oMj5cblxuICAgICAge2Vycm9yICYmIChcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJlcnJvci1tZXNzYWdlXCI+XG4gICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwiZXJyb3ItaWNvblwiPuKaoO+4jzwvc3Bhbj5cbiAgICAgICAgICB7ZXJyb3J9XG4gICAgICAgIDwvZGl2PlxuICAgICAgKX1cblxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJiZW5jaG1hcmstY29udHJvbHNcIj5cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJjb250cm9sLWdyb3VwXCI+XG4gICAgICAgICAgPGxhYmVsIGh0bWxGb3I9XCJzY2VuYXJpby1zZWxlY3RcIj5TZWxlY3QgU2NlbmFyaW86PC9sYWJlbD5cbiAgICAgICAgICA8c2VsZWN0XG4gICAgICAgICAgICBpZD1cInNjZW5hcmlvLXNlbGVjdFwiXG4gICAgICAgICAgICB2YWx1ZT17c2VsZWN0ZWRTY2VuYXJpb31cbiAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0U2VsZWN0ZWRTY2VuYXJpbyhlLnRhcmdldC52YWx1ZSl9XG4gICAgICAgICAgICBkaXNhYmxlZD17aXNSdW5uaW5nfVxuICAgICAgICAgID5cbiAgICAgICAgICAgIDxvcHRpb24gdmFsdWU9XCJcIj4tLSBDaG9vc2UgYSBzY2VuYXJpbyAtLTwvb3B0aW9uPlxuICAgICAgICAgICAge3NjZW5hcmlvcy5tYXAoKHNjZW5hcmlvKSA9PiAoXG4gICAgICAgICAgICAgIDxvcHRpb24ga2V5PXtzY2VuYXJpby5zY2VuYXJpb19pZH0gdmFsdWU9e3NjZW5hcmlvLnNjZW5hcmlvX2lkfT5cbiAgICAgICAgICAgICAgICB7c2NlbmFyaW8uc2NlbmFyaW9fbmFtZX0gKHtzY2VuYXJpby50eXBlfSlcbiAgICAgICAgICAgICAgPC9vcHRpb24+XG4gICAgICAgICAgICApKX1cbiAgICAgICAgICA8L3NlbGVjdD5cbiAgICAgICAgPC9kaXY+XG5cbiAgICAgICAge3NlbGVjdGVkU2NlbmFyaW9EYXRhICYmIChcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNjZW5hcmlvLWRldGFpbHNcIj5cbiAgICAgICAgICAgIDxoMz5TY2VuYXJpbyBEZXRhaWxzPC9oMz5cbiAgICAgICAgICAgIDxwPlxuICAgICAgICAgICAgICA8c3Ryb25nPkRlc2NyaXB0aW9uOjwvc3Ryb25nPiB7c2VsZWN0ZWRTY2VuYXJpb0RhdGEuZGVzY3JpcHRpb259XG4gICAgICAgICAgICA8L3A+XG4gICAgICAgICAgICA8cD5cbiAgICAgICAgICAgICAgPHN0cm9uZz5UeXBlOjwvc3Ryb25nPiB7c2VsZWN0ZWRTY2VuYXJpb0RhdGEudHlwZX1cbiAgICAgICAgICAgIDwvcD5cbiAgICAgICAgICAgIDxwPlxuICAgICAgICAgICAgICA8c3Ryb25nPkR1cmF0aW9uOjwvc3Ryb25nPiB7c2VsZWN0ZWRTY2VuYXJpb0RhdGEuZHVyYXRpb25fc2Vjb25kc317JyAnfVxuICAgICAgICAgICAgICBzZWNvbmRzXG4gICAgICAgICAgICA8L3A+XG4gICAgICAgICAgICA8cD5cbiAgICAgICAgICAgICAgPHN0cm9uZz5QYXJhbWV0ZXJzOjwvc3Ryb25nPnsnICd9XG4gICAgICAgICAgICAgIHtKU09OLnN0cmluZ2lmeShzZWxlY3RlZFNjZW5hcmlvRGF0YS5wYXJhbWV0ZXJzKX1cbiAgICAgICAgICAgIDwvcD5cbiAgICAgICAgICAgIDxwPlxuICAgICAgICAgICAgICA8c3Ryb25nPlRocmVzaG9sZHM6PC9zdHJvbmc+eycgJ31cbiAgICAgICAgICAgICAge0pTT04uc3RyaW5naWZ5KHNlbGVjdGVkU2NlbmFyaW9EYXRhLnRocmVzaG9sZHMpfVxuICAgICAgICAgICAgPC9wPlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICApfVxuXG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiY29udHJvbC1ncm91cFwiPlxuICAgICAgICAgIDxsYWJlbCBodG1sRm9yPVwiZGV2aWNlLXR5cGVcIj5EZXZpY2UgVHlwZTo8L2xhYmVsPlxuICAgICAgICAgIDxzZWxlY3RcbiAgICAgICAgICAgIGlkPVwiZGV2aWNlLXR5cGVcIlxuICAgICAgICAgICAgdmFsdWU9e2RldmljZVR5cGV9XG4gICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldERldmljZVR5cGUoZS50YXJnZXQudmFsdWUpfVxuICAgICAgICAgICAgZGlzYWJsZWQ9e2lzUnVubmluZ31cbiAgICAgICAgICA+XG4gICAgICAgICAgICA8b3B0aW9uIHZhbHVlPVwiZGVza3RvcFwiPkRlc2t0b3A8L29wdGlvbj5cbiAgICAgICAgICAgIDxvcHRpb24gdmFsdWU9XCJtb2JpbGVcIj5Nb2JpbGU8L29wdGlvbj5cbiAgICAgICAgICAgIDxvcHRpb24gdmFsdWU9XCJzZXJ2ZXJcIj5TZXJ2ZXI8L29wdGlvbj5cbiAgICAgICAgICA8L3NlbGVjdD5cbiAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJjb250cm9sLWdyb3VwXCI+XG4gICAgICAgICAgPGxhYmVsIGh0bWxGb3I9XCJjb252ZXJzaW9uLWlkXCI+Q29udmVyc2lvbiBJRCAob3B0aW9uYWwpOjwvbGFiZWw+XG4gICAgICAgICAgPGlucHV0XG4gICAgICAgICAgICBpZD1cImNvbnZlcnNpb24taWRcIlxuICAgICAgICAgICAgdHlwZT1cInRleHRcIlxuICAgICAgICAgICAgdmFsdWU9e2NvbnZlcnNpb25JZH1cbiAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0Q29udmVyc2lvbklkKGUudGFyZ2V0LnZhbHVlKX1cbiAgICAgICAgICAgIHBsYWNlaG9sZGVyPVwiRW50ZXIgY29udmVyc2lvbiBJRCB0byBsaW5rIGJlbmNobWFya1wiXG4gICAgICAgICAgICBkaXNhYmxlZD17aXNSdW5uaW5nfVxuICAgICAgICAgIC8+XG4gICAgICAgIDwvZGl2PlxuXG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYnV0dG9uLWdyb3VwXCI+XG4gICAgICAgICAgPGJ1dHRvblxuICAgICAgICAgICAgb25DbGljaz17cnVuQmVuY2htYXJrfVxuICAgICAgICAgICAgZGlzYWJsZWQ9e2lzUnVubmluZyB8fCAhc2VsZWN0ZWRTY2VuYXJpb31cbiAgICAgICAgICAgIGNsYXNzTmFtZT1cInJ1bi1iZW5jaG1hcmstYnRuXCJcbiAgICAgICAgICA+XG4gICAgICAgICAgICB7aXNSdW5uaW5nID8gJ1J1bm5pbmcuLi4nIDogJ1J1biBCZW5jaG1hcmsnfVxuICAgICAgICAgIDwvYnV0dG9uPlxuXG4gICAgICAgICAgPGJ1dHRvblxuICAgICAgICAgICAgb25DbGljaz17KCkgPT4gc2V0U2hvd0NyZWF0ZVNjZW5hcmlvKHRydWUpfVxuICAgICAgICAgICAgZGlzYWJsZWQ9e2lzUnVubmluZ31cbiAgICAgICAgICAgIGNsYXNzTmFtZT1cImNyZWF0ZS1zY2VuYXJpby1idG5cIlxuICAgICAgICAgID5cbiAgICAgICAgICAgIENyZWF0ZSBDdXN0b20gU2NlbmFyaW9cbiAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgPC9kaXY+XG4gICAgICA8L2Rpdj5cblxuICAgICAgey8qIEN1c3RvbSBTY2VuYXJpbyBDcmVhdGlvbiBNb2RhbCAqL31cbiAgICAgIHtzaG93Q3JlYXRlU2NlbmFyaW8gJiYgKFxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImN1c3RvbS1zY2VuYXJpby1tb2RhbFwiPlxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibW9kYWwtY29udGVudFwiPlxuICAgICAgICAgICAgPGgzPkNyZWF0ZSBDdXN0b20gU2NlbmFyaW88L2gzPlxuXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZvcm0tZ3JvdXBcIj5cbiAgICAgICAgICAgICAgPGxhYmVsPlNjZW5hcmlvIE5hbWU6PC9sYWJlbD5cbiAgICAgICAgICAgICAgPGlucHV0XG4gICAgICAgICAgICAgICAgdHlwZT1cInRleHRcIlxuICAgICAgICAgICAgICAgIHZhbHVlPXtjdXN0b21TY2VuYXJpby5zY2VuYXJpb19uYW1lfVxuICAgICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT5cbiAgICAgICAgICAgICAgICAgIHNldEN1c3RvbVNjZW5hcmlvKHtcbiAgICAgICAgICAgICAgICAgICAgLi4uY3VzdG9tU2NlbmFyaW8sXG4gICAgICAgICAgICAgICAgICAgIHNjZW5hcmlvX25hbWU6IGUudGFyZ2V0LnZhbHVlLFxuICAgICAgICAgICAgICAgICAgfSlcbiAgICAgICAgICAgICAgICB9XG4gICAgICAgICAgICAgICAgcGxhY2Vob2xkZXI9XCJFbnRlciBzY2VuYXJpbyBuYW1lXCJcbiAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZvcm0tZ3JvdXBcIj5cbiAgICAgICAgICAgICAgPGxhYmVsPkRlc2NyaXB0aW9uOjwvbGFiZWw+XG4gICAgICAgICAgICAgIDx0ZXh0YXJlYVxuICAgICAgICAgICAgICAgIHZhbHVlPXtjdXN0b21TY2VuYXJpby5kZXNjcmlwdGlvbn1cbiAgICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+XG4gICAgICAgICAgICAgICAgICBzZXRDdXN0b21TY2VuYXJpbyh7XG4gICAgICAgICAgICAgICAgICAgIC4uLmN1c3RvbVNjZW5hcmlvLFxuICAgICAgICAgICAgICAgICAgICBkZXNjcmlwdGlvbjogZS50YXJnZXQudmFsdWUsXG4gICAgICAgICAgICAgICAgICB9KVxuICAgICAgICAgICAgICAgIH1cbiAgICAgICAgICAgICAgICBwbGFjZWhvbGRlcj1cIkRlc2NyaWJlIHRoZSBzY2VuYXJpb1wiXG4gICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmb3JtLWdyb3VwXCI+XG4gICAgICAgICAgICAgIDxsYWJlbD5UeXBlOjwvbGFiZWw+XG4gICAgICAgICAgICAgIDxzZWxlY3RcbiAgICAgICAgICAgICAgICB2YWx1ZT17Y3VzdG9tU2NlbmFyaW8udHlwZX1cbiAgICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+XG4gICAgICAgICAgICAgICAgICBzZXRDdXN0b21TY2VuYXJpbyh7IC4uLmN1c3RvbVNjZW5hcmlvLCB0eXBlOiBlLnRhcmdldC52YWx1ZSB9KVxuICAgICAgICAgICAgICAgIH1cbiAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgIDxvcHRpb24gdmFsdWU9XCJjdXN0b21cIj5DdXN0b208L29wdGlvbj5cbiAgICAgICAgICAgICAgICA8b3B0aW9uIHZhbHVlPVwic3RyZXNzXCI+U3RyZXNzIFRlc3Q8L29wdGlvbj5cbiAgICAgICAgICAgICAgICA8b3B0aW9uIHZhbHVlPVwibG9hZFwiPkxvYWQgVGVzdDwvb3B0aW9uPlxuICAgICAgICAgICAgICAgIDxvcHRpb24gdmFsdWU9XCJtZW1vcnlcIj5NZW1vcnkgVGVzdDwvb3B0aW9uPlxuICAgICAgICAgICAgICA8L3NlbGVjdD5cbiAgICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZvcm0tZ3JvdXBcIj5cbiAgICAgICAgICAgICAgPGxhYmVsPkR1cmF0aW9uIChzZWNvbmRzKTo8L2xhYmVsPlxuICAgICAgICAgICAgICA8aW5wdXRcbiAgICAgICAgICAgICAgICB0eXBlPVwibnVtYmVyXCJcbiAgICAgICAgICAgICAgICB2YWx1ZT17Y3VzdG9tU2NlbmFyaW8uZHVyYXRpb25fc2Vjb25kc31cbiAgICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+XG4gICAgICAgICAgICAgICAgICBzZXRDdXN0b21TY2VuYXJpbyh7XG4gICAgICAgICAgICAgICAgICAgIC4uLmN1c3RvbVNjZW5hcmlvLFxuICAgICAgICAgICAgICAgICAgICBkdXJhdGlvbl9zZWNvbmRzOiBwYXJzZUludChlLnRhcmdldC52YWx1ZSksXG4gICAgICAgICAgICAgICAgICB9KVxuICAgICAgICAgICAgICAgIH1cbiAgICAgICAgICAgICAgICBtaW49XCI2MFwiXG4gICAgICAgICAgICAgICAgbWF4PVwiMzYwMFwiXG4gICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJtb2RhbC1idXR0b25zXCI+XG4gICAgICAgICAgICAgIDxidXR0b24gb25DbGljaz17Y3JlYXRlQ3VzdG9tU2NlbmFyaW99PkNyZWF0ZSBTY2VuYXJpbzwvYnV0dG9uPlxuICAgICAgICAgICAgICA8YnV0dG9uIG9uQ2xpY2s9eygpID0+IHNldFNob3dDcmVhdGVTY2VuYXJpbyhmYWxzZSl9PlxuICAgICAgICAgICAgICAgIENhbmNlbFxuICAgICAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICA8L2Rpdj5cbiAgICAgICl9XG5cbiAgICAgIHsvKiBCZW5jaG1hcmsgUHJvZ3Jlc3MgKi99XG4gICAgICB7Y3VycmVudFJ1biAmJiBpc1J1bm5pbmcgJiYgKFxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImJlbmNobWFyay1wcm9ncmVzc1wiPlxuICAgICAgICAgIDxoMz5CZW5jaG1hcmsgUHJvZ3Jlc3M8L2gzPlxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicHJvZ3Jlc3MtYmFyXCI+XG4gICAgICAgICAgICA8ZGl2XG4gICAgICAgICAgICAgIGNsYXNzTmFtZT1cInByb2dyZXNzLWZpbGxcIlxuICAgICAgICAgICAgICBzdHlsZT17eyB3aWR0aDogYCR7Y3VycmVudFJ1bi5wcm9ncmVzc30lYCB9fVxuICAgICAgICAgICAgPjwvZGl2PlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDxwPlN0YXR1czoge2N1cnJlbnRSdW4uc3RhdHVzfTwvcD5cbiAgICAgICAgICA8cD5TdGFnZToge2N1cnJlbnRSdW4uY3VycmVudF9zdGFnZX08L3A+XG4gICAgICAgICAgPHA+UHJvZ3Jlc3M6IHtjdXJyZW50UnVuLnByb2dyZXNzfSU8L3A+XG4gICAgICAgIDwvZGl2PlxuICAgICAgKX1cblxuICAgICAgey8qIEJlbmNobWFyayBSZXBvcnQgKi99XG4gICAgICB7Y3VycmVudFJlcG9ydCAmJiAoXG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYmVuY2htYXJrLXJlcG9ydFwiPlxuICAgICAgICAgIDxoMz5CZW5jaG1hcmsgUmVwb3J0PC9oMz5cblxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic2NvcmUtc3VtbWFyeVwiPlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzY29yZS1pdGVtXCI+XG4gICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInNjb3JlLWxhYmVsXCI+T3ZlcmFsbCBTY29yZTo8L3NwYW4+XG4gICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInNjb3JlLXZhbHVlXCI+XG4gICAgICAgICAgICAgICAge2N1cnJlbnRSZXBvcnQuYmVuY2htYXJrLm92ZXJhbGxfc2NvcmV9LzEwMFxuICAgICAgICAgICAgICA8L3NwYW4+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic2NvcmUtaXRlbVwiPlxuICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJzY29yZS1sYWJlbFwiPkNQVSBTY29yZTo8L3NwYW4+XG4gICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInNjb3JlLXZhbHVlXCI+XG4gICAgICAgICAgICAgICAge2N1cnJlbnRSZXBvcnQuYmVuY2htYXJrLmNwdV9zY29yZX0vMTAwXG4gICAgICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzY29yZS1pdGVtXCI+XG4gICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInNjb3JlLWxhYmVsXCI+TWVtb3J5IFNjb3JlOjwvc3Bhbj5cbiAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwic2NvcmUtdmFsdWVcIj5cbiAgICAgICAgICAgICAgICB7Y3VycmVudFJlcG9ydC5iZW5jaG1hcmsubWVtb3J5X3Njb3JlfS8xMDBcbiAgICAgICAgICAgICAgPC9zcGFuPlxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNjb3JlLWl0ZW1cIj5cbiAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwic2NvcmUtbGFiZWxcIj5OZXR3b3JrIFNjb3JlOjwvc3Bhbj5cbiAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwic2NvcmUtdmFsdWVcIj5cbiAgICAgICAgICAgICAgICB7Y3VycmVudFJlcG9ydC5iZW5jaG1hcmsubmV0d29ya19zY29yZX0vMTAwXG4gICAgICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJtZXRyaWNzLXRhYmxlXCI+XG4gICAgICAgICAgICA8aDQ+UGVyZm9ybWFuY2UgTWV0cmljczwvaDQ+XG4gICAgICAgICAgICA8dGFibGU+XG4gICAgICAgICAgICAgIDx0aGVhZD5cbiAgICAgICAgICAgICAgICA8dHI+XG4gICAgICAgICAgICAgICAgICA8dGg+TWV0cmljPC90aD5cbiAgICAgICAgICAgICAgICAgIDx0aD5DYXRlZ29yeTwvdGg+XG4gICAgICAgICAgICAgICAgICA8dGg+SmF2YSBWYWx1ZTwvdGg+XG4gICAgICAgICAgICAgICAgICA8dGg+QmVkcm9jayBWYWx1ZTwvdGg+XG4gICAgICAgICAgICAgICAgICA8dGg+SW1wcm92ZW1lbnQ8L3RoPlxuICAgICAgICAgICAgICAgIDwvdHI+XG4gICAgICAgICAgICAgIDwvdGhlYWQ+XG4gICAgICAgICAgICAgIDx0Ym9keT5cbiAgICAgICAgICAgICAgICB7Y3VycmVudFJlcG9ydC5tZXRyaWNzLm1hcCgobWV0cmljLCBpbmRleCkgPT4gKFxuICAgICAgICAgICAgICAgICAgPHRyIGtleT17aW5kZXh9PlxuICAgICAgICAgICAgICAgICAgICA8dGQ+e21ldHJpYy5tZXRyaWNfbmFtZX08L3RkPlxuICAgICAgICAgICAgICAgICAgICA8dGQ+e21ldHJpYy5tZXRyaWNfY2F0ZWdvcnl9PC90ZD5cbiAgICAgICAgICAgICAgICAgICAgPHRkPlxuICAgICAgICAgICAgICAgICAgICAgIHttZXRyaWMuamF2YV92YWx1ZX0ge21ldHJpYy51bml0fVxuICAgICAgICAgICAgICAgICAgICA8L3RkPlxuICAgICAgICAgICAgICAgICAgICA8dGQ+XG4gICAgICAgICAgICAgICAgICAgICAge21ldHJpYy5iZWRyb2NrX3ZhbHVlfSB7bWV0cmljLnVuaXR9XG4gICAgICAgICAgICAgICAgICAgIDwvdGQ+XG4gICAgICAgICAgICAgICAgICAgIDx0ZFxuICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT17XG4gICAgICAgICAgICAgICAgICAgICAgICBtZXRyaWMuaW1wcm92ZW1lbnRfcGVyY2VudGFnZSA8IDBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPyAnaW1wcm92ZW1lbnQnXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDogJ3JlZ3Jlc3Npb24nXG4gICAgICAgICAgICAgICAgICAgICAgfVxuICAgICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgICAge21ldHJpYy5pbXByb3ZlbWVudF9wZXJjZW50YWdlLnRvRml4ZWQoMSl9JVxuICAgICAgICAgICAgICAgICAgICA8L3RkPlxuICAgICAgICAgICAgICAgICAgPC90cj5cbiAgICAgICAgICAgICAgICApKX1cbiAgICAgICAgICAgICAgPC90Ym9keT5cbiAgICAgICAgICAgIDwvdGFibGU+XG4gICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImFuYWx5c2lzLXNlY3Rpb25cIj5cbiAgICAgICAgICAgIDxoND5BbmFseXNpczwvaDQ+XG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImlzc3Vlc1wiPlxuICAgICAgICAgICAgICA8aDU+SWRlbnRpZmllZCBJc3N1ZXM6PC9oNT5cbiAgICAgICAgICAgICAgPHVsPlxuICAgICAgICAgICAgICAgIHtjdXJyZW50UmVwb3J0LmFuYWx5c2lzLmlkZW50aWZpZWRfaXNzdWVzLm1hcChcbiAgICAgICAgICAgICAgICAgIChpc3N1ZSwgaW5kZXgpID0+IChcbiAgICAgICAgICAgICAgICAgICAgPGxpIGtleT17aW5kZXh9Pntpc3N1ZX08L2xpPlxuICAgICAgICAgICAgICAgICAgKVxuICAgICAgICAgICAgICAgICl9XG4gICAgICAgICAgICAgIDwvdWw+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3VnZ2VzdGlvbnNcIj5cbiAgICAgICAgICAgICAgPGg1Pk9wdGltaXphdGlvbiBTdWdnZXN0aW9uczo8L2g1PlxuICAgICAgICAgICAgICA8dWw+XG4gICAgICAgICAgICAgICAge2N1cnJlbnRSZXBvcnQuYW5hbHlzaXMub3B0aW1pemF0aW9uX3N1Z2dlc3Rpb25zLm1hcChcbiAgICAgICAgICAgICAgICAgIChzdWdnZXN0aW9uLCBpbmRleCkgPT4gKFxuICAgICAgICAgICAgICAgICAgICA8bGkga2V5PXtpbmRleH0+e3N1Z2dlc3Rpb259PC9saT5cbiAgICAgICAgICAgICAgICAgIClcbiAgICAgICAgICAgICAgICApfVxuICAgICAgICAgICAgICA8L3VsPlxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInJlcG9ydC10ZXh0XCI+XG4gICAgICAgICAgICA8aDQ+RGV0YWlsZWQgUmVwb3J0PC9oND5cbiAgICAgICAgICAgIDxwcmU+e2N1cnJlbnRSZXBvcnQucmVwb3J0X3RleHR9PC9wcmU+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgIDwvZGl2PlxuICAgICAgKX1cbiAgICA8L2Rpdj5cbiAgKTtcbn07XG4iXSwiZmlsZSI6Ii9zcmMvY29tcG9uZW50cy9QZXJmb3JtYW5jZUJlbmNobWFyay9QZXJmb3JtYW5jZUJlbmNobWFyay50c3gifQ==
+
+//# vitestCache=W3siZmlsZSI6IjEiLCJpZCI6IjEiLCJ1cmwiOiIyIiwiaW1wb3J0ZWRVcmxzIjoiMyIsIm1hcHBpbmdzIjpmYWxzZX0sIi9ob21lL2FsZXgvUHJvamVjdHMvTW9kUG9ydGVyLUFJL2Zyb250ZW5kL3NyYy9jb21wb25lbnRzL1BlcmZvcm1hbmNlQmVuY2htYXJrL1BlcmZvcm1hbmNlQmVuY2htYXJrLnRzeCIsIi9zcmMvY29tcG9uZW50cy9QZXJmb3JtYW5jZUJlbmNobWFyay9QZXJmb3JtYW5jZUJlbmNobWFyay50c3giLFtdXQ==

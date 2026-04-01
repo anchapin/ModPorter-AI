@@ -183,7 +183,7 @@ def determine_failure_source(conversion_stage: Optional[str]) -> FailureSource:
 
     if "upload" in stage_lower:
         return FailureSource.FILE_UPLOAD
-    elif "parse" in stage_lower:
+    elif "parse" in stage_lower or "parsing" in stage_lower:
         return FailureSource.FILE_PARSING
     elif "analy" in stage_lower:
         return FailureSource.MOD_ANALYSIS

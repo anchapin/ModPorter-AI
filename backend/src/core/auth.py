@@ -93,7 +93,9 @@ class AuthManager:
             password_bytes = plain_password.encode("utf-8")
             hashed_bytes = hashed_password.encode("utf-8")
             return bcrypt.checkpw(password_bytes, hashed_bytes)
-        except Exception:
+        except (ValueError, TypeError) as e:
+            # Invalid hash format or encoding error - treat as wrong password
+            # Don't log to avoid timing attacks
             return False
 
     def create_access_token(

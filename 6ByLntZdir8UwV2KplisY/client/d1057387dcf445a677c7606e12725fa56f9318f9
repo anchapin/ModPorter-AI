@@ -1,0 +1,54 @@
+const __vite_ssr_import_0__ = await __vite_ssr_import__("/@fs/home/alex/Projects/ModPorter-AI/node_modules/.pnpm/react@19.2.4/node_modules/react/jsx-dev-runtime.js", {"importedNames":["jsxDEV"]});
+const __vite_ssr_import_1__ = await __vite_ssr_import__("/@fs/home/alex/Projects/ModPorter-AI/node_modules/.pnpm/@testing-library+react@16.3.2_@testing-library+dom@10.4.1_@types+react-dom@19.2.3_@type_893f466751a7d66081fd06e9edb9241a/node_modules/@testing-library/react/dist/index.js", {"importedNames":["render","screen","waitFor"]});
+const __vite_ssr_import_2__ = await __vite_ssr_import__("/@fs/home/alex/Projects/ModPorter-AI/node_modules/.pnpm/vitest@4.0.18_@types+node@25.4.0_@vitest+ui@4.0.18_jiti@2.6.1_jsdom@28.1.0_msw@2.12.10__26417f62b608bc1be6ca0ba5170c7860/node_modules/vitest/dist/index.js", {"importedNames":["describe","test","expect"]});
+const __vite_ssr_import_3__ = await __vite_ssr_import__("/src/components/QAReport/QAReport.tsx", {"importedNames":["default"]});
+
+
+
+
+(0,__vite_ssr_import_2__.describe)("QAReport", () => {
+  (0,__vite_ssr_import_2__.test)("shows loading state initially", () => {
+    (0,__vite_ssr_import_1__.render)(/* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_3__.default), { taskId: "test-task-123" }, void 0, false, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/QAReport/QAReport.test.tsx",
+      lineNumber: 7,
+      columnNumber: 12
+    }, this));
+    (0,__vite_ssr_import_2__.expect)(
+      __vite_ssr_import_1__.screen.getByText("Loading QA Report for Task ID: test-task-123...")
+    ).toBeInTheDocument();
+  });
+  (0,__vite_ssr_import_2__.test)("shows error when no task ID provided", () => {
+    (0,__vite_ssr_import_1__.render)(/* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_3__.default), { taskId: "" }, void 0, false, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/QAReport/QAReport.test.tsx",
+      lineNumber: 14,
+      columnNumber: 12
+    }, this));
+    (0,__vite_ssr_import_2__.expect)(
+      __vite_ssr_import_1__.screen.getByText("Error: Task ID is required to fetch a QA report.")
+    ).toBeInTheDocument();
+  });
+  (0,__vite_ssr_import_2__.test)("displays QA report data after loading", async () => {
+    (0,__vite_ssr_import_1__.render)(/* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_3__.default), { taskId: "test-task-123" }, void 0, false, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/QAReport/QAReport.test.tsx",
+      lineNumber: 21,
+      columnNumber: 12
+    }, this));
+    (0,__vite_ssr_import_2__.expect)(
+      __vite_ssr_import_1__.screen.getByText("Loading QA Report for Task ID: test-task-123...")
+    ).toBeInTheDocument();
+    await (0,__vite_ssr_import_1__.waitFor)(
+      () => {
+        (0,__vite_ssr_import_2__.expect)(
+          __vite_ssr_import_1__.screen.getByText("QA Report (Task ID: test-task-123)")
+        ).toBeInTheDocument();
+      },
+      { timeout: 3e3 }
+    );
+    (0,__vite_ssr_import_2__.expect)(__vite_ssr_import_1__.screen.getByText(/Report ID:/)).toBeInTheDocument();
+    (0,__vite_ssr_import_2__.expect)(__vite_ssr_import_1__.screen.getByText(/Overall Quality Score:/)).toBeInTheDocument();
+  });
+});
+//# sourceMappingSource=vite-generated
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJtYXBwaW5ncyI6IkFBTVc7QUFOWDtBQUNBO0FBQ0E7Ozs7O0dBRUEsZ0NBQVMsWUFBWSxNQUFNO0FBQ3pCLGlDQUFLLGlDQUFpQyxNQUFNO0FBQzFDLHFDQUFPLG9EQUFDLGtDQUFTLFFBQU8sbUJBQWpCO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0FBaUMsQ0FBRTtBQUMxQztBQUFBLE1BQ0UsNkJBQU8sVUFBVSxpREFBaUQ7QUFBQSxJQUNwRSxFQUFFLGtCQUFrQjtBQUFBLEVBQ3RCLENBQUM7QUFFRCxpQ0FBSyx3Q0FBd0MsTUFBTTtBQUNqRCxxQ0FBTyxvREFBQyxrQ0FBUyxRQUFPLE1BQWpCO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0FBb0IsQ0FBRTtBQUM3QjtBQUFBLE1BQ0UsNkJBQU8sVUFBVSxrREFBa0Q7QUFBQSxJQUNyRSxFQUFFLGtCQUFrQjtBQUFBLEVBQ3RCLENBQUM7QUFFRCxpQ0FBSyx5Q0FBeUMsWUFBWTtBQUN4RCxxQ0FBTyxvREFBQyxrQ0FBUyxRQUFPLG1CQUFqQjtBQUFBO0FBQUE7QUFBQTtBQUFBLFdBQWlDLENBQUU7QUFHMUM7QUFBQSxNQUNFLDZCQUFPLFVBQVUsaURBQWlEO0FBQUEsSUFDcEUsRUFBRSxrQkFBa0I7QUFHcEIsYUFBTTtBQUFBLE1BQ0osTUFBTTtBQUNKO0FBQUEsVUFDRSw2QkFBTyxVQUFVLG9DQUFvQztBQUFBLFFBQ3ZELEVBQUUsa0JBQWtCO0FBQUEsTUFDdEI7QUFBQSxNQUNBLEVBQUUsU0FBUyxJQUFLO0FBQUEsSUFDbEI7QUFFQSxxQ0FBTyw2QkFBTyxVQUFVLFlBQVksQ0FBQyxFQUFFLGtCQUFrQjtBQUN6RCxxQ0FBTyw2QkFBTyxVQUFVLHdCQUF3QixDQUFDLEVBQUUsa0JBQWtCO0FBQUEsRUFDdkUsQ0FBQztBQUNILENBQUMiLCJuYW1lcyI6W10sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbIlFBUmVwb3J0LnRlc3QudHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IHJlbmRlciwgc2NyZWVuLCB3YWl0Rm9yIH0gZnJvbSAnQHRlc3RpbmctbGlicmFyeS9yZWFjdCc7XG5pbXBvcnQgeyBkZXNjcmliZSwgdGVzdCwgZXhwZWN0IH0gZnJvbSAndml0ZXN0JztcbmltcG9ydCBRQVJlcG9ydCBmcm9tICcuL1FBUmVwb3J0JztcblxuZGVzY3JpYmUoJ1FBUmVwb3J0JywgKCkgPT4ge1xuICB0ZXN0KCdzaG93cyBsb2FkaW5nIHN0YXRlIGluaXRpYWxseScsICgpID0+IHtcbiAgICByZW5kZXIoPFFBUmVwb3J0IHRhc2tJZD1cInRlc3QtdGFzay0xMjNcIiAvPik7XG4gICAgZXhwZWN0KFxuICAgICAgc2NyZWVuLmdldEJ5VGV4dCgnTG9hZGluZyBRQSBSZXBvcnQgZm9yIFRhc2sgSUQ6IHRlc3QtdGFzay0xMjMuLi4nKVxuICAgICkudG9CZUluVGhlRG9jdW1lbnQoKTtcbiAgfSk7XG5cbiAgdGVzdCgnc2hvd3MgZXJyb3Igd2hlbiBubyB0YXNrIElEIHByb3ZpZGVkJywgKCkgPT4ge1xuICAgIHJlbmRlcig8UUFSZXBvcnQgdGFza0lkPVwiXCIgLz4pO1xuICAgIGV4cGVjdChcbiAgICAgIHNjcmVlbi5nZXRCeVRleHQoJ0Vycm9yOiBUYXNrIElEIGlzIHJlcXVpcmVkIHRvIGZldGNoIGEgUUEgcmVwb3J0LicpXG4gICAgKS50b0JlSW5UaGVEb2N1bWVudCgpO1xuICB9KTtcblxuICB0ZXN0KCdkaXNwbGF5cyBRQSByZXBvcnQgZGF0YSBhZnRlciBsb2FkaW5nJywgYXN5bmMgKCkgPT4ge1xuICAgIHJlbmRlcig8UUFSZXBvcnQgdGFza0lkPVwidGVzdC10YXNrLTEyM1wiIC8+KTtcblxuICAgIC8vIEluaXRpYWxseSBzaG93cyBsb2FkaW5nXG4gICAgZXhwZWN0KFxuICAgICAgc2NyZWVuLmdldEJ5VGV4dCgnTG9hZGluZyBRQSBSZXBvcnQgZm9yIFRhc2sgSUQ6IHRlc3QtdGFzay0xMjMuLi4nKVxuICAgICkudG9CZUluVGhlRG9jdW1lbnQoKTtcblxuICAgIC8vIFdhaXQgZm9yIHRoZSBjb21wb25lbnQgdG8gdXBkYXRlIGFmdGVyIHRoZSBhc3luYyB0aW1lb3V0XG4gICAgYXdhaXQgd2FpdEZvcihcbiAgICAgICgpID0+IHtcbiAgICAgICAgZXhwZWN0KFxuICAgICAgICAgIHNjcmVlbi5nZXRCeVRleHQoJ1FBIFJlcG9ydCAoVGFzayBJRDogdGVzdC10YXNrLTEyMyknKVxuICAgICAgICApLnRvQmVJblRoZURvY3VtZW50KCk7XG4gICAgICB9LFxuICAgICAgeyB0aW1lb3V0OiAzMDAwIH1cbiAgICApO1xuXG4gICAgZXhwZWN0KHNjcmVlbi5nZXRCeVRleHQoL1JlcG9ydCBJRDovKSkudG9CZUluVGhlRG9jdW1lbnQoKTtcbiAgICBleHBlY3Qoc2NyZWVuLmdldEJ5VGV4dCgvT3ZlcmFsbCBRdWFsaXR5IFNjb3JlOi8pKS50b0JlSW5UaGVEb2N1bWVudCgpO1xuICB9KTtcbn0pO1xuIl0sImZpbGUiOiIvc3JjL2NvbXBvbmVudHMvUUFSZXBvcnQvUUFSZXBvcnQudGVzdC50c3gifQ==
+
+//# vitestCache=W3siZmlsZSI6IjEiLCJpZCI6IjEiLCJ1cmwiOiIyIiwiaW1wb3J0ZWRVcmxzIjoiMyIsIm1hcHBpbmdzIjpmYWxzZX0sIi9ob21lL2FsZXgvUHJvamVjdHMvTW9kUG9ydGVyLUFJL2Zyb250ZW5kL3NyYy9jb21wb25lbnRzL1FBUmVwb3J0L1FBUmVwb3J0LnRlc3QudHN4IiwiL3NyYy9jb21wb25lbnRzL1FBUmVwb3J0L1FBUmVwb3J0LnRlc3QudHN4IixbXV0=

@@ -33,7 +33,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.base import get_db
@@ -87,7 +87,8 @@ class ConversionOptions(BaseModel):
         description="Target Minecraft Bedrock version",
     )
 
-    @validator("assumptions")
+    @field_validator("assumptions")
+    @classmethod
     def validate_assumptions(cls, v):
         if v not in ("conservative", "aggressive"):
             raise ValueError("assumptions must be 'conservative' or 'aggressive'")
@@ -544,7 +545,7 @@ async def create_conversion(
             file_id=file_id,
             original_filename=safe_filename,
             target_version=conversion_options.target_version,
-            options=conversion_options.dict(),
+            options=conversion_options.model_dump(),
             commit=True,
         )
 
@@ -573,7 +574,7 @@ async def create_conversion(
                 "file_path": file_path,
                 "original_filename": safe_filename,
                 "target_version": conversion_options.target_version,
-                "options": conversion_options.dict(),
+                "options": conversion_options.model_dump(),
             },
             priority=TaskPriority.NORMAL,
         )
@@ -588,7 +589,7 @@ async def create_conversion(
                 file_path=file_path,
                 original_filename=safe_filename,
                 target_version=conversion_options.target_version,
-                options=conversion_options.dict(),
+                options=conversion_options.model_dump(),
             )
             logger.info(f"AI Engine conversion started in background for job: {conversion_id}")
 
@@ -696,7 +697,7 @@ async def get_conversion(
     )
 
     # Update cache
-    await cache.set_job_status(conversion_id, response.dict())
+    await cache.set_job_status(conversion_id, response.model_dump())
 
     return response
 

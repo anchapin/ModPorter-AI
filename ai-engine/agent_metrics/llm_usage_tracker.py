@@ -332,9 +332,10 @@ class LLMUsageTracker:
         """Export metrics in Prometheus format"""
         lines = []
 
-        with self._lock:
-            total = self.get_total_usage()
+        # get_total_usage handles its own locking
+        total = self.get_total_usage()
 
+        with self._lock:
             lines.append("# HELP llm_calls_total Total LLM API calls")
             lines.append("# TYPE llm_calls_total counter")
             lines.append(f"llm_calls_total {total['total_calls']}")

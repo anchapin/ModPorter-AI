@@ -192,7 +192,7 @@ class CodeAwareEmbeddingGenerator:
         confidence = self._calculate_code_confidence(chunk)
 
         return EmbeddingResult(
-            embedding=embeddings[0],
+            embedding=embeddings[0].embedding,
             model_used=self.base_generator.model_name,
             strategy=EmbeddingStrategy.CODE_SPECIALIZED,
             confidence=confidence,
@@ -482,6 +482,7 @@ class MultiModalEmbeddingGenerator:
             processing_time_ms=processing_time,
             metadata={"content_type": "text", "content_length": len(text)},
         )
+
 
     async def _generate_chunk_embedding(
         self, chunk: Chunk, strategy: EmbeddingStrategy

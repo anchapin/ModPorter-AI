@@ -1,0 +1,675 @@
+__vite_ssr_exportName__("RecipeBuilder", () => { try { return RecipeBuilder } catch {} });
+const __vite_ssr_import_0__ = await __vite_ssr_import__("/@fs/home/alex/Projects/ModPorter-AI/node_modules/.pnpm/react@19.2.4/node_modules/react/jsx-dev-runtime.js", {"importedNames":["Fragment","jsxDEV"]});
+const __vite_ssr_import_1__ = await __vite_ssr_import__("/@fs/home/alex/Projects/ModPorter-AI/node_modules/.pnpm/react@19.2.4/node_modules/react/index.js", {"importedNames":["useState","useCallback","useEffect"]});
+const __vite_ssr_import_2__ = await __vite_ssr_import__("/@fs/home/alex/Projects/ModPorter-AI/node_modules/.pnpm/@mui+material@7.3.9_@emotion+react@11.14.0_@types+react@19.2.14_react@19.2.4__@emotion+_5efc65b7a21bb615fd4ee8d4bf58b896/node_modules/@mui/material/esm/index.js", {"importedNames":["Box","Paper","Typography","Button","Grid","FormControl","InputLabel","Select","MenuItem","TextField","Alert","Tooltip","IconButton"]});
+const __vite_ssr_import_3__ = await __vite_ssr_import__("/@fs/home/alex/Projects/ModPorter-AI/node_modules/.pnpm/@mui+icons-material@7.3.9_@mui+material@7.3.9_@emotion+react@11.14.0_@types+react@19.2._dc2be6bc014bebdac88a574e3e02c144/node_modules/@mui/icons-material/esm/index.js", {"importedNames":["Save","Undo","Redo","History"]});
+const __vite_ssr_import_4__ = await __vite_ssr_import__("/src/hooks/useUndoRedo.ts", {"importedNames":["useUndoRedo"]});
+const __vite_ssr_import_5__ = await __vite_ssr_import__("/src/components/BehaviorEditor/RecipeBuilder/RecipeGrid.tsx", {"importedNames":["RecipeGrid"]});
+const __vite_ssr_import_6__ = await __vite_ssr_import__("/src/components/BehaviorEditor/RecipeBuilder/ItemLibrary.tsx", {"importedNames":["ItemLibrary"]});
+const __vite_ssr_import_7__ = await __vite_ssr_import__("/src/components/BehaviorEditor/RecipeBuilder/RecipeValidation.tsx", {"importedNames":["RecipeValidation"]});
+const __vite_ssr_import_8__ = await __vite_ssr_import__("/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.css");
+"use strict";
+
+
+
+
+
+
+
+
+
+const RecipeBuilder = ({
+  initialRecipe = {},
+  onRecipeChange,
+  onRecipeSave,
+  availableItems = [],
+  readOnly = false
+}) => {
+  const initialRecipeState = {
+    id: "",
+    identifier: "",
+    type: "shaped",
+    name: "",
+    description: "",
+    pattern: [],
+    ingredients: [],
+    result: { id: "result", type: "minecraft:item", name: "", count: 1 },
+    experience: 0,
+    cookingTime: 200,
+    priority: 0,
+    group: "",
+    tags: [],
+    ...initialRecipe
+  };
+  const {
+    state: currentRecipe,
+    updateState: setCurrentRecipe,
+    undo,
+    redo,
+    canUndo,
+    canRedo
+  } = (0,__vite_ssr_import_4__.useUndoRedo)(initialRecipeState, {
+    maxHistory: 50,
+    enableDebounce: false
+  });
+  const [selectedItem, setSelectedItem] = (0,__vite_ssr_import_1__.useState)(null);
+  const [validationErrors, setValidationErrors] = (0,__vite_ssr_import_1__.useState)([]);
+  const getGridSize = (0,__vite_ssr_import_1__.useCallback)(() => {
+    switch (currentRecipe.type) {
+      case "shaped":
+      case "shapeless":
+        return { width: 3, height: 3 };
+      case "furnace":
+      case "blast_furnace":
+      case "campfire":
+      case "smoker":
+        return { width: 1, height: 1 };
+      case "brewing":
+        return { width: 3, height: 3 };
+      // 3 ingredient slots + 1 output
+      case "stonecutter":
+        return { width: 1, height: 1 };
+      default:
+        return { width: 3, height: 3 };
+    }
+  }, [currentRecipe.type]);
+  (0,__vite_ssr_import_1__.useEffect)(() => {
+    const { width, height } = getGridSize();
+    if (!currentRecipe.pattern || currentRecipe.pattern.length === 0) {
+      const emptyPattern = [];
+      for (let y = 0; y < height; y++) {
+        const row = [];
+        for (let x = 0; x < width; x++) {
+          row.push({ x, y, item: null });
+        };
+        emptyPattern.push(row);
+      };
+      setCurrentRecipe((prev) => ({ ...prev, pattern: emptyPattern }));
+    }
+  }, [currentRecipe.type, currentRecipe.pattern, getGridSize]);
+  const handleFieldChange = (0,__vite_ssr_import_1__.useCallback)(
+    (field, value) => {
+      const updatedRecipe = { ...currentRecipe, [field]: value };
+      setCurrentRecipe(updatedRecipe, `Update ${field}`);
+      onRecipeChange(updatedRecipe);
+    },
+    [currentRecipe, onRecipeChange, setCurrentRecipe]
+  );
+  const handleItemPlace = (0,__vite_ssr_import_1__.useCallback)(
+    (slot, item) => {
+      const newPattern = [...currentRecipe.pattern];
+      const slotRow = newPattern[slot.y];
+      const updatedSlot = { ...slot, item };
+      newPattern[slot.y] = [
+        ...slotRow.slice(0, slot.x),
+        updatedSlot,
+        ...slotRow.slice(slot.x + 1)
+      ];
+      const updatedRecipe = { ...currentRecipe, pattern: newPattern };
+      setCurrentRecipe(updatedRecipe, "Place item in grid");
+      onRecipeChange(updatedRecipe);
+    },
+    [currentRecipe, onRecipeChange, setCurrentRecipe]
+  );
+  const handleItemRemove = (0,__vite_ssr_import_1__.useCallback)(
+    (slot) => {
+      const newPattern = [...currentRecipe.pattern];
+      const slotRow = newPattern[slot.y];
+      const updatedSlot = { ...slot, item: null };
+      newPattern[slot.y] = [
+        ...slotRow.slice(0, slot.x),
+        updatedSlot,
+        ...slotRow.slice(slot.x + 1)
+      ];
+      const updatedRecipe = { ...currentRecipe, pattern: newPattern };
+      setCurrentRecipe(updatedRecipe, "Remove item from grid");
+      onRecipeChange(updatedRecipe);
+    },
+    [currentRecipe, onRecipeChange, setCurrentRecipe]
+  );
+  (0,__vite_ssr_import_1__.useEffect)(() => {
+    const validator = new __vite_ssr_import_7__.RecipeValidation();
+    const errors = validator.validate(currentRecipe, availableItems);
+    setValidationErrors(errors);
+  }, [currentRecipe, availableItems, getGridSize]);
+  const gridSize = getGridSize();
+  const hasUnsavedChanges = JSON.stringify(currentRecipe) !== JSON.stringify(initialRecipe);
+  return /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Box), { className: "recipe-builder", children: [
+    /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Paper), { className: "recipe-builder-header", sx: { p: 2, mb: 2 }, children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Box), { display: "flex", justifyContent: "space-between", alignItems: "center", children: [
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Typography), { variant: "h6", children: "Recipe Builder" }, void 0, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+        lineNumber: 215,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Box), { display: "flex", gap: 1, alignItems: "center", children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Tooltip), { title: "Undo (Ctrl+Z)", children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_2__.IconButton),
+          {
+            size: "small",
+            onClick: undo,
+            disabled: !canUndo || readOnly,
+            children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_3__.Undo), { fontSize: "small" }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+              lineNumber: 223,
+              columnNumber: 17
+            }, this)
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+            lineNumber: 218,
+            columnNumber: 15
+          },
+          this
+        ) }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+          lineNumber: 217,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Tooltip), { title: "Redo (Ctrl+Y)", children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_2__.IconButton),
+          {
+            size: "small",
+            onClick: redo,
+            disabled: !canRedo || readOnly,
+            children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_3__.Redo), { fontSize: "small" }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+              lineNumber: 232,
+              columnNumber: 17
+            }, this)
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+            lineNumber: 227,
+            columnNumber: 15
+          },
+          this
+        ) }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+          lineNumber: 226,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Tooltip), { title: "History", children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.IconButton), { size: "small", disabled: true, children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_3__.History), { fontSize: "small" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+          lineNumber: 237,
+          columnNumber: 17
+        }, this) }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+          lineNumber: 236,
+          columnNumber: 15
+        }, this) }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+          lineNumber: 235,
+          columnNumber: 13
+        }, this),
+        onRecipeSave && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_2__.Button),
+          {
+            variant: "contained",
+            startIcon: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_3__.Save), {}, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+              lineNumber: 243,
+              columnNumber: 28
+            }, this),
+            onClick: () => onRecipeSave(currentRecipe),
+            disabled: validationErrors.length > 0 || readOnly,
+            children: "Save Recipe"
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+            lineNumber: 241,
+            columnNumber: 15
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+        lineNumber: 216,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+      lineNumber: 214,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+      lineNumber: 213,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Grid), { container: true, spacing: 2, children: [
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Grid), { size: { xs: 12, md: 4 }, children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Paper), { sx: { p: 2, height: "100%" }, children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Typography), { variant: "subtitle1", gutterBottom: true, children: "Recipe Properties" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+          lineNumber: 258,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.FormControl), { fullWidth: true, sx: { mb: 2 }, children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.InputLabel), { children: "Recipe Type" }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+            lineNumber: 263,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+            (0,__vite_ssr_import_2__.Select),
+            {
+              value: currentRecipe.type,
+              onChange: (e) => handleFieldChange("type", e.target.value),
+              disabled: readOnly,
+              children: [
+                /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.MenuItem), { value: "shaped", children: "Shaped Crafting" }, void 0, false, {
+                  fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+                  lineNumber: 269,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.MenuItem), { value: "shapeless", children: "Shapeless Crafting" }, void 0, false, {
+                  fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+                  lineNumber: 270,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.MenuItem), { value: "furnace", children: "Furnace Smelting" }, void 0, false, {
+                  fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+                  lineNumber: 271,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.MenuItem), { value: "blast_furnace", children: "Blast Furnace" }, void 0, false, {
+                  fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+                  lineNumber: 272,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.MenuItem), { value: "campfire", children: "Campfire Cooking" }, void 0, false, {
+                  fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+                  lineNumber: 273,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.MenuItem), { value: "smoker", children: "Smoker" }, void 0, false, {
+                  fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+                  lineNumber: 274,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.MenuItem), { value: "brewing", children: "Brewing Stand" }, void 0, false, {
+                  fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+                  lineNumber: 275,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.MenuItem), { value: "stonecutter", children: "Stonecutter" }, void 0, false, {
+                  fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+                  lineNumber: 276,
+                  columnNumber: 17
+                }, this)
+              ]
+            },
+            void 0,
+            true,
+            {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+              lineNumber: 264,
+              columnNumber: 15
+            },
+            this
+          )
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+          lineNumber: 262,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_2__.TextField),
+          {
+            fullWidth: true,
+            label: "Recipe Identifier",
+            value: currentRecipe.identifier,
+            onChange: (e) => handleFieldChange("identifier", e.target.value),
+            disabled: readOnly,
+            sx: { mb: 2 },
+            helperText: "Unique identifier (e.g., 'minecraft:oak_planks')"
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+            lineNumber: 280,
+            columnNumber: 13
+          },
+          this
+        ),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_2__.TextField),
+          {
+            fullWidth: true,
+            label: "Recipe Name",
+            value: currentRecipe.name,
+            onChange: (e) => handleFieldChange("name", e.target.value),
+            disabled: readOnly,
+            sx: { mb: 2 }
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+            lineNumber: 290,
+            columnNumber: 13
+          },
+          this
+        ),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_2__.TextField),
+          {
+            fullWidth: true,
+            label: "Description",
+            value: currentRecipe.description || "",
+            onChange: (e) => handleFieldChange("description", e.target.value),
+            disabled: readOnly,
+            multiline: true,
+            rows: 3,
+            sx: { mb: 2 }
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+            lineNumber: 299,
+            columnNumber: 13
+          },
+          this
+        ),
+        currentRecipe.type === "shaped" && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_2__.TextField),
+          {
+            fullWidth: true,
+            label: "Pattern Shape (optional)",
+            value: currentRecipe.group || "",
+            onChange: (e) => handleFieldChange("group", e.target.value),
+            disabled: readOnly,
+            sx: { mb: 2 },
+            helperText: "For shaped recipes with flexible patterns"
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+            lineNumber: 312,
+            columnNumber: 15
+          },
+          this
+        ),
+        (currentRecipe.type === "furnace" || currentRecipe.type === "blast_furnace" || currentRecipe.type === "campfire" || currentRecipe.type === "smoker") && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_0__.Fragment), { children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+            (0,__vite_ssr_import_2__.TextField),
+            {
+              fullWidth: true,
+              label: "Experience",
+              type: "number",
+              value: currentRecipe.experience || 0,
+              onChange: (e) => handleFieldChange(
+                "experience",
+                parseFloat(e.target.value) || 0
+              ),
+              disabled: readOnly,
+              sx: { mb: 2 },
+              inputProps: { min: 0, max: 1, step: 0.1 }
+            },
+            void 0,
+            false,
+            {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+              lineNumber: 328,
+              columnNumber: 17
+            },
+            this
+          ),
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+            (0,__vite_ssr_import_2__.TextField),
+            {
+              fullWidth: true,
+              label: "Cooking Time (ticks)",
+              type: "number",
+              value: currentRecipe.cookingTime || 200,
+              onChange: (e) => handleFieldChange(
+                "cookingTime",
+                parseInt(e.target.value) || 200
+              ),
+              disabled: readOnly,
+              sx: { mb: 2 },
+              inputProps: { min: 1, max: 32767 }
+            },
+            void 0,
+            false,
+            {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+              lineNumber: 343,
+              columnNumber: 17
+            },
+            this
+          )
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+          lineNumber: 327,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_2__.TextField),
+          {
+            fullWidth: true,
+            label: "Priority",
+            type: "number",
+            value: currentRecipe.priority || 0,
+            onChange: (e) => handleFieldChange("priority", parseInt(e.target.value) || 0),
+            disabled: readOnly,
+            sx: { mb: 2 },
+            helperText: "Higher priority recipes are checked first"
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+            lineNumber: 361,
+            columnNumber: 13
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+        lineNumber: 257,
+        columnNumber: 11
+      }, this) }, void 0, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+        lineNumber: 256,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Grid), { size: { xs: 12, md: 4 }, children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Paper), { sx: { p: 2, height: "100%" }, children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Typography), { variant: "subtitle1", gutterBottom: true, children: "Recipe Grid" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+          lineNumber: 379,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_5__.RecipeGrid),
+          {
+            pattern: currentRecipe.pattern || [],
+            width: gridSize.width,
+            height: gridSize.height,
+            onItemPlace: handleItemPlace,
+            onItemRemove: handleItemRemove,
+            selectedItem,
+            readOnly,
+            recipeType: currentRecipe.type
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+            lineNumber: 383,
+            columnNumber: 13
+          },
+          this
+        ),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_2__.Box),
+          {
+            mt: 2,
+            p: 2,
+            sx: { border: "1px dashed #ccc", borderRadius: 1 },
+            children: [
+              /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Typography), { variant: "subtitle2", gutterBottom: true, children: "Result:" }, void 0, false, {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+                lineNumber: 400,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Box), { display: "flex", alignItems: "center", gap: 2, children: [
+                /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Box), { className: "result-item", children: [
+                  currentRecipe.result.texture && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+                    "img",
+                    {
+                      src: currentRecipe.result.texture,
+                      alt: currentRecipe.result.name,
+                      className: "item-icon"
+                    },
+                    void 0,
+                    false,
+                    {
+                      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+                      lineNumber: 406,
+                      columnNumber: 21
+                    },
+                    this
+                  ),
+                  /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Typography), { variant: "body2", children: currentRecipe.result.name || "Empty" }, void 0, false, {
+                    fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+                    lineNumber: 412,
+                    columnNumber: 19
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+                  lineNumber: 404,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+                  (0,__vite_ssr_import_2__.TextField),
+                  {
+                    label: "Count",
+                    type: "number",
+                    value: currentRecipe.result.count || 1,
+                    onChange: (e) => handleFieldChange("result", {
+                      ...currentRecipe.result,
+                      count: parseInt(e.target.value) || 1
+                    }),
+                    disabled: readOnly,
+                    size: "small",
+                    inputProps: { min: 1, max: 64 }
+                  },
+                  void 0,
+                  false,
+                  {
+                    fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+                    lineNumber: 416,
+                    columnNumber: 17
+                  },
+                  this
+                )
+              ] }, void 0, true, {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+                lineNumber: 403,
+                columnNumber: 15
+              }, this)
+            ]
+          },
+          void 0,
+          true,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+            lineNumber: 395,
+            columnNumber: 13
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+        lineNumber: 378,
+        columnNumber: 11
+      }, this) }, void 0, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+        lineNumber: 377,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Grid), { size: { xs: 12, md: 4 }, children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Paper), { sx: { p: 2, height: "100%" }, children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Typography), { variant: "subtitle1", gutterBottom: true, children: "Item Library" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+          lineNumber: 438,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          (0,__vite_ssr_import_6__.ItemLibrary),
+          {
+            items: availableItems,
+            selectedItem,
+            onItemSelect: setSelectedItem,
+            onResultSelect: (item) => handleFieldChange("result", { ...item, count: 1 }),
+            readOnly
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+            lineNumber: 442,
+            columnNumber: 13
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+        lineNumber: 437,
+        columnNumber: 11
+      }, this) }, void 0, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+        lineNumber: 436,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+      lineNumber: 254,
+      columnNumber: 7
+    }, this),
+    validationErrors.length > 0 && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Alert), { severity: "error", sx: { mt: 2 }, children: [
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Typography), { variant: "subtitle2", gutterBottom: true, children: "Validation Errors:" }, void 0, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+        lineNumber: 458,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("ul", { children: validationErrors.map((error, index) => /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("li", { children: error }, index, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+        lineNumber: 463,
+        columnNumber: 15
+      }, this)) }, void 0, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+        lineNumber: 461,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+      lineNumber: 457,
+      columnNumber: 9
+    }, this),
+    hasUnsavedChanges && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Box), { sx: { mt: 2, textAlign: "center" }, children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)((0,__vite_ssr_import_2__.Typography), { variant: "caption", color: "warning.main", children: "You have unsaved changes" }, void 0, false, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+      lineNumber: 472,
+      columnNumber: 11
+    }, this) }, void 0, false, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+      lineNumber: 471,
+      columnNumber: 9
+    }, this)
+  ] }, void 0, true, {
+    fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/BehaviorEditor/RecipeBuilder/RecipeBuilder.tsx",
+    lineNumber: 212,
+    columnNumber: 5
+  }, this);
+};
+//# sourceMappingSource=vite-generated
+//# sourceMappingURL=data:application/json;base64,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QUEsUUFFQTtBQUFBLGFBQUM7QUFBQTtBQUFBLFlBQ0MsT0FBTztBQUFBLFlBQ1A7QUFBQSxZQUNBLGNBQWM7QUFBQSxZQUNkLGdCQUFnQixDQUFDLFNBQ2Ysa0JBQWtCLFVBQVUsRUFBRSxHQUFHLE1BQU0sT0FBTyxFQUFFLENBQUM7QUFBQSxZQUVuRDtBQUFBO0FBQUEsVUFQRjtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsUUFRQTtBQUFBLFdBYkY7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQWNBLEtBZkY7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQWdCQTtBQUFBLFNBdE1GO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0F1TUE7QUFBQSxJQUdDLGlCQUFpQixTQUFTLEtBQ3pCLG9EQUFDLGdDQUFNLFVBQVMsU0FBUSxJQUFJLEVBQUUsSUFBSSxFQUFFLEdBQ2xDO0FBQUEsMERBQUMscUNBQVcsU0FBUSxhQUFZLGNBQVksTUFBQyxrQ0FBN0M7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQUVBO0FBQUEsTUFDQSxpREFBQyxRQUNFLDJCQUFpQixJQUFJLENBQUMsT0FBTyxVQUM1QixpREFBQyxRQUFnQixtQkFBUixPQUFUO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFBdUIsQ0FDeEIsS0FISDtBQUFBO0FBQUE7QUFBQTtBQUFBLGFBSUE7QUFBQSxTQVJGO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0FTQTtBQUFBLElBSUQscUJBQ0Msb0RBQUMsOEJBQUksSUFBSSxFQUFFLElBQUksR0FBRyxXQUFXLFNBQVMsR0FDcEMsOERBQUMscUNBQVcsU0FBUSxXQUFVLE9BQU0sZ0JBQWUsd0NBQW5EO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0FFQSxLQUhGO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0FJQTtBQUFBLE9BdlFKO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0F5UUE7QUFFSiIsIm5hbWVzIjpbXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiUmVjaXBlQnVpbGRlci50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IFJlYWN0LCB7IHVzZVN0YXRlLCB1c2VDYWxsYmFjaywgdXNlRWZmZWN0IH0gZnJvbSAncmVhY3QnO1xuaW1wb3J0IHtcbiAgQm94LFxuICBQYXBlcixcbiAgVHlwb2dyYXBoeSxcbiAgQnV0dG9uLFxuICBHcmlkLFxuICBGb3JtQ29udHJvbCxcbiAgSW5wdXRMYWJlbCxcbiAgU2VsZWN0LFxuICBNZW51SXRlbSxcbiAgVGV4dEZpZWxkLFxuICBBbGVydCxcbiAgVG9vbHRpcCxcbiAgSWNvbkJ1dHRvbixcbn0gZnJvbSAnQG11aS9tYXRlcmlhbCc7XG5pbXBvcnQgeyBTYXZlLCBVbmRvLCBSZWRvLCBIaXN0b3J5IH0gZnJvbSAnQG11aS9pY29ucy1tYXRlcmlhbCc7XG5pbXBvcnQgeyB1c2VVbmRvUmVkbyB9IGZyb20gJy4uLy4uLy4uL2hvb2tzL3VzZVVuZG9SZWRvJztcbmltcG9ydCB7IFJlY2lwZUdyaWQgfSBmcm9tICcuL1JlY2lwZUdyaWQnO1xuaW1wb3J0IHsgSXRlbUxpYnJhcnkgfSBmcm9tICcuL0l0ZW1MaWJyYXJ5JztcbmltcG9ydCB7IFJlY2lwZVZhbGlkYXRpb24gfSBmcm9tICcuL1JlY2lwZVZhbGlkYXRpb24nO1xuaW1wb3J0ICcuL1JlY2lwZUJ1aWxkZXIuY3NzJztcblxuZXhwb3J0IGludGVyZmFjZSBSZWNpcGVJdGVtIHtcbiAgaWQ6IHN0cmluZztcbiAgdHlwZTpcbiAgICB8ICdtaW5lY3JhZnQ6aXRlbSdcbiAgICB8ICdtaW5lY3JhZnQ6aXRlbV90YWcnXG4gICAgfCAnbWluZWNyYWZ0OmJsb2NrJ1xuICAgIHwgJ21pbmVjcmFmdDpibG9ja190YWcnO1xuICBuYW1lOiBzdHJpbmc7XG4gIGNvdW50PzogbnVtYmVyO1xuICBkYXRhPzogbnVtYmVyO1xuICB0ZXh0dXJlPzogc3RyaW5nO1xufVxuXG5leHBvcnQgaW50ZXJmYWNlIFJlY2lwZVNsb3Qge1xuICB4OiBudW1iZXI7XG4gIHk6IG51bWJlcjtcbiAgaXRlbTogUmVjaXBlSXRlbSB8IG51bGw7XG59XG5cbmV4cG9ydCBpbnRlcmZhY2UgUmVjaXBlIHtcbiAgaWQ6IHN0cmluZztcbiAgaWRlbnRpZmllcjogc3RyaW5nO1xuICB0eXBlOlxuICAgIHwgJ3NoYXBlZCdcbiAgICB8ICdzaGFwZWxlc3MnXG4gICAgfCAnZnVybmFjZSdcbiAgICB8ICdibGFzdF9mdXJuYWNlJ1xuICAgIHwgJ2NhbXBmaXJlJ1xuICAgIHwgJ3Ntb2tlcidcbiAgICB8ICdicmV3aW5nJ1xuICAgIHwgJ3N0b25lY3V0dGVyJztcbiAgbmFtZTogc3RyaW5nO1xuICBkZXNjcmlwdGlvbj86IHN0cmluZztcbiAgcGF0dGVybj86IFJlY2lwZVNsb3RbXVtdO1xuICBpbmdyZWRpZW50czogUmVjaXBlSXRlbVtdO1xuICByZXN1bHQ6IFJlY2lwZUl0ZW07XG4gIGV4cGVyaWVuY2U/OiBudW1iZXI7XG4gIGNvb2tpbmdUaW1lPzogbnVtYmVyO1xuICBwcmlvcml0eTogbnVtYmVyO1xuICBncm91cD86IHN0cmluZztcbiAgdGFncz86IHN0cmluZ1tdO1xufVxuXG5leHBvcnQgaW50ZXJmYWNlIFJlY2lwZUJ1aWxkZXJQcm9wcyB7XG4gIGluaXRpYWxSZWNpcGU/OiBQYXJ0aWFsPFJlY2lwZT47XG4gIG9uUmVjaXBlQ2hhbmdlOiAocmVjaXBlOiBSZWNpcGUpID0+IHZvaWQ7XG4gIG9uUmVjaXBlU2F2ZT86IChyZWNpcGU6IFJlY2lwZSkgPT4gdm9pZDtcbiAgYXZhaWxhYmxlSXRlbXM6IFJlY2lwZUl0ZW1bXTtcbiAgcmVhZE9ubHk/OiBib29sZWFuO1xufVxuXG5leHBvcnQgY29uc3QgUmVjaXBlQnVpbGRlcjogUmVhY3QuRkM8UmVjaXBlQnVpbGRlclByb3BzPiA9ICh7XG4gIGluaXRpYWxSZWNpcGUgPSB7fSxcbiAgb25SZWNpcGVDaGFuZ2UsXG4gIG9uUmVjaXBlU2F2ZSxcbiAgYXZhaWxhYmxlSXRlbXMgPSBbXSxcbiAgcmVhZE9ubHkgPSBmYWxzZSxcbn0pID0+IHtcbiAgY29uc3QgaW5pdGlhbFJlY2lwZVN0YXRlOiBSZWNpcGUgPSB7XG4gICAgaWQ6ICcnLFxuICAgIGlkZW50aWZpZXI6ICcnLFxuICAgIHR5cGU6ICdzaGFwZWQnLFxuICAgIG5hbWU6ICcnLFxuICAgIGRlc2NyaXB0aW9uOiAnJyxcbiAgICBwYXR0ZXJuOiBbXSxcbiAgICBpbmdyZWRpZW50czogW10sXG4gICAgcmVzdWx0OiB7IGlkOiAncmVzdWx0JywgdHlwZTogJ21pbmVjcmFmdDppdGVtJywgbmFtZTogJycsIGNvdW50OiAxIH0sXG4gICAgZXhwZXJpZW5jZTogMCxcbiAgICBjb29raW5nVGltZTogMjAwLFxuICAgIHByaW9yaXR5OiAwLFxuICAgIGdyb3VwOiAnJyxcbiAgICB0YWdzOiBbXSxcbiAgICAuLi5pbml0aWFsUmVjaXBlLFxuICB9O1xuXG4gIGNvbnN0IHtcbiAgICBzdGF0ZTogY3VycmVudFJlY2lwZSxcbiAgICB1cGRhdGVTdGF0ZTogc2V0Q3VycmVudFJlY2lwZSxcbiAgICB1bmRvLFxuICAgIHJlZG8sXG4gICAgY2FuVW5kbyxcbiAgICBjYW5SZWRvLFxuICB9ID0gdXNlVW5kb1JlZG88UmVjaXBlPihpbml0aWFsUmVjaXBlU3RhdGUsIHtcbiAgICBtYXhIaXN0b3J5OiA1MCxcbiAgICBlbmFibGVEZWJvdW5jZTogZmFsc2UsXG4gIH0pO1xuXG4gIGNvbnN0IFtzZWxlY3RlZEl0ZW0sIHNldFNlbGVjdGVkSXRlbV0gPSB1c2VTdGF0ZTxSZWNpcGVJdGVtIHwgbnVsbD4obnVsbCk7XG4gIGNvbnN0IFt2YWxpZGF0aW9uRXJyb3JzLCBzZXRWYWxpZGF0aW9uRXJyb3JzXSA9IHVzZVN0YXRlPHN0cmluZ1tdPihbXSk7XG5cbiAgLy8gR3JpZCBzaXplIGJhc2VkIG9uIHJlY2lwZSB0eXBlXG4gIGNvbnN0IGdldEdyaWRTaXplID0gdXNlQ2FsbGJhY2soKCkgPT4ge1xuICAgIHN3aXRjaCAoY3VycmVudFJlY2lwZS50eXBlKSB7XG4gICAgICBjYXNlICdzaGFwZWQnOlxuICAgICAgY2FzZSAnc2hhcGVsZXNzJzpcbiAgICAgICAgcmV0dXJuIHsgd2lkdGg6IDMsIGhlaWdodDogMyB9O1xuICAgICAgY2FzZSAnZnVybmFjZSc6XG4gICAgICBjYXNlICdibGFzdF9mdXJuYWNlJzpcbiAgICAgIGNhc2UgJ2NhbXBmaXJlJzpcbiAgICAgIGNhc2UgJ3Ntb2tlcic6XG4gICAgICAgIHJldHVybiB7IHdpZHRoOiAxLCBoZWlnaHQ6IDEgfTtcbiAgICAgIGNhc2UgJ2JyZXdpbmcnOlxuICAgICAgICByZXR1cm4geyB3aWR0aDogMywgaGVpZ2h0OiAzIH07IC8vIDMgaW5ncmVkaWVudCBzbG90cyArIDEgb3V0cHV0XG4gICAgICBjYXNlICdzdG9uZWN1dHRlcic6XG4gICAgICAgIHJldHVybiB7IHdpZHRoOiAxLCBoZWlnaHQ6IDEgfTtcbiAgICAgIGRlZmF1bHQ6XG4gICAgICAgIHJldHVybiB7IHdpZHRoOiAzLCBoZWlnaHQ6IDMgfTtcbiAgICB9XG4gIH0sIFtjdXJyZW50UmVjaXBlLnR5cGVdKTtcblxuICAvLyBJbml0aWFsaXplIGVtcHR5IHBhdHRlcm4gaWYgbmVlZGVkXG4gIHVzZUVmZmVjdCgoKSA9PiB7XG4gICAgY29uc3QgeyB3aWR0aCwgaGVpZ2h0IH0gPSBnZXRHcmlkU2l6ZSgpO1xuICAgIGlmICghY3VycmVudFJlY2lwZS5wYXR0ZXJuIHx8IGN1cnJlbnRSZWNpcGUucGF0dGVybi5sZW5ndGggPT09IDApIHtcbiAgICAgIGNvbnN0IGVtcHR5UGF0dGVybjogUmVjaXBlU2xvdFtdW10gPSBbXTtcbiAgICAgIGZvciAobGV0IHkgPSAwOyB5IDwgaGVpZ2h0OyB5KyspIHtcbiAgICAgICAgY29uc3Qgcm93OiBSZWNpcGVTbG90W10gPSBbXTtcbiAgICAgICAgZm9yIChsZXQgeCA9IDA7IHggPCB3aWR0aDsgeCsrKSB7XG4gICAgICAgICAgcm93LnB1c2goeyB4LCB5LCBpdGVtOiBudWxsIH0pO1xuICAgICAgICB9XG4gICAgICAgIGVtcHR5UGF0dGVybi5wdXNoKHJvdyk7XG4gICAgICB9XG4gICAgICBzZXRDdXJyZW50UmVjaXBlKChwcmV2KSA9PiAoeyAuLi5wcmV2LCBwYXR0ZXJuOiBlbXB0eVBhdHRlcm4gfSkpO1xuICAgIH1cbiAgfSwgW2N1cnJlbnRSZWNpcGUudHlwZSwgY3VycmVudFJlY2lwZS5wYXR0ZXJuLCBnZXRHcmlkU2l6ZV0pO1xuXG4gIC8vIEhhbmRsZSByZWNpcGUgZmllbGQgY2hhbmdlc1xuICBjb25zdCBoYW5kbGVGaWVsZENoYW5nZSA9IHVzZUNhbGxiYWNrKFxuICAgIChmaWVsZDoga2V5b2YgUmVjaXBlLCB2YWx1ZTogYW55KSA9PiB7XG4gICAgICBjb25zdCB1cGRhdGVkUmVjaXBlID0geyAuLi5jdXJyZW50UmVjaXBlLCBbZmllbGRdOiB2YWx1ZSB9O1xuICAgICAgc2V0Q3VycmVudFJlY2lwZSh1cGRhdGVkUmVjaXBlLCBgVXBkYXRlICR7ZmllbGR9YCk7XG4gICAgICBvblJlY2lwZUNoYW5nZSh1cGRhdGVkUmVjaXBlKTtcbiAgICB9LFxuICAgIFtjdXJyZW50UmVjaXBlLCBvblJlY2lwZUNoYW5nZSwgc2V0Q3VycmVudFJlY2lwZV1cbiAgKTtcblxuICAvLyBIYW5kbGUgaXRlbSBwbGFjZW1lbnQgaW4gZ3JpZFxuICBjb25zdCBoYW5kbGVJdGVtUGxhY2UgPSB1c2VDYWxsYmFjayhcbiAgICAoc2xvdDogUmVjaXBlU2xvdCwgaXRlbTogUmVjaXBlSXRlbSkgPT4ge1xuICAgICAgY29uc3QgbmV3UGF0dGVybiA9IFsuLi5jdXJyZW50UmVjaXBlLnBhdHRlcm4hXTtcbiAgICAgIGNvbnN0IHNsb3RSb3cgPSBuZXdQYXR0ZXJuW3Nsb3QueV07XG4gICAgICBjb25zdCB1cGRhdGVkU2xvdCA9IHsgLi4uc2xvdCwgaXRlbSB9O1xuICAgICAgbmV3UGF0dGVybltzbG90LnldID0gW1xuICAgICAgICAuLi5zbG90Um93LnNsaWNlKDAsIHNsb3QueCksXG4gICAgICAgIHVwZGF0ZWRTbG90LFxuICAgICAgICAuLi5zbG90Um93LnNsaWNlKHNsb3QueCArIDEpLFxuICAgICAgXTtcblxuICAgICAgY29uc3QgdXBkYXRlZFJlY2lwZSA9IHsgLi4uY3VycmVudFJlY2lwZSwgcGF0dGVybjogbmV3UGF0dGVybiB9O1xuICAgICAgc2V0Q3VycmVudFJlY2lwZSh1cGRhdGVkUmVjaXBlLCAnUGxhY2UgaXRlbSBpbiBncmlkJyk7XG4gICAgICBvblJlY2lwZUNoYW5nZSh1cGRhdGVkUmVjaXBlKTtcbiAgICB9LFxuICAgIFtjdXJyZW50UmVjaXBlLCBvblJlY2lwZUNoYW5nZSwgc2V0Q3VycmVudFJlY2lwZV1cbiAgKTtcblxuICAvLyBIYW5kbGUgaXRlbSByZW1vdmFsIGZyb20gZ3JpZFxuICBjb25zdCBoYW5kbGVJdGVtUmVtb3ZlID0gdXNlQ2FsbGJhY2soXG4gICAgKHNsb3Q6IFJlY2lwZVNsb3QpID0+IHtcbiAgICAgIGNvbnN0IG5ld1BhdHRlcm4gPSBbLi4uY3VycmVudFJlY2lwZS5wYXR0ZXJuIV07XG4gICAgICBjb25zdCBzbG90Um93ID0gbmV3UGF0dGVybltzbG90LnldO1xuICAgICAgY29uc3QgdXBkYXRlZFNsb3QgPSB7IC4uLnNsb3QsIGl0ZW06IG51bGwgfTtcbiAgICAgIG5ld1BhdHRlcm5bc2xvdC55XSA9IFtcbiAgICAgICAgLi4uc2xvdFJvdy5zbGljZSgwLCBzbG90LngpLFxuICAgICAgICB1cGRhdGVkU2xvdCxcbiAgICAgICAgLi4uc2xvdFJvdy5zbGljZShzbG90LnggKyAxKSxcbiAgICAgIF07XG5cbiAgICAgIGNvbnN0IHVwZGF0ZWRSZWNpcGUgPSB7IC4uLmN1cnJlbnRSZWNpcGUsIHBhdHRlcm46IG5ld1BhdHRlcm4gfTtcbiAgICAgIHNldEN1cnJlbnRSZWNpcGUodXBkYXRlZFJlY2lwZSwgJ1JlbW92ZSBpdGVtIGZyb20gZ3JpZCcpO1xuICAgICAgb25SZWNpcGVDaGFuZ2UodXBkYXRlZFJlY2lwZSk7XG4gICAgfSxcbiAgICBbY3VycmVudFJlY2lwZSwgb25SZWNpcGVDaGFuZ2UsIHNldEN1cnJlbnRSZWNpcGVdXG4gICk7XG5cbiAgLy8gSGlzdG9yeSBmdW5jdGlvbmFsaXR5IGlzIGRpc2FibGVkIC0gdW5kby9yZWRvIGZ1bmN0aW9ucyByZW1vdmVkXG5cbiAgLy8gVmFsaWRhdGUgcmVjaXBlXG4gIHVzZUVmZmVjdCgoKSA9PiB7XG4gICAgY29uc3QgdmFsaWRhdG9yID0gbmV3IFJlY2lwZVZhbGlkYXRpb24oKTtcbiAgICBjb25zdCBlcnJvcnMgPSB2YWxpZGF0b3IudmFsaWRhdGUoY3VycmVudFJlY2lwZSwgYXZhaWxhYmxlSXRlbXMpO1xuICAgIHNldFZhbGlkYXRpb25FcnJvcnMoZXJyb3JzKTtcbiAgfSwgW2N1cnJlbnRSZWNpcGUsIGF2YWlsYWJsZUl0ZW1zLCBnZXRHcmlkU2l6ZV0pO1xuXG4gIGNvbnN0IGdyaWRTaXplID0gZ2V0R3JpZFNpemUoKTtcbiAgY29uc3QgaGFzVW5zYXZlZENoYW5nZXMgPVxuICAgIEpTT04uc3RyaW5naWZ5KGN1cnJlbnRSZWNpcGUpICE9PSBKU09OLnN0cmluZ2lmeShpbml0aWFsUmVjaXBlKTtcblxuICByZXR1cm4gKFxuICAgIDxCb3ggY2xhc3NOYW1lPVwicmVjaXBlLWJ1aWxkZXJcIj5cbiAgICAgIDxQYXBlciBjbGFzc05hbWU9XCJyZWNpcGUtYnVpbGRlci1oZWFkZXJcIiBzeD17eyBwOiAyLCBtYjogMiB9fT5cbiAgICAgICAgPEJveCBkaXNwbGF5PVwiZmxleFwiIGp1c3RpZnlDb250ZW50PVwic3BhY2UtYmV0d2VlblwiIGFsaWduSXRlbXM9XCJjZW50ZXJcIj5cbiAgICAgICAgICA8VHlwb2dyYXBoeSB2YXJpYW50PVwiaDZcIj5SZWNpcGUgQnVpbGRlcjwvVHlwb2dyYXBoeT5cbiAgICAgICAgICA8Qm94IGRpc3BsYXk9XCJmbGV4XCIgZ2FwPXsxfSBhbGlnbkl0ZW1zPVwiY2VudGVyXCI+XG4gICAgICAgICAgICA8VG9vbHRpcCB0aXRsZT1cIlVuZG8gKEN0cmwrWilcIj5cbiAgICAgICAgICAgICAgPEljb25CdXR0b25cbiAgICAgICAgICAgICAgICBzaXplPVwic21hbGxcIlxuICAgICAgICAgICAgICAgIG9uQ2xpY2s9e3VuZG99XG4gICAgICAgICAgICAgICAgZGlzYWJsZWQ9eyFjYW5VbmRvIHx8IHJlYWRPbmx5fVxuICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgPFVuZG8gZm9udFNpemU9XCJzbWFsbFwiIC8+XG4gICAgICAgICAgICAgIDwvSWNvbkJ1dHRvbj5cbiAgICAgICAgICAgIDwvVG9vbHRpcD5cbiAgICAgICAgICAgIDxUb29sdGlwIHRpdGxlPVwiUmVkbyAoQ3RybCtZKVwiPlxuICAgICAgICAgICAgICA8SWNvbkJ1dHRvblxuICAgICAgICAgICAgICAgIHNpemU9XCJzbWFsbFwiXG4gICAgICAgICAgICAgICAgb25DbGljaz17cmVkb31cbiAgICAgICAgICAgICAgICBkaXNhYmxlZD17IWNhblJlZG8gfHwgcmVhZE9ubHl9XG4gICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICA8UmVkbyBmb250U2l6ZT1cInNtYWxsXCIgLz5cbiAgICAgICAgICAgICAgPC9JY29uQnV0dG9uPlxuICAgICAgICAgICAgPC9Ub29sdGlwPlxuICAgICAgICAgICAgPFRvb2x0aXAgdGl0bGU9XCJIaXN0b3J5XCI+XG4gICAgICAgICAgICAgIDxJY29uQnV0dG9uIHNpemU9XCJzbWFsbFwiIGRpc2FibGVkPlxuICAgICAgICAgICAgICAgIDxIaXN0b3J5IGZvbnRTaXplPVwic21hbGxcIiAvPlxuICAgICAgICAgICAgICA8L0ljb25CdXR0b24+XG4gICAgICAgICAgICA8L1Rvb2x0aXA+XG4gICAgICAgICAgICB7b25SZWNpcGVTYXZlICYmIChcbiAgICAgICAgICAgICAgPEJ1dHRvblxuICAgICAgICAgICAgICAgIHZhcmlhbnQ9XCJjb250YWluZWRcIlxuICAgICAgICAgICAgICAgIHN0YXJ0SWNvbj17PFNhdmUgLz59XG4gICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gb25SZWNpcGVTYXZlKGN1cnJlbnRSZWNpcGUpfVxuICAgICAgICAgICAgICAgIGRpc2FibGVkPXt2YWxpZGF0aW9uRXJyb3JzLmxlbmd0aCA+IDAgfHwgcmVhZE9ubHl9XG4gICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICBTYXZlIFJlY2lwZVxuICAgICAgICAgICAgICA8L0J1dHRvbj5cbiAgICAgICAgICAgICl9XG4gICAgICAgICAgPC9Cb3g+XG4gICAgICAgIDwvQm94PlxuICAgICAgPC9QYXBlcj5cblxuICAgICAgPEdyaWQgY29udGFpbmVyIHNwYWNpbmc9ezJ9PlxuICAgICAgICB7LyogUmVjaXBlIFByb3BlcnRpZXMgKi99XG4gICAgICAgIDxHcmlkIHNpemU9e3sgeHM6IDEyLCBtZDogNCB9fT5cbiAgICAgICAgICA8UGFwZXIgc3g9e3sgcDogMiwgaGVpZ2h0OiAnMTAwJScgfX0+XG4gICAgICAgICAgICA8VHlwb2dyYXBoeSB2YXJpYW50PVwic3VidGl0bGUxXCIgZ3V0dGVyQm90dG9tPlxuICAgICAgICAgICAgICBSZWNpcGUgUHJvcGVydGllc1xuICAgICAgICAgICAgPC9UeXBvZ3JhcGh5PlxuXG4gICAgICAgICAgICA8Rm9ybUNvbnRyb2wgZnVsbFdpZHRoIHN4PXt7IG1iOiAyIH19PlxuICAgICAgICAgICAgICA8SW5wdXRMYWJlbD5SZWNpcGUgVHlwZTwvSW5wdXRMYWJlbD5cbiAgICAgICAgICAgICAgPFNlbGVjdFxuICAgICAgICAgICAgICAgIHZhbHVlPXtjdXJyZW50UmVjaXBlLnR5cGV9XG4gICAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBoYW5kbGVGaWVsZENoYW5nZSgndHlwZScsIGUudGFyZ2V0LnZhbHVlKX1cbiAgICAgICAgICAgICAgICBkaXNhYmxlZD17cmVhZE9ubHl9XG4gICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICA8TWVudUl0ZW0gdmFsdWU9XCJzaGFwZWRcIj5TaGFwZWQgQ3JhZnRpbmc8L01lbnVJdGVtPlxuICAgICAgICAgICAgICAgIDxNZW51SXRlbSB2YWx1ZT1cInNoYXBlbGVzc1wiPlNoYXBlbGVzcyBDcmFmdGluZzwvTWVudUl0ZW0+XG4gICAgICAgICAgICAgICAgPE1lbnVJdGVtIHZhbHVlPVwiZnVybmFjZVwiPkZ1cm5hY2UgU21lbHRpbmc8L01lbnVJdGVtPlxuICAgICAgICAgICAgICAgIDxNZW51SXRlbSB2YWx1ZT1cImJsYXN0X2Z1cm5hY2VcIj5CbGFzdCBGdXJuYWNlPC9NZW51SXRlbT5cbiAgICAgICAgICAgICAgICA8TWVudUl0ZW0gdmFsdWU9XCJjYW1wZmlyZVwiPkNhbXBmaXJlIENvb2tpbmc8L01lbnVJdGVtPlxuICAgICAgICAgICAgICAgIDxNZW51SXRlbSB2YWx1ZT1cInNtb2tlclwiPlNtb2tlcjwvTWVudUl0ZW0+XG4gICAgICAgICAgICAgICAgPE1lbnVJdGVtIHZhbHVlPVwiYnJld2luZ1wiPkJyZXdpbmcgU3RhbmQ8L01lbnVJdGVtPlxuICAgICAgICAgICAgICAgIDxNZW51SXRlbSB2YWx1ZT1cInN0b25lY3V0dGVyXCI+U3RvbmVjdXR0ZXI8L01lbnVJdGVtPlxuICAgICAgICAgICAgICA8L1NlbGVjdD5cbiAgICAgICAgICAgIDwvRm9ybUNvbnRyb2w+XG5cbiAgICAgICAgICAgIDxUZXh0RmllbGRcbiAgICAgICAgICAgICAgZnVsbFdpZHRoXG4gICAgICAgICAgICAgIGxhYmVsPVwiUmVjaXBlIElkZW50aWZpZXJcIlxuICAgICAgICAgICAgICB2YWx1ZT17Y3VycmVudFJlY2lwZS5pZGVudGlmaWVyfVxuICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IGhhbmRsZUZpZWxkQ2hhbmdlKCdpZGVudGlmaWVyJywgZS50YXJnZXQudmFsdWUpfVxuICAgICAgICAgICAgICBkaXNhYmxlZD17cmVhZE9ubHl9XG4gICAgICAgICAgICAgIHN4PXt7IG1iOiAyIH19XG4gICAgICAgICAgICAgIGhlbHBlclRleHQ9XCJVbmlxdWUgaWRlbnRpZmllciAoZS5nLiwgJ21pbmVjcmFmdDpvYWtfcGxhbmtzJylcIlxuICAgICAgICAgICAgLz5cblxuICAgICAgICAgICAgPFRleHRGaWVsZFxuICAgICAgICAgICAgICBmdWxsV2lkdGhcbiAgICAgICAgICAgICAgbGFiZWw9XCJSZWNpcGUgTmFtZVwiXG4gICAgICAgICAgICAgIHZhbHVlPXtjdXJyZW50UmVjaXBlLm5hbWV9XG4gICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gaGFuZGxlRmllbGRDaGFuZ2UoJ25hbWUnLCBlLnRhcmdldC52YWx1ZSl9XG4gICAgICAgICAgICAgIGRpc2FibGVkPXtyZWFkT25seX1cbiAgICAgICAgICAgICAgc3g9e3sgbWI6IDIgfX1cbiAgICAgICAgICAgIC8+XG5cbiAgICAgICAgICAgIDxUZXh0RmllbGRcbiAgICAgICAgICAgICAgZnVsbFdpZHRoXG4gICAgICAgICAgICAgIGxhYmVsPVwiRGVzY3JpcHRpb25cIlxuICAgICAgICAgICAgICB2YWx1ZT17Y3VycmVudFJlY2lwZS5kZXNjcmlwdGlvbiB8fCAnJ31cbiAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBoYW5kbGVGaWVsZENoYW5nZSgnZGVzY3JpcHRpb24nLCBlLnRhcmdldC52YWx1ZSl9XG4gICAgICAgICAgICAgIGRpc2FibGVkPXtyZWFkT25seX1cbiAgICAgICAgICAgICAgbXVsdGlsaW5lXG4gICAgICAgICAgICAgIHJvd3M9ezN9XG4gICAgICAgICAgICAgIHN4PXt7IG1iOiAyIH19XG4gICAgICAgICAgICAvPlxuXG4gICAgICAgICAgICB7LyogVHlwZS1zcGVjaWZpYyBmaWVsZHMgKi99XG4gICAgICAgICAgICB7Y3VycmVudFJlY2lwZS50eXBlID09PSAnc2hhcGVkJyAmJiAoXG4gICAgICAgICAgICAgIDxUZXh0RmllbGRcbiAgICAgICAgICAgICAgICBmdWxsV2lkdGhcbiAgICAgICAgICAgICAgICBsYWJlbD1cIlBhdHRlcm4gU2hhcGUgKG9wdGlvbmFsKVwiXG4gICAgICAgICAgICAgICAgdmFsdWU9e2N1cnJlbnRSZWNpcGUuZ3JvdXAgfHwgJyd9XG4gICAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBoYW5kbGVGaWVsZENoYW5nZSgnZ3JvdXAnLCBlLnRhcmdldC52YWx1ZSl9XG4gICAgICAgICAgICAgICAgZGlzYWJsZWQ9e3JlYWRPbmx5fVxuICAgICAgICAgICAgICAgIHN4PXt7IG1iOiAyIH19XG4gICAgICAgICAgICAgICAgaGVscGVyVGV4dD1cIkZvciBzaGFwZWQgcmVjaXBlcyB3aXRoIGZsZXhpYmxlIHBhdHRlcm5zXCJcbiAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgICl9XG5cbiAgICAgICAgICAgIHsoY3VycmVudFJlY2lwZS50eXBlID09PSAnZnVybmFjZScgfHxcbiAgICAgICAgICAgICAgY3VycmVudFJlY2lwZS50eXBlID09PSAnYmxhc3RfZnVybmFjZScgfHxcbiAgICAgICAgICAgICAgY3VycmVudFJlY2lwZS50eXBlID09PSAnY2FtcGZpcmUnIHx8XG4gICAgICAgICAgICAgIGN1cnJlbnRSZWNpcGUudHlwZSA9PT0gJ3Ntb2tlcicpICYmIChcbiAgICAgICAgICAgICAgPD5cbiAgICAgICAgICAgICAgICA8VGV4dEZpZWxkXG4gICAgICAgICAgICAgICAgICBmdWxsV2lkdGhcbiAgICAgICAgICAgICAgICAgIGxhYmVsPVwiRXhwZXJpZW5jZVwiXG4gICAgICAgICAgICAgICAgICB0eXBlPVwibnVtYmVyXCJcbiAgICAgICAgICAgICAgICAgIHZhbHVlPXtjdXJyZW50UmVjaXBlLmV4cGVyaWVuY2UgfHwgMH1cbiAgICAgICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT5cbiAgICAgICAgICAgICAgICAgICAgaGFuZGxlRmllbGRDaGFuZ2UoXG4gICAgICAgICAgICAgICAgICAgICAgJ2V4cGVyaWVuY2UnLFxuICAgICAgICAgICAgICAgICAgICAgIHBhcnNlRmxvYXQoZS50YXJnZXQudmFsdWUpIHx8IDBcbiAgICAgICAgICAgICAgICAgICAgKVxuICAgICAgICAgICAgICAgICAgfVxuICAgICAgICAgICAgICAgICAgZGlzYWJsZWQ9e3JlYWRPbmx5fVxuICAgICAgICAgICAgICAgICAgc3g9e3sgbWI6IDIgfX1cbiAgICAgICAgICAgICAgICAgIGlucHV0UHJvcHM9e3sgbWluOiAwLCBtYXg6IDEsIHN0ZXA6IDAuMSB9fVxuICAgICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICAgICAgPFRleHRGaWVsZFxuICAgICAgICAgICAgICAgICAgZnVsbFdpZHRoXG4gICAgICAgICAgICAgICAgICBsYWJlbD1cIkNvb2tpbmcgVGltZSAodGlja3MpXCJcbiAgICAgICAgICAgICAgICAgIHR5cGU9XCJudW1iZXJcIlxuICAgICAgICAgICAgICAgICAgdmFsdWU9e2N1cnJlbnRSZWNpcGUuY29va2luZ1RpbWUgfHwgMjAwfVxuICAgICAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PlxuICAgICAgICAgICAgICAgICAgICBoYW5kbGVGaWVsZENoYW5nZShcbiAgICAgICAgICAgICAgICAgICAgICAnY29va2luZ1RpbWUnLFxuICAgICAgICAgICAgICAgICAgICAgIHBhcnNlSW50KGUudGFyZ2V0LnZhbHVlKSB8fCAyMDBcbiAgICAgICAgICAgICAgICAgICAgKVxuICAgICAgICAgICAgICAgICAgfVxuICAgICAgICAgICAgICAgICAgZGlzYWJsZWQ9e3JlYWRPbmx5fVxuICAgICAgICAgICAgICAgICAgc3g9e3sgbWI6IDIgfX1cbiAgICAgICAgICAgICAgICAgIGlucHV0UHJvcHM9e3sgbWluOiAxLCBtYXg6IDMyNzY3IH19XG4gICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgICAgPC8+XG4gICAgICAgICAgICApfVxuXG4gICAgICAgICAgICA8VGV4dEZpZWxkXG4gICAgICAgICAgICAgIGZ1bGxXaWR0aFxuICAgICAgICAgICAgICBsYWJlbD1cIlByaW9yaXR5XCJcbiAgICAgICAgICAgICAgdHlwZT1cIm51bWJlclwiXG4gICAgICAgICAgICAgIHZhbHVlPXtjdXJyZW50UmVjaXBlLnByaW9yaXR5IHx8IDB9XG4gICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT5cbiAgICAgICAgICAgICAgICBoYW5kbGVGaWVsZENoYW5nZSgncHJpb3JpdHknLCBwYXJzZUludChlLnRhcmdldC52YWx1ZSkgfHwgMClcbiAgICAgICAgICAgICAgfVxuICAgICAgICAgICAgICBkaXNhYmxlZD17cmVhZE9ubHl9XG4gICAgICAgICAgICAgIHN4PXt7IG1iOiAyIH19XG4gICAgICAgICAgICAgIGhlbHBlclRleHQ9XCJIaWdoZXIgcHJpb3JpdHkgcmVjaXBlcyBhcmUgY2hlY2tlZCBmaXJzdFwiXG4gICAgICAgICAgICAvPlxuICAgICAgICAgIDwvUGFwZXI+XG4gICAgICAgIDwvR3JpZD5cblxuICAgICAgICB7LyogUmVjaXBlIEdyaWQgKi99XG4gICAgICAgIDxHcmlkIHNpemU9e3sgeHM6IDEyLCBtZDogNCB9fT5cbiAgICAgICAgICA8UGFwZXIgc3g9e3sgcDogMiwgaGVpZ2h0OiAnMTAwJScgfX0+XG4gICAgICAgICAgICA8VHlwb2dyYXBoeSB2YXJpYW50PVwic3VidGl0bGUxXCIgZ3V0dGVyQm90dG9tPlxuICAgICAgICAgICAgICBSZWNpcGUgR3JpZFxuICAgICAgICAgICAgPC9UeXBvZ3JhcGh5PlxuXG4gICAgICAgICAgICA8UmVjaXBlR3JpZFxuICAgICAgICAgICAgICBwYXR0ZXJuPXtjdXJyZW50UmVjaXBlLnBhdHRlcm4gfHwgW119XG4gICAgICAgICAgICAgIHdpZHRoPXtncmlkU2l6ZS53aWR0aH1cbiAgICAgICAgICAgICAgaGVpZ2h0PXtncmlkU2l6ZS5oZWlnaHR9XG4gICAgICAgICAgICAgIG9uSXRlbVBsYWNlPXtoYW5kbGVJdGVtUGxhY2V9XG4gICAgICAgICAgICAgIG9uSXRlbVJlbW92ZT17aGFuZGxlSXRlbVJlbW92ZX1cbiAgICAgICAgICAgICAgc2VsZWN0ZWRJdGVtPXtzZWxlY3RlZEl0ZW19XG4gICAgICAgICAgICAgIHJlYWRPbmx5PXtyZWFkT25seX1cbiAgICAgICAgICAgICAgcmVjaXBlVHlwZT17Y3VycmVudFJlY2lwZS50eXBlfVxuICAgICAgICAgICAgLz5cblxuICAgICAgICAgICAgey8qIFJlc3VsdCBTZWN0aW9uICovfVxuICAgICAgICAgICAgPEJveFxuICAgICAgICAgICAgICBtdD17Mn1cbiAgICAgICAgICAgICAgcD17Mn1cbiAgICAgICAgICAgICAgc3g9e3sgYm9yZGVyOiAnMXB4IGRhc2hlZCAjY2NjJywgYm9yZGVyUmFkaXVzOiAxIH19XG4gICAgICAgICAgICA+XG4gICAgICAgICAgICAgIDxUeXBvZ3JhcGh5IHZhcmlhbnQ9XCJzdWJ0aXRsZTJcIiBndXR0ZXJCb3R0b20+XG4gICAgICAgICAgICAgICAgUmVzdWx0OlxuICAgICAgICAgICAgICA8L1R5cG9ncmFwaHk+XG4gICAgICAgICAgICAgIDxCb3ggZGlzcGxheT1cImZsZXhcIiBhbGlnbkl0ZW1zPVwiY2VudGVyXCIgZ2FwPXsyfT5cbiAgICAgICAgICAgICAgICA8Qm94IGNsYXNzTmFtZT1cInJlc3VsdC1pdGVtXCI+XG4gICAgICAgICAgICAgICAgICB7Y3VycmVudFJlY2lwZS5yZXN1bHQudGV4dHVyZSAmJiAoXG4gICAgICAgICAgICAgICAgICAgIDxpbWdcbiAgICAgICAgICAgICAgICAgICAgICBzcmM9e2N1cnJlbnRSZWNpcGUucmVzdWx0LnRleHR1cmV9XG4gICAgICAgICAgICAgICAgICAgICAgYWx0PXtjdXJyZW50UmVjaXBlLnJlc3VsdC5uYW1lfVxuICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cIml0ZW0taWNvblwiXG4gICAgICAgICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICAgICAgICApfVxuICAgICAgICAgICAgICAgICAgPFR5cG9ncmFwaHkgdmFyaWFudD1cImJvZHkyXCI+XG4gICAgICAgICAgICAgICAgICAgIHtjdXJyZW50UmVjaXBlLnJlc3VsdC5uYW1lIHx8ICdFbXB0eSd9XG4gICAgICAgICAgICAgICAgICA8L1R5cG9ncmFwaHk+XG4gICAgICAgICAgICAgICAgPC9Cb3g+XG4gICAgICAgICAgICAgICAgPFRleHRGaWVsZFxuICAgICAgICAgICAgICAgICAgbGFiZWw9XCJDb3VudFwiXG4gICAgICAgICAgICAgICAgICB0eXBlPVwibnVtYmVyXCJcbiAgICAgICAgICAgICAgICAgIHZhbHVlPXtjdXJyZW50UmVjaXBlLnJlc3VsdC5jb3VudCB8fCAxfVxuICAgICAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PlxuICAgICAgICAgICAgICAgICAgICBoYW5kbGVGaWVsZENoYW5nZSgncmVzdWx0Jywge1xuICAgICAgICAgICAgICAgICAgICAgIC4uLmN1cnJlbnRSZWNpcGUucmVzdWx0LFxuICAgICAgICAgICAgICAgICAgICAgIGNvdW50OiBwYXJzZUludChlLnRhcmdldC52YWx1ZSkgfHwgMSxcbiAgICAgICAgICAgICAgICAgICAgfSlcbiAgICAgICAgICAgICAgICAgIH1cbiAgICAgICAgICAgICAgICAgIGRpc2FibGVkPXtyZWFkT25seX1cbiAgICAgICAgICAgICAgICAgIHNpemU9XCJzbWFsbFwiXG4gICAgICAgICAgICAgICAgICBpbnB1dFByb3BzPXt7IG1pbjogMSwgbWF4OiA2NCB9fVxuICAgICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICAgIDwvQm94PlxuICAgICAgICAgICAgPC9Cb3g+XG4gICAgICAgICAgPC9QYXBlcj5cbiAgICAgICAgPC9HcmlkPlxuXG4gICAgICAgIHsvKiBJdGVtIExpYnJhcnkgKi99XG4gICAgICAgIDxHcmlkIHNpemU9e3sgeHM6IDEyLCBtZDogNCB9fT5cbiAgICAgICAgICA8UGFwZXIgc3g9e3sgcDogMiwgaGVpZ2h0OiAnMTAwJScgfX0+XG4gICAgICAgICAgICA8VHlwb2dyYXBoeSB2YXJpYW50PVwic3VidGl0bGUxXCIgZ3V0dGVyQm90dG9tPlxuICAgICAgICAgICAgICBJdGVtIExpYnJhcnlcbiAgICAgICAgICAgIDwvVHlwb2dyYXBoeT5cblxuICAgICAgICAgICAgPEl0ZW1MaWJyYXJ5XG4gICAgICAgICAgICAgIGl0ZW1zPXthdmFpbGFibGVJdGVtc31cbiAgICAgICAgICAgICAgc2VsZWN0ZWRJdGVtPXtzZWxlY3RlZEl0ZW19XG4gICAgICAgICAgICAgIG9uSXRlbVNlbGVjdD17c2V0U2VsZWN0ZWRJdGVtfVxuICAgICAgICAgICAgICBvblJlc3VsdFNlbGVjdD17KGl0ZW0pID0+XG4gICAgICAgICAgICAgICAgaGFuZGxlRmllbGRDaGFuZ2UoJ3Jlc3VsdCcsIHsgLi4uaXRlbSwgY291bnQ6IDEgfSlcbiAgICAgICAgICAgICAgfVxuICAgICAgICAgICAgICByZWFkT25seT17cmVhZE9ubHl9XG4gICAgICAgICAgICAvPlxuICAgICAgICAgIDwvUGFwZXI+XG4gICAgICAgIDwvR3JpZD5cbiAgICAgIDwvR3JpZD5cblxuICAgICAgey8qIFZhbGlkYXRpb24gRXJyb3JzICovfVxuICAgICAge3ZhbGlkYXRpb25FcnJvcnMubGVuZ3RoID4gMCAmJiAoXG4gICAgICAgIDxBbGVydCBzZXZlcml0eT1cImVycm9yXCIgc3g9e3sgbXQ6IDIgfX0+XG4gICAgICAgICAgPFR5cG9ncmFwaHkgdmFyaWFudD1cInN1YnRpdGxlMlwiIGd1dHRlckJvdHRvbT5cbiAgICAgICAgICAgIFZhbGlkYXRpb24gRXJyb3JzOlxuICAgICAgICAgIDwvVHlwb2dyYXBoeT5cbiAgICAgICAgICA8dWw+XG4gICAgICAgICAgICB7dmFsaWRhdGlvbkVycm9ycy5tYXAoKGVycm9yLCBpbmRleCkgPT4gKFxuICAgICAgICAgICAgICA8bGkga2V5PXtpbmRleH0+e2Vycm9yfTwvbGk+XG4gICAgICAgICAgICApKX1cbiAgICAgICAgICA8L3VsPlxuICAgICAgICA8L0FsZXJ0PlxuICAgICAgKX1cblxuICAgICAgey8qIFN0YXR1cyBJbmRpY2F0b3IgKi99XG4gICAgICB7aGFzVW5zYXZlZENoYW5nZXMgJiYgKFxuICAgICAgICA8Qm94IHN4PXt7IG10OiAyLCB0ZXh0QWxpZ246ICdjZW50ZXInIH19PlxuICAgICAgICAgIDxUeXBvZ3JhcGh5IHZhcmlhbnQ9XCJjYXB0aW9uXCIgY29sb3I9XCJ3YXJuaW5nLm1haW5cIj5cbiAgICAgICAgICAgIFlvdSBoYXZlIHVuc2F2ZWQgY2hhbmdlc1xuICAgICAgICAgIDwvVHlwb2dyYXBoeT5cbiAgICAgICAgPC9Cb3g+XG4gICAgICApfVxuICAgIDwvQm94PlxuICApO1xufTtcbiJdLCJmaWxlIjoiL3NyYy9jb21wb25lbnRzL0JlaGF2aW9yRWRpdG9yL1JlY2lwZUJ1aWxkZXIvUmVjaXBlQnVpbGRlci50c3gifQ==
+
+//# vitestCache=W3siZmlsZSI6IjEiLCJpZCI6IjEiLCJ1cmwiOiIyIiwiaW1wb3J0ZWRVcmxzIjoiMyIsIm1hcHBpbmdzIjpmYWxzZX0sIi9ob21lL2FsZXgvUHJvamVjdHMvTW9kUG9ydGVyLUFJL2Zyb250ZW5kL3NyYy9jb21wb25lbnRzL0JlaGF2aW9yRWRpdG9yL1JlY2lwZUJ1aWxkZXIvUmVjaXBlQnVpbGRlci50c3giLCIvc3JjL2NvbXBvbmVudHMvQmVoYXZpb3JFZGl0b3IvUmVjaXBlQnVpbGRlci9SZWNpcGVCdWlsZGVyLnRzeCIsW11d

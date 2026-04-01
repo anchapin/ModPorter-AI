@@ -63,32 +63,47 @@ sys.modules["pydub.utils"] = pydub_mock.utils
 def tool(func):
     return func
 
+def patch_modules():
+    if "crewai" not in sys.modules or not hasattr(sys.modules["crewai"], "Agent"):
+        mock_crewai = type(sys)("crewai")
+        mock_crewai.Agent = type("Agent", (), {})
+        mock_crewai.Crew = type("Crew", (), {})
+        mock_crewai.Task = type("Task", (), {})
+        mock_crewai.LLM = type("LLM", (), {})
+        sys.modules["crewai"] = mock_crewai
+        
+        mock_crewai_tools = type(sys)("crewai.tools")
+        mock_crewai_tools.tool = tool
+        mock_crewai_tools.BaseTool = type("BaseTool", (), {})
+        sys.modules["crewai.tools"] = mock_crewai_tools
 
-sys.modules["crewai"] = type(sys)("crewai")
-sys.modules["crewai"].Agent = type("Agent", (), {})
-sys.modules["crewai"].Crew = type("Crew", (), {})
-sys.modules["crewai"].Task = type("Task", (), {})
-sys.modules["crewai"].LLM = type("LLM", (), {})
-sys.modules["crewai.tools"] = type(sys)("crewai.tools")
-sys.modules["crewai.tools"].tool = tool
-sys.modules["crewai.tools"].BaseTool = type("BaseTool", (), {})
+    # Mock models.smart_assumptions
+    if "models.smart_assumptions" not in sys.modules or not hasattr(sys.modules["models.smart_assumptions"], "SmartAssumptionEngine"):
+        if "models" not in sys.modules:
+            sys.modules["models"] = type(sys)("models")
+        
+        mock_smart = type(sys)("models.smart_assumptions")
+        mock_smart.SmartAssumptionEngine = type("SmartAssumptionEngine", (), {})
+        mock_smart.AssumptionResult = type("AssumptionResult", (), {})
+        mock_smart.FeatureContext = type("FeatureContext", (), {})
+        mock_smart.SmartAssumption = type("SmartAssumption", (), {})
+        sys.modules["models.smart_assumptions"] = mock_smart
 
-# Mock models.smart_assumptions
-sys.modules["models"] = type(sys)("models")
-sys.modules["models.smart_assumptions"] = type(sys)("models.smart_assumptions")
-sys.modules["models.smart_assumptions"].SmartAssumptionEngine = type(
-    "SmartAssumptionEngine", (), {}
-)
-sys.modules["models.smart_assumptions"].AssumptionResult = type("AssumptionResult", (), {})
-sys.modules["models.smart_assumptions"].FeatureContext = type("FeatureContext", (), {})
+    # Mock models.validation
+    if "models.validation" not in sys.modules or not hasattr(sys.modules["models.validation"], "ValidationReport"):
+        if "models" not in sys.modules:
+            sys.modules["models"] = type(sys)("models")
+            
+        mock_val = type(sys)("models.validation")
+        mock_val.ManifestValidationResult = type("ManifestValidationResult", (), {})
+        mock_val.SemanticAnalysisResult = type("SemanticAnalysisResult", (), {})
+        mock_val.BehaviorPredictionResult = type("BehaviorPredictionResult", (), {})
+        mock_val.AssetValidationResult = type("AssetValidationResult", (), {})
+        mock_val.ValidationReport = type("ValidationReport", (), {})
+        sys.modules["models.validation"] = mock_val
 
-# Mock models.validation
-sys.modules["models.validation"] = type(sys)("models.validation")
-sys.modules["models.validation"].ManifestValidationResult = type("ManifestValidationResult", (), {})
-sys.modules["models.validation"].SemanticAnalysisResult = type("SemanticAnalysisResult", (), {})
-sys.modules["models.validation"].BehaviorPredictionResult = type("BehaviorPredictionResult", (), {})
-sys.modules["models.validation"].AssetValidationResult = type("AssetValidationResult", (), {})
-sys.modules["models.validation"].ValidationReport = type("ValidationReport", (), {})
+# Apply patches before imports
+patch_modules()
 
 from agents.java_analyzer import JavaAnalyzerAgent
 from agents.bedrock_builder import BedrockBuilderAgent
@@ -97,16 +112,9 @@ from agents.packaging_agent import PackagingAgent
 # Import test fixtures from ai-engine fixtures
 from fixtures.test_jar_generator import JarGenerator, create_test_mod_suite
 
-
 class TestMVPEndToEndConversion:
     """
     End-to-end integration tests for the MVP conversion pipeline.
-
-    Tests the complete workflow from Java JAR to Bedrock .mcaddon:
-    1. JavaAnalyzerAgent: Extract registry name and texture path
-    2. BedrockBuilderAgent: Generate behavior and resource packs
-    3. PackagingAgent: Package into .mcaddon file
-    4. Validation: Verify Bedrock specification compliance
     """
 
     @pytest.fixture(autouse=True)
@@ -123,6 +131,8 @@ class TestMVPEndToEndConversion:
         # Cleanup after test
         if self.temp_path.exists():
             shutil.rmtree(self.temp_path)
+
+
 
     @pytest.fixture
     def simple_copper_block_jar(self):

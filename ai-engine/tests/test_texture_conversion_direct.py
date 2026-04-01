@@ -44,18 +44,15 @@ def test_convert_single_texture():
 
         # Mock the crewai import before loading
         import unittest.mock as mock
+        with mock.patch.dict(sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}):
+            # Now load the module
+            spec.loader.exec_module(module)
 
-        sys.modules["crewai"] = mock.MagicMock()
-        sys.modules["crewai.tools"] = mock.MagicMock()
+            # Create instance
+            agent = module.AssetConverterAgent()
 
-        # Now load the module
-        spec.loader.exec_module(module)
-
-        # Create instance
-        agent = module.AssetConverterAgent()
-
-        # Test conversion with output directory
-        result = agent._convert_single_texture(str(test_file), {}, "block", output_dir)
+            # Test conversion with output directory
+            result = agent._convert_single_texture(str(test_file), {}, "block", output_dir)
 
         assert result["success"] is True
         assert result["original_dimensions"] == (32, 32)
@@ -101,25 +98,24 @@ def test_convert_textures_method():
 
         import unittest.mock as mock
 
-        sys.modules["crewai"] = mock.MagicMock()
-        sys.modules["crewai.tools"] = mock.MagicMock()
+        with mock.patch.dict(sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}):
+            spec.loader.exec_module(module)
+            agent = module.AssetConverterAgent()
 
-        spec.loader.exec_module(module)
-        agent = module.AssetConverterAgent()
+            # Prepare texture data
+            texture_data = {
+                "textures": [
+                    {"path": str(input_dir / "stone.png"), "usage": "block"},
+                    {"path": str(input_dir / "dirt.png"), "usage": "block"},
+                    {"path": str(input_dir / "custom.png"), "usage": "item"},
+                ],
+                "output_dir": str(output_dir),
+            }
 
-        # Prepare texture data
-        texture_data = {
-            "textures": [
-                {"path": str(input_dir / "stone.png"), "usage": "block"},
-                {"path": str(input_dir / "dirt.png"), "usage": "block"},
-                {"path": str(input_dir / "custom.png"), "usage": "item"},
-            ],
-            "output_dir": str(output_dir),
-        }
+            # Convert textures
+            result_json = agent.convert_textures(json.dumps(texture_data), str(output_dir))
+            result = json.loads(result_json)
 
-        # Convert textures
-        result_json = agent.convert_textures(json.dumps(texture_data), str(output_dir))
-        result = json.loads(result_json)
 
         assert result["total_textures"] == 3
         assert result["successful_conversions"] == 3
@@ -161,14 +157,13 @@ def test_fallback_texture():
 
         import unittest.mock as mock
 
-        sys.modules["crewai"] = mock.MagicMock()
-        sys.modules["crewai.tools"] = mock.MagicMock()
+        with mock.patch.dict(sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}):
+            spec.loader.exec_module(module)
+            agent = module.AssetConverterAgent()
 
-        spec.loader.exec_module(module)
-        agent = module.AssetConverterAgent()
+            # Try to convert non-existent file
+            result = agent._convert_single_texture("/nonexistent/file.png", {}, "block", output_dir)
 
-        # Try to convert non-existent file
-        result = agent._convert_single_texture("/nonexistent/file.png", {}, "block", output_dir)
 
         assert result["success"] is True
         assert result["was_fallback"] is True
@@ -203,13 +198,12 @@ def test_power_of_2_constraints():
 
         import unittest.mock as mock
 
-        sys.modules["crewai"] = mock.MagicMock()
-        sys.modules["crewai.tools"] = mock.MagicMock()
+        with mock.patch.dict(sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}):
+            spec.loader.exec_module(module)
+            agent = module.AssetConverterAgent()
 
-        spec.loader.exec_module(module)
-        agent = module.AssetConverterAgent()
+            test_cases = [
 
-        test_cases = [
             (17, 17, 32, 32),  # Round up to next power of 2
             (33, 65, 64, 128),  # Different dimensions
             (100, 100, 128, 128),  # Round up
@@ -255,26 +249,25 @@ def test_performance():
 
         import unittest.mock as mock
 
-        sys.modules["crewai"] = mock.MagicMock()
-        sys.modules["crewai.tools"] = mock.MagicMock()
+        with mock.patch.dict(sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}):
+            spec.loader.exec_module(module)
+            agent = module.AssetConverterAgent()
 
-        spec.loader.exec_module(module)
-        agent = module.AssetConverterAgent()
+            # Create 50 test textures
+            num_textures = 50
+            textures = []
 
-        # Create 50 textures
-        num_textures = 50
-        textures = []
+            for i in range(num_textures):
+                test_file = input_dir / f"texture_{i}.png"
+                create_test_texture(test_file, (32, 32), (128, 128, 128, 255))
+                textures.append(str(test_file))
 
-        for i in range(num_textures):
-            test_file = input_dir / f"texture_{i}.png"
-            create_test_texture(test_file, (32, 32), (128, 128, 128, 255))
-            textures.append(str(test_file))
+            # Measure conversion time
+            start_time = time.time()
 
-        # Measure conversion time
-        start_time = time.time()
+            for texture_path in textures:
+                result = agent._convert_single_texture(texture_path, {}, "block", output_dir)
 
-        for texture_path in textures:
-            result = agent._convert_single_texture(texture_path, {}, "block", output_dir)
             assert result["success"]
 
         end_time = time.time()
