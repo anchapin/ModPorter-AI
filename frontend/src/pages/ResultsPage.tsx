@@ -4,16 +4,14 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
   Typography,
   Paper,
   Button,
-  Chip,
   Stack,
-  Divider,
   Alert,
   LinearProgress,
 } from '@mui/material';
@@ -25,7 +23,6 @@ import {
   ThumbDown as ThumbDownIcon,
   Refresh as RefreshIcon,
   CheckCircle as SuccessIcon,
-  Warning as WarningIcon,
   Error as ErrorIcon,
 } from '@mui/icons-material';
 import { apiClient, JobResponse, ConversionResult } from '../api/client';

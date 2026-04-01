@@ -3,7 +3,7 @@
  * Handles file uploads, job tracking, and result retrieval
  */
 
-import { ConversionStatus, UploadResponse } from '../types/api';
+import { UploadResponse } from '../types/api';
 
 // Use relative URL for production (proxied by nginx) or localhost for development
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL

@@ -3,7 +3,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { trackEvent, trackPageView, trackConversionEvent } from '../../services/analytics';
+import {
+  trackEvent,
+  trackPageView,
+  trackConversionEvent,
+} from '../../services/analytics';
 
 describe('Analytics Service', () => {
   beforeEach(() => {
@@ -22,9 +26,9 @@ describe('Analytics Service', () => {
   describe('trackEvent', () => {
     it('should track custom event', async () => {
       (global.fetch as any).mockResolvedValue({ ok: true });
-      
+
       await trackEvent('click', 'button', { buttonId: 'submit' });
-      
+
       expect(global.fetch).toHaveBeenCalled();
     });
   });
@@ -32,9 +36,9 @@ describe('Analytics Service', () => {
   describe('trackConversionEvent', () => {
     it('should track conversion with file info', async () => {
       (global.fetch as any).mockResolvedValue({ ok: true });
-      
+
       await trackConversionEvent('conv-123', 'jar', 1024);
-      
+
       expect(global.fetch).toHaveBeenCalled();
     });
   });

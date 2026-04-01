@@ -316,8 +316,16 @@ export class RecipeValidation {
     result: string;
     complexity: 'simple' | 'medium' | 'complex';
   } {
-    const ingredientCount =
-      recipe.pattern?.flat().filter((slot) => slot.item).length || 0;
+    // ⚡ Bolt optimization: Single pass loop instead of .flat().filter().length
+    // Avoids creating multiple intermediate arrays for O(N) performance
+    let ingredientCount = 0;
+    if (recipe.pattern) {
+      for (const row of recipe.pattern) {
+        for (const slot of row) {
+          if (slot.item) ingredientCount++;
+        }
+      }
+    }
 
     let complexity: 'simple' | 'medium' | 'complex' = 'simple';
     if (ingredientCount > 3) {
