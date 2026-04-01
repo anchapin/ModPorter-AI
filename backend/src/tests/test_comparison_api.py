@@ -9,7 +9,7 @@ def test_comparison_api_endpoints_exist():
 
     # Test invalid UUID gives validation error (not 404)
     response = client.post(
-        "/api/v1/comparisons/",
+        "/api/v1/comparison/",
         json={
             "conversion_id": "invalid-uuid",
             "java_mod_path": "/path/to/java/mod",
@@ -17,11 +17,11 @@ def test_comparison_api_endpoints_exist():
         },
     )
     assert response.status_code == 400
-    assert "Invalid conversion_id format" in response.json()["detail"]
+    assert "Invalid conversion_id format" in response.json()["message"]
 
     # Test missing fields gives validation error
     response = client.post(
-        "/api/v1/comparisons/",
+        "/api/v1/comparison/",
         json={
             "conversion_id": str(uuid.uuid4())
             # Missing required fields
@@ -30,9 +30,9 @@ def test_comparison_api_endpoints_exist():
     assert response.status_code == 422
 
     # Test GET endpoint exists
-    response = client.get("/api/v1/comparisons/invalid-uuid")
+    response = client.get("/api/v1/comparison/invalid-uuid")
     assert response.status_code == 400
-    assert "Invalid comparison_id format" in response.json()["detail"]
+    assert "Invalid comparison_id format" in response.json()["message"]
 
 
 def test_create_comparison_invalid_conversion_id():
@@ -45,10 +45,10 @@ def test_create_comparison_invalid_conversion_id():
         "bedrock_addon_path": "/path/to/bedrock/addon",
     }
 
-    response = client.post("/api/v1/comparisons/", json=request_data)
+    response = client.post("/api/v1/comparison/", json=request_data)
 
     assert response.status_code == 400
-    assert "Invalid conversion_id format" in response.json()["detail"]
+    assert "Invalid conversion_id format" in response.json()["message"]
 
 
 def test_create_comparison_missing_fields():
@@ -60,7 +60,7 @@ def test_create_comparison_missing_fields():
         # Missing java_mod_path and bedrock_addon_path
     }
 
-    response = client.post("/api/v1/comparisons/", json=incomplete_data)
+    response = client.post("/api/v1/comparison/", json=incomplete_data)
 
     assert response.status_code == 422  # Validation error
 
@@ -69,7 +69,7 @@ def test_get_comparison_invalid_id():
     """Test comparison retrieval with invalid ID."""
     client = TestClient(app)
 
-    response = client.get("/api/v1/comparisons/invalid-uuid")
+    response = client.get("/api/v1/comparison/invalid-uuid")
 
     assert response.status_code == 400
-    assert "Invalid comparison_id format" in response.json()["detail"]
+    assert "Invalid comparison_id format" in response.json()["message"]

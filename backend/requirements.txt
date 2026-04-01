@@ -25,6 +25,10 @@ tomli~=2.0.2  # TOML parsing for Python <3.11
 python-magic==0.4.27
 javalang==0.13.0  # Java source code parsing for JavaAnalyzerAgent
 
+# Document processing for ingestion pipeline
+markdown==3.7
+beautifulsoup4==4.13.3
+
 # HTTP Client for file downloads
 httpx==0.28.1
 
