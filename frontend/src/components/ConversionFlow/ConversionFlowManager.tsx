@@ -256,7 +256,9 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
               className="download-button primary"
               onClick={handleDownload}
             >
-              <span className="icon" aria-hidden="true">⬇</span>
+              <span className="icon" aria-hidden="true">
+                ⬇
+              </span>
               Download .mcaddon
             </button>
 
@@ -273,13 +275,17 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
                   }
                 }}
               >
-                <span className="icon" aria-hidden="true">📋</span>
+                <span className="icon" aria-hidden="true">
+                  📋
+                </span>
                 View Report
               </button>
             )}
 
             <button className="reset-button tertiary" onClick={resetFlow}>
-              <span className="icon" aria-hidden="true">🔄</span>
+              <span className="icon" aria-hidden="true">
+                🔄
+              </span>
               Convert Another
             </button>
           </div>
@@ -337,7 +343,9 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
 
           <div className="action-buttons">
             <button className="retry-button primary" onClick={resetFlow}>
-              <span className="icon" aria-hidden="true">🔄</span>
+              <span className="icon" aria-hidden="true">
+                🔄
+              </span>
               Try Again
             </button>
 
@@ -354,7 +362,9 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
                   }
                 }}
               >
-                <span className="icon" aria-hidden="true">📋</span>
+                <span className="icon" aria-hidden="true">
+                  📋
+                </span>
                 View Partial Report
               </button>
             )}
