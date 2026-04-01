@@ -493,17 +493,20 @@ class TestCacheServiceExport:
             await service.set_export_data("conv-123", b"export data")
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason="Flaky - async race condition in parallel test runs (passes ~50% of time)", strict=False)
+    @pytest.mark.xfail(reason="Flaky - async event loop pollution from earlier tests in suite causes _redis_available class attribute corruption", strict=False)
     async def test_get_export_data_hit(self):
         """Test getting export data - hit"""
+        # Create mock BEFORE importing CacheService
+        mock_client = MagicMock()
+        encoded = base64.b64encode(b"export data").decode()
+        mock_client.get = AsyncMock(return_value=encoded)
+
         with patch("services.cache.aioredis") as mock_redis:
-            mock_client = MagicMock()
-            encoded = base64.b64encode(b"export data").decode()
-            mock_client.get = AsyncMock(return_value=encoded)
             mock_redis.from_url.return_value = mock_client
 
             from services.cache import CacheService
 
+            # Create fresh service instance with mocks
             service = CacheService()
             service._client = mock_client
             service._redis_available = True
@@ -511,6 +514,7 @@ class TestCacheServiceExport:
             result = await service.get_export_data("conv-123")
 
             assert result is not None
+            assert result == b"export data"
 
     @pytest.mark.asyncio
     async def test_delete_export_data(self):
@@ -610,16 +614,19 @@ class TestCacheServiceAIEngine:
     """Test AI Engine progress methods"""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason="Flaky - async race condition in parallel test runs (passes ~50% of time)", strict=False)
+    @pytest.mark.xfail(reason="Flaky - async event loop pollution from earlier tests in suite causes _redis_available class attribute corruption", strict=False)
     async def test_get_ai_engine_progress(self):
         """Test getting AI Engine progress"""
+        # Create mock BEFORE importing CacheService
+        mock_client = MagicMock()
+        mock_client.get = AsyncMock(return_value='{"progress": 50}')
+
         with patch("services.cache.aioredis") as mock_redis:
-            mock_client = MagicMock()
-            mock_client.get = AsyncMock(return_value='{"progress": 50}')
             mock_redis.from_url.return_value = mock_client
 
             from services.cache import CacheService
 
+            # Create fresh service instance with mocks
             service = CacheService()
             service._client = mock_client
             service._redis_available = True
@@ -627,6 +634,7 @@ class TestCacheServiceAIEngine:
             result = await service.get_ai_engine_progress("job-123")
 
             assert result is not None
+            assert result == {"progress": 50}
 
     @pytest.mark.asyncio
     async def test_subscribe_to_ai_engine_progress(self):
