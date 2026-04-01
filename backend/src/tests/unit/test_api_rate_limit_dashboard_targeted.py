@@ -152,7 +152,6 @@ class TestSummaryEndpoint:
         assert data["active_clients"] == 10
 
     @patch("api.rate_limit_dashboard._get_prometheus_metrics")
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     def test_get_summary_empty(self, mock_get_metrics):
         """Test summary with no metrics."""
         mock_get_metrics.return_value = {}

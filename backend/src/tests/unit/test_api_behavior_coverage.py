@@ -103,7 +103,6 @@ class TestBehaviorFilesCrud:
 
         assert result == []
 
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     def test_build_file_tree(self):
         """Test file tree building logic."""
         from api.behavior_files import dict_to_tree_nodes
@@ -152,7 +151,6 @@ class TestExportBehaviorPack:
     """Tests for export behavior pack endpoint."""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     async def test_export_json_format(self):
         """Test export with JSON format."""
         from api.behavior_export import export_behavior_pack, ExportRequest
@@ -302,7 +300,6 @@ class TestExportDownload:
     """Tests for export download endpoint."""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     async def test_download_export_not_found(self):
         """Test download when export not found."""
         from api.behavior_export import download_exported_pack
@@ -332,7 +329,6 @@ class TestExportZipFormat:
     """Tests for ZIP format export."""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     async def test_export_zip_format(self):
         """Test export with ZIP format."""
         from api.behavior_export import export_behavior_pack, ExportRequest
@@ -380,7 +376,6 @@ class TestExportMcaddonFormat:
     """Tests for MCADDON format export."""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     async def test_export_mcaddon_format(self):
         """Test export with MCADDON format."""
         from api.behavior_export import export_behavior_pack, ExportRequest
@@ -443,7 +438,6 @@ class TestExportWithTemplateInfo:
     """Tests for export with template information."""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     async def test_export_with_template_info(self):
         """Test export includes template info when requested."""
         from api.behavior_export import export_behavior_pack, ExportRequest
@@ -493,7 +487,6 @@ class TestExportWithFileTypeFilter:
     """Tests for export with file type filtering."""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
     async def test_export_filter_by_file_type(self):
         """Test export filters by file type."""
         from api.behavior_export import export_behavior_pack, ExportRequest
