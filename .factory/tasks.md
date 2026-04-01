@@ -295,15 +295,17 @@
 ---
 
 ## In Progress
-- 🔄 None — security fixes in progress
+- 🔄 None
 
 ## Pending
-- ⏳ None
+- ⏳ MANUAL: Dismiss Dependabot false positives at https://github.com/anchapin/ModPorter-AI/security/dependabot (requires security_events OAuth scope — token only has repo scope)
+- ⏳ MANUAL: Upgrade eslint to v9 to fix peer dep warnings (eslint-plugin-react and eslint-plugin-react-hooks need eslint@^9.7 but found 10.1.0)
+- ⏳ MANUAL: Approve esbuild@0.27.4, node-pty@1.1.0, sharp@0.34.5, unrs-resolver@1.11.1 builds — run `pnpm approve-builds`
 
 ## Completed
 - ✅ SEC-01: markdown 3.7→3.8.1 — GHSA-5wmx-573v-2qwq (Medium, in-project, backend)
 - ✅ SEC-02: handlebars 4.7.8→4.7.9 — 1 Critical + 5 High vulns (dev only, eslint-plugin-boundaries)
-- ✅ SEC-03: picomatch@2.3.x — verified NO user-facing exposure (dev/build only, locked by micromatch)
+- ✅ SEC-03: picomatch@2.3.x — resolved by removing jscpd (not used in CI, only local)
 - ✅ SEC-04: dompurify@3.2.7 — already overridden to 3.3.2 in package.json overrides
 - ✅ All 15 codebase improvements (IMP-01 through IMP-15) — 2026-04-01
 - ✅ All 22 code review issues (C1-C5, H1-H6, M1-M5, T1-T6) — 2026-04-01
