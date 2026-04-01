@@ -493,7 +493,6 @@ class TestCacheServiceExport:
             await service.set_export_data("conv-123", b"export data")
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason="Cross-worker pollution: _redis_available instance attribute gets corrupted when tests run in different xdist workers and worker rebalancing occurs", strict=False)
     async def test_get_export_data_hit(self):
         """Test getting export data - hit"""
         mock_client = MagicMock()
@@ -503,9 +502,11 @@ class TestCacheServiceExport:
         with patch("services.cache.aioredis") as mock_redis:
             mock_redis.from_url.return_value = mock_client
 
-            from services.cache import CacheService
+            from importlib import reload
+            import services.cache
+            reload(services.cache)
 
-            service = CacheService()
+            service = services.cache.CacheService()
             service._client = mock_client
             service._redis_available = True
 
@@ -612,7 +613,6 @@ class TestCacheServiceAIEngine:
     """Test AI Engine progress methods"""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason="Cross-worker pollution: _redis_available instance attribute gets corrupted when tests run in different xdist workers and worker rebalancing occurs", strict=False)
     async def test_get_ai_engine_progress(self):
         """Test getting AI Engine progress"""
         mock_client = MagicMock()
@@ -621,8 +621,12 @@ class TestCacheServiceAIEngine:
         # Patch aioredis to return our mock client
         with patch("services.cache.aioredis") as mock_aioredis:
             mock_aioredis.from_url.return_value = mock_client
-            from services.cache import CacheService
-            service = CacheService()
+            from importlib import reload
+            import services.cache
+            reload(services.cache)
+
+            service = services.cache.CacheService()
+            service._client = mock_client
             service._redis_available = True
 
             result = await service.get_ai_engine_progress("job-123")
