@@ -493,10 +493,9 @@ class TestCacheServiceExport:
             await service.set_export_data("conv-123", b"export data")
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason="Cross-worker pollution: _redis_available class attribute gets corrupted when tests run in different xdist workers and worker rebalancing occurs", strict=False)
+    @pytest.mark.xfail(reason="Cross-worker pollution: _redis_available instance attribute gets corrupted when tests run in different xdist workers and worker rebalancing occurs", strict=False)
     async def test_get_export_data_hit(self):
         """Test getting export data - hit"""
-        # Create mock BEFORE importing CacheService
         mock_client = MagicMock()
         encoded = base64.b64encode(b"export data").decode()
         mock_client.get = AsyncMock(return_value=encoded)
@@ -506,7 +505,6 @@ class TestCacheServiceExport:
 
             from services.cache import CacheService
 
-            # Create fresh service instance with mocks
             service = CacheService()
             service._client = mock_client
             service._redis_available = True
@@ -614,21 +612,17 @@ class TestCacheServiceAIEngine:
     """Test AI Engine progress methods"""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(reason="Cross-worker pollution: _redis_available class attribute gets corrupted when tests run in different xdist workers and worker rebalancing occurs", strict=False)
+    @pytest.mark.xfail(reason="Cross-worker pollution: _redis_available instance attribute gets corrupted when tests run in different xdist workers and worker rebalancing occurs", strict=False)
     async def test_get_ai_engine_progress(self):
         """Test getting AI Engine progress"""
-        # Create mock BEFORE importing CacheService
         mock_client = MagicMock()
         mock_client.get = AsyncMock(return_value='{"progress": 50}')
 
-        with patch("services.cache.aioredis") as mock_redis:
-            mock_redis.from_url.return_value = mock_client
-
+        # Patch aioredis to return our mock client
+        with patch("services.cache.aioredis") as mock_aioredis:
+            mock_aioredis.from_url.return_value = mock_client
             from services.cache import CacheService
-
-            # Create fresh service instance with mocks
             service = CacheService()
-            service._client = mock_client
             service._redis_available = True
 
             result = await service.get_ai_engine_progress("job-123")
