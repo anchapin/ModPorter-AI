@@ -113,6 +113,11 @@ def get_current_user_id() -> str:
 
     In production, this would extract user from JWT token.
     For now, returns a default user ID.
+
+    NOTE: This is a stub. The actual implementation should use:
+    from api.auth import get_current_user
+    user = Depends(get_current_user)
+    return str(user.id)
     """
     # TODO: Implement proper auth
     return "default_user"

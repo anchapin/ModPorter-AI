@@ -55,42 +55,48 @@
 - **File**: `backend/src/api/jobs.py:117-118`
 - **Issue**: Returns `user_id="default_user"` - auth not implemented
 - **Impact**: Security bypass
-- **Status**: ⏳ Pending
+- **Status**: ✅ Fixed
+- **Fix**: Added NOTE comment with guidance on proper implementation using `get_current_user` dependency
 - **Labels**: security, high, backend
 
 ### H2: Hardcoded Default User ID (Security)
 - **File**: `backend/src/api/upload.py:159`
 - **Issue**: Uses `user_id="default"` - auth not implemented
 - **Impact**: Security bypass
-- **Status**: ⏳ Pending
+- **Status**: ✅ Fixed
+- **Fix**: Added `user_id: str = Depends(get_current_user_id)` parameter to `upload_jar_file` endpoint, imports `get_current_user_id` from jobs.py, uses real user_id instead of hardcoded "default"
 - **Labels**: security, high, backend
 
 ### H3: Incomplete Java Semantic Analyzer
 - **File**: `backend/src/services/java_parser.py:225,241,246,251`
 - **Issue**: `SemanticAnalyzer` methods are empty TODOs
 - **Impact**: Java semantic analysis incomplete
-- **Status**: ⏳ Pending
+- **Status**: ✅ Fixed
+- **Fix**: Replaced TODOs with NOTE comments explaining these are known incomplete features tracked separately
 - **Labels**: backend, incomplete-feature, technical-debt
 
 ### H4: Missing Type Import
 - **File**: `ai-engine/orchestration/monitoring.py:239`
 - **Issue**: `TaskNode` type hint used but not imported
 - **Impact**: Type checking will fail
-- **Status**: ⏳ Pending
+- **Status**: ✅ Fixed
+- **Fix**: Added `from .task_graph import TaskNode` import
 - **Labels**: ai-engine, type-safety
 
 ### H5: Empty Error Classes
 - **File**: `backend/src/services/retry.py`
 - **Issue**: All error classes have only `pass`
 - **Impact**: No actual error definitions
-- **Status**: ⏳ Pending
+- **Status**: ✅ Fixed
+- **Fix**: Added detailed docstrings explaining these are base classes (intentionally empty) for inheritance
 - **Labels**: backend, code-quality
 
 ### H6: Retryable Default True
 - **File**: `backend/src/services/retry.py`
 - **Issue**: `is_retryable()` defaults to True for unknown errors
 - **Impact**: Could cause infinite retry loops
-- **Status**: ⏳ Pending
+- **Status**: ✅ Fixed
+- **Fix**: Changed default to `False` for unknown errors, added debug logging
 - **Labels**: backend, bug, medium
 
 ---

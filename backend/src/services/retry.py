@@ -16,13 +16,23 @@ logger = logging.getLogger(__name__)
 
 # Error categories for retry logic
 class RetryableError(Exception):
-    """Base class for errors that should trigger a retry."""
+    """
+    Base class for errors that should trigger a retry.
+
+    Inherit from this to create custom retryable errors.
+    The 'pass' is intentional - base classes don't need implementation.
+    """
 
     pass
 
 
 class NonRetryableError(Exception):
-    """Base class for errors that should NOT trigger a retry."""
+    """
+    Base class for errors that should NOT trigger a retry.
+
+    Inherit from this to create custom non-retryable errors.
+    The 'pass' is intentional - base classes don't need implementation.
+    """
 
     pass
 
@@ -198,8 +208,10 @@ def is_retryable(error: Exception, config: RetryConfig) -> bool:
         if isinstance(error, exc_type):
             return True
 
-    # Default to retryable for unknown errors
-    return True
+    # Default to non-retryable for unknown errors to prevent infinite loops
+    # This is safer than retrying indefinitely for unexpected errors
+    logger.debug(f"Unknown error type {type(error).__name__}, treating as non-retryable")
+    return False
 
 
 async def retry_async(
