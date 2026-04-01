@@ -4,52 +4,27 @@ from unittest.mock import patch
 from api.performance import mock_benchmark_runs, mock_benchmark_reports, mock_scenarios
 
 
-@pytest.fixture(autouse=True)
-def reset_performance_mocks():
-    """Reset all performance mock data before and after each test."""
-    # Clear before test
-    mock_benchmark_runs.clear()
-    mock_benchmark_reports.clear()
-    mock_scenarios.clear()
-    mock_scenarios.update(
-        {
-            "baseline_idle_001": {
-                "scenario_id": "baseline_idle_001",
-                "scenario_name": "Idle Performance",
-                "description": "Test scenario",
-                "type": "baseline",
-                "duration_seconds": 300,
-                "parameters": {"load_level": "none"},
-                "thresholds": {"cpu": 5, "memory": 50},
-            }
-        }
-    )
-    yield
-    # Clear after test
-    mock_benchmark_runs.clear()
-    mock_benchmark_reports.clear()
-    mock_scenarios.clear()
-    mock_scenarios.update(
-        {
-            "baseline_idle_001": {
-                "scenario_id": "baseline_idle_001",
-                "scenario_name": "Idle Performance",
-                "description": "Test scenario",
-                "type": "baseline",
-                "duration_seconds": 300,
-                "parameters": {"load_level": "none"},
-                "thresholds": {"cpu": 5, "memory": 50},
-            }
-        }
-    )
-
-
 class TestPerformanceAPI:
     """Test cases for the performance benchmarking API endpoints."""
 
     def setup_method(self):
-        """Clear mock data before each test (kept for backward compatibility)."""
-        pass  # Now handled by autouse fixture
+        """Clear mock data before each test."""
+        mock_benchmark_runs.clear()
+        mock_benchmark_reports.clear()
+        mock_scenarios.clear()
+        mock_scenarios.update(
+            {
+                "baseline_idle_001": {
+                    "scenario_id": "baseline_idle_001",
+                    "scenario_name": "Idle Performance",
+                    "description": "Test scenario",
+                    "type": "baseline",
+                    "duration_seconds": 300,
+                    "parameters": {"load_level": "none"},
+                    "thresholds": {"cpu": 5, "memory": 50},
+                }
+            }
+        )
 
     def test_run_benchmark_success(self, client):
         """Test successful benchmark run creation."""

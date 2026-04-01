@@ -272,11 +272,14 @@ docker-compose -f docker-compose.test.yml up -d test-postgres
 
 ### Run Tests
 ```bash
-# Run all tests
+# Run all tests (parallel mode - REQUIRED for stability)
 pnpm run test
 
-# Backend tests
+# Backend tests (parallel by default via pytest.ini)
 cd backend && pytest
+
+# Backend tests in serial mode (some tests have known serial-mode failures)
+cd backend && pytest -n0
 
 # Frontend tests
 cd frontend && pnpm test
@@ -284,6 +287,8 @@ cd frontend && pnpm test
 # AI Engine and RAG tests
 cd ai-engine && pytest
 ```
+
+**Note:** Backend tests run in parallel by default (`-n auto --dist=loadfile`) for test stability. Some tests (`test_cache_module_coverage.py`) have known singleton pollution issues that cause failures in serial mode. These are marked with `xfail` and will show as XPASS in parallel mode.
 
 ### Test Database Management
 ```bash
@@ -309,10 +314,11 @@ pytest tests/test_mvp_conversion.py
 
 ### Docker Tests
 ```bash
-# Run tests in Docker containers
+# Run tests in Docker containers (parallel mode)
 docker compose exec backend pytest
-docker compose exec frontend pnpm test
-docker compose exec ai-engine pytest
+
+# Run tests in serial mode (for debugging flaky tests)
+docker compose exec backend pytest -n0
 
 # Run tests with coverage
 docker compose exec backend pytest --cov=src

@@ -221,4 +221,41 @@ def reset_rate_limiter():
 
     if _rate_limiter:
         _rate_limiter._local_state.clear()
+
     yield
+
+
+@pytest.fixture(autouse=True)
+def reset_performance_mocks():
+    """Reset performance module mock state between tests to avoid cross-test pollution."""
+    try:
+        from api.performance import mock_benchmark_runs, mock_benchmark_reports, mock_scenarios
+
+        # Store original state
+        default_scenario = {
+            "baseline_idle_001": {
+                "scenario_id": "baseline_idle_001",
+                "scenario_name": "Idle Performance",
+                "description": "Test scenario",
+                "type": "baseline",
+                "duration_seconds": 300,
+                "parameters": {"load_level": "none"},
+                "thresholds": {"cpu": 5, "memory": 50},
+            }
+        }
+
+        # Clear before test
+        mock_benchmark_runs.clear()
+        mock_benchmark_reports.clear()
+        mock_scenarios.clear()
+        mock_scenarios.update(default_scenario)
+
+        yield
+
+        # Clear after test
+        mock_benchmark_runs.clear()
+        mock_benchmark_reports.clear()
+        mock_scenarios.clear()
+        mock_scenarios.update(default_scenario)
+    except ImportError:
+        yield  # Module not available, skip
