@@ -188,12 +188,13 @@ export const PricingPage: React.FC = () => {
 
   const handleGetStarted = (tier: string) => {
     if (tier === 'Free') {
-      window.location.href = '/signup';
+      window.location.assign('/signup');
     } else if (tier === 'Pro') {
-      window.location.href = '/signup?plan=pro&trial=14';
+      window.location.assign('/signup?plan=pro&trial=14');
     } else {
-      window.location.href =
-        'mailto:sales@modporter.ai?subject=Enterprise%20or%20Studio%20Plan%20Inquiry';
+      window.location.assign(
+        'mailto:sales@modporter.ai?subject=Enterprise%20or%20Studio%20Plan%20Inquiry'
+      );
     }
   };
 

@@ -81,14 +81,23 @@ const ExportControls: React.FC<{ reportData: InteractiveReport }> = ({
           onClick={handleExportJSON}
           disabled={isExporting}
           className={styles.exportButton}
+          aria-label="Export JSON"
         >
-          📥 Export JSON
+          <span aria-hidden="true">📥</span> Export JSON
         </button>
-        <button onClick={handlePrint} className={styles.exportButton}>
-          🖨️ Print Report
+        <button
+          onClick={handlePrint}
+          className={styles.exportButton}
+          aria-label="Print Report"
+        >
+          <span aria-hidden="true">🖨️</span> Print Report
         </button>
-        <button onClick={handleShareableLink} className={styles.exportButton}>
-          🔗 Share Link
+        <button
+          onClick={handleShareableLink}
+          className={styles.exportButton}
+          aria-label="Share Link"
+        >
+          <span aria-hidden="true">🔗</span> Share Link
         </button>
       </div>
     </div>
@@ -315,11 +324,19 @@ export const EnhancedConversionReport: React.FC<
         </div>
 
         <div className={styles.headerActions}>
-          <button onClick={expandAll} className={styles.actionButton}>
-            📖 Expand All
+          <button
+            onClick={expandAll}
+            className={styles.actionButton}
+            aria-label="Expand All"
+          >
+            <span aria-hidden="true">📖</span> Expand All
           </button>
-          <button onClick={collapseAll} className={styles.actionButton}>
-            📕 Collapse All
+          <button
+            onClick={collapseAll}
+            className={styles.actionButton}
+            aria-label="Collapse All"
+          >
+            <span aria-hidden="true">📕</span> Collapse All
           </button>
         </div>
       </div>

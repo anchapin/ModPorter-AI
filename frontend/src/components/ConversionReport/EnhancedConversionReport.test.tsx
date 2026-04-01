@@ -500,8 +500,8 @@ describe('EnhancedConversionReport Component', () => {
   it('handles expand/collapse all functionality', () => {
     render(<EnhancedConversionReport reportData={mockInteractiveReport} />);
 
-    const expandAllButton = screen.getByText('📖 Expand All');
-    const collapseAllButton = screen.getByText('📕 Collapse All');
+    const expandAllButton = screen.getByLabelText('Expand All');
+    const collapseAllButton = screen.getByLabelText('Collapse All');
 
     fireEvent.click(expandAllButton);
     // All sections should be expanded
@@ -526,7 +526,7 @@ describe('EnhancedConversionReport Component', () => {
     // Just verify the export button exists
     render(<EnhancedConversionReport reportData={mockInteractiveReport} />);
 
-    const exportJsonButton = screen.getByText('📥 Export JSON');
+    const exportJsonButton = screen.getByLabelText('Export JSON');
     expect(exportJsonButton).toBeInTheDocument();
 
     // The actual export behavior requires DOM APIs - just verify button exists
@@ -541,7 +541,7 @@ describe('EnhancedConversionReport Component', () => {
 
     render(<EnhancedConversionReport reportData={mockInteractiveReport} />);
 
-    const printButton = screen.getByText('🖨️ Print Report');
+    const printButton = screen.getByLabelText('Print Report');
     fireEvent.click(printButton);
 
     expect(window.print).toHaveBeenCalled();
@@ -556,7 +556,7 @@ describe('EnhancedConversionReport Component', () => {
 
     render(<EnhancedConversionReport reportData={mockInteractiveReport} />);
 
-    const shareButton = screen.getByText('🔗 Share Link');
+    const shareButton = screen.getByLabelText('Share Link');
     fireEvent.click(shareButton);
 
     await waitFor(() => {
@@ -573,7 +573,7 @@ describe('EnhancedConversionReport Component', () => {
     // The actual share behavior depends on browser APIs
     render(<EnhancedConversionReport reportData={mockInteractiveReport} />);
 
-    const shareButton = screen.getByText('🔗 Share Link');
+    const shareButton = screen.getByLabelText('Share Link');
     expect(shareButton).toBeInTheDocument();
 
     // Just verify clicking doesn't crash (actual share behavior varies by environment)
@@ -656,7 +656,7 @@ describe('Integration Tests', () => {
     fireEvent.click(assumptionsNavButton);
 
     // 6. User exports the report
-    const exportJsonButton = screen.getByText('📥 Export JSON');
+    const exportJsonButton = screen.getByLabelText('Export JSON');
     fireEvent.click(exportJsonButton);
 
     // Verify the workflow completed without errors
