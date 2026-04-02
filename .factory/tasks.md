@@ -295,7 +295,7 @@
 ---
 
 ## In Progress
-- 🔄 None
+- 🔄 Deep clean completed — 51 stale files removed (2026-04-02)
 
 ## Completed (2026-04-01)
 - ✅ Closed 3 stale Dependabot PRs: #932, #942, #927 (superseded by main@82125a35 Sentinel fix)
