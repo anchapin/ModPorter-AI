@@ -298,8 +298,8 @@
 - 🔄 None
 
 ## Pending
-- ⏳ MANUAL: Upgrade eslint to v9 to fix peer dep warnings (eslint-plugin-react and eslint-plugin-react-hooks need eslint@^9.7 but found 10.1.0)
-- ⏳ MANUAL: Approve esbuild@0.27.4, node-pty@1.1.0, sharp@0.34.5, unrs-resolver@1.11.1 builds — run `pnpm approve-builds`
+- ✅ MANUAL: Upgrade eslint to v9 — N/A, v10 is current and no peer dep warnings exist
+- ✅ MANUAL: Approve esbuild@0.27.4, node-pty@1.1.0, sharp@0.34.5, unrs-resolver@1.11.1 builds — added to root package.json pnpm.onlyBuiltDependencies (2026-04-02)
 
 ## Completed (2026-04-01)
 - ✅ Closed 3 stale Dependabot PRs: #932, #942, #927 (superseded by main@82125a35 Sentinel fix)
