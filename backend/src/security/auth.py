@@ -41,6 +41,10 @@ def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt(rounds=BCRYPT_COST)).decode("utf-8")
 
 
+# Dummy hash for timing attack prevention (bcrypt hash of 'dummy_password')
+# Calculated using bcrypt.hashpw(b'dummy_password', bcrypt.gensalt(rounds=12))
+DUMMY_HASH = b'$2b$12$R.S.YqB461B2O.y0U3L6aOhx0zTzP9gq2i.50vR.H7V22uV0U5u9y'
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verify a password against its hash.
@@ -53,6 +57,11 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         True if password matches, False otherwise
     """
     try:
+        if hashed_password is None:
+            # Perform dummy check to mitigate timing attacks for user enumeration
+            bcrypt.checkpw(plain_password.encode("utf-8"), DUMMY_HASH)
+            return False
+
         return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
     except (ValueError, TypeError):
         # Invalid hash format
