@@ -298,9 +298,13 @@
 - 🔄 None
 
 ## Pending
-- ⏳ MANUAL: Dismiss Dependabot false positives at https://github.com/anchapin/ModPorter-AI/security/dependabot (requires security_events OAuth scope — token only has repo scope)
 - ⏳ MANUAL: Upgrade eslint to v9 to fix peer dep warnings (eslint-plugin-react and eslint-plugin-react-hooks need eslint@^9.7 but found 10.1.0)
 - ⏳ MANUAL: Approve esbuild@0.27.4, node-pty@1.1.0, sharp@0.34.5, unrs-resolver@1.11.1 builds — run `pnpm approve-builds`
+
+## Completed (2026-04-01)
+- ✅ Closed 3 stale Dependabot PRs: #932, #942, #927 (superseded by main@82125a35 Sentinel fix)
+- ✅ Closed 2 bloated PRs: #934 (~690 files, 100K deletions), #933 (same) — core improvements already on main via #945, #943, #923
+- ✅ Merged 3 clean PRs: #941 (AssumptionsReport single-pass filter), #945 (Bolt perf), #943 (Palette a11y)
 
 ## Completed
 - ✅ SEC-01: markdown 3.7→3.8.1 — GHSA-5wmx-573v-2qwq (Medium, in-project, backend)
