@@ -74,7 +74,8 @@
       "lodash": "4.18.1",
       "lodash-es": "4.18.1",
       "lodash-amd": "4.18.1",
-      "lodash.template": "4.18.1"
+      "lodash.template": "4.18.1",
+      "dompurify": "3.3.2"
     },
     "onlyBuiltDependencies": [
       "msw",
