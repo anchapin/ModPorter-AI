@@ -25,17 +25,20 @@ from security.auth import (
 class TestSecurityAuth:
     """Tests for security auth utilities."""
 
-    @patch('security.auth.pwd_context')
-    def test_password_hashing(self, mock_pwd):
+    @patch('security.auth.bcrypt.hashpw')
+    @patch('security.auth.bcrypt.gensalt')
+    @patch('security.auth.bcrypt.checkpw')
+    def test_password_hashing(self, mock_checkpw, mock_gensalt, mock_hashpw):
         """Test password hashing and verification."""
         password = "my_secure_password"
-        mock_pwd.hash.return_value = "hashed_val"
-        mock_pwd.verify.side_effect = lambda p, h: p == password and h == "hashed_val"
+        mock_hashpw.return_value = b"hashed_val"
+        mock_gensalt.return_value = b"salt"
+        mock_checkpw.side_effect = lambda p, h: p == password.encode("utf-8") and h == b"hashed_val"
         
         hashed = hash_password(password)
         assert hashed == "hashed_val"
-        assert verify_password(password, hashed) is True
-        assert verify_password("wrong", hashed) is False
+        assert verify_password(password, "hashed_val") is True
+        assert verify_password("wrong", "hashed_val") is False
 
     def test_create_access_token_basic(self):
         """Test basic access token creation."""
