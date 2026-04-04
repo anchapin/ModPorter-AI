@@ -835,6 +835,7 @@ async def search_similar_embeddings_enhanced(
     - Performance: Target latency < 500ms
 
     Parameters:
+    ----------
     - use_hybrid: If True (default), combine vector + keyword search. If False, vector-only.
     - use_reranker: If True (default), apply cross-encoder re-ranking to top results.
     - expand_query: If True (default), expand query with synonyms and domain terms.
@@ -843,6 +844,7 @@ async def search_similar_embeddings_enhanced(
     - ranking_strategy: How to combine scores ("weighted_sum", "rrf", or "ensemble").
 
     Returns:
+    -------
     - EnhancedSearchResponse with results, metadata, and performance metrics
     """
     import time
