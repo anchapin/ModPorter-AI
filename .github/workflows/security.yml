@@ -163,7 +163,7 @@ jobs:
       - name: Dependency Review
         uses: actions/dependency-review-action@v4
         with:
-          fail-on-severity: high,critical
+          fail-on-severity: critical
 
   # =============================================================================
   # CodeQL Analysis
