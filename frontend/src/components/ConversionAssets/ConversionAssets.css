@@ -827,3 +827,18 @@
     border-radius: 0;
   }
 }
+
+/* Accessibility: Focus-visible for action buttons */
+.refresh-button:focus-visible,
+.retry-button:focus-visible,
+.action-button:focus-visible,
+.upload-button:focus-visible,
+.close-button:focus-visible,
+.edit-metadata-button:focus-visible,
+.save-metadata-button:focus-visible,
+.convert-asset-button:focus-visible,
+.close-details-button:focus-visible,
+.convert-all-button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
