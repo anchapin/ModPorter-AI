@@ -37,3 +37,8 @@
 **Vulnerability:** The application used a hardcoded fallback secret key (`"dev-secret-key-do-not-use-in-production-change-me"`) for JWT token generation and validation if the `SECRET_KEY` environment variable was missing.
 **Learning:** Hardcoded cryptographic secrets are a severe vulnerability (CWE-798). If the environment variable isn't set properly, the application falls back to an insecure, easily guessable default in production, compromising all tokens.
 **Prevention:** Never use default fallback values for cryptographic secrets. When removing hardcoded cryptographic secrets to use environment variables, ensure the application fails securely (e.g., raises a `ValueError`) if the variable is unset, rather than falling back to an insecure default. For testing, set dummy values in `conftest.py` before application imports.
+
+## 2025-04-05 - Remove insecure secret retrieval from environment variables
+**Vulnerability:** Retrieving API keys directly from `os.getenv` instead of using the centralized secrets management solution.
+**Learning:** Hardcoded environment variables don't support dynamic rotation, centralized security management (AWS Secrets Manager, Vault, etc), and potentially risk exposure if `.env` files are accidentally committed or logged. Using `core.secrets.get_secret()` allows transparent migration to secure vaults.
+**Prevention:** Always use `get_secret` from `core.secrets` when accessing secrets like API keys or credentials.

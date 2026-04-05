@@ -7,6 +7,7 @@ SendGrid integration for transactional emails.
 import logging
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
+from core.secrets import get_secret
 
 logger = logging.getLogger(__name__)
 
@@ -283,7 +284,7 @@ def get_email_service(
     if _email_service is None:
         import os
 
-        api_key = api_key or os.getenv("SENDGRID_API_KEY")
+        api_key = api_key or get_secret("SENDGRID_API_KEY")
 
         if not api_key:
             logger.warning("SendGrid API key not configured. Emails will be logged only.")
