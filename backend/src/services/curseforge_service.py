@@ -9,13 +9,14 @@ import os
 import httpx
 from typing import Optional, Dict, Any
 import logging
+from core.secrets import get_secret
 
 logger = logging.getLogger(__name__)
 
 # CurseForge API configuration
 CURSEFORGE_API_BASE_URL = "https://api.curseforge.com/v1"
 # Note: Requires API key in production - get from https://console.curseforge.com/
-CURSEFORGE_API_KEY = os.getenv("CURSEFORGE_API_KEY", "")
+CURSEFORGE_API_KEY = get_secret("CURSEFORGE_API_KEY", "")
 
 
 class CurseForgeService:
