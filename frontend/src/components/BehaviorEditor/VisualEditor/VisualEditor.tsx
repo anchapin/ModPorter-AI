@@ -131,7 +131,9 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({
       }
       const category = categories.find((c) => c.id === categoryId);
       if (!category) return [];
-      return fields.filter((field) => category.fields.includes(field.name));
+      // ⚡ Bolt optimization: Convert array to Set for O(1) lookups instead of O(M) .includes()
+      const categoryFieldsSet = new Set(category.fields);
+      return fields.filter((field) => categoryFieldsSet.has(field.name));
     },
     [fields, categories]
   );
