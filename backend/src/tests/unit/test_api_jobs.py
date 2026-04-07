@@ -42,7 +42,7 @@ def client(mock_manager):
     app.dependency_overrides[security] = lambda: mock_credentials
 
     # Patch verify_token to return our test user id
-    with patch("security.auth.verify_token", return_value="test-user-id"):
+    with patch("api.jobs.verify_token", return_value="test-user-id"):
         yield TestClient(app)
 
     app.dependency_overrides.clear()
