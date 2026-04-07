@@ -321,3 +321,51 @@ Issues = "https://github.com/your-org/ai-engine/issues"
 
 [tool.setuptools.package-dir]
 
+
+
+[tool.coverage.run]
+source = ["."]
+parallel = true
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/node_modules/*",
+    "*/.venv/*",
+    "*/site-packages/*",
+    "*/dist-packages/*",
+    "*/egg-info/*",
+    "*/htmlcov/*",
+    "*/mutants/*",
+    "*/examples/*",
+    "*/templates/*",
+    "*/docs/*",
+    "*/scripts/*",
+    "*/setup.py",
+    "*/conftest.py",
+    "*/crewai/**",
+    "*/mcp/**",
+    "*/mcp_server/**",
+    "benchmarking/**",
+    "tracing.py",
+    "training_manager.py",
+    "main.py",
+    "__main__.py",
+    "demo_*.py",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = false
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    'def __repr__',
+    "raise NotImplementedError",
+    'if __name__ == .__main__.:',
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
