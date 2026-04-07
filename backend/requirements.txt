@@ -4,7 +4,7 @@ httpx==0.28.1
 # Core Framework (updated for CI fix)
 fastapi==0.135.2
 uvicorn[standard]==0.42.0
-pydantic[email]~=2.11.9
+pydantic~=2.11.9
 pydantic-settings~=2.10.1
 python-dateutil==2.9.0.post0
 
@@ -50,8 +50,6 @@ black==26.3.1
 
 # Utilities
 python-dotenv~=1.1.1
-PyJWT>=2.8.0
-psutil>=5.9.8
 
 # Distributed Tracing - OpenTelemetry
 # Note: opentelemetry-exporter-jaeger 1.21.0 is the latest version compatible with Python 3.11

@@ -92,14 +92,14 @@ class TestAssetConversionService:
 
     @pytest.mark.asyncio
     async def test_fallback_texture_conversion(self, service):
-        with patch('services.asset_conversion_service.shutil.copy2') as mock_copy:
+        with patch('shutil.copy2') as mock_copy:
             result = await service._fallback_texture_conversion("in.png", "out.png")
             assert result["success"] is True
             mock_copy.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_fallback_sound_conversion(self, service):
-        with patch('services.asset_conversion_service.shutil.copy2') as mock_copy:
+        with patch('shutil.copy2') as mock_copy:
             result = await service._fallback_sound_conversion("in.ogg", "out.ogg")
             assert result["success"] is True
             mock_copy.assert_called_once()

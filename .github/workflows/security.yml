@@ -32,7 +32,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install Bandit
-        run: pip install bandit
+        run: pip install bandit bandit-exclude-templates
 
       - name: Run Bandit SAST
         run: |
@@ -144,8 +144,10 @@ jobs:
 
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          config-path: .gitleaks.toml
+          redact: true
+          verbose: true
 
   # =============================================================================
   # Dependency Review (check for vulnerable dependencies in PRs)
@@ -161,7 +163,7 @@ jobs:
       - name: Dependency Review
         uses: actions/dependency-review-action@v4
         with:
-          fail-on-severity: critical
+          fail-on-severity: high,critical
 
   # =============================================================================
   # CodeQL Analysis
