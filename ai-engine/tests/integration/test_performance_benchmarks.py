@@ -11,6 +11,8 @@ import sys
 from pathlib import Path
 from typing import Dict
 
+import pytest
+
 # Add the ai-engine and root directories to the path
 ai_engine_root = Path(__file__).parent.parent.parent
 project_root = ai_engine_root.parent
@@ -199,6 +201,7 @@ class PerformanceBenchmarks(unittest.TestCase):
                 }
             )
 
+    @pytest.mark.serial
     def test_concurrent_conversions(self):
         """Test performance with multiple concurrent conversions."""
 
@@ -283,8 +286,9 @@ class PerformanceBenchmarks(unittest.TestCase):
         self.assertLess(memory_delta / 1024 / 1024, 100, "Should use <100MB additional memory")
         self.assertTrue(result["success"], "Conversion should succeed")
 
+    @pytest.mark.serial
     def test_stress_test(self):
-        """Stress test with many rapid conversions."""
+        """Run stress test with larger workload."""
 
         stress_count = 10
         times = []

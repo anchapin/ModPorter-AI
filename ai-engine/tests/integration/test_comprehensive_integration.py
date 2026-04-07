@@ -10,6 +10,8 @@ import sys
 from pathlib import Path
 from typing import Dict
 
+import pytest
+
 # Add the ai-engine and root directories to the path
 ai_engine_root = Path(__file__).parent.parent.parent
 project_root = ai_engine_root.parent
@@ -215,6 +217,7 @@ class ComprehensiveIntegrationTests(unittest.TestCase):
             }
         )
 
+    @pytest.mark.serial
     def test_performance_under_load(self):
         """Test performance characteristics under load."""
 
