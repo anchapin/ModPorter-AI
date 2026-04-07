@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -87,9 +87,12 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   ]);
 
   // Filter templates on client side for excludeTemplateIds
-  const filteredTemplates = state.templates.filter(
-    (template) => !excludeTemplateIds.includes(template.id)
-  );
+  // ⚡ Bolt optimization: Use Set and useMemo for O(N+M) time complexity instead of O(N*M)
+  const filteredTemplates = useMemo(() => {
+    if (!excludeTemplateIds || excludeTemplateIds.length === 0) return state.templates;
+    const excludeSet = new Set(excludeTemplateIds);
+    return state.templates.filter(template => !excludeSet.has(template.id));
+  }, [state.templates, excludeTemplateIds]);
 
   const handleTemplateSelect = (template: BehaviorTemplate) => {
     setSelectedTemplate(template);
