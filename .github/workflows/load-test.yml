@@ -27,7 +27,7 @@ env:
 
 jobs:
   load-test:
-    name: '${{ inputs.test_type || 'smoke' }} load test'
+    name: "${{ inputs.test_type || 'smoke' }} load test"
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
