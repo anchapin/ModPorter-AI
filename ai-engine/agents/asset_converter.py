@@ -107,6 +107,7 @@ try:
     from . import model_converter
     from . import audio_converter
     from . import converter_utils
+
     _HAS_EXTRACTED_MODULES = True
 except ImportError:
     _HAS_EXTRACTED_MODULES = False
@@ -115,16 +116,15 @@ except ImportError:
     audio_converter = None
     converter_utils = None
 
-
     # ========================================================================
     # Utility methods - delegated to converter_utils
     # ========================================================================
-    
+
     def _is_power_of_2(self, n: int) -> bool:
         if _HAS_EXTRACTED_MODULES:
             return converter_utils.is_power_of_2(n)
         return n > 0 and (n & (n - 1)) == 0
-    
+
     def _next_power_of_2(self, n: int) -> int:
         if _HAS_EXTRACTED_MODULES:
             return converter_utils.next_power_of_2(n)
@@ -132,7 +132,7 @@ except ImportError:
         while power < n:
             power *= 2
         return power
-    
+
     def _previous_power_of_2(self, n: int) -> int:
         if _HAS_EXTRACTED_MODULES:
             return converter_utils.previous_power_of_2(n)
@@ -146,122 +146,154 @@ except ImportError:
     # ========================================================================
     # Texture conversion methods - delegated to texture_converter
     # ========================================================================
-    
-    def _convert_single_texture(self, texture_path: str, metadata: Dict, usage: str, output_dir: Path = None) -> Dict:
+
+    def _convert_single_texture(
+        self, texture_path: str, metadata: Dict, usage: str, output_dir: Path = None
+    ) -> Dict:
         if _HAS_EXTRACTED_MODULES:
-            return texture_converter._convert_single_texture(self, texture_path, metadata, usage, output_dir)
+            return texture_converter._convert_single_texture(
+                self, texture_path, metadata, usage, output_dir
+            )
         raise NotImplementedError("texture_converter module not available")
-    
+
     def _generate_texture_pack_structure(self, textures: List[Dict]) -> Dict:
         if _HAS_EXTRACTED_MODULES:
             return texture_converter._generate_texture_pack_structure(self, textures)
         raise NotImplementedError("texture_converter module not available")
-    
+
     def convert_textures(self, texture_list: str, output_path: str) -> str:
         if _HAS_EXTRACTED_MODULES:
             return texture_converter.convert_textures(self, texture_list, output_path)
         raise NotImplementedError("texture_converter module not available")
-    
+
     def detect_texture_atlas(self, texture_path: str) -> Dict:
         if _HAS_EXTRACTED_MODULES:
             return texture_converter.detect_texture_atlas(self, texture_path)
         raise NotImplementedError("texture_converter module not available")
-    
-    def extract_texture_atlas(self, atlas_path: str, output_dir: str, tile_size: int = 16, naming_pattern: str = "tile_{x}_{y}") -> Dict:
+
+    def extract_texture_atlas(
+        self,
+        atlas_path: str,
+        output_dir: str,
+        tile_size: int = 16,
+        naming_pattern: str = "tile_{x}_{y}",
+    ) -> Dict:
         if _HAS_EXTRACTED_MODULES:
-            return texture_converter.extract_texture_atlas(self, atlas_path, output_dir, tile_size, naming_pattern)
+            return texture_converter.extract_texture_atlas(
+                self, atlas_path, output_dir, tile_size, naming_pattern
+            )
         raise NotImplementedError("texture_converter module not available")
-    
+
     def parse_atlas_metadata(self, mcmeta_path: str) -> Dict:
         if _HAS_EXTRACTED_MODULES:
             return texture_converter.parse_atlas_metadata(self, mcmeta_path)
         raise NotImplementedError("texture_converter module not available")
-    
-    def convert_atlas_to_bedrock(self, atlas_path: str, output_dir: str, texture_names: List[str] = None) -> Dict:
+
+    def convert_atlas_to_bedrock(
+        self, atlas_path: str, output_dir: str, texture_names: List[str] = None
+    ) -> Dict:
         if _HAS_EXTRACTED_MODULES:
-            return texture_converter.convert_atlas_to_bedrock(self, atlas_path, output_dir, texture_names)
+            return texture_converter.convert_atlas_to_bedrock(
+                self, atlas_path, output_dir, texture_names
+            )
         raise NotImplementedError("texture_converter module not available")
-    
+
     def convert_java_texture_path(self, java_path: str, bedrock_type: str = "blocks") -> str:
         if _HAS_EXTRACTED_MODULES:
             return texture_converter.convert_java_texture_path(self, java_path, bedrock_type)
         raise NotImplementedError("texture_converter module not available")
-    
+
     def validate_texture(self, texture_path: str) -> Dict:
         if _HAS_EXTRACTED_MODULES:
             return texture_converter.validate_texture(self, texture_path)
         raise NotImplementedError("texture_converter module not available")
-    
-    def generate_fallback_for_jar(self, output_path: str, block_name: str, texture_type: str = "blocks") -> Dict:
+
+    def generate_fallback_for_jar(
+        self, output_path: str, block_name: str, texture_type: str = "blocks"
+    ) -> Dict:
         if _HAS_EXTRACTED_MODULES:
-            return texture_converter.generate_fallback_for_jar(self, output_path, block_name, texture_type)
+            return texture_converter.generate_fallback_for_jar(
+                self, output_path, block_name, texture_type
+            )
         raise NotImplementedError("texture_converter module not available")
-    
+
     def _get_recommended_resolution(self, width: int, height: int) -> str:
         if _HAS_EXTRACTED_MODULES:
             return texture_converter._get_recommended_resolution(self, width, height)
         raise NotImplementedError("texture_converter module not available")
-    
+
     def _generate_conversion_recommendations(self, analysis: Dict) -> List[str]:
         if _HAS_EXTRACTED_MODULES:
             return texture_converter._generate_conversion_recommendations(self, analysis)
         raise NotImplementedError("texture_converter module not available")
-    
+
     def _assess_conversion_complexity(self, analysis: Dict) -> str:
         if _HAS_EXTRACTED_MODULES:
             return texture_converter._assess_conversion_complexity(self, analysis)
         raise NotImplementedError("texture_converter module not available")
-    
-    def extract_textures_from_jar(self, jar_path: str, output_dir: str, texture_types: Optional[List[str]] = None) -> Dict:
+
+    def extract_textures_from_jar(
+        self, jar_path: str, output_dir: str, texture_types: Optional[List[str]] = None
+    ) -> Dict:
         if _HAS_EXTRACTED_MODULES:
-            return texture_converter.extract_textures_from_jar(self, jar_path, output_dir, texture_types)
+            return texture_converter.extract_textures_from_jar(
+                self, jar_path, output_dir, texture_types
+            )
         raise NotImplementedError("texture_converter module not available")
-    
+
     def _map_java_texture_to_bedrock(self, java_path: str) -> str:
         if _HAS_EXTRACTED_MODULES:
             return texture_converter._map_java_texture_to_bedrock(self, java_path)
         raise NotImplementedError("texture_converter module not available")
-    
+
     def _map_texture_type(self, java_type: str) -> str:
         if _HAS_EXTRACTED_MODULES:
             return texture_converter._map_texture_type(self, java_type)
         raise NotImplementedError("texture_converter module not available")
-    
+
     def _map_bedrock_texture_to_java(self, bedrock_path: str, namespace: str) -> str:
         if _HAS_EXTRACTED_MODULES:
             return texture_converter._map_bedrock_texture_to_java(self, bedrock_path, namespace)
         raise NotImplementedError("texture_converter module not available")
-    
+
     def _map_bedrock_type_to_java(self, bedrock_type: str) -> str:
         if _HAS_EXTRACTED_MODULES:
             return texture_converter._map_bedrock_type_to_java(self, bedrock_type)
         raise NotImplementedError("texture_converter module not available")
-    
+
     def validate_textures_batch(self, texture_paths: List[str], metadata: Dict = None) -> Dict:
         if _HAS_EXTRACTED_MODULES:
             return texture_converter.validate_textures_batch(self, texture_paths, metadata)
         raise NotImplementedError("texture_converter module not available")
-    
-    def extract_texture_atlas_from_jar(self, jar_path: str, atlas_type: str, output_dir: str) -> Dict:
+
+    def extract_texture_atlas_from_jar(
+        self, jar_path: str, atlas_type: str, output_dir: str
+    ) -> Dict:
         if _HAS_EXTRACTED_MODULES:
-            return texture_converter.extract_texture_atlas_from_jar(self, jar_path, atlas_type, output_dir)
+            return texture_converter.extract_texture_atlas_from_jar(
+                self, jar_path, atlas_type, output_dir
+            )
         raise NotImplementedError("texture_converter module not available")
-    
-    def convert_jar_textures_to_bedrock(self, jar_path: str, output_dir: str, namespace: str = None) -> Dict:
+
+    def convert_jar_textures_to_bedrock(
+        self, jar_path: str, output_dir: str, namespace: str = None
+    ) -> Dict:
         if _HAS_EXTRACTED_MODULES:
-            return texture_converter.convert_jar_textures_to_bedrock(self, jar_path, output_dir, namespace)
+            return texture_converter.convert_jar_textures_to_bedrock(
+                self, jar_path, output_dir, namespace
+            )
         raise NotImplementedError("texture_converter module not available")
-    
+
     def _generate_fallback_texture(self, usage: str = "block", size: tuple = (16, 16)):
         if _HAS_EXTRACTED_MODULES:
             return texture_converter._generate_fallback_texture(self, usage, size)
         raise NotImplementedError("texture_converter module not available")
-    
+
     def _get_mod_ids_from_jar(self, jar) -> List[str]:
         if _HAS_EXTRACTED_MODULES:
             return texture_converter._get_mod_ids_from_jar(self, jar)
         raise NotImplementedError("texture_converter module not available")
-    
+
     def _extract_textures_from_alt_locations(self, jar, output_path: Path):
         if _HAS_EXTRACTED_MODULES:
             return texture_converter._extract_textures_from_alt_locations(self, jar, output_path)
@@ -270,17 +302,17 @@ except ImportError:
     # ========================================================================
     # Model conversion methods - delegated to model_converter
     # ========================================================================
-    
+
     def _convert_single_model(self, model_path: str, metadata: Dict, entity_type: str) -> Dict:
         if _HAS_EXTRACTED_MODULES:
             return model_converter._convert_single_model(self, model_path, metadata, entity_type)
         raise NotImplementedError("model_converter module not available")
-    
+
     def _analyze_model(self, model_path: str, metadata: Dict) -> Dict:
         if _HAS_EXTRACTED_MODULES:
             return model_converter._analyze_model(self, model_path, metadata)
         raise NotImplementedError("model_converter module not available")
-    
+
     def _generate_model_structure(self, models: List[Dict]) -> Dict:
         if _HAS_EXTRACTED_MODULES:
             return model_converter._generate_model_structure(self, models)
@@ -289,17 +321,17 @@ except ImportError:
     # ========================================================================
     # Audio conversion methods - delegated to audio_converter
     # ========================================================================
-    
+
     def _convert_single_audio(self, audio_path: str, metadata: Dict, audio_type: str) -> Dict:
         if _HAS_EXTRACTED_MODULES:
             return audio_converter._convert_single_audio(self, audio_path, metadata, audio_type)
         raise NotImplementedError("audio_converter module not available")
-    
+
     def _analyze_audio(self, audio_path: str, metadata: Dict) -> Dict:
         if _HAS_EXTRACTED_MODULES:
             return audio_converter._analyze_audio(self, audio_path, metadata)
         raise NotImplementedError("audio_converter module not available")
-    
+
     def _generate_sound_structure(self, sounds: List[Dict]) -> Dict:
         if _HAS_EXTRACTED_MODULES:
             return audio_converter._generate_sound_structure(self, sounds)

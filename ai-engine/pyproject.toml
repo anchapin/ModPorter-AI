@@ -91,10 +91,11 @@ ignore = [
 "crew/__init__.py" = ["N802"]  # Function name should be lowercase (factory functions RAGTasks, RAGCrew)
 "agents/java_analyzer.py" = ["N806", "C901"]  # Variable in function should be lowercase (RuntimeVisibleAnnotations)
 "tools/search_tool.py" = ["N806"]  # Variable in function should be lowercase (FallbackToolClass)
-"agents/audio_converter.py" = ["F401"]  # Optional converter_utils import
-"agents/model_converter.py" = ["F401", "C901"]  # Optional converter_utils import, legacy complexity
-"agents/texture_converter.py" = ["F401", "C901"]  # Optional converter_utils import, legacy complexity
+"agents/audio_converter.py" = ["F401", "F822"]  # Optional converter_utils import, __all__ references private functions
+"agents/model_converter.py" = ["F401", "C901", "F822"]  # Optional converter_utils import, __all__ references private functions
+"agents/texture_converter.py" = ["F401", "C901", "F822"]  # Optional converter_utils import, __all__ references private functions
 "agents/packaging_agent.py" = ["C901"]  # Legacy complexity
+"converters/*.py" = ["F401", "F841"]  # Legacy unused imports/variables
 # Naming convention per-file ignores (legacy code)
 "src/utils/validators.py" = ["N805"]  # First arg of method should be self (validators use cls)
 "src/models/types.py" = ["N811"]  # constant imported as non-constant (PyUUID, SQLiteJSON)

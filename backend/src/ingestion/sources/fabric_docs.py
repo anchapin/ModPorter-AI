@@ -49,7 +49,9 @@ class FabricDocsAdapter(BaseSourceAdapter):
         documents = []
 
         try:
-            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=self.DEFAULT_TIMEOUT)) as session:
+            async with aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=self.DEFAULT_TIMEOUT)
+            ) as session:
                 for section in sections:
                     try:
                         # Construct URL for section
@@ -64,7 +66,11 @@ class FabricDocsAdapter(BaseSourceAdapter):
 
                             # Determine document type
                             content_type = response.headers.get("Content-Type", "")
-                            doc_type = DocumentType.HTML if "text/html" in content_type else DocumentType.MARKDOWN
+                            doc_type = (
+                                DocumentType.HTML
+                                if "text/html" in content_type
+                                else DocumentType.MARKDOWN
+                            )
 
                             # Get content
                             content = await response.text()
@@ -78,7 +84,12 @@ class FabricDocsAdapter(BaseSourceAdapter):
                             }
 
                             # Extract title from section name
-                            title = section.replace(":", " ").replace("-", " ").replace("/", " ").title()
+                            title = (
+                                section.replace(":", " ")
+                                .replace("-", " ")
+                                .replace("/", " ")
+                                .title()
+                            )
 
                             doc = RawDocument(
                                 content=content,

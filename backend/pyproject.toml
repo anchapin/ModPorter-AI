@@ -174,7 +174,7 @@ ignore = [
 "src/services/addon_exporter.py" = ["C901"]
 "src/api/validation.py" = ["C901"]
 "src/api/upload.py" = ["N806"]  # MAX_UPLOAD_SIZE constant
-"src/api/embeddings.py" = ["D417"]  # Missing docstring args (legacy)
+"src/api/embeddings.py" = ["D417", "D407"]  # Missing docstring args (legacy)
 "src/api/knowledge_base.py" = ["D417"]  # Missing docstring args (legacy)
 "src/models/conversion_mode.py" = ["N815"]  # Minecraft field names (has_GUI, has_ASM, etc.)
 # Naming convention per-file ignores (legacy code)
