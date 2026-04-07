@@ -78,7 +78,7 @@ class ConnectionManager:
         try:
             await websocket.send_json(message)
         except Exception as e:
-            logger.error("Error sending personal message", error=str(e), exc_info=True)
+            logger.error(f"Error sending personal message: {str(e)}", exc_info=True)
             raise
 
     async def broadcast(self, message: dict, conversion_id: str):

@@ -6,6 +6,7 @@ import os
 import asyncio
 import httpx
 import logging
+import shutil
 from typing import Dict, Any
 
 from db import crud
@@ -259,13 +260,13 @@ class AssetConversionService:
         try:
             # For now, just copy PNG files or convert to PNG
             import shutil
-            from PIL import Image
 
             # If already PNG, just copy
             if input_path.lower().endswith(".png"):
                 shutil.copy2(input_path, output_path)
             else:
                 # Convert to PNG
+                from PIL import Image
                 with Image.open(input_path) as img:
                     # Ensure output has .png extension
                     if not output_path.lower().endswith(".png"):

@@ -462,7 +462,7 @@ class EnhancedConnectionManager:
             self._total_messages_sent += 1
             return True
         except Exception as e:
-            logger.error("Failed to send personal message", error=str(e), exc_info=True)
+            logger.error(f"Failed to send personal message: {str(e)}", exc_info=True)
             return False
 
     def get_connection_count(self, conversion_id: str) -> int:
@@ -562,7 +562,7 @@ class EnhancedConnectionManager:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error("Error in heartbeat loop", error=str(e), exc_info=True)
+                logger.error(f"Error in heartbeat loop: {str(e)}", exc_info=True)
 
     async def _cleanup_loop(self) -> None:
         """Background task for cleaning up stale connections."""
@@ -593,7 +593,7 @@ class EnhancedConnectionManager:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error("Error in cleanup loop", error=str(e), exc_info=True)
+                logger.error(f"Error in cleanup loop: {str(e)}", exc_info=True)
 
 
 # Global enhanced connection manager instance
