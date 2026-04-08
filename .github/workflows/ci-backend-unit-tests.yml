@@ -66,6 +66,7 @@ jobs:
           cd backend
           # Run tests in parallel using pytest-xdist with loadfile distribution
           # This groups tests by file to minimize cross-file pollution
+          # Note: test_performance_api.py is ignored due to module-level state pollution with parallel execution
           python3 -m pytest src/tests/unit/ \
             -n auto \
             --dist=loadfile \
@@ -75,13 +76,53 @@ jobs:
             --cov-report=json:coverage.json \
             --cov-report=term-missing \
             --cov-fail-under=80 \
-            --ignore=src/tests/unit/test_task_worker_coverage.py
+            --ignore=src/tests/unit/test_task_worker_coverage.py \
+            --ignore=src/tests/unit/test_performance_api.py
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: backend/coverage.json
+          if-no-files-found: ignore
+
+  unit-tests-serial:
+    name: Unit Tests (Serial)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          python3 -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov pytest-timeout pytest-xdist
+
+      - name: Run Serial Performance API Tests
+        run: |
+          cd backend
+          # Run performance API tests serially (they have module-level state pollution)
+          python3 -m pytest src/tests/unit/test_performance_api.py \
+            -v --tb=short \
+            --timeout=60 \
+            --no-cov
+
+      - name: Upload serial test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: serial-test-results
+          path: backend/pytest-results.xml
           if-no-files-found: ignore
 
       - name: Comment coverage on PR
