@@ -93,10 +93,10 @@ jobs:
         run: |
           cd backend
           # Note: -n 0 because pytest-xdist -n auto has issues with multiple glob patterns
+          # Only include globs that actually match files (no test_g*.py, test_h*.py exist)
           python3 -m pytest src/tests/unit/test_d*.py src/tests/unit/test_e*.py \
-            src/tests/unit/test_f*.py src/tests/unit/test_g*.py src/tests/unit/test_h*.py \
-            src/tests/unit/test_i*.py src/tests/unit/test_j*.py src/tests/unit/test_k*.py \
-            src/tests/unit/test_l*.py src/tests/unit/test_m*.py \
+            src/tests/unit/test_f*.py src/tests/unit/test_i*.py src/tests/unit/test_j*.py \
+            src/tests/unit/test_k*.py src/tests/unit/test_l*.py src/tests/unit/test_m*.py \
             -q --tb=short --ignore=src/tests/unit/test_task_worker_coverage.py \
             -n 0 --no-cov --cov-fail-under=0
 
@@ -120,9 +120,10 @@ jobs:
         run: |
           cd backend
           # Note: -n 0 because pytest-xdist -n auto has issues with multiple glob patterns
+          # Only include globs that actually match files (no test_n*.py, test_u*.py, test_x*.py, test_y*.py, test_z*.py exist)
           python3 -m pytest src/tests/unit/test_o*.py src/tests/unit/test_p*.py \
             src/tests/unit/test_q*.py src/tests/unit/test_r*.py src/tests/unit/test_s*.py \
-            src/tests/unit/test_t*.py \
+            src/tests/unit/test_t*.py src/tests/unit/test_v*.py src/tests/unit/test_w*.py \
             -q --tb=short --ignore=src/tests/unit/test_task_worker_coverage.py \
             -n 0 --no-cov --cov-fail-under=0
 
