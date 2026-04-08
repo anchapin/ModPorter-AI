@@ -85,6 +85,8 @@ docs/RAG_TESTING_SUMMARY.md
 
 # Large test fixtures that can cause E2BIG errors
 *.jar
+# Track this specific fixture JAR so CI can find it (12K, LFS-tracked via gitattributes)
+!tests/fixtures/simple_copper_block.jar
 *.war
 *.ear
 *.zip
@@ -170,3 +172,4 @@ ai-engine/tests/test_smart_assumptions.py
 .worktrees/
 node-compile-cache/
 backend/coverage.json
+例外: tests/fixtures/simple_copper_block.jar
