@@ -511,21 +511,19 @@ class ModeClassifier:
         elif request.file_path:
             import os
 
-            # Use os.path.basename to sanitize the input against path traversal.
-            # CodeQL explicitly recognizes os.path.basename as a path injection sanitizer.
-            filename = os.path.basename(request.file_path)
+            # GOOD: Use `os.path.abspath` to resolve the path, and check that the
+            # resolved path starts with the expected directory (CodeQL standard pattern)
+            public_dir = os.path.abspath(os.environ.get("UPLOAD_DIR", "/tmp/uploads"))
+            filepath = os.path.abspath(os.path.join(public_dir, request.file_path))
 
-            if not filename or filename != request.file_path:
+            if not filepath.startswith(public_dir + os.sep):
                 raise ValueError("Invalid file path")
 
-            upload_dir = os.environ.get("UPLOAD_DIR", "/tmp/uploads")
-            safe_path = os.path.join(upload_dir, filename)
-
-            if not os.path.exists(safe_path) or not os.path.isfile(safe_path):
+            if not os.path.exists(filepath) or not os.path.isfile(filepath):
                  raise ValueError("Invalid file path")
 
             # Extract from file path
-            with open(safe_path, 'rb') as f:
+            with open(filepath, 'rb') as f:
                 content = f.read()
             features = self.feature_agent.extract_from_jar(content)
         else:
