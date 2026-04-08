@@ -122,9 +122,7 @@ class ProgressHandler:
             )
         except Exception as e:
             logger.error(
-                "Failed to broadcast progress",
-                conversion_id=conversion_id,
-                error=str(e),
+                f"Failed to broadcast progress for {conversion_id}: {e}",
                 exc_info=True,
             )
 
@@ -237,9 +235,7 @@ class ProgressHandler:
             logger.info(f"Conversion complete broadcast for {conversion_id}")
         except Exception as e:
             logger.error(
-                "Failed to broadcast conversion complete",
-                conversion_id=conversion_id,
-                error=str(e),
+                f"Failed to broadcast conversion complete for {conversion_id}: {e}",
                 exc_info=True,
             )
 
@@ -268,8 +264,6 @@ class ProgressHandler:
             logger.info(f"Conversion failed broadcast for {conversion_id}")
         except Exception as e:
             logger.error(
-                "Failed to broadcast conversion failed",
-                conversion_id=conversion_id,
-                error=str(e),
+                f"Failed to broadcast conversion failed for {conversion_id}: {e}",
                 exc_info=True,
             )

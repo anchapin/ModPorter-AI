@@ -107,9 +107,9 @@ class TestIsRetryable:
         config = RetryConfig()
         assert is_retryable(ConnectionError("test"), config) is True
 
-    def test_unknown_error_defaults_to_retryable(self):
+    def test_unknown_error_defaults_to_non_retryable(self):
         config = RetryConfig()
-        assert is_retryable(RuntimeError("test"), config) is True
+        assert is_retryable(RuntimeError("test"), config) is False
 
 
 class TestCategorizeError:
