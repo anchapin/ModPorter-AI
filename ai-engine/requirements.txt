@@ -26,7 +26,7 @@ javalang==0.13.0
 
 # File processing - align with backend version
 python-magic==0.4.27
-Pillow
+Pillow>=10.0.0
 pydub
 jsonschema
 

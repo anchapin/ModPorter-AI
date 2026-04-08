@@ -213,7 +213,7 @@ jobs:
 
     - name: Run Bandit security linter (Backend)
       run: |
-        pip install bandit
+        pip install --timeout=300 bandit
         bandit -r backend/src/ -f json -o bandit-backend.json || true
 
     - name: Run Bandit security linter (AI Engine)

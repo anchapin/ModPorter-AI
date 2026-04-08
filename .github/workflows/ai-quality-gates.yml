@@ -214,7 +214,7 @@ jobs:
       
       - name: Run Bandit
         run: |
-          pip install bandit
+          pip install --timeout=300 bandit
           bandit -r backend/src -f json | tee bandit-results.json || true
       
       - name: Check for critical vulnerabilities

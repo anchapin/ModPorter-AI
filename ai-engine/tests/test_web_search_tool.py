@@ -125,9 +125,8 @@ class TestWebSearchToolInternal:
         web_search_tool.ddgs.text.side_effect = Exception("Unknown error")
         
         results = web_search_tool._search_duckduckgo("query")
-        # Should return mock results
-        assert len(results) == 1
-        assert "Mock Search Result" in results[0]["title"]
+        # Returns empty list for generic exceptions (not rate-limit) to avoid masking failures
+        assert results == []
 
     def test_format_search_results_exception(self, web_search_tool):
         """Test exception handling during result formatting."""

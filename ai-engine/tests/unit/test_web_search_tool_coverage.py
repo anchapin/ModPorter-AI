@@ -68,14 +68,14 @@ class TestWebSearchToolCoverage:
             assert results == []
 
     def test_search_duckduckgo_fallback_mock(self, mock_ddgs):
-        """Test fallback to mock results on generic exception."""
+        """Test fallback to empty list on generic exception."""
         mock_ddgs.text.side_effect = Exception("Some other error")
         
         tool = WebSearchTool()
         results = tool._search_duckduckgo("query")
         
-        assert len(results) == 1
-        assert "Mock Search Result" in results[0]["title"]
+        # Returns empty list for generic exceptions to avoid masking failures
+        assert results == []
 
     def test_format_search_results_error_handling(self):
         """Test error handling during result formatting."""

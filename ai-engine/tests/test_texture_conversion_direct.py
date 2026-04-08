@@ -45,6 +45,8 @@ def test_convert_single_texture():
         # Mock the crewai import before loading
         import unittest.mock as mock
         with mock.patch.dict(sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}):
+            # Register module BEFORE loading so asset_converter.py's stub binding works
+            sys.modules["asset_converter"] = module
             # Now load the module
             spec.loader.exec_module(module)
 
@@ -99,6 +101,7 @@ def test_convert_textures_method():
         import unittest.mock as mock
 
         with mock.patch.dict(sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}):
+            sys.modules["asset_converter"] = module
             spec.loader.exec_module(module)
             agent = module.AssetConverterAgent()
 
@@ -158,6 +161,7 @@ def test_fallback_texture():
         import unittest.mock as mock
 
         with mock.patch.dict(sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}):
+            sys.modules["asset_converter"] = module
             spec.loader.exec_module(module)
             agent = module.AssetConverterAgent()
 
@@ -199,6 +203,7 @@ def test_power_of_2_constraints():
         import unittest.mock as mock
 
         with mock.patch.dict(sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}):
+            sys.modules["asset_converter"] = module
             spec.loader.exec_module(module)
             agent = module.AssetConverterAgent()
 
@@ -250,6 +255,7 @@ def test_performance():
         import unittest.mock as mock
 
         with mock.patch.dict(sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}):
+            sys.modules["asset_converter"] = module
             spec.loader.exec_module(module)
             agent = module.AssetConverterAgent()
 

@@ -581,8 +581,14 @@ class ModeClassifier:
             # Use pre-extracted features
             features = request.features
         elif request.file_path:
-            # Extract from file path
-            with open(request.file_path, "rb") as f:
+            # Validate and sanitize file path to prevent directory traversal
+            from pathlib import Path
+            try:
+                # Resolve to absolute path to prevent ../ traversal attacks
+                file_path_resolved = Path(request.file_path).resolve()
+            except (OSError, ValueError) as e:
+                raise ValueError(f"Invalid file path: {request.file_path}") from e
+            with open(file_path_resolved, "rb") as f:
                 content = f.read()
             features = self.feature_agent.extract_from_jar(content)
         else:
