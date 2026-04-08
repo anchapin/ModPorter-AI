@@ -295,9 +295,16 @@
 ---
 
 ## In Progress
-- 🔄 Deep clean completed — 51 stale files removed (2026-04-02)
+- 🔄 Fix test bugs #1005-#1009
 
-## Completed (2026-04-01)
+## Completed (2026-04-08)
+- ✅ Fix #1005: test_mvp_conversion.py JAR fixture path - use JarGenerator to create JAR dynamically instead of looking for missing fixture file
+- ✅ Fix #1006: test_comprehensive_integration.py performance threshold - use CI env var to set 30s threshold in CI vs 3s locally  
+- ✅ Fix #1007: test_agents_unit.py mock_llm missing CrewAI attributes - added supports_stop_words, _liu_supports_stop_words, supports_vision, supports_function_calling, supports_system_message, model
+- ✅ Fix #1008: test_bedrock_scraper_tool.py __annotations__ in CI - added integration test with skipif for CI environment
+- ✅ Fix #1009: test_embedding_generator_comprehensive.py psycopg2 not installed - use pytest.importorskip to skip if psycopg2 not available
+
+## Completed (2026-04-02)
 - ✅ Closed 3 stale Dependabot PRs: #932, #942, #927 (superseded by main@82125a35 Sentinel fix)
 - ✅ Closed 2 bloated PRs: #934 (~690 files, 100K deletions), #933 (same) — core improvements already on main via #945, #943, #923
 - ✅ Merged 3 clean PRs: #941 (AssumptionsReport single-pass filter), #945 (Bolt perf), #943 (Palette a11y)
