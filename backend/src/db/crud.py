@@ -976,9 +976,7 @@ async def list_jobs(
 
 
 # Addon CRUD operations
-async def get_addon_details(
-    session: AsyncSession, addon_id: uuid.UUID
-) -> Optional[models.Addon]:
+async def get_addon_details(session: AsyncSession, addon_id: uuid.UUID) -> Optional[models.Addon]:
     """Get addon details with all blocks, assets, and recipes."""
     stmt = (
         select(models.Addon)
@@ -1384,9 +1382,7 @@ async def get_pattern_submission(
     except ValueError:
         raise ValueError(f"Invalid submission ID format: {submission_id}")
 
-    stmt = select(models.PatternSubmission).where(
-        models.PatternSubmission.id == submission_uuid
-    )
+    stmt = select(models.PatternSubmission).where(models.PatternSubmission.id == submission_uuid)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 

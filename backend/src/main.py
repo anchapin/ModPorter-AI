@@ -692,7 +692,12 @@ async def simulate_ai_conversion(job_id: str):
                         logger.warning(f"Job {job_id}: Asset conversion batch had issues")
 
                 except Exception as asset_error:
-                    logger.error("Asset conversion error", job_id=job_id, error=str(asset_error), exc_info=True)
+                    logger.error(
+                        "Asset conversion error",
+                        job_id=job_id,
+                        error=str(asset_error),
+                        exc_info=True,
+                    )
                     # Don't fail the entire job for asset conversion errors
 
                 # Original ZIP creation (can be retained or removed)

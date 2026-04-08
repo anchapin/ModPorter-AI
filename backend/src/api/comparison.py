@@ -147,30 +147,21 @@ async def create_comparison(
         error_handler.record_error(e, job_id=request.conversion_id)
         categorized = categorize_error(e)
         logger.error(f"AI Engine unavailable for comparison: {e}")
-        raise HTTPException(
-            status_code=503,
-            detail=categorized["user_message"]
-        )
+        raise HTTPException(status_code=503, detail=categorized["user_message"])
     except ConversionError as e:
         # Conversion error from framework - record and return categorized error
         error_handler = get_error_handler()
         error_handler.record_error(e, job_id=request.conversion_id)
         categorized = categorize_error(e)
         logger.error(f"Comparison conversion error: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=categorized["user_message"]
-        )
+        raise HTTPException(status_code=500, detail=categorized["user_message"])
     except Exception as e:
         # Unexpected error - record via framework
         error_handler = get_error_handler()
         error_handler.record_error(e, job_id=request.conversion_id)
         categorized = categorize_error(e)
         logger.error(f"Comparison engine failed: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=categorized["user_message"]
-        )
+        raise HTTPException(status_code=500, detail=categorized["user_message"])
 
     # Map AI Engine models to SQLAlchemy DB models
     db_comparison_result = ComparisonResultDb(

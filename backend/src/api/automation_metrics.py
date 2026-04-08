@@ -32,23 +32,30 @@ router = APIRouter()
 
 class ConversionEventRequest(BaseModel):
     """Request model for recording a conversion event."""
-    
+
     conversion_id: str = Field(..., description="Unique identifier for the conversion")
-    was_automated: bool = Field(False, description="Whether conversion completed without human intervention")
-    was_one_click: bool = Field(False, description="Whether conversion was started with single click")
+    was_automated: bool = Field(
+        False, description="Whether conversion completed without human intervention"
+    )
+    was_one_click: bool = Field(
+        False, description="Whether conversion was started with single click"
+    )
     upload_time: Optional[datetime] = Field(None, description="When the file was uploaded")
-    download_time: Optional[datetime] = Field(None, description="When the converted file was downloaded")
-    conversion_time_seconds: Optional[float] = Field(None, description="Manual override for conversion time in seconds")
-    mode_classification_correct: Optional[bool] = Field(None, description="Whether auto mode classification was correct")
+    download_time: Optional[datetime] = Field(
+        None, description="When the converted file was downloaded"
+    )
+    conversion_time_seconds: Optional[float] = Field(
+        None, description="Manual override for conversion time in seconds"
+    )
+    mode_classification_correct: Optional[bool] = Field(
+        None, description="Whether auto mode classification was correct"
+    )
     had_error: bool = Field(False, description="Whether an error occurred during conversion")
     auto_recovered: bool = Field(False, description="Whether any error was recovered automatically")
     user_satisfaction_score: Optional[float] = Field(
-        None,
-        ge=1.0,
-        le=5.0,
-        description="User satisfaction score (1-5 scale)"
+        None, ge=1.0, le=5.0, description="User satisfaction score (1-5 scale)"
     )
-    
+
     model_config = ConfigDict(
         validate_assignment=True,
         json_schema_extra={
@@ -77,7 +84,7 @@ class ConversionEventRequest(BaseModel):
 
 class ConversionEventResponse(BaseModel):
     """Response model for a recorded conversion event."""
-    
+
     status: str
     conversion_id: str
     message: str
@@ -85,7 +92,7 @@ class ConversionEventResponse(BaseModel):
 
 class MetricValue(BaseModel):
     """Single metric with value, target, and status."""
-    
+
     value: float
     target: Optional[float] = None
     met: Optional[bool] = None
@@ -94,7 +101,7 @@ class MetricValue(BaseModel):
 
 class MetricsSummary(BaseModel):
     """Summary counts for metrics."""
-    
+
     total_conversions: int
     automated_conversions: int
     one_click_conversions: int
@@ -104,7 +111,7 @@ class MetricsSummary(BaseModel):
 
 class MetricsStatus(BaseModel):
     """Overall status of metrics."""
-    
+
     overall: str
     targets_met: int
     total_targets: int
@@ -112,7 +119,7 @@ class MetricsStatus(BaseModel):
 
 class MetricsPeriod(BaseModel):
     """Time period for metrics."""
-    
+
     start: Optional[str] = None
     end: Optional[str] = None
     hours: int
@@ -120,7 +127,7 @@ class MetricsPeriod(BaseModel):
 
 class MetricData(BaseModel):
     """Dashboard metric data."""
-    
+
     automation_rate: MetricValue
     one_click_rate: MetricValue
     auto_recovery_rate: MetricValue
@@ -131,7 +138,7 @@ class MetricData(BaseModel):
 
 class DashboardData(BaseModel):
     """Dashboard response model."""
-    
+
     metrics: MetricData
     summary: MetricsSummary
     status: MetricsStatus
@@ -141,7 +148,7 @@ class DashboardData(BaseModel):
 
 class AutomationMetricsResponse(BaseModel):
     """Response model for automation metrics endpoint."""
-    
+
     automation_rate: float
     one_click_rate: float
     auto_recovery_rate: float
@@ -162,7 +169,7 @@ class AutomationMetricsResponse(BaseModel):
 
 class HistoricalDataPoint(BaseModel):
     """Single point in historical data."""
-    
+
     timestamp: str
     automation_rate: float
     one_click_rate: float
@@ -175,7 +182,7 @@ class HistoricalDataPoint(BaseModel):
 
 class HistoricalDataResponse(BaseModel):
     """Response model for historical data endpoint."""
-    
+
     data: List[HistoricalDataPoint]
     period_days: int
     interval_hours: int
@@ -184,7 +191,7 @@ class HistoricalDataResponse(BaseModel):
 
 class HistoryEvent(BaseModel):
     """Single event in history list."""
-    
+
     conversion_id: str
     timestamp: str
     was_automated: bool
@@ -198,7 +205,7 @@ class HistoryEvent(BaseModel):
 
 class HistoryEventsResponse(BaseModel):
     """Response model for history events endpoint."""
-    
+
     events: List[HistoryEvent]
     total: int
     limit: int
@@ -212,18 +219,20 @@ class HistoryEventsResponse(BaseModel):
 
 @router.get("/automation", response_model=AutomationMetricsResponse)
 async def get_automation_metrics(
-    period_hours: int = Query(24, ge=1, le=720, description="Time period in hours to calculate metrics for")
+    period_hours: int = Query(
+        24, ge=1, le=720, description="Time period in hours to calculate metrics for"
+    ),
 ):
     """
     Get current automation metrics.
-    
+
     Returns current automation rate, one-click rate, auto-recovery rate,
     average conversion time, mode classification accuracy, and user satisfaction.
     """
     try:
         service = get_automation_metrics_service()
         snapshot = service.get_current_metrics(period_hours=period_hours)
-        
+
         return AutomationMetricsResponse(
             automation_rate=snapshot.automation_rate,
             one_click_rate=snapshot.one_click_rate,
@@ -249,18 +258,18 @@ async def get_automation_metrics(
 
 @router.get("/automation/dashboard", response_model=DashboardData)
 async def get_automation_dashboard(
-    period_hours: int = Query(24, ge=1, le=720, description="Time period in hours")
+    period_hours: int = Query(24, ge=1, le=720, description="Time period in hours"),
 ):
     """
     Get dashboard-ready automation metrics data.
-    
+
     Returns formatted metrics with targets, status indicators,
     and summary data suitable for dashboard display.
     """
     try:
         service = get_automation_metrics_service()
         data = service.get_dashboard_data(period_hours=period_hours)
-        
+
         return DashboardData(
             metrics=MetricData(
                 automation_rate=MetricValue(
@@ -324,17 +333,17 @@ async def record_conversion_event(
 ):
     """
     Record a conversion event with automation metrics.
-    
+
     This endpoint should be called after each conversion completes to record
     the automation-related metrics for that conversion.
     """
     try:
         service = get_automation_metrics_service()
-        
+
         # Convert datetime strings to datetime objects if provided
         upload_time = event.upload_time
         download_time = event.download_time
-        
+
         service.record_conversion_event(
             conversion_id=event.conversion_id,
             was_automated=event.was_automated,
@@ -347,7 +356,7 @@ async def record_conversion_event(
             auto_recovered=event.auto_recovered,
             user_satisfaction_score=event.user_satisfaction_score,
         )
-        
+
         return ConversionEventResponse(
             status="success",
             conversion_id=event.conversion_id,
@@ -361,17 +370,19 @@ async def record_conversion_event(
 @router.get("/automation/history", response_model=HistoricalDataResponse)
 async def get_automation_history(
     days: int = Query(7, ge=1, le=30, description="Number of days of history"),
-    interval_hours: int = Query(1, ge=1, le=24, description="Interval between data points in hours"),
+    interval_hours: int = Query(
+        1, ge=1, le=24, description="Interval between data points in hours"
+    ),
 ):
     """
     Get historical automation metrics data.
-    
+
     Returns a time series of automation metrics over the specified period.
     """
     try:
         service = get_automation_metrics_service()
         data = service.get_historical_data(days=days, interval_hours=interval_hours)
-        
+
         return HistoricalDataResponse(
             data=[
                 HistoricalDataPoint(
@@ -404,7 +415,7 @@ async def get_conversion_events(
 ):
     """
     Get recorded conversion events.
-    
+
     Returns paginated list of conversion events with their automation metrics.
     """
     try:
@@ -415,7 +426,7 @@ async def get_conversion_events(
             start_date=start_date,
             end_date=end_date,
         )
-        
+
         return HistoryEventsResponse(
             events=[
                 HistoryEvent(
@@ -444,14 +455,14 @@ async def get_conversion_events(
 async def reset_automation_metrics():
     """
     Reset all automation metrics and history.
-    
+
     WARNING: This will delete all stored metrics data.
     Use with caution - typically only for testing.
     """
     try:
         service = get_automation_metrics_service()
         service.reset_metrics()
-        
+
         return {
             "status": "success",
             "message": "Automation metrics reset successfully",

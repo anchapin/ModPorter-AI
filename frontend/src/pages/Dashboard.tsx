@@ -171,7 +171,9 @@ export const Dashboard: React.FC = () => {
           className={`nav-tab ${activeTab === 'convert' ? 'active' : ''}`}
           onClick={() => setActiveTab('convert')}
         >
-          <span className="tab-icon" aria-hidden="true">🚀</span>
+          <span className="tab-icon" aria-hidden="true">
+            🚀
+          </span>
           Convert Mods
         </button>
 
@@ -179,7 +181,9 @@ export const Dashboard: React.FC = () => {
           className={`nav-tab ${activeTab === 'history' ? 'active' : ''}`}
           onClick={() => setActiveTab('history')}
         >
-          <span className="tab-icon" aria-hidden="true">📋</span>
+          <span className="tab-icon" aria-hidden="true">
+            📋
+          </span>
           Conversion History
         </button>
 
@@ -187,7 +191,9 @@ export const Dashboard: React.FC = () => {
           className={`nav-tab ${activeTab === 'performance' ? 'active' : ''}`}
           onClick={() => setActiveTab('performance')}
         >
-          <span className="tab-icon" aria-hidden="true">⚡</span>
+          <span className="tab-icon" aria-hidden="true">
+            ⚡
+          </span>
           Performance
         </button>
       </div>

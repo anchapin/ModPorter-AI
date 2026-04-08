@@ -62,7 +62,6 @@ ignore_missing_imports = true
 target-version = "py311"
 line-length = 100
 exclude = [
-    "tests/",
     "src/tests/",
     ".git/",
     "__pycache__/",
@@ -173,6 +172,10 @@ ignore = [
 "src/security/file_security.py" = ["C901"]
 "src/services/addon_exporter.py" = ["C901"]
 "src/api/validation.py" = ["C901"]
+"src/api/embeddings.py" = ["D417"]
+"src/api/knowledge_base.py" = ["D417"]
+"src/api/upload.py" = ["N806"]
+"src/models/conversion_mode.py" = ["N815"]
 # Naming convention per-file ignores (legacy code)
 "src/api/conversions.py" = ["N805", "C901"]  # First arg of method should be self (validators use cls)
 "src/utils/validators.py" = ["N805"]  # First arg of method should be self (validators use cls)
