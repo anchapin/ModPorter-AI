@@ -34,7 +34,9 @@ def _get_ai_engine_module(module_path: str):
     if not module_file.exists():
         raise ImportError(f"ai-engine module not found: {module_file}")
 
-    spec = importlib.util.spec_from_file_location(module_path.replace("/", ".").replace(".py", ""), module_file)
+    spec = importlib.util.spec_from_file_location(
+        module_path.replace("/", ".").replace(".py", ""), module_file
+    )
     if spec and spec.loader:
         module = importlib.util.module_from_spec(spec)
         sys.modules[module_path.replace("/", ".").replace(".py", "")] = module
