@@ -15,6 +15,7 @@ exclude = [
     "docker/",    # Docker files
     "docs/",      # Documentation
     "temp_init.py",  # UTF-16 encoded file
+    "pytest-of-alex/",  # pytest forked test isolation directories
 ]
 
 [tool.ruff.lint]
