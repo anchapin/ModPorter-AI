@@ -6,6 +6,7 @@ Tests the complete pipeline: upload JAR -> start conversion -> wait for completi
 Issue #170: https://github.com/anchapin/ModPorter-AI/issues/170
 """
 
+import os
 import pytest
 import time
 
@@ -87,6 +88,10 @@ class TestEndToEndIntegration:
 
         return final_status
 
+    @pytest.mark.skipif(
+        os.getenv("TESTING", "false").lower() == "true",
+        reason="Background task processing requires full middleware stack",
+    )
     def test_complete_jar_to_mcaddon_conversion(self, client, project_root):
         """
         Complete test: uploads simple_copper_block.jar → waits for Celery job → downloads .mcaddon.
@@ -132,6 +137,10 @@ class TestEndToEndIntegration:
         print(f"   - Final status: {final_status}")
         print(f"   - .mcaddon size: {len(mcaddon_content):,} bytes")
 
+    @pytest.mark.skipif(
+        os.getenv("TESTING", "false").lower() == "true",
+        reason="Background task processing requires full middleware stack",
+    )
     def test_job_appears_in_conversions_list(self, client, project_root):
         """
         Verify that completed jobs appear in the conversions list endpoint.
