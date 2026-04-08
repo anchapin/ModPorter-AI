@@ -92,13 +92,13 @@ jobs:
       - name: Run Batch 2 Tests
         run: |
           cd backend
-          # Run specific test batches WITHOUT coverage (coverage is handled separately by Coverage Gate job)
+          # Note: -n 0 because pytest-xdist -n auto has issues with multiple glob patterns
           python3 -m pytest src/tests/unit/test_d*.py src/tests/unit/test_e*.py \
             src/tests/unit/test_f*.py src/tests/unit/test_g*.py src/tests/unit/test_h*.py \
             src/tests/unit/test_i*.py src/tests/unit/test_j*.py src/tests/unit/test_k*.py \
             src/tests/unit/test_l*.py src/tests/unit/test_m*.py \
             -q --tb=short --ignore=src/tests/unit/test_task_worker_coverage.py \
-            --no-cov --cov-fail-under=0
+            -n 0 --no-cov --cov-fail-under=0
 
   unit-tests-batch-3:
     name: Unit Tests (n-z*)
@@ -119,12 +119,12 @@ jobs:
       - name: Run Batch 3 Tests
         run: |
           cd backend
-          # Run specific test batches WITHOUT coverage (coverage is handled separately by Coverage Gate job)
+          # Note: -n 0 because pytest-xdist -n auto has issues with multiple glob patterns
           python3 -m pytest src/tests/unit/test_o*.py src/tests/unit/test_p*.py \
             src/tests/unit/test_q*.py src/tests/unit/test_r*.py src/tests/unit/test_s*.py \
             src/tests/unit/test_t*.py \
             -q --tb=short --ignore=src/tests/unit/test_task_worker_coverage.py \
-            --no-cov --cov-fail-under=0
+            -n 0 --no-cov --cov-fail-under=0
 
   # ============================================
   # UNIT TESTS - COVERAGE
