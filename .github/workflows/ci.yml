@@ -1196,7 +1196,7 @@ jobs:
       - name: Check backend format
         run: |
           cd backend
-          ruff format --check src/ tests/
+          ruff format --check src/ src/tests/
 
   # Dependency vulnerability scanning
   vulnerability-scan:
