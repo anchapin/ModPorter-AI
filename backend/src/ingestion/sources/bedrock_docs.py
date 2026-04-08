@@ -50,9 +50,7 @@ class BedrockDocsAdapter(BaseSourceAdapter):
         documents = []
 
         try:
-            async with aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=self.DEFAULT_TIMEOUT)
-            ) as session:
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=self.DEFAULT_TIMEOUT)) as session:
                 for namespace in namespaces:
                     try:
                         # Construct URL for namespace

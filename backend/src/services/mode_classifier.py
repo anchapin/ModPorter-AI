@@ -93,101 +93,52 @@ class FeatureExtractionAgent:
 
         try:
             with zipfile.ZipFile(io.BytesIO(jar_content)) as zf:
-                class_files = [f for f in zf.namelist() if f.endswith(".class")]
+                class_files = [f for f in zf.namelist() if f.endswith('.class')]
                 features.total_classes = len(class_files)
 
                 # Extract class names for analysis
                 class_names = []
                 for name in class_files:
-                    parts = name.rsplit("/", 1)
+                    parts = name.rsplit('/', 1)
                     if len(parts) > 1:
-                        class_names.append(parts[1].replace(".class", ""))
+                        class_names.append(parts[1].replace('.class', ''))
 
                 # Check for dependencies in class names
                 features.total_dependencies = self._count_dependencies(class_names)
 
                 # Check for mod components
-                features.has_items = self._check_pattern(
-                    class_names,
-                    [
-                        r"Item",
-                        r"BlockItem",
-                        r"SwordItem",
-                        r"ToolItem",
-                    ],
-                )
-                features.has_blocks = self._check_pattern(
-                    class_names,
-                    [
-                        r"Block",
-                        r"OreBlock",
-                        r"FallingBlock",
-                    ],
-                )
-                features.has_entities = self._check_pattern(
-                    class_names,
-                    [
-                        r"Entity",
-                        r"Mob",
-                        r"LivingEntity",
-                    ],
-                )
-                features.has_recipes = self._check_pattern(
-                    class_names,
-                    [
-                        r"Recipe",
-                        r"Crafting",
-                        r"ShapedRecipe",
-                        r"ShapelessRecipe",
-                    ],
-                )
-                features.has_GUI = self._check_pattern(
-                    class_names,
-                    [
-                        r"Screen",
-                        r"Gui",
-                        r"Container",
-                        r"Slot",
-                    ],
-                )
-                features.has_multiblock = self._check_pattern(
-                    class_names,
-                    [
-                        r"Multiblock",
-                        r"Structure",
-                        r"IMultiblock",
-                    ],
-                )
-                features.has_custom_AI = self._check_pattern(
-                    class_names,
-                    [
-                        r"EntityAITask",
-                        r"GoalSelector",
-                        r"Behavior",
-                    ],
-                )
-                features.has_custom_rendering = self._check_pattern(
-                    class_names,
-                    [
-                        r"Render",
-                        r"Renderer",
-                        r"Layer",
-                        r"Model",
-                    ],
-                )
-                features.has_custom_models = self._check_pattern(
-                    class_names,
-                    [
-                        r"ModelBakery",
-                        r"IModel",
-                        r"IModelLoader",
-                    ],
-                )
+                features.has_items = self._check_pattern(class_names, [
+                    r'Item', r'BlockItem', r'SwordItem', r'ToolItem',
+                ])
+                features.has_blocks = self._check_pattern(class_names, [
+                    r'Block', r'OreBlock', r'FallingBlock',
+                ])
+                features.has_entities = self._check_pattern(class_names, [
+                    r'Entity', r'Mob', r'LivingEntity',
+                ])
+                features.has_recipes = self._check_pattern(class_names, [
+                    r'Recipe', r'Crafting', r'ShapedRecipe', r'ShapelessRecipe',
+                ])
+                features.has_GUI = self._check_pattern(class_names, [
+                    r'Screen', r'Gui', r'Container', r'Slot',
+                ])
+                features.has_multiblock = self._check_pattern(class_names, [
+                    r'Multiblock', r'Structure', r'IMultiblock',
+                ])
+                features.has_custom_AI = self._check_pattern(class_names, [
+                    r'EntityAITask', r'GoalSelector', r'Behavior',
+                ])
+                features.has_custom_rendering = self._check_pattern(class_names, [
+                    r'Render', r'Renderer', r'Layer', r'Model',
+                ])
+                features.has_custom_models = self._check_pattern(class_names, [
+                    r'ModelBakery', r'IModel', r'IModelLoader',
+                ])
 
                 # Check for complex features in class names
                 for feature_type, patterns in self.complex_feature_patterns.items():
                     if self._check_pattern(class_names, patterns):
-                        setattr(features, f"has_{feature_type}", True)
+                        setattr(features, f'has_{feature_type}', True)
 
                 # Detect mod loader
                 features.mod_loader = self._detect_mod_loader(zf.namelist())
@@ -210,14 +161,8 @@ class FeatureExtractionAgent:
     def _count_dependencies(self, class_names: List[str]) -> int:
         """Count external dependencies based on import patterns."""
         known_libs = [
-            "net/minecraft",
-            "com/mojang",
-            "forge",
-            "fabric",
-            "org/slf4j",
-            "com/google/gson",
-            "org/apache",
-            "io/github/constructing",
+            'net/minecraft', 'com/mojang', 'forge', 'fabric', 'org/slf4j',
+            'com/google/gson', 'org/apache', 'io/github/constructing',
         ]
         return len(known_libs) // 3  # Rough estimate
 
@@ -231,19 +176,19 @@ class FeatureExtractionAgent:
 
     def _detect_mod_loader(self, file_list: List[str]) -> Optional[str]:
         """Detect mod loader from file list."""
-        if any("forge" in f.lower() for f in file_list):
-            return "forge"
-        if any("fabric" in f.lower() for f in file_list):
-            return "fabric"
-        if any("neoforge" in f.lower() for f in file_list):
-            return "neoforge"
+        if any('forge' in f.lower() for f in file_list):
+            return 'forge'
+        if any('fabric' in f.lower() for f in file_list):
+            return 'fabric'
+        if any('neoforge' in f.lower() for f in file_list):
+            return 'neoforge'
         return None
 
     def _extract_version(self, file_list: List[str]) -> Optional[str]:
         """Extract version from file list."""
-        version_pattern = r"mcmod\.info|version.*?(\d+\.\d+\.\d+)"
+        version_pattern = r'mcmod\.info|version.*?(\d+\.\d+\.\d+)'
         for f in file_list:
-            if match := re.search(r"version[\"\'\s:=]+(\d+\.\d+\.\d+)", f, re.I):
+            if match := re.search(r'version[\"\'\s:=]+(\d+\.\d+\.\d+)', f, re.I):
                 return match.group(1)
         return None
 
@@ -252,59 +197,49 @@ class FeatureExtractionAgent:
         complex_features = []
 
         if features.has_dimensions:
-            complex_features.append(
-                ComplexFeature(
-                    feature_type="dimensions",
-                    description="Custom dimension implementation detected",
-                    impact="warning",
-                    workaround_available=True,
-                    workaround_description="Use vanilla dimensions as base",
-                )
-            )
+            complex_features.append(ComplexFeature(
+                feature_type="dimensions",
+                description="Custom dimension implementation detected",
+                impact="warning",
+                workaround_available=True,
+                workaround_description="Use vanilla dimensions as base"
+            ))
 
         if features.has_worldgen:
-            complex_features.append(
-                ComplexFeature(
-                    feature_type="worldgen",
-                    description="Custom world generation detected",
-                    impact="warning",
-                    workaround_available=True,
-                    workaround_description="Limited Bedrock world gen support",
-                )
-            )
+            complex_features.append(ComplexFeature(
+                feature_type="worldgen",
+                description="Custom world generation detected",
+                impact="warning",
+                workaround_available=True,
+                workaround_description="Limited Bedrock world gen support"
+            ))
 
         if features.has_biomes:
-            complex_features.append(
-                ComplexFeature(
-                    feature_type="biomes",
-                    description="Custom biome definitions detected",
-                    impact="info",
-                    workaround_available=True,
-                    workaround_description="Use Bedrock biome system",
-                )
-            )
+            complex_features.append(ComplexFeature(
+                feature_type="biomes",
+                description="Custom biome definitions detected",
+                impact="info",
+                workaround_available=True,
+                workaround_description="Use Bedrock biome system"
+            ))
 
         if features.has_network_packets:
-            complex_features.append(
-                ComplexFeature(
-                    feature_type="network_packets",
-                    description="Custom network packets detected",
-                    impact="blocking",
-                    workaround_available=False,
-                    workaround_description="No network packet support in Bedrock",
-                )
-            )
+            complex_features.append(ComplexFeature(
+                feature_type="network_packets",
+                description="Custom network packets detected",
+                impact="blocking",
+                workaround_available=False,
+                workaround_description="No network packet support in Bedrock"
+            ))
 
         if features.has_ASM:
-            complex_features.append(
-                ComplexFeature(
-                    feature_type="ASM",
-                    description="ASM bytecode manipulation detected",
-                    impact="blocking",
-                    workaround_available=False,
-                    workaround_description="ASM not available in Bedrock",
-                )
-            )
+            complex_features.append(ComplexFeature(
+                feature_type="ASM",
+                description="ASM bytecode manipulation detected",
+                impact="blocking",
+                workaround_available=False,
+                workaround_description="ASM not available in Bedrock"
+            ))
 
         return complex_features
 
@@ -370,20 +305,16 @@ class ClassifierAgent:
         for rule in self.rules:
             if self._rule_matches(rule, features):
                 scores[rule.mode] += 0.3 + rule.confidence_boost
-                reasons.append(
-                    f"Matches rule: {rule.mode.value} "
-                    f"(classes={features.total_classes}, deps={features.total_dependencies})"
-                )
+                reasons.append(f"Matches rule: {rule.mode.value} "
+                            f"(classes={features.total_classes}, deps={features.total_dependencies})")
 
         # Check for complex features that override classification
         blocking_features = [f for f in features.complex_features if f.impact == "blocking"]
         if blocking_features:
             # Force expert mode for blocking features
             scores[ConversionMode.EXPERT] += 0.5
-            reasons.append(
-                f"Blocking features force Expert mode: "
-                f"{[f.feature_type for f in blocking_features]}"
-            )
+            reasons.append(f"Blocking features force Expert mode: "
+                         f"{[f.feature_type for f in blocking_features]}")
 
         # Determine winning mode
         winning_mode = max(scores, key=scores.get)
@@ -405,9 +336,8 @@ class ClassifierAgent:
                 return False
         return True
 
-    def _calculate_alternatives(
-        self, features: ModFeatures, primary_mode: ConversionMode
-    ) -> List[ClassificationConfidence]:
+    def _calculate_alternatives(self, features: ModFeatures,
+                               primary_mode: ConversionMode) -> List[ClassificationConfidence]:
         """Calculate confidence scores for alternative modes."""
         alternatives = []
 
@@ -428,13 +358,11 @@ class ClassifierAgent:
             elif mode == ConversionMode.EXPERT and features.total_classes >= 50:
                 confidence = 0.7
 
-            alternatives.append(
-                ClassificationConfidence(
-                    mode=mode,
-                    confidence=confidence,
-                    reasons=[f"Alternative: {mode.value} ({confidence:.0%} confidence)"],
-                )
-            )
+            alternatives.append(ClassificationConfidence(
+                mode=mode,
+                confidence=confidence,
+                reasons=[f"Alternative: {mode.value} ({confidence:.0%} confidence)"]
+            ))
 
         return alternatives
 
@@ -581,8 +509,16 @@ class ModeClassifier:
             # Use pre-extracted features
             features = request.features
         elif request.file_path:
+            import os
+            # Make sure it's a valid safe path to prevent path traversal
+            safe_path = os.path.abspath(request.file_path)
+            # Ensure it's inside an allowed temp or storage directory if necessary
+            # For now, just ensure it doesn't do traversal
+            if not os.path.exists(safe_path) or not os.path.isfile(safe_path):
+                 raise ValueError("Invalid file path")
+
             # Extract from file path
-            with open(request.file_path, "rb") as f:
+            with open(safe_path, 'rb') as f:
                 content = f.read()
             features = self.feature_agent.extract_from_jar(content)
         else:
@@ -594,11 +530,9 @@ class ModeClassifier:
         # Step 3: Routing - pipeline already embedded in result
         # Additional routing info available via router_agent.get_pipeline_config(result.mode)
 
-        logger.info(
-            f"Classification complete: mode={result.mode}, "
-            f"confidence={result.confidence:.2%}, "
-            f"automation={result.automation_level}%"
-        )
+        logger.info(f"Classification complete: mode={result.mode}, "
+                   f"confidence={result.confidence:.2%}, "
+                   f"automation={result.automation_level}%")
 
         return result
 

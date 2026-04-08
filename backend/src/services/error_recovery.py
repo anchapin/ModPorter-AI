@@ -209,9 +209,7 @@ class RecoveryStrategyExecutor:
     def _register_default_handlers(self) -> None:
         """Register default strategy handlers."""
         self._strategy_handlers[RecoveryStrategy.RETRY] = self._handle_retry
-        self._strategy_handlers[RecoveryStrategy.RETRY_WITH_BACKOFF] = (
-            self._handle_retry_with_backoff
-        )
+        self._strategy_handlers[RecoveryStrategy.RETRY_WITH_BACKOFF] = self._handle_retry_with_backoff
         self._strategy_handlers[RecoveryStrategy.FALLBACK_SERVICE] = self._handle_fallback_service
         self._strategy_handlers[RecoveryStrategy.FALLBACK_METHOD] = self._handle_fallback_method
         self._strategy_handlers[RecoveryStrategy.DEGRADED_MODE] = self._handle_degraded_mode
@@ -250,9 +248,7 @@ class RecoveryStrategyExecutor:
                 raise ValueError(f"No handler for strategy {action.strategy}")
 
             # Execute the handler
-            result = await self._execute_handler(
-                handler, action, original_error, context, retry_config
-            )
+            result = await self._execute_handler(handler, action, original_error, context, retry_config)
 
             attempt.status = RecoveryStatus.SUCCEEDED
             attempt.completed_at = datetime.now(timezone.utc)
@@ -541,9 +537,7 @@ class ErrorSupervisor:
 
         # Step 2: Classify the error
         classification = result.classification
-        logger.info(
-            f"Error classified as: {classification.error_type.value} ({classification.severity.value})"
-        )
+        logger.info(f"Error classified as: {classification.error_type.value} ({classification.severity.value})")
 
         # Step 3: Get error pattern and recovery actions
         pattern = self.pattern_library.get_pattern(classification.error_type)
@@ -595,10 +589,7 @@ class ErrorSupervisor:
             return result
 
         # Step 6: Escalate to human if all recovery attempts fail
-        if (
-            self.pattern_library.should_escalate(classification.error_type)
-            or classification.severity == ErrorSeverity.BLOCKING
-        ):
+        if self.pattern_library.should_escalate(classification.error_type) or classification.severity == ErrorSeverity.BLOCKING:
             result.status = RecoveryStatus.ESCALATED
             result.escalated = True
             result.escalated_at = datetime.now(timezone.utc)

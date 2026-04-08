@@ -28,23 +28,23 @@ jobs:
       - name: Generate OpenAPI spec
         run: |
           curl -s http://localhost:8080/openapi.json | python3 -c "
-import json
-import sys
-spec = json.load(sys.stdin)
-# Remove server URLs (they may differ between envs)
-if 'servers' in spec:
-    del spec['servers']
-# Write cleaned spec
-with open('openapi.json', 'w') as f:
-    json.dump(spec, f, indent=2)
-print('OpenAPI spec saved')
-" || echo "Skipping spec generation - API not running"
+          import json
+          import sys
+          spec = json.load(sys.stdin)
+          # Remove server URLs (they may differ between envs)
+          if 'servers' in spec:
+              del spec['servers']
+          # Write cleaned spec
+          with open('openapi.json', 'w') as f:
+              json.dump(spec, f, indent=2)
+          print('OpenAPI spec saved')
+          " || echo "Skipping spec generation - API not running"
 
       - name: Validate OpenAPI spec structure
         run: |
           python3 -c "
-import json
-import sys
+          import json
+          import sys
 
 with open('openapi.json') as f:
     spec = json.load(f)

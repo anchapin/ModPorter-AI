@@ -161,11 +161,14 @@ DEFAULT_CLASSIFICATION_RULES: List[ModeClassificationRule] = [
         min_classes=50,
         min_dependencies=10,
         has_complex_features=True,
-        confidence_boost=0.2,
+        confidence_boost=0.2
     ),
     # Expert mode (class/dependency based)
     ModeClassificationRule(
-        mode=ConversionMode.EXPERT, min_classes=50, min_dependencies=10, confidence_boost=0.1
+        mode=ConversionMode.EXPERT,
+        min_classes=50,
+        min_dependencies=10,
+        confidence_boost=0.1
     ),
     # Complex mode
     ModeClassificationRule(
@@ -173,17 +176,27 @@ DEFAULT_CLASSIFICATION_RULES: List[ModeClassificationRule] = [
         min_classes=20,
         min_dependencies=5,
         has_complex_features=True,
-        confidence_boost=0.2,
+        confidence_boost=0.2
     ),
     ModeClassificationRule(
-        mode=ConversionMode.COMPLEX, min_classes=20, min_dependencies=5, confidence_boost=0.1
+        mode=ConversionMode.COMPLEX,
+        min_classes=20,
+        min_dependencies=5,
+        confidence_boost=0.1
     ),
     # Standard mode
     ModeClassificationRule(
-        mode=ConversionMode.STANDARD, min_classes=5, min_dependencies=2, confidence_boost=0.1
+        mode=ConversionMode.STANDARD,
+        min_classes=5,
+        min_dependencies=2,
+        confidence_boost=0.1
     ),
     # Simple mode (default)
-    ModeClassificationRule(mode=ConversionMode.SIMPLE, min_classes=1, confidence_boost=0.0),
+    ModeClassificationRule(
+        mode=ConversionMode.SIMPLE,
+        min_classes=1,
+        confidence_boost=0.0
+    ),
 ]
 
 
@@ -206,15 +219,7 @@ MODE_PIPELINES: Dict[ConversionMode, ModeSpecificPipelineConfig] = {
     ConversionMode.COMPLEX: ModeSpecificPipelineConfig(
         mode=ConversionMode.COMPLEX,
         pipeline_name="complex-pipeline",
-        steps=[
-            "parse",
-            "extract",
-            "translate",
-            "qa-review",
-            "semantic-check",
-            "validate",
-            "export",
-        ],
+        steps=["parse", "extract", "translate", "qa-review", "semantic-check", "validate", "export"],
         estimated_success_rate=0.85,
         requires_human_review=True,
         special_requirements=["additional_qa", "extended_validation"],
@@ -222,16 +227,7 @@ MODE_PIPELINES: Dict[ConversionMode, ModeSpecificPipelineConfig] = {
     ConversionMode.EXPERT: ModeSpecificPipelineConfig(
         mode=ConversionMode.EXPERT,
         pipeline_name="expert-pipeline",
-        steps=[
-            "parse",
-            "extract",
-            "translate",
-            "qa-review",
-            "semantic-check",
-            "expert-review",
-            "validate",
-            "export",
-        ],
+        steps=["parse", "extract", "translate", "qa-review", "semantic-check", "expert-review", "validate", "export"],
         estimated_success_rate=0.70,
         requires_human_review=True,
         special_requirements=["expert_qa", "manual_inspection", "extended_validation"],

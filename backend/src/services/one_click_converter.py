@@ -37,7 +37,6 @@ logger = logging.getLogger(__name__)
 # Pipeline Stages
 # =============================================================================
 
-
 class PipelineStage(str, Enum):
     """One-click converter pipeline stages."""
 
@@ -80,7 +79,6 @@ class PipelineStatus(BaseModel):
 # Request/Response Models
 # =============================================================================
 
-
 class OneClickConvertRequest(BaseModel):
     """Request for one-click conversion."""
 
@@ -115,7 +113,6 @@ class ReadyToConvert(BaseModel):
 # =============================================================================
 # Pipeline Supervisor
 # =============================================================================
-
 
 class OneClickPipelineSupervisor:
     """
@@ -182,7 +179,7 @@ class OneClickPipelineSupervisor:
         # If file_path provided, read content
         if request.file_path:
             try:
-                with open(request.file_path, "rb") as f:
+                with open(request.file_path, 'rb') as f:
                     request.file_content = f.read()
             except Exception as e:
                 raise ValueError(f"Failed to read file: {e}")
@@ -218,13 +215,11 @@ class OneClickPipelineSupervisor:
         status.current_stage = PipelineStage.APPLY_DEFAULTS
 
         # Add any classification warnings
-        status.warnings.extend(
-            [
-                f"Mode detected: {classification_result.mode.value}",
-                f"Confidence: {classification_result.confidence:.0%}",
-                f"Automation level: {classification_result.automation_level}%",
-            ]
-        )
+        status.warnings.extend([
+            f"Mode detected: {classification_result.mode.value}",
+            f"Confidence: {classification_result.confidence:.0%}",
+            f"Automation level: {classification_result.automation_level}%",
+        ])
 
         if classification_result.alternative_modes:
             status.warnings.append(
@@ -251,7 +246,6 @@ class OneClickPipelineSupervisor:
             if history:
                 # Convert to HistoricalConversion format for smart defaults
                 from src.services.smart_defaults import HistoricalConversion
-
                 historical_data = [
                     HistoricalConversion(
                         conversion_id=h.conversion_id,
@@ -296,7 +290,6 @@ class OneClickPipelineSupervisor:
 # One-Click Converter Service
 # =============================================================================
 
-
 class OneClickConverter:
     """
     One-click conversion service implementing Pipeline + Supervisor pattern.
@@ -337,8 +330,9 @@ class OneClickConverter:
         response = OneClickConvertResponse(
             pipeline_id=status.pipeline_id,
             status=status,
-            recommended_settings=status.settings
-            or ConversionSettings(mode=status.mode or ConversionMode.STANDARD),
+            recommended_settings=status.settings or ConversionSettings(
+                mode=status.mode or ConversionMode.STANDARD
+            ),
             confidence=0.8 if status.settings else 0.0,
         )
 
@@ -346,9 +340,7 @@ class OneClickConverter:
         if request.user_id:
             prefs = await self.supervisor.user_prefs.get_preferences(request.user_id)
             if prefs and prefs.total_conversions > 0:
-                response.personalization_source = (
-                    f"learned_from_{prefs.total_conversions}_conversions"
-                )
+                response.personalization_source = f"learned_from_{prefs.total_conversions}_conversions"
 
         return response
 

@@ -34,26 +34,19 @@ class ConversionEventRequest(BaseModel):
     """Request model for recording a conversion event."""
 
     conversion_id: str = Field(..., description="Unique identifier for the conversion")
-    was_automated: bool = Field(
-        False, description="Whether conversion completed without human intervention"
-    )
-    was_one_click: bool = Field(
-        False, description="Whether conversion was started with single click"
-    )
+    was_automated: bool = Field(False, description="Whether conversion completed without human intervention")
+    was_one_click: bool = Field(False, description="Whether conversion was started with single click")
     upload_time: Optional[datetime] = Field(None, description="When the file was uploaded")
-    download_time: Optional[datetime] = Field(
-        None, description="When the converted file was downloaded"
-    )
-    conversion_time_seconds: Optional[float] = Field(
-        None, description="Manual override for conversion time in seconds"
-    )
-    mode_classification_correct: Optional[bool] = Field(
-        None, description="Whether auto mode classification was correct"
-    )
+    download_time: Optional[datetime] = Field(None, description="When the converted file was downloaded")
+    conversion_time_seconds: Optional[float] = Field(None, description="Manual override for conversion time in seconds")
+    mode_classification_correct: Optional[bool] = Field(None, description="Whether auto mode classification was correct")
     had_error: bool = Field(False, description="Whether an error occurred during conversion")
     auto_recovered: bool = Field(False, description="Whether any error was recovered automatically")
     user_satisfaction_score: Optional[float] = Field(
-        None, ge=1.0, le=5.0, description="User satisfaction score (1-5 scale)"
+        None,
+        ge=1.0,
+        le=5.0,
+        description="User satisfaction score (1-5 scale)"
     )
 
     model_config = ConfigDict(
@@ -219,9 +212,7 @@ class HistoryEventsResponse(BaseModel):
 
 @router.get("/automation", response_model=AutomationMetricsResponse)
 async def get_automation_metrics(
-    period_hours: int = Query(
-        24, ge=1, le=720, description="Time period in hours to calculate metrics for"
-    ),
+    period_hours: int = Query(24, ge=1, le=720, description="Time period in hours to calculate metrics for")
 ):
     """
     Get current automation metrics.
@@ -258,7 +249,7 @@ async def get_automation_metrics(
 
 @router.get("/automation/dashboard", response_model=DashboardData)
 async def get_automation_dashboard(
-    period_hours: int = Query(24, ge=1, le=720, description="Time period in hours"),
+    period_hours: int = Query(24, ge=1, le=720, description="Time period in hours")
 ):
     """
     Get dashboard-ready automation metrics data.
@@ -370,9 +361,7 @@ async def record_conversion_event(
 @router.get("/automation/history", response_model=HistoricalDataResponse)
 async def get_automation_history(
     days: int = Query(7, ge=1, le=30, description="Number of days of history"),
-    interval_hours: int = Query(
-        1, ge=1, le=24, description="Interval between data points in hours"
-    ),
+    interval_hours: int = Query(1, ge=1, le=24, description="Interval between data points in hours"),
 ):
     """
     Get historical automation metrics data.

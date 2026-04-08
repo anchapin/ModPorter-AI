@@ -41,11 +41,9 @@ def client(mock_manager):
     mock_credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials="mock-token")
     app.dependency_overrides[security] = lambda: mock_credentials
 
-    # Since get_current_user_id is a dependency, override it too
-    from api.jobs import get_current_user_id
-    app.dependency_overrides[get_current_user_id] = lambda: "test-user-id"
-
-    yield TestClient(app)
+    # Patch verify_token to return our test user id
+    with patch("security.auth.verify_token", return_value="test-user-id"):
+        yield TestClient(app)
 
     app.dependency_overrides.clear()
 

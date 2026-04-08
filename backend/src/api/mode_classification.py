@@ -35,7 +35,7 @@ router = APIRouter(prefix="/api/v1/classify", tags=["mode-classification"])
     response_model=ModeClassificationResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Classify mod conversion mode",
-    description="Automatically classify a mod's conversion complexity and return recommended settings.",
+    description="Automatically classify a mod's conversion complexity and return recommended settings."
 )
 async def classify_mod(
     file: UploadFile = File(..., description="Mod JAR/ZIP file to classify"),
@@ -83,12 +83,15 @@ async def classify_mod(
 
     except ValueError as e:
         logger.error(f"Classification error: {e}")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     except Exception as e:
         logger.error(f"Unexpected error during classification: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Classification failed unexpectedly",
+            detail="Classification failed unexpectedly"
         )
 
 
@@ -97,7 +100,7 @@ async def classify_mod(
     response_model=ModeClassificationResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Classify from pre-extracted features",
-    description="Classify using already-extracted mod features.",
+    description="Classify using already-extracted mod features."
 )
 async def classify_from_features(
     features: ModeClassificationRequest,
@@ -112,7 +115,8 @@ async def classify_from_features(
     try:
         if not features.features:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="features field is required"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="features field is required"
             )
 
         # Run classification
@@ -142,7 +146,7 @@ async def classify_from_features(
         logger.error(f"Error classifying from features: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Classification failed unexpectedly",
+            detail="Classification failed unexpectedly"
         )
 
 
@@ -150,7 +154,7 @@ async def classify_from_features(
     "/modes",
     response_model=list[dict],
     summary="Get available conversion modes",
-    description="Returns all available conversion modes with their characteristics.",
+    description="Returns all available conversion modes with their characteristics."
 )
 async def get_modes() -> JSONResponse:
     """
@@ -211,7 +215,7 @@ async def get_modes() -> JSONResponse:
     "/pipeline/{mode}",
     response_model=dict,
     summary="Get pipeline configuration for mode",
-    description="Returns the conversion pipeline configuration for a specific mode.",
+    description="Returns the conversion pipeline configuration for a specific mode."
 )
 async def get_pipeline(
     mode: ConversionMode,
@@ -234,7 +238,7 @@ async def get_pipeline(
     "/settings/{mode}",
     response_model=ConversionSettings,
     summary="Get recommended settings for mode",
-    description="Returns the recommended conversion settings for a specific mode.",
+    description="Returns the recommended conversion settings for a specific mode."
 )
 async def get_settings(
     mode: ConversionMode,

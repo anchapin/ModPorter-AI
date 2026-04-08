@@ -35,4 +35,3 @@ storybook-static
 
 # Test coverage reports
 coverage/
-.stryker-tmp

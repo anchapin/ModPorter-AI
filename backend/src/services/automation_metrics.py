@@ -39,9 +39,7 @@ class ConversionEvent:
     download_time: Optional[datetime] = None
     conversion_time_seconds: Optional[float] = None
     # Mode classification
-    mode_classification_correct: Optional[bool] = (
-        None  # True if auto-classified mode matched user choice
-    )
+    mode_classification_correct: Optional[bool] = None  # True if auto-classified mode matched user choice
     # Error recovery
     had_error: bool = False
     auto_recovered: bool = False  # True if error was recovered automatically
@@ -203,7 +201,7 @@ class AutomationMetricsService:
 
             # Trim old events if over limit
             if len(self._events) > self._max_stored_events:
-                self._events = self._events[-self._max_stored_events :]
+                self._events = self._events[-self._max_stored_events:]
 
         logger.debug(f"Recorded conversion event: {conversion_id}, automated={was_automated}")
         return event
@@ -261,22 +259,15 @@ class AutomationMetricsService:
                 if e.upload_time and e.download_time
             ]
             if times:
-                times.extend(
-                    [
-                        e.conversion_time_seconds
-                        for e in recent_events
-                        if e.conversion_time_seconds is not None
-                        and not (e.upload_time and e.download_time)
-                    ]
-                )
+                times.extend([
+                    e.conversion_time_seconds
+                    for e in recent_events
+                    if e.conversion_time_seconds is not None and not (e.upload_time and e.download_time)
+                ])
             avg_conversion_time = (sum(times) / len(times)) if times else 0.0
 
             # Average user satisfaction
-            scores = [
-                e.user_satisfaction_score
-                for e in recent_events
-                if e.user_satisfaction_score is not None
-            ]
+            scores = [e.user_satisfaction_score for e in recent_events if e.user_satisfaction_score is not None]
             avg_satisfaction = (sum(scores) / len(scores)) if scores else 0.0
 
             # Build snapshot
@@ -324,13 +315,11 @@ class AutomationMetricsService:
         snapshot = self.get_current_metrics(period_hours=period_hours)
 
         # Determine overall status
-        targets_met = sum(
-            [
-                snapshot.automation_target_met,
-                snapshot.one_click_target_met,
-                snapshot.auto_recovery_target_met,
-            ]
-        )
+        targets_met = sum([
+            snapshot.automation_target_met,
+            snapshot.one_click_target_met,
+            snapshot.auto_recovery_target_met,
+        ])
 
         if targets_met == 3:
             overall_status = "excellent"
@@ -414,7 +403,10 @@ class AutomationMetricsService:
 
         with self._lock:
             # Filter historical points within range
-            historical = [h for h in self._history if h.timestamp >= cutoff]
+            historical = [
+                h for h in self._history
+                if h.timestamp >= cutoff
+            ]
 
         return [
             {
@@ -489,7 +481,7 @@ class AutomationMetricsService:
 
             # Apply pagination
             total = len(events)
-            events = events[offset : offset + limit]
+            events = events[offset:offset + limit]
 
         return [
             {
@@ -546,6 +538,4 @@ def get_dashboard_data(period_hours: int = 24) -> Dict[str, Any]:
 
 def get_historical_data(days: int = 7, interval_hours: int = 1) -> List[Dict[str, Any]]:
     """Convenience function to get historical data."""
-    return get_automation_metrics_service().get_historical_data(
-        days=days, interval_hours=interval_hours
-    )
+    return get_automation_metrics_service().get_historical_data(days=days, interval_hours=interval_hours)

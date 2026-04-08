@@ -12,7 +12,6 @@ from typing import List, Dict, Any, Optional
 
 class DocumentType(Enum):
     """Document type classification for ingestion."""
-
     MARKDOWN = "markdown"
     HTML = "html"
     PDF = "pdf"
@@ -30,7 +29,6 @@ class RawDocument:
         metadata: Optional metadata extracted from source
         title: Document title (if available)
     """
-
     content: str
     source_url: str
     doc_type: DocumentType

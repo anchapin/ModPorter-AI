@@ -3,7 +3,6 @@
   "packageManager": "pnpm",
   "reporters": ["html", "json", "clear-text"],
   "testRunner": "vitest",
-  "plugins": ["@stryker-mutator/vitest-runner"],
   "testRunnerNodeArgs": ["--experimental-vm-modules"],
   "vitest": {
     "configFile": "vite.config.ts"
@@ -28,6 +27,5 @@
     "**/.next/**"
   ],
   "concurrency": 4,
-  "coverageAnalysis": "perTest",
-  "timeoutMS": 10000
+  "coverageAnalysis": "perTest"
 }

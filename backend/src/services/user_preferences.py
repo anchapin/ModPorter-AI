@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 # Data Models
 # =============================================================================
 
-
 class UserPreferenceProfile(BaseModel):
     """User's preference profile for conversions."""
 
@@ -64,7 +63,6 @@ class ConversionHistoryEntry(BaseModel):
 # =============================================================================
 # In-Memory Store
 # =============================================================================
-
 
 class InMemoryPreferenceStore:
     """
@@ -133,7 +131,6 @@ class InMemoryPreferenceStore:
 # =============================================================================
 # User Preferences Service
 # =============================================================================
-
 
 class UserPreferencesService:
     """
@@ -249,13 +246,8 @@ class UserPreferencesService:
 
         # Learn from successful settings
         for key, value in settings.items():
-            if key in (
-                "detail_level",
-                "validation_level",
-                "enable_auto_fix",
-                "enable_ai_assistance",
-                "parallel_processing",
-            ):
+            if key in ("detail_level", "validation_level", "enable_auto_fix",
+                       "enable_ai_assistance", "parallel_processing"):
                 mode_prefs[key] = value
             elif key in ("timeout_seconds", "max_retries", "quality_threshold"):
                 # Average numeric values over time

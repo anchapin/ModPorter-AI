@@ -545,7 +545,11 @@ class ErrorPatternLibrary:
 
     def get_patterns_by_tag(self, tag: str) -> List[ErrorPattern]:
         """Get all patterns that have a specific tag."""
-        return [pattern for pattern in self._patterns.values() if tag in pattern.tags]
+        return [
+            pattern
+            for pattern in self._patterns.values()
+            if tag in pattern.tags
+        ]
 
     def get_all_patterns(self) -> Dict[ErrorType, ErrorPattern]:
         """Get all registered patterns."""

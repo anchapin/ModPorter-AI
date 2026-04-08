@@ -30,7 +30,6 @@ logger = logging.getLogger(__name__)
 # Data Models
 # =============================================================================
 
-
 class DefaultSelectionRule(BaseModel):
     """A rule for selecting default settings based on mode and features."""
 
@@ -91,8 +90,9 @@ MODE_DEFAULT_RULES: List[DefaultSelectionRule] = [
             "timeout_seconds": 120,
             "parallel_processing": False,
             "quality_threshold": 0.9,
-        },
+        }
     ),
+
     # STANDARD mode - balanced processing
     DefaultSelectionRule(
         name="standard_balanced",
@@ -105,8 +105,9 @@ MODE_DEFAULT_RULES: List[DefaultSelectionRule] = [
             "timeout_seconds": 300,
             "parallel_processing": True,
             "quality_threshold": 0.8,
-        },
+        }
     ),
+
     # COMPLEX mode - detailed processing
     DefaultSelectionRule(
         name="complex_detailed",
@@ -119,8 +120,9 @@ MODE_DEFAULT_RULES: List[DefaultSelectionRule] = [
             "timeout_seconds": 600,
             "parallel_processing": True,
             "quality_threshold": 0.7,
-        },
+        }
     ),
+
     # EXPERT mode - manual review required
     DefaultSelectionRule(
         name="expert_manual_review",
@@ -134,7 +136,7 @@ MODE_DEFAULT_RULES: List[DefaultSelectionRule] = [
             "timeout_seconds": 900,
             "parallel_processing": True,
             "quality_threshold": 0.6,
-        },
+        }
     ),
 ]
 
@@ -147,7 +149,7 @@ FEATURE_ADJUSTMENT_RULES: List[DefaultSelectionRule] = [
         condition="features.has_items == True",
         settings_adjustments={
             "timeout_seconds": 180,  # Add 60s for item processing
-        },
+        }
     ),
     DefaultSelectionRule(
         name="has_blocks_increase_timeout",
@@ -156,7 +158,7 @@ FEATURE_ADJUSTMENT_RULES: List[DefaultSelectionRule] = [
         condition="features.has_blocks == True",
         settings_adjustments={
             "timeout_seconds": 240,  # Add 60s for block processing
-        },
+        }
     ),
     DefaultSelectionRule(
         name="has_entities_requires_strict_validation",
@@ -166,7 +168,7 @@ FEATURE_ADJUSTMENT_RULES: List[DefaultSelectionRule] = [
         settings_adjustments={
             "validation_level": "strict",
             "timeout_seconds": 400,
-        },
+        }
     ),
     DefaultSelectionRule(
         name="has_multiblock_increase_retries",
@@ -176,7 +178,7 @@ FEATURE_ADJUSTMENT_RULES: List[DefaultSelectionRule] = [
         settings_adjustments={
             "max_retries": 7,
             "timeout_seconds": 800,
-        },
+        }
     ),
     DefaultSelectionRule(
         name="has_dimensions_expert_mode",
@@ -186,7 +188,7 @@ FEATURE_ADJUSTMENT_RULES: List[DefaultSelectionRule] = [
         settings_adjustments={
             "enable_auto_fix": False,
             "timeout_seconds": 1200,
-        },
+        }
     ),
 ]
 
@@ -241,7 +243,6 @@ PATTERN_LIBRARY: Dict[str, PatternMatch] = {
 # =============================================================================
 # Smart Defaults Engine
 # =============================================================================
-
 
 class SmartDefaultsEngine:
     """
@@ -310,15 +311,15 @@ class SmartDefaultsEngine:
         if user_id:
             prefs = self._get_user_preferences(user_id)
             if prefs:
-                user_settings, user_confidence = self._apply_user_preferences(mode, prefs)
+                user_settings, user_confidence = self._apply_user_preferences(
+                    mode, prefs
+                )
                 settings_dict.update(user_settings)
                 confidence_factors.append(user_confidence)
                 sources.append(f"user_preferences:{user_id}")
 
         # Calculate overall confidence
-        overall_confidence = (
-            sum(confidence_factors) / len(confidence_factors) if confidence_factors else 0.5
-        )
+        overall_confidence = sum(confidence_factors) / len(confidence_factors) if confidence_factors else 0.5
 
         # Build final settings
         final_settings = ConversionSettings(
@@ -339,12 +340,17 @@ class SmartDefaultsEngine:
             sources=sources,
         )
 
-    def _apply_mode_rules(self, mode: ConversionMode) -> tuple[Dict[str, Any], float]:
+    def _apply_mode_rules(
+        self, mode: ConversionMode
+    ) -> tuple[Dict[str, Any], float]:
         """Apply mode-specific rules to get base settings."""
         settings = {}
 
         # Find highest priority rule for this mode
-        matching_rules = [r for r in self.mode_rules if mode in r.applies_to_modes]
+        matching_rules = [
+            r for r in self.mode_rules
+            if mode in r.applies_to_modes
+        ]
         matching_rules.sort(key=lambda r: r.priority, reverse=True)
 
         if matching_rules:
@@ -389,7 +395,10 @@ class SmartDefaultsEngine:
             return {}, 0.0
 
         # Find similar successful conversions
-        similar_conversions = [c for c in historical_data if c.mode == mode and c.success]
+        similar_conversions = [
+            c for c in historical_data
+            if c.mode == mode and c.success
+        ]
 
         if not similar_conversions:
             return {}, 0.0
@@ -434,17 +443,15 @@ class SmartDefaultsEngine:
         """Apply user-specific preferences."""
         # Filter preferences to only valid settings fields
         valid_fields = {
-            "detail_level",
-            "validation_level",
-            "enable_auto_fix",
-            "enable_ai_assistance",
-            "max_retries",
-            "timeout_seconds",
-            "parallel_processing",
-            "quality_threshold",
+            "detail_level", "validation_level", "enable_auto_fix",
+            "enable_ai_assistance", "max_retries", "timeout_seconds",
+            "parallel_processing", "quality_threshold"
         }
 
-        filtered_prefs = {k: v for k, v in preferences.items() if k in valid_fields}
+        filtered_prefs = {
+            k: v for k, v in preferences.items()
+            if k in valid_fields
+        }
 
         return filtered_prefs, 0.85  # User preferences have high confidence
 

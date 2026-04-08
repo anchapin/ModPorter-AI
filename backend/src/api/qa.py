@@ -172,6 +172,7 @@ def get_qa_report(task_id: str, report_format: str = "json") -> Dict[str, Any]:
             "overall_quality_score", 0.0
         ),
         "summary": task_info.get("results_summary", {}),
+
         "functional_tests": {"passed": 30, "failed": 2, "details": [...]},
         "performance_tests": {
             "cpu_avg": "25%",

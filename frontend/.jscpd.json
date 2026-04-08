@@ -1,0 +1,16 @@
+{
+  "threshold": 5,
+  "reporters": ["html", "console"],
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/coverage/**",
+    "**/.venv/**",
+    "**/venv_test/**",
+    "**/venv_muttest/**",
+    "**/mutants/**",
+    "**/.worktrees/**",
+    "**/pnpm-lock.yaml"
+  ],
+  "absolute": true
+}
