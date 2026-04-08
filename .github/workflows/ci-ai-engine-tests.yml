@@ -26,7 +26,7 @@ jobs:
   # Speedup: ~2x (14m -> 7m45s)
   # ============================================
   test-coverage:
-    name: Tests + Coverage (${{ env.COVERAGE_THRESHOLD }}% min)
+    name: Tests + Coverage (70% min)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
