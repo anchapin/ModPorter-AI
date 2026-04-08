@@ -512,38 +512,27 @@ class ModeClassifier:
             import os
             from pathlib import Path
 
-            # Verify the path is safe
-            requested_path_str = os.path.abspath(request.file_path)
+            # Extract only the filename from the provided path to prevent directory traversal
+            filename = os.path.basename(request.file_path)
 
-            # Use pathlib to verify the path explicitly as an extra security measure
-            path_obj = Path(requested_path_str)
+            # If the original path contained directory components, reject it
+            # This is a strict defense-in-depth measure
+            if filename != request.file_path:
+                raise ValueError("Access denied: Only filenames are allowed, not directory paths")
 
-            allowed_dirs = [
-                os.path.abspath(os.environ.get("UPLOAD_DIR", "/tmp/uploads")),
-                os.path.abspath(os.environ.get("TEMP_DIR", "/tmp"))
-            ]
+            # Construct a safe path using only the base filename within the allowed directory
+            upload_dir = os.path.abspath(os.environ.get("UPLOAD_DIR", "/tmp/uploads"))
+            safe_path = os.path.join(upload_dir, filename)
 
-            is_safe = False
-            for allowed_dir in allowed_dirs:
-                allowed_path = Path(allowed_dir)
-                try:
-                    # This raises an error if requested_path is not relative to allowed_dir
-                    path_obj.relative_to(allowed_path)
-                    is_safe = True
-                    break
-                except ValueError:
-                    continue
+            # Ensure the constructed path is actually within the upload directory
+            if not os.path.abspath(safe_path).startswith(upload_dir):
+                raise ValueError("Access denied: Path escape detected")
 
-            if not is_safe:
-                raise ValueError("Access denied: File path outside of allowed directories")
-
-            # Now safe to use the path
-            resolved_path = str(path_obj)
-            if not os.path.exists(resolved_path) or not os.path.isfile(resolved_path):
+            if not os.path.exists(safe_path) or not os.path.isfile(safe_path):
                  raise ValueError("Invalid file path")
 
             # Extract from file path
-            with open(resolved_path, 'rb') as f:
+            with open(safe_path, 'rb') as f:
                 content = f.read()
             features = self.feature_agent.extract_from_jar(content)
         else:

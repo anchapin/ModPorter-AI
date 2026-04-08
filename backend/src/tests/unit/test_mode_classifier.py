@@ -560,7 +560,7 @@ class TestModeClassifier:
         """Test that classify rejects invalid file paths."""
         request = ModeClassificationRequest(file_path="/tmp/uploads/invalid.jar")
 
-        with pytest.raises(ValueError, match="Invalid file path"):
+        with pytest.raises(ValueError, match="Access denied|Invalid file path"):
             await mode_classifier.classify(request)
 
     @pytest.mark.asyncio
