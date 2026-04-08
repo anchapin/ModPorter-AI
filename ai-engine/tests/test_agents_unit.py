@@ -411,6 +411,10 @@ class TestRAGAgents:
         mock.supports_function_calling = False
         mock.supports_system_message = False
         mock.model = "mock-model"
+        # Add attributes to avoid URL Mock issues
+        mock.base_url = "https://api.openai.com/v1"
+        mock.api_base = "https://api.openai.com/v1"
+        mock.api_key = "test-key"
         return mock
 
     @pytest.fixture

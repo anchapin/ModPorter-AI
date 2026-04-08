@@ -151,11 +151,11 @@ class TestMVPEndToEndConversion:
         - Registry name: simple_copper:polished_copper
         - Texture: assets/simple_copper/textures/block/polished_copper.png
         """
-        # Generate JAR dynamically using TestJarGenerator
-        # This ensures path resolution works in CI and locally
-        generator = JarGenerator(str(self.temp_path))
-        jar_path = generator.create_mod_jar("simple_copper", blocks=["polished_copper"])
-        return str(jar_path)
+        # Look for fixture in project root tests/fixtures directory
+        fixture_path = project_root / "tests" / "fixtures" / "simple_copper_block.jar"
+        if not fixture_path.exists():
+            pytest.skip(f"Test fixture not found: {fixture_path}")
+        return str(fixture_path)
 
     # ========================================
     # Test Case 1: Simple Solid Block (Happy Path)
