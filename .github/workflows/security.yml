@@ -145,7 +145,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v3
+        uses: gitleaks/gitleaks-action@v2.3.9
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-path: .gitleaks.toml
