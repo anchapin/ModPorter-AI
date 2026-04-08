@@ -295,7 +295,10 @@
 ---
 
 ## In Progress
-- 🔄 Fix test bugs #1005-#1009
+- 🔄 Fix test bugs #1005-#1009 (PR #1011)
+
+## Pending
+- ⏳ Verify fixes with test run
 
 ## Completed (2026-04-08)
 - ✅ Fix #1005: test_mvp_conversion.py JAR fixture path - use JarGenerator to create JAR dynamically instead of looking for missing fixture file
