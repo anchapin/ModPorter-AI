@@ -186,8 +186,8 @@ class TestEndToEndIntegration:
 
         assert upload_response.status_code == 400, "Should reject invalid file types"
         error_data = upload_response.json()
-        assert "detail" in error_data
-        assert "not supported" in error_data["detail"].lower()
+        assert "message" in error_data
+        assert "not supported" in error_data["message"].lower()
 
     def test_nonexistent_job_status(self, client):
         """
@@ -202,8 +202,8 @@ class TestEndToEndIntegration:
             status_response.status_code == 404
         ), "Should return 404 for non-existent jobs"
         error_data = status_response.json()
-        assert "detail" in error_data
-        assert "not found" in error_data["detail"].lower()
+        assert "message" in error_data
+        assert "not found" in error_data["message"].lower()
 
 
 if __name__ == "__main__":

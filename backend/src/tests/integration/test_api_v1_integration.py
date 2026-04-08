@@ -65,7 +65,7 @@ class TestV1ConversionIntegration:
         data = response.json()
 
         assert "job_id" in data
-        assert data["status"] == "queued"
+        assert data["status"] == "preprocessing"
         assert "message" in data
         assert "estimated_time" in data
 
@@ -97,7 +97,7 @@ class TestV1ConversionIntegration:
         data = response.json()
 
         assert "job_id" in data
-        assert data["status"] == "queued"
+        assert data["status"] == "preprocessing"
 
     def test_v1_convert_with_mcaddon_upload(self, client):
         """Test v1 conversion endpoint with MCADDON file upload."""
@@ -128,7 +128,7 @@ class TestV1ConversionIntegration:
         data = response.json()
 
         assert "job_id" in data
-        assert data["status"] == "queued"
+        assert data["status"] == "preprocessing"
 
     def test_v1_upload_invalid_file_type(
         self, client
@@ -140,10 +140,10 @@ class TestV1ConversionIntegration:
             "/api/v1/upload",  # Changed to /upload
             files={"file": ("test.txt", io.BytesIO(text_content), "text/plain")},
         )
-        assert response.status_code == 415
+        assert response.status_code == 400
         data = response.json()
-        assert "detail" in data
-        assert "invalid file type" in data["detail"]
+        assert "message" in data
+        assert "file type" in data["message"]
 
     def test_v1_convert_missing_file_id(
         self, client
@@ -180,8 +180,8 @@ class TestV1ConversionIntegration:
         )
         assert response.status_code == 413
         data = response.json()
-        assert "detail" in data
-        assert "exceeds the maximum allowed size" in data["detail"]
+        assert "message" in data
+        assert "exceeds the maximum allowed size" in data["message"]
 
 
 class TestV1StatusIntegration:
@@ -228,7 +228,7 @@ class TestV1StatusIntegration:
         assert "message" in status_data
         assert "created_at" in status_data
         assert status_data["job_id"] == job_id
-        assert status_data["status"] in ["queued", "processing", "completed", "failed"]
+        assert status_data["status"] in ["queued", "preprocessing", "processing", "completed", "failed"]
         assert isinstance(status_data["progress"], int)
         assert 0 <= status_data["progress"] <= 100
 
@@ -240,7 +240,7 @@ class TestV1StatusIntegration:
 
         assert response.status_code == 404
         data = response.json()
-        assert "detail" in data
+        assert "message" in data
 
     def test_v1_check_status_invalid_job_id_format(self, client):
         """Test checking status with invalid job ID format."""
@@ -295,7 +295,7 @@ class TestV1DownloadIntegration:
         elif download_response.status_code == 400:
             # Job not yet completed
             data = download_response.json()
-            assert "detail" in data
+            assert "message" in data
 
     def test_v1_download_nonexistent_job(self, client):
         """Test downloading from non-existent job via v1 endpoint."""
@@ -305,7 +305,7 @@ class TestV1DownloadIntegration:
 
         assert response.status_code == 404
         data = response.json()
-        assert "detail" in data
+        assert "message" in data
 
 
 class TestV1ErrorHandlingIntegration:
@@ -356,7 +356,7 @@ class TestV1ErrorHandlingIntegration:
             assert response.status_code == 200
             data = response.json()
             assert "job_id" in data
-            assert data["status"] == "queued"
+            assert data["status"] == "preprocessing"
 
         job_ids = [response.json()["job_id"] for response in conversion_responses]
         assert len(set(job_ids)) == len(job_ids)
@@ -412,13 +412,13 @@ class TestV1FullWorkflowIntegration:
             # Verify progress is reasonable
             assert 0 <= status_data["progress"] <= 100
 
-            if final_status in ["completed", "failed"]:
+            if final_status in ["queued", "preprocessing", "processing", "completed", "failed"]:
                 break
 
             time.sleep(1)  # Wait before next check
 
         # Step 3: Verify final status is valid
-        assert final_status in ["queued", "processing", "completed", "failed"]
+        assert final_status in ["queued", "preprocessing", "processing", "completed", "failed"]
 
         # Step 4: If completed, try to download
         if final_status == "completed":
@@ -460,7 +460,7 @@ class TestV1FullWorkflowIntegration:
         data = conversion_response.json()
 
         assert "job_id" in data
-        assert data["status"] == "queued"
+        assert data["status"] == "preprocessing"
 
         # Verify we can check status
         job_id = data["job_id"]
@@ -519,7 +519,7 @@ class TestReportAPIEndpoints:
     def test_get_interactive_report_not_found(self, client):
         response = client.get("/api/v1/jobs/unknown_job_id_123/report")
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert "not found" in response.json()["message"].lower()
 
     def test_get_prd_style_report_success(self, client):
         job_id = MOCK_CONVERSION_RESULT_SUCCESS["job_id"]

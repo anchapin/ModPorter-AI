@@ -281,7 +281,7 @@ class TestValidationAPIIntegration:
 
         response = client.post("/api/v1/validation/", json=request_data)
         assert response.status_code == 400
-        assert ValidationMessages.CONVERSION_ID_REQUIRED in response.json()["detail"]
+        assert ValidationMessages.CONVERSION_ID_REQUIRED in response.json()["message"]
 
     def test_validation_job_persistence(self, client, sample_validation_request):
         """Test that validation jobs persist correctly in storage"""
@@ -358,7 +358,7 @@ class TestValidationAPIIntegration:
         assert "overall_confidence" in report_data
         assert "recommendations" in report_data
 
-    @patch("src.api.validation.MockValidationAgent.validate_conversion")
+    @patch("src.api.validation.ValidationAgent.validate_conversion")
     def test_validation_agent_error_handling(
         self, mock_validate, client, sample_validation_request
     ):
@@ -394,5 +394,5 @@ class TestValidationAPIIntegration:
         report_response = client.get(f"/api/v1/validation/{job_id}/report")
         assert report_response.status_code == 400
         assert (
-            ValidationMessages.REPORT_NOT_AVAILABLE in report_response.json()["detail"]
+            ValidationMessages.REPORT_NOT_AVAILABLE in report_response.json()["message"]
         )
