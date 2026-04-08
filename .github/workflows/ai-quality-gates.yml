@@ -120,14 +120,10 @@ jobs:
         run: |
           cd backend
           # Note: -n 0 because pytest-xdist -n auto has issues with multiple glob patterns
-          # Known issue: test_quality_validator.py causes import pollution for
-          # test_report_exporter_service.py when collected together, so we ignore it
           python3 -m pytest src/tests/unit/test_o*.py src/tests/unit/test_p*.py \
             src/tests/unit/test_q*.py src/tests/unit/test_r*.py src/tests/unit/test_s*.py \
             src/tests/unit/test_t*.py \
-            -q --tb=short \
-            --ignore=src/tests/unit/test_task_worker_coverage.py \
-            --ignore=src/tests/unit/test_quality_validator.py \
+            -q --tb=short --ignore=src/tests/unit/test_task_worker_coverage.py \
             -n 0 --no-cov --cov-fail-under=0
 
   # ============================================
