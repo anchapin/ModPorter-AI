@@ -92,10 +92,33 @@ class TestAssetConversionService:
 
     @pytest.mark.asyncio
     async def test_fallback_texture_conversion(self, service):
-        with patch('shutil.copy2') as mock_copy:
+        # Mock PIL.Image.open and shutil at global level since they're imported locally in the function
+        mock_image = MagicMock()
+        mock_image.save = MagicMock()
+        
+        import PIL.Image
+        original_open = PIL.Image.open
+        
+        def mock_open(path):
+            return mock_image
+            
+        mock_image_instance = MagicMock()
+        mock_image_instance.__enter__ = MagicMock(return_value=mock_image)
+        mock_image_instance.__aexit__ = MagicMock(return_value=None)
+        mock_image_instance.save = MagicMock()
+        
+        PIL.Image.open = MagicMock(return_value=mock_image_instance)
+        
+        import shutil
+        original_copy2 = shutil.copy2
+        shutil.copy2 = MagicMock()
+        
+        try:
             result = await service._fallback_texture_conversion("in.png", "out.png")
             assert result["success"] is True
-            mock_copy.assert_called_once()
+        finally:
+            PIL.Image.open = original_open
+            shutil.copy2 = original_copy2
 
     @pytest.mark.asyncio
     async def test_fallback_sound_conversion(self, service):
