@@ -5,8 +5,7 @@
   "testRunner": "vitest",
   "testRunnerNodeArgs": ["--experimental-vm-modules"],
   "vitest": {
-    "configFile": "vite.config.ts",
-    "enableFindRelatedTests": true
+    "configFile": "vite.config.ts"
   },
   "mutate": [
     "src/**/*.{ts,tsx}",
