@@ -85,13 +85,13 @@ class MemoryCache:
                 cached = CachedResult(
                     data=result,
                     results=result.get("results", result),
-                    ttl=ttl if ttl is not None else self.ttl
+                    ttl=ttl if ttl is not None else self.ttl,
                 )
             elif isinstance(result, CachedResult):
                 cached = result
             else:
                 cached = CachedResult(data=result, ttl=ttl if ttl is not None else self.ttl)
-            
+
             if key in self._cache:
                 self._cache.move_to_end(key)
 
@@ -249,13 +249,13 @@ class PipelineCache:
             cached = CachedResult(
                 data=result,
                 results=result.get("results", result),
-                ttl=ttl if ttl is not None else self.ttl
+                ttl=ttl if ttl is not None else self.ttl,
             )
         elif isinstance(result, CachedResult):
             cached = result
         else:
             cached = CachedResult(data=result, ttl=ttl if ttl is not None else self.ttl)
-        
+
         self._backend.set(key, cached)
 
     def invalidate(self, pattern: str = None) -> None:

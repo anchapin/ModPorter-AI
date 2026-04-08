@@ -52,7 +52,7 @@ class SearchBenchmark:
         self.queries = test_queries()
 
         # Build BM25 index
-        if hasattr(self.engine, 'build_index'):
+        if hasattr(self.engine, "build_index"):
             self.engine.build_index(self.documents)
             print("BM25 index built")
 
@@ -103,6 +103,7 @@ class SearchBenchmark:
 
         # Use mock query embedding
         import random
+
         random.seed(123)
         query_embedding = [random.uniform(-1, 1) for _ in range(384)]
         norm = sum(x**2 for x in query_embedding) ** 0.5
@@ -152,19 +153,22 @@ class SearchBenchmark:
 
         # First, get search results to re-rank
         import random
+
         random.seed(123)
         query_embedding = [random.uniform(-1, 1) for _ in range(384)]
         norm = sum(x**2 for x in query_embedding) ** 0.5
         query_embedding = [x / norm for x in query_embedding]
 
         # Get search results asynchronously
-        search_results = asyncio.run(self.engine.search(
-            query=SearchQuery(query_text="custom block creation", top_k=num_candidates),
-            documents=self.documents,
-            embeddings=self.embeddings,
-            query_embedding=query_embedding,
-            search_mode=SearchMode.HYBRID,
-        ))
+        search_results = asyncio.run(
+            self.engine.search(
+                query=SearchQuery(query_text="custom block creation", top_k=num_candidates),
+                documents=self.documents,
+                embeddings=self.embeddings,
+                query_embedding=query_embedding,
+                search_mode=SearchMode.HYBRID,
+            )
+        )
 
         latencies = []
         for _ in range(num_runs):
@@ -214,6 +218,7 @@ class SearchBenchmark:
         }
 
         import random
+
         random.seed(123)
         query_embedding = [random.uniform(-1, 1) for _ in range(384)]
         norm = sum(x**2 for x in query_embedding) ** 0.5
@@ -275,9 +280,11 @@ class SearchBenchmark:
         print(f"  Max: {max_latency:.2f}ms")
 
         print(f"\nBreakdown (Average):")
-        print(f"  Query Expansion: {avg_expansion:.2f}ms ({avg_expansion/avg_latency*100:.1f}%)")
-        print(f"  Hybrid Search: {avg_search:.2f}ms ({avg_search/avg_latency*100:.1f}%)")
-        print(f"  Re-ranking: {avg_rerank:.2f}ms ({avg_rerank/avg_latency*100:.1f}%)")
+        print(
+            f"  Query Expansion: {avg_expansion:.2f}ms ({avg_expansion / avg_latency * 100:.1f}%)"
+        )
+        print(f"  Hybrid Search: {avg_search:.2f}ms ({avg_search / avg_latency * 100:.1f}%)")
+        print(f"  Re-ranking: {avg_rerank:.2f}ms ({avg_rerank / avg_latency * 100:.1f}%)")
 
         # Performance target validation
         print(f"\nPerformance Target (< 500ms):")

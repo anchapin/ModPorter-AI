@@ -611,9 +611,11 @@ class HybridSearchEngine:
 
             # Skip candidates with no meaningful scores (both vector and keyword are 0 or unavailable)
             if not should_skip:
-                has_vector_score = search_mode != SearchMode.KEYWORD_ONLY and embeddings.get(doc_id, [])
+                has_vector_score = search_mode != SearchMode.KEYWORD_ONLY and embeddings.get(
+                    doc_id, []
+                )
                 has_keyword_score = search_mode != SearchMode.VECTOR_ONLY and document.content_text
-                
+
                 # If in hybrid/adaptive mode, require at least one score type to be non-zero
                 if search_mode in [SearchMode.HYBRID, SearchMode.ADAPTIVE]:
                     if candidate.vector_score < 0.01 and candidate.keyword_score == 0:

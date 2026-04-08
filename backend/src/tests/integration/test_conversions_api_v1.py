@@ -11,9 +11,7 @@ class TestConversionsAPI:
         jar_content = b"PK\x03\x04\x14\x00\x00\x00\x08\x00"
 
         # Options as JSON string
-        options = json.dumps(
-            {"assumptions": "conservative", "target_version": "1.20.0"}
-        )
+        options = json.dumps({"assumptions": "conservative", "target_version": "1.20.0"})
 
         response = client.post(
             "/api/v1/conversions",

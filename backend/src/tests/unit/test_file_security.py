@@ -73,9 +73,7 @@ class TestFileSecurityScanner:
         with tempfile.TemporaryDirectory() as tmpdir:
             yield Path(tmpdir)
 
-    def create_zip(
-        self, path: Path, files: dict, compression: int = zipfile.ZIP_DEFLATED
-    ) -> Path:
+    def create_zip(self, path: Path, files: dict, compression: int = zipfile.ZIP_DEFLATED) -> Path:
         """Helper to create a zip file."""
         with zipfile.ZipFile(path, "w", compression=compression) as zf:
             for name, content in files.items():
@@ -130,9 +128,7 @@ class TestFileSecurityScanner:
         result = scanner.scan_file(zip_path)
 
         assert not result.is_safe
-        assert any(
-            t.threat_type == SecurityThreatType.PATH_TRAVERSAL for t in result.threats
-        )
+        assert any(t.threat_type == SecurityThreatType.PATH_TRAVERSAL for t in result.threats)
 
     def test_detect_path_traversal_absolute(self, scanner, temp_dir):
         """Test detection of absolute path traversal."""
@@ -142,9 +138,7 @@ class TestFileSecurityScanner:
         result = scanner.scan_file(zip_path)
 
         assert not result.is_safe
-        assert any(
-            t.threat_type == SecurityThreatType.PATH_TRAVERSAL for t in result.threats
-        )
+        assert any(t.threat_type == SecurityThreatType.PATH_TRAVERSAL for t in result.threats)
 
     def test_detect_zip_bomb_high_ratio(self, strict_scanner, temp_dir):
         """Test detection of ZIP bomb with high compression ratio."""
@@ -171,9 +165,7 @@ class TestFileSecurityScanner:
         result = strict_scanner.scan_file(zip_path)
 
         assert not result.is_safe
-        assert any(
-            t.threat_type == SecurityThreatType.EXCESSIVE_FILES for t in result.threats
-        )
+        assert any(t.threat_type == SecurityThreatType.EXCESSIVE_FILES for t in result.threats)
 
     def test_detect_large_file(self, strict_scanner, temp_dir):
         """Test detection of oversized file."""
@@ -187,9 +179,7 @@ class TestFileSecurityScanner:
         result = strict_scanner.scan_file(zip_path)
 
         assert not result.is_safe
-        assert any(
-            t.threat_type == SecurityThreatType.EXCESSIVE_SIZE for t in result.threats
-        )
+        assert any(t.threat_type == SecurityThreatType.EXCESSIVE_SIZE for t in result.threats)
 
     def test_detect_nested_archive(self, scanner, temp_dir):
         """Test detection of nested archives."""
@@ -205,9 +195,7 @@ class TestFileSecurityScanner:
         result = scanner.scan_file(outer_path)
 
         # Should detect nested archive
-        assert any(
-            t.threat_type == SecurityThreatType.NESTED_ARCHIVE for t in result.threats
-        )
+        assert any(t.threat_type == SecurityThreatType.NESTED_ARCHIVE for t in result.threats)
 
     def test_detect_suspicious_content(self, scanner, temp_dir):
         """Test detection of suspicious content patterns."""
@@ -223,10 +211,7 @@ class TestFileSecurityScanner:
         result = scanner.scan_file(zip_path)
 
         # Should detect suspicious pattern
-        assert any(
-            t.threat_type == SecurityThreatType.SUSPICIOUS_CONTENT
-            for t in result.threats
-        )
+        assert any(t.threat_type == SecurityThreatType.SUSPICIOUS_CONTENT for t in result.threats)
 
     def test_scan_invalid_zip(self, scanner, temp_dir):
         """Test scanning an invalid/corrupted ZIP file."""
@@ -236,18 +221,14 @@ class TestFileSecurityScanner:
         result = scanner.scan_file(invalid_path)
 
         assert not result.is_safe
-        assert any(
-            t.threat_type == SecurityThreatType.INVALID_ARCHIVE for t in result.threats
-        )
+        assert any(t.threat_type == SecurityThreatType.INVALID_ARCHIVE for t in result.threats)
 
     def test_scan_nonexistent_file(self, scanner, temp_dir):
         """Test scanning a non-existent file."""
         result = scanner.scan_file(Path("/nonexistent/file.zip"))
 
         assert not result.is_safe
-        assert any(
-            t.threat_type == SecurityThreatType.INVALID_ARCHIVE for t in result.threats
-        )
+        assert any(t.threat_type == SecurityThreatType.INVALID_ARCHIVE for t in result.threats)
 
     def test_scan_disallowed_extension(self, scanner, temp_dir):
         """Test scanning file with disallowed extension."""
@@ -257,10 +238,7 @@ class TestFileSecurityScanner:
         result = scanner.scan_file(exe_path)
 
         assert not result.is_safe
-        assert any(
-            t.threat_type == SecurityThreatType.SUSPICIOUS_CONTENT
-            for t in result.threats
-        )
+        assert any(t.threat_type == SecurityThreatType.SUSPICIOUS_CONTENT for t in result.threats)
 
     def test_validate_extraction_path_safe(self, scanner, temp_dir):
         """Test validation of safe extraction paths."""
@@ -325,24 +303,18 @@ class TestSecurityScanResult:
         result = SecurityScanResult(is_safe=True)
 
         # Low severity doesn't change safety
-        result.add_threat(
-            SecurityThreatType.SUSPICIOUS_CONTENT, SecuritySeverity.LOW, "Low threat"
-        )
+        result.add_threat(SecurityThreatType.SUSPICIOUS_CONTENT, SecuritySeverity.LOW, "Low threat")
         assert result.is_safe
 
         # High severity changes safety
-        result.add_threat(
-            SecurityThreatType.PATH_TRAVERSAL, SecuritySeverity.HIGH, "High threat"
-        )
+        result.add_threat(SecurityThreatType.PATH_TRAVERSAL, SecuritySeverity.HIGH, "High threat")
         assert not result.is_safe
         assert result.has_high_threats
 
     def test_has_critical_threats(self):
         """Test detection of critical threats."""
         result = SecurityScanResult(is_safe=True)
-        result.add_threat(
-            SecurityThreatType.ZIP_BOMB, SecuritySeverity.CRITICAL, "Critical threat"
-        )
+        result.add_threat(SecurityThreatType.ZIP_BOMB, SecuritySeverity.CRITICAL, "Critical threat")
 
         assert result.has_critical_threats
         assert not result.is_safe

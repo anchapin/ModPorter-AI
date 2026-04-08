@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ValidationResult:
     """Result of pattern validation."""
+
     is_valid: bool
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
@@ -44,24 +45,23 @@ class PatternValidator:
 
     # Malicious content patterns
     MALICIOUS_PATTERNS = [
-        r'\beval\s*\(',  # eval(
-        r'__import__\s*\(',  # __import__(
-        r'\bexec\s*\(',  # exec(
-        r'<script[^>]*>',  # <script> tags
-        r'javascript:',  # javascript: protocol
-        r'document\.cookie',  # document.cookie
-        r'Runtime\.getRuntime',  # Java Runtime.exec()
-        r'ProcessBuilder\s*\(',  # ProcessBuilder(
-        r'\bSystem\.exec',  # System.exec (doesn't exist but looks suspicious)
-        r'\.getClass\(\)\s*\.forName',  # Reflection-based class loading
+        r"\beval\s*\(",  # eval(
+        r"__import__\s*\(",  # __import__(
+        r"\bexec\s*\(",  # exec(
+        r"<script[^>]*>",  # <script> tags
+        r"javascript:",  # javascript: protocol
+        r"document\.cookie",  # document.cookie
+        r"Runtime\.getRuntime",  # Java Runtime.exec()
+        r"ProcessBuilder\s*\(",  # ProcessBuilder(
+        r"\bSystem\.exec",  # System.exec (doesn't exist but looks suspicious)
+        r"\.getClass\(\)\s*\.forName",  # Reflection-based class loading
     ]
 
     def __init__(self):
         """Initialize validator."""
         # Compile malicious patterns for performance
         self.malicious_regex = re.compile(
-            '|'.join(self.MALICIOUS_PATTERNS),
-            re.IGNORECASE | re.MULTILINE
+            "|".join(self.MALICIOUS_PATTERNS), re.IGNORECASE | re.MULTILINE
         )
 
     async def validate_pattern(
@@ -122,33 +122,26 @@ class PatternValidator:
         errors = []
         warnings = []
 
-        lines = pattern.strip().split('\n')
+        lines = pattern.strip().split("\n")
 
         # Check minimum line count
         if len(lines) < self.MIN_JAVA_LINES:
             errors.append(
-                f"Java pattern too short: {len(lines)} lines, "
-                f"minimum {self.MIN_JAVA_LINES}"
+                f"Java pattern too short: {len(lines)} lines, minimum {self.MIN_JAVA_LINES}"
             )
 
         # Check for class/interface/enum keyword
-        java_keywords = ['class ', 'interface ', 'enum ']
+        java_keywords = ["class ", "interface ", "enum "]
         if not any(keyword in pattern for keyword in java_keywords):
-            errors.append(
-                "Java pattern must contain class, interface, or enum keyword"
-            )
+            errors.append("Java pattern must contain class, interface, or enum keyword")
 
         # Check for access modifiers (warning only)
-        if not any(mod in pattern for mod in ['public ', 'private ', 'protected ']):
-            warnings.append(
-                "Java pattern missing access modifier (public/private/protected)"
-            )
+        if not any(mod in pattern for mod in ["public ", "private ", "protected "]):
+            warnings.append("Java pattern missing access modifier (public/private/protected)")
 
         # Check for package or import statements (good practice)
-        if 'package ' not in pattern and 'import ' not in pattern:
-            warnings.append(
-                "Java pattern missing package or import statements"
-            )
+        if "package " not in pattern and "import " not in pattern:
+            warnings.append("Java pattern missing package or import statements")
 
         return ValidationResult(
             is_valid=len(errors) == 0,
@@ -167,13 +160,12 @@ class PatternValidator:
         errors = []
         warnings = []
 
-        lines = pattern.strip().split('\n')
+        lines = pattern.strip().split("\n")
 
         # Check minimum line count
         if len(lines) < self.MIN_BEDROCK_LINES:
             errors.append(
-                f"Bedrock pattern too short: {len(lines)} lines, "
-                f"minimum {self.MIN_BEDROCK_LINES}"
+                f"Bedrock pattern too short: {len(lines)} lines, minimum {self.MIN_BEDROCK_LINES}"
             )
 
         # Try to parse as JSON first
@@ -186,23 +178,19 @@ class PatternValidator:
             pass
 
         # Check for JavaScript keywords
-        js_keywords = ['function ', 'const ', 'let ', 'var ', 'import ', 'class ']
+        js_keywords = ["function ", "const ", "let ", "var ", "import ", "class "]
         if not any(keyword in pattern for keyword in js_keywords):
-            errors.append(
-                "Bedrock pattern must be valid JSON or JavaScript"
-            )
+            errors.append("Bedrock pattern must be valid JSON or JavaScript")
 
         # Check for common Bedrock patterns
         bedrock_indicators = [
-            'minecraft:',
-            'format_version',
-            'components',
-            'description',
+            "minecraft:",
+            "format_version",
+            "components",
+            "description",
         ]
         if not any(indicator in pattern for indicator in bedrock_indicators):
-            warnings.append(
-                "Bedrock pattern may not follow standard format"
-            )
+            warnings.append("Bedrock pattern may not follow standard format")
 
         return ValidationResult(
             is_valid=len(errors) == 0,
@@ -234,16 +222,14 @@ class PatternValidator:
 
         # Check for placeholder text
         placeholders = [
-            'TODO',
-            'FIXME',
-            'example',
-            'test',
-            'placeholder',
+            "TODO",
+            "FIXME",
+            "example",
+            "test",
+            "placeholder",
         ]
         if any(placeholder.lower() in description.lower() for placeholder in placeholders):
-            warnings.append(
-                "Description may contain placeholder text"
-            )
+            warnings.append("Description may contain placeholder text")
 
         return ValidationResult(
             is_valid=len(errors) == 0,
@@ -263,7 +249,7 @@ class PatternValidator:
         Returns:
             True if malicious content detected, False otherwise
         """
-        combined = '\n'.join(patterns)
+        combined = "\n".join(patterns)
         matches = self.malicious_regex.findall(combined)
 
         if matches:

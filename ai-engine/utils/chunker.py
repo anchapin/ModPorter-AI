@@ -26,7 +26,9 @@ class Chunker:
         start = 0
         increment = chunk_size - overlap
         if increment <= 0:
-            logger.warning("chunk_size - overlap <= 0. Using chunk_size as increment to avoid infinite loop.")
+            logger.warning(
+                "chunk_size - overlap <= 0. Using chunk_size as increment to avoid infinite loop."
+            )
             increment = chunk_size
 
         while start < len(document):

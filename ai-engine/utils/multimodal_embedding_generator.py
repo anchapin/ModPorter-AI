@@ -483,7 +483,6 @@ class MultiModalEmbeddingGenerator:
             metadata={"content_type": "text", "content_length": len(text)},
         )
 
-
     async def _generate_chunk_embedding(
         self, chunk: Chunk, strategy: EmbeddingStrategy
     ) -> EmbeddingResult:

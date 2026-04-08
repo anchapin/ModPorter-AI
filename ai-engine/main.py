@@ -44,6 +44,7 @@ from utils.gpu_config import get_gpu_config, print_gpu_info, optimize_for_infere
 # Import RAG evaluation components
 try:
     from evaluation.rag_evaluator import RAGEvaluator, GoldenDatasetItem, EvaluationResult
+
     RAG_EVALUATOR_AVAILABLE = True
 except ImportError:
     RAG_EVALUATOR_AVAILABLE = False
@@ -628,10 +629,18 @@ class RAGEvaluationRequest(BaseModel):
     retrieved_docs: List[str] = Field(..., description="List of retrieved document IDs")
     relevant_docs: List[str] = Field(..., description="List of relevant document IDs")
     answer: str = Field(..., description="The generated answer")
-    required_keywords: Optional[List[str]] = Field(default=[], description="Keywords that should be in answer")
-    prohibited_keywords: Optional[List[str]] = Field(default=[], description="Keywords that should not be in answer")
-    query_type: Optional[str] = Field(default="general", description="Type of query (explanation, how_to, example, etc.)")
-    relevance_scores: Optional[Dict[str, float]] = Field(default=None, description="Relevance scores for retrieved docs")
+    required_keywords: Optional[List[str]] = Field(
+        default=[], description="Keywords that should be in answer"
+    )
+    prohibited_keywords: Optional[List[str]] = Field(
+        default=[], description="Keywords that should not be in answer"
+    )
+    query_type: Optional[str] = Field(
+        default="general", description="Type of query (explanation, how_to, example, etc.)"
+    )
+    relevance_scores: Optional[Dict[str, float]] = Field(
+        default=None, description="Relevance scores for retrieved docs"
+    )
 
 
 class RAGEvaluationResponse(BaseModel):
@@ -650,7 +659,7 @@ class RAGEvaluationResponse(BaseModel):
     response_model=RAGEvaluationResponse,
     tags=["evaluation"],
     summary="Evaluate RAG system performance",
-    description="Evaluate a RAG query against retrieved documents and generated answer"
+    description="Evaluate a RAG query against retrieved documents and generated answer",
 )
 async def evaluate_rag_query(request: RAGEvaluationRequest):
     """
@@ -663,8 +672,7 @@ async def evaluate_rag_query(request: RAGEvaluationRequest):
     """
     if not RAG_EVALUATOR_AVAILABLE:
         raise HTTPException(
-            status_code=503,
-            detail="RAG evaluation not available - evaluation module not loaded"
+            status_code=503, detail="RAG evaluation not available - evaluation module not loaded"
         )
 
     try:
@@ -711,10 +719,10 @@ async def evaluate_rag_query(request: RAGEvaluationRequest):
 
         # Calculate overall score (weighted average)
         overall_score = (
-            0.4 * retrieval_metrics["precision_at_5"] +
-            0.3 * generation_metrics["keyword_coverage"] +
-            0.2 * generation_metrics["coherence_score"] +
-            0.1 * diversity_metrics["source_diversity"]
+            0.4 * retrieval_metrics["precision_at_5"]
+            + 0.3 * generation_metrics["keyword_coverage"]
+            + 0.2 * generation_metrics["coherence_score"]
+            + 0.1 * diversity_metrics["source_diversity"]
         )
 
         return RAGEvaluationResponse(
@@ -723,7 +731,7 @@ async def evaluate_rag_query(request: RAGEvaluationRequest):
             retrieval_metrics=retrieval_metrics,
             generation_metrics=generation_metrics,
             diversity_metrics=diversity_metrics,
-            evaluation_timestamp=datetime.now(timezone.utc)
+            evaluation_timestamp=datetime.now(timezone.utc),
         )
 
     except Exception as e:
@@ -731,16 +739,12 @@ async def evaluate_rag_query(request: RAGEvaluationRequest):
         raise HTTPException(status_code=500, detail=f"Evaluation failed: {str(e)}")
 
 
-@app.get(
-    "/api/v1/rag/health",
-    tags=["evaluation"],
-    summary="Check RAG evaluation service health"
-)
+@app.get("/api/v1/rag/health", tags=["evaluation"], summary="Check RAG evaluation service health")
 async def evaluation_health_check():
     """Check if RAG evaluation service is available."""
     return {
         "status": "healthy" if RAG_EVALUATOR_AVAILABLE else "unavailable",
-        "evaluator_available": RAG_EVALUATOR_AVAILABLE
+        "evaluator_available": RAG_EVALUATOR_AVAILABLE,
     }
 
 

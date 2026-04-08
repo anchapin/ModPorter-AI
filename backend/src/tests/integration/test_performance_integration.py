@@ -102,9 +102,7 @@ class TestPerformanceIntegration:
             "thresholds": {"cpu": 60, "memory": 100},
         }
 
-        scenario_response = self.client.post(
-            "/api/v1/performance/scenarios", json=custom_scenario
-        )
+        scenario_response = self.client.post("/api/v1/performance/scenarios", json=custom_scenario)
         assert scenario_response.status_code == 201
 
         scenario_data = scenario_response.json()

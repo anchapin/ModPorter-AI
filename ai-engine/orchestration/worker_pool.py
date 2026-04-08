@@ -241,7 +241,9 @@ class WorkerPool:
         """
         # Run synchronous submit in a thread pool to avoid blocking the event loop
         loop = asyncio.get_running_loop()
-        future = await loop.run_in_executor(self.executor, lambda: self._submit_sync(task, agent_executor))
+        future = await loop.run_in_executor(
+            self.executor, lambda: self._submit_sync(task, agent_executor)
+        )
         # wrap the concurrent.futures.Future in an asyncio.Future for await
         return asyncio.wrap_future(future)
 

@@ -37,7 +37,7 @@ class TestProgressMessageData:
             progress=50,
             message="Analyzing Java code",
         )
-        
+
         assert data.agent == "JavaAnalyzerAgent"
         assert data.status == AgentStatus.IN_PROGRESS
         assert data.progress == 50
@@ -52,14 +52,14 @@ class TestProgressMessageData:
             progress=100,
             message="Done",
         )
-        
+
         assert isinstance(data.timestamp, datetime)
         assert data.timestamp.tzinfo is not None  # Should be timezone-aware
 
     def test_custom_timestamp(self):
         """Test custom timestamp can be set."""
         custom_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
-        
+
         data = ProgressMessageData(
             agent="Test",
             status=AgentStatus.COMPLETED,
@@ -67,7 +67,7 @@ class TestProgressMessageData:
             message="Done",
             timestamp=custom_time,
         )
-        
+
         assert data.timestamp == custom_time
 
     def test_details_optional(self):
@@ -78,13 +78,13 @@ class TestProgressMessageData:
             progress=0,
             message="Queued",
         )
-        
+
         assert data.details is None
 
     def test_details_with_data(self):
         """Test details field can contain data."""
         details = {"file": "test.java", "lines": 150}
-        
+
         data = ProgressMessageData(
             agent="Test",
             status=AgentStatus.IN_PROGRESS,
@@ -92,7 +92,7 @@ class TestProgressMessageData:
             message="Processing",
             details=details,
         )
-        
+
         assert data.details == details
 
 
@@ -109,7 +109,7 @@ class TestProgressMessage:
                 message="Done",
             )
         )
-        
+
         assert msg.type == "agent_progress"
 
     def test_custom_type(self):
@@ -121,9 +121,9 @@ class TestProgressMessage:
                 status=AgentStatus.COMPLETED,
                 progress=100,
                 message="Done",
-            )
+            ),
         )
-        
+
         assert msg.type == "conversion_complete"
 
 
@@ -138,7 +138,7 @@ class TestProgressMessageFunction:
             progress=50,
             message="Analyzing code",
         )
-        
+
         assert isinstance(msg, ProgressMessage)
         assert msg.data.agent == "JavaAnalyzerAgent"
         assert msg.data.status == AgentStatus.IN_PROGRESS
@@ -154,7 +154,7 @@ class TestProgressMessageFunction:
             message="Done",
             details={"key": "value"},
         )
-        
+
         assert msg.data.details == {"key": "value"}
 
 
@@ -166,7 +166,7 @@ class TestProgressHandler:
         """Test broadcasting progress."""
         with patch("src.websocket.progress_handler.manager") as mock_manager:
             mock_manager.broadcast = AsyncMock()
-            
+
             await ProgressHandler.broadcast_progress(
                 conversion_id="test-123",
                 agent="JavaAnalyzerAgent",
@@ -174,7 +174,7 @@ class TestProgressHandler:
                 progress=50,
                 message="Analyzing code",
             )
-            
+
             mock_manager.broadcast.assert_called_once()
             call_args = mock_manager.broadcast.call_args
             assert call_args[0][1] == "test-123"
@@ -184,12 +184,12 @@ class TestProgressHandler:
         """Test broadcasting agent start."""
         with patch("src.websocket.progress_handler.manager") as mock_manager:
             mock_manager.broadcast = AsyncMock()
-            
+
             await ProgressHandler.broadcast_agent_start(
                 conversion_id="test-123",
                 agent="JavaAnalyzerAgent",
             )
-            
+
             mock_manager.broadcast.assert_called_once()
 
     @pytest.mark.asyncio
@@ -197,13 +197,13 @@ class TestProgressHandler:
         """Test broadcasting agent start with custom message."""
         with patch("src.websocket.progress_handler.manager") as mock_manager:
             mock_manager.broadcast = AsyncMock()
-            
+
             await ProgressHandler.broadcast_agent_start(
                 conversion_id="test-123",
                 agent="JavaAnalyzerAgent",
                 message="Custom start message",
             )
-            
+
             mock_manager.broadcast.assert_called_once()
             call_args = mock_manager.broadcast.call_args
             msg_data = call_args[0][0]["data"]
@@ -214,14 +214,14 @@ class TestProgressHandler:
         """Test broadcasting agent update."""
         with patch("src.websocket.progress_handler.manager") as mock_manager:
             mock_manager.broadcast = AsyncMock()
-            
+
             await ProgressHandler.broadcast_agent_update(
                 conversion_id="test-123",
                 agent="JavaAnalyzerAgent",
                 progress=75,
                 message="Processing files",
             )
-            
+
             mock_manager.broadcast.assert_called_once()
             call_args = mock_manager.broadcast.call_args
             msg_data = call_args[0][0]["data"]
@@ -233,12 +233,12 @@ class TestProgressHandler:
         """Test broadcasting agent completion."""
         with patch("src.websocket.progress_handler.manager") as mock_manager:
             mock_manager.broadcast = AsyncMock()
-            
+
             await ProgressHandler.broadcast_agent_complete(
                 conversion_id="test-123",
                 agent="JavaAnalyzerAgent",
             )
-            
+
             mock_manager.broadcast.assert_called_once()
             call_args = mock_manager.broadcast.call_args
             msg_data = call_args[0][0]["data"]
@@ -250,13 +250,13 @@ class TestProgressHandler:
         """Test broadcasting agent failure."""
         with patch("src.websocket.progress_handler.manager") as mock_manager:
             mock_manager.broadcast = AsyncMock()
-            
+
             await ProgressHandler.broadcast_agent_failed(
                 conversion_id="test-123",
                 agent="JavaAnalyzerAgent",
                 error_message="Analysis failed",
             )
-            
+
             mock_manager.broadcast.assert_called_once()
             call_args = mock_manager.broadcast.call_args
             msg_data = call_args[0][0]["data"]
@@ -268,12 +268,12 @@ class TestProgressHandler:
         """Test broadcasting conversion complete."""
         with patch("src.websocket.progress_handler.manager") as mock_manager:
             mock_manager.broadcast = AsyncMock()
-            
+
             await ProgressHandler.broadcast_conversion_complete(
                 conversion_id="test-123",
                 download_url="https://example.com/download",
             )
-            
+
             mock_manager.broadcast.assert_called_once()
             call_args = mock_manager.broadcast.call_args
             msg_data = call_args[0][0]["data"]
@@ -284,12 +284,12 @@ class TestProgressHandler:
         """Test broadcasting conversion failure."""
         with patch("src.websocket.progress_handler.manager") as mock_manager:
             mock_manager.broadcast = AsyncMock()
-            
+
             await ProgressHandler.broadcast_conversion_failed(
                 conversion_id="test-123",
                 error_message="Conversion failed",
             )
-            
+
             mock_manager.broadcast.assert_called_once()
             call_args = mock_manager.broadcast.call_args
             msg_data = call_args[0][0]["data"]
@@ -301,7 +301,7 @@ class TestProgressHandler:
         """Test error handling in broadcast."""
         with patch("src.websocket.progress_handler.manager") as mock_manager:
             mock_manager.broadcast = AsyncMock(side_effect=Exception("Connection error"))
-            
+
             # Should not raise exception, just log error
             await ProgressHandler.broadcast_progress(
                 conversion_id="test-123",
@@ -310,7 +310,7 @@ class TestProgressHandler:
                 progress=100,
                 message="Done",
             )
-            
+
             mock_manager.broadcast.assert_called_once()
 
 
@@ -325,9 +325,9 @@ class TestProgressMessageSerialization:
             progress=100,
             message="Done",
         )
-        
+
         dumped = msg.model_dump()
-        
+
         assert "type" in dumped
         assert "data" in dumped
         assert dumped["data"]["agent"] == "Test"
@@ -336,15 +336,15 @@ class TestProgressMessageSerialization:
     def test_json_serialization(self):
         """Test JSON serialization."""
         import json
-        
+
         msg = progress_message(
             agent="Test",
             status=AgentStatus.COMPLETED,
             progress=100,
             message="Done",
         )
-        
+
         json_str = msg.model_dump_json()
-        
+
         assert "agent" in json_str
         assert "Test" in json_str
