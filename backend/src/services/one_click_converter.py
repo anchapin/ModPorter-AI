@@ -182,7 +182,20 @@ class OneClickPipelineSupervisor:
         # If file_path provided, read content
         if request.file_path:
             try:
-                with open(request.file_path, "rb") as f:
+                from pathlib import Path
+
+                file_path_resolved = Path(request.file_path).resolve()
+                # Defensive: reject paths outside expected upload roots
+                allowed_roots = [Path.cwd(), Path("/tmp"), Path("/var/tmp")]
+                if not any(
+                    str(file_path_resolved).startswith(str(root.resolve()))
+                    for root in allowed_roots
+                ):
+                    raise ValueError("File path must be within allowed directories")
+            except (OSError, ValueError) as e:
+                raise ValueError("Invalid file path") from e
+            try:
+                with open(file_path_resolved, "rb") as f:
                     request.file_content = f.read()
             except Exception as e:
                 raise ValueError(f"Failed to read file: {e}")
