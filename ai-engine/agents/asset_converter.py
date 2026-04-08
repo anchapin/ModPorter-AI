@@ -98,6 +98,7 @@ class AssetConverterAgent:
             AssetConverterAgent.generate_fallback_texture_tool,
         ]
 
+    pass
 
 # ============================================================================
 # EXTRACTED MODULES - Delegation for backward compatibility
