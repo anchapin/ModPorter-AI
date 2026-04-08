@@ -585,10 +585,16 @@ class ModeClassifier:
             from pathlib import Path
 
             try:
-                # Resolve to absolute path to prevent ../ traversal attacks
                 file_path_resolved = Path(request.file_path).resolve()
+                # Defensive: reject paths outside expected upload roots
+                allowed_roots = [Path.cwd(), Path("/tmp"), Path("/var/tmp")]
+                if not any(
+                    str(file_path_resolved).startswith(str(root.resolve()))
+                    for root in allowed_roots
+                ):
+                    raise ValueError("File path must be within allowed directories")
             except (OSError, ValueError) as e:
-                raise ValueError(f"Invalid file path: {request.file_path}") from e
+                raise ValueError("Invalid file path") from e
             with open(file_path_resolved, "rb") as f:
                 content = f.read()
             features = self.feature_agent.extract_from_jar(content)
