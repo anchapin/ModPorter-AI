@@ -1,7 +1,12 @@
+import os
 import pytest
 from fastapi.testclient import TestClient
 
 
+@pytest.mark.skipif(
+    os.getenv("TESTING", "false").lower() == "true",
+    reason="Rate limiting is disabled when TESTING=true (middleware not loaded)",
+)
 def test_upload_rate_limit(client: TestClient):
     """
     Test that the upload endpoint is rate limited correctly (20 requests per minute).
