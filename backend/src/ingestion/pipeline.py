@@ -17,8 +17,13 @@ from .validators.quality import QualityValidator, ValidationResult
 
 # Import from Phase 15-01
 import sys
+from pathlib import Path
 
-sys.path.append("/home/alex/Projects/ModPorter-AI/ai-engine")
+# Add ai-engine to path using relative resolution (works in both local and CI)
+_ai_engine_path = Path(__file__).resolve().parent.parent.parent.parent / "ai-engine"
+if _ai_engine_path.exists() and str(_ai_engine_path) not in sys.path:
+    sys.path.insert(0, str(_ai_engine_path))
+
 from indexing.chunking_strategies import ChunkingStrategyFactory
 from indexing.metadata_extractor import DocumentMetadataExtractor
 
