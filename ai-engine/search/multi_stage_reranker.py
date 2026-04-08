@@ -7,7 +7,7 @@ different reranking strategies in sequence for improved result quality.
 
 import logging
 from typing import List, Dict, Any, Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 
 from schemas.multimodal_schema import SearchQuery, SearchResult

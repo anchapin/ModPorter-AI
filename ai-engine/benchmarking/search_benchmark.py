@@ -8,7 +8,7 @@ to validate the < 500ms performance target.
 import time
 import asyncio
 import statistics
-from typing import Dict, List, Tuple
+from typing import Dict
 import sys
 from pathlib import Path
 
@@ -19,11 +19,10 @@ sys.path.insert(0, str(ai_engine_root))
 from search.hybrid_search_engine import HybridSearchEngine, SearchMode, RankingStrategy
 from search.reranking_engine import CrossEncoderReRanker
 from search.query_expansion import QueryExpansionEngine
-from schemas.multimodal_schema import SearchQuery, MultiModalDocument, ContentType
+from schemas.multimodal_schema import SearchQuery
 
 # Import fixtures
 sys.path.insert(0, str(Path(__file__).parent.parent / "tests"))
-from fixtures.search_fixtures import mock_documents, mock_embeddings, test_queries
 
 
 class SearchBenchmark:
@@ -67,7 +66,7 @@ class SearchBenchmark:
         for query_name, query_data in self.queries.items():
             for _ in range(num_runs):
                 start_time = time.time()
-                expanded = self.expander.expand_query(
+                _ = self.expander.expand_query(
                     SearchQuery(query_text=query_data["query"]),
                     strategies=["domain_expansion", "synonym_expansion"],
                     max_expansion_terms=10,
@@ -170,7 +169,7 @@ class SearchBenchmark:
         latencies = []
         for _ in range(num_runs):
             start_time = time.time()
-            reranked_results = self.reranker.rerank(
+            _ = self.reranker.rerank(
                 query="custom block creation",
                 results=search_results[:num_candidates],
                 top_k=10,
@@ -247,7 +246,7 @@ class SearchBenchmark:
 
             # Step 3: Re-ranking
             step_start = time.time()
-            reranked_results = self.reranker.rerank(
+            _ = self.reranker.rerank(
                 query=expanded.expanded_query,
                 results=search_results[:50],
                 top_k=10,

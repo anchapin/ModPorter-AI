@@ -1,11 +1,10 @@
 import asyncio
-import logging
 from typing import Dict, Any, List
 import time
 import structlog
 
 from qa.context import QAContext, RefinementHistory
-from qa.validators import AgentOutput, validate_agent_output
+from qa.validators import validate_agent_output
 from utils.error_recovery import CircuitBreaker, CircuitBreakerOpenError
 
 logger = structlog.get_logger(__name__)
@@ -79,7 +78,7 @@ class QAOrchestrator:
                     "error": "Circuit breaker open",
                     "skipped": True,
                 }
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.error("Agent timed out", agent=agent_name)
                 context.validation_results[agent_name] = {
                     "success": False,
@@ -317,7 +316,7 @@ class QAOrchestrator:
             )
             breaker._on_success()
             return result
-        except Exception as e:
+        except Exception:
             breaker._on_failure()
             raise
 

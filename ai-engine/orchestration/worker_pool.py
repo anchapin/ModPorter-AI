@@ -122,7 +122,7 @@ class WorkerPool:
 
         except asyncio.CancelledError:
             raise
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise
         except Exception as e:
             logger.error(f"Failed to start WorkerPool: {e}")
@@ -207,7 +207,7 @@ class WorkerPool:
 
             except asyncio.CancelledError:
                 raise
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 raise
             except Exception as e:
                 # Record failure stats
@@ -274,7 +274,7 @@ class WorkerPool:
 
             except asyncio.CancelledError:
                 raise
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 raise
             except Exception as e:
                 if self.enable_monitoring:
@@ -341,7 +341,7 @@ class WorkerPool:
 
                 except asyncio.CancelledError:
                     raise
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     raise
                 except Exception as e:
                     failed_tasks.append({"task_id": task_id, "error": str(e)})
@@ -449,7 +449,7 @@ class WorkerPool:
 
             except asyncio.CancelledError:
                 raise
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 raise
             except Exception as e:
                 logger.error(f"Error in worker monitoring: {e}")
@@ -500,7 +500,7 @@ def create_agent_executor(agent_instance, tools_mapping: Optional[Dict[str, Any]
 
         except asyncio.CancelledError:
             raise
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise
         except Exception as e:
             logger.error(f"Agent execution failed for task {task.task_id}: {e}")

@@ -7,10 +7,9 @@ by caching results for repeated queries.
 
 import logging
 import time
-import hashlib
 from typing import Optional, Dict, Any, Protocol
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from collections import OrderedDict
 import threading
 

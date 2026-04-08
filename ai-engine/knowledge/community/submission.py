@@ -206,7 +206,6 @@ class CommunityPatternManager:
         # If approved, add to pattern library
         if approved:
             from ..patterns.base import ConversionPattern, PatternLibrary
-            from ..patterns.mappings import PatternMapping, PatternMappingRegistry
 
             # Create pattern from submission
             pattern = ConversionPattern(

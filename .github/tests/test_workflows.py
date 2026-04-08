@@ -4,7 +4,6 @@ These tests validate the structure and configuration of GitHub Actions workflows
 """
 
 import os
-import re
 
 import pytest
 import yaml

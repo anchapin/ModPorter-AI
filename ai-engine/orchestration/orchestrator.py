@@ -9,7 +9,6 @@ import multiprocessing
 import asyncio
 import os
 from typing import Dict, List, Any, Optional, Callable
-from concurrent.futures import Future, as_completed
 import json
 from pathlib import Path
 
@@ -337,7 +336,7 @@ class ParallelOrchestrator:
 
             except asyncio.CancelledError:
                 raise  # Always re-raise CancelledError — never swallow it
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 raise  # Re-raise timeouts too
             except Exception as e:
                 logger.error(f"Error in analysis spawn callback: {e}")
@@ -374,7 +373,7 @@ class ParallelOrchestrator:
 
             except asyncio.CancelledError:
                 raise  # Always re-raise CancelledError — never swallow it
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 raise  # Re-raise timeouts too
             except Exception as e:
                 logger.error(f"Error in planning spawn callback: {e}")
@@ -428,7 +427,7 @@ class ParallelOrchestrator:
 
             except asyncio.CancelledError:
                 raise  # Always re-raise CancelledError — never swallow it
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 raise  # Re-raise timeouts too
             except Exception as e:
                 logger.error(f"Workflow execution failed: {e}")
@@ -481,7 +480,7 @@ class ParallelOrchestrator:
                             task_graph.mark_task_completed(spawned_task.task_id, spawned_result)
                         except asyncio.CancelledError:
                             raise
-                        except asyncio.TimeoutError:
+                        except TimeoutError:
                             raise
                         except Exception as e:
                             logger.error(f"Spawned task {spawned_task.task_id} failed: {e}")
@@ -491,7 +490,7 @@ class ParallelOrchestrator:
 
             except asyncio.CancelledError:
                 raise
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 raise
             except Exception as e:
                 logger.error(f"Task {task_id} failed: {e}")
@@ -517,7 +516,7 @@ class ParallelOrchestrator:
                                     task_graph.mark_task_completed(spawned_task.task_id, spawned_result)
                                 except asyncio.CancelledError:
                                     raise
-                                except asyncio.TimeoutError:
+                                except TimeoutError:
                                     raise
                                 except Exception as spawn_e:
                                     logger.error(f"Spawned task {spawned_task.task_id} failed: {spawn_e}")
@@ -525,7 +524,7 @@ class ParallelOrchestrator:
                         continue  # Continue to next task in sequence
                     except asyncio.CancelledError:
                         raise
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         raise
                     except Exception as retry_e:
                         logger.error(f"Task {task_id} failed on retry: {retry_e}")
@@ -605,7 +604,7 @@ class ParallelOrchestrator:
 
                 except asyncio.CancelledError:
                     raise
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     raise
                 except Exception as e:
                     logger.error(f"Task {task_id} failed: {e}")
@@ -630,7 +629,7 @@ class ParallelOrchestrator:
                         task_graph.mark_task_completed(task_id, result)
                     except asyncio.CancelledError:
                         raise
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         raise
                     except Exception as e:
                         logger.error(f"Final task {task_id} failed: {e}")

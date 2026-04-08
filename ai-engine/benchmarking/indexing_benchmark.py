@@ -17,8 +17,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from indexing.chunking_strategies import (
     ChunkingStrategyFactory,
     SemanticChunking,
-    RecursiveChunking,
-    FixedSizeChunking,
 )
 from indexing.metadata_extractor import DocumentMetadataExtractor
 
@@ -140,7 +138,7 @@ class IndexingBenchmark:
             # Extract metadata
             extractor = DocumentMetadataExtractor()
             start = time.time()
-            metadata = extractor.extract(test_doc, source="benchmark")
+            _ = extractor.extract(test_doc, source="benchmark")
             extract_time = (time.time() - start) * 1000
 
             # Chunk document
