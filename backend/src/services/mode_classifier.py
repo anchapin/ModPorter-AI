@@ -583,6 +583,7 @@ class ModeClassifier:
         elif request.file_path:
             # Validate and sanitize file path to prevent directory traversal
             from pathlib import Path
+
             try:
                 # Resolve to absolute path to prevent ../ traversal attacks
                 file_path_resolved = Path(request.file_path).resolve()

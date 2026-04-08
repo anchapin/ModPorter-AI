@@ -44,7 +44,10 @@ def test_convert_single_texture():
 
         # Mock the crewai import before loading
         import unittest.mock as mock
-        with mock.patch.dict(sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}):
+
+        with mock.patch.dict(
+            sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}
+        ):
             # Register module BEFORE loading so asset_converter.py's stub binding works
             sys.modules["asset_converter"] = module
             # Now load the module
@@ -100,7 +103,9 @@ def test_convert_textures_method():
 
         import unittest.mock as mock
 
-        with mock.patch.dict(sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}):
+        with mock.patch.dict(
+            sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}
+        ):
             sys.modules["asset_converter"] = module
             spec.loader.exec_module(module)
             agent = module.AssetConverterAgent()
@@ -118,7 +123,6 @@ def test_convert_textures_method():
             # Convert textures
             result_json = agent.convert_textures(json.dumps(texture_data), str(output_dir))
             result = json.loads(result_json)
-
 
         assert result["total_textures"] == 3
         assert result["successful_conversions"] == 3
@@ -160,14 +164,15 @@ def test_fallback_texture():
 
         import unittest.mock as mock
 
-        with mock.patch.dict(sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}):
+        with mock.patch.dict(
+            sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}
+        ):
             sys.modules["asset_converter"] = module
             spec.loader.exec_module(module)
             agent = module.AssetConverterAgent()
 
             # Try to convert non-existent file
             result = agent._convert_single_texture("/nonexistent/file.png", {}, "block", output_dir)
-
 
         assert result["success"] is True
         assert result["was_fallback"] is True
@@ -202,19 +207,20 @@ def test_power_of_2_constraints():
 
         import unittest.mock as mock
 
-        with mock.patch.dict(sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}):
+        with mock.patch.dict(
+            sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}
+        ):
             sys.modules["asset_converter"] = module
             spec.loader.exec_module(module)
             agent = module.AssetConverterAgent()
 
             test_cases = [
-
-            (17, 17, 32, 32),  # Round up to next power of 2
-            (33, 65, 64, 128),  # Different dimensions
-            (100, 100, 128, 128),  # Round up
-            (1024, 1024, 1024, 1024),  # Already at max
-            (2048, 2048, 1024, 1024),  # Cap at max resolution
-        ]
+                (17, 17, 32, 32),  # Round up to next power of 2
+                (33, 65, 64, 128),  # Different dimensions
+                (100, 100, 128, 128),  # Round up
+                (1024, 1024, 1024, 1024),  # Already at max
+                (2048, 2048, 1024, 1024),  # Cap at max resolution
+            ]
 
         for i, (width, height, expected_width, expected_height) in enumerate(test_cases):
             test_file = input_dir / f"test_{i}.png"
@@ -254,7 +260,9 @@ def test_performance():
 
         import unittest.mock as mock
 
-        with mock.patch.dict(sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}):
+        with mock.patch.dict(
+            sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}
+        ):
             sys.modules["asset_converter"] = module
             spec.loader.exec_module(module)
             agent = module.AssetConverterAgent()

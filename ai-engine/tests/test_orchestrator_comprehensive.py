@@ -5,8 +5,7 @@ Comprehensive unit tests for ParallelOrchestrator.
 import pytest
 import time
 import json
-from pathlib import Path
-from unittest.mock import MagicMock, patch, Mock, AsyncMock
+from unittest.mock import MagicMock, patch, AsyncMock
 from orchestration.orchestrator import ParallelOrchestrator
 from orchestration.strategy_selector import OrchestrationStrategy, StrategyConfig
 from orchestration.task_graph import TaskGraph, TaskNode
@@ -37,23 +36,21 @@ class TestParallelOrchestrator:
             OrchestrationStrategy.SEQUENTIAL,
             OrchestrationStrategy.PARALLEL_BASIC,
             OrchestrationStrategy.PARALLEL_ADAPTIVE,
-            OrchestrationStrategy.HYBRID
+            OrchestrationStrategy.HYBRID,
         ]
-        
+
         for strategy in strategies:
-            with patch.object(orchestrator.strategy_selector, 'select_strategy') as mock_select:
+            with patch.object(orchestrator.strategy_selector, "select_strategy") as mock_select:
                 mock_select.return_value = (strategy, StrategyConfig())
-                
+
                 graph = orchestrator.create_conversion_workflow(
-                    mod_path="test.jar",
-                    output_path="out",
-                    temp_dir="tmp"
+                    mod_path="test.jar", output_path="out", temp_dir="tmp"
                 )
                 assert orchestrator.current_strategy == strategy
                 assert "analyze" in graph.nodes
 
     def test_create_workflow_invalid_strategy(self, orchestrator):
-        with patch.object(orchestrator.strategy_selector, 'select_strategy') as mock_select:
+        with patch.object(orchestrator.strategy_selector, "select_strategy") as mock_select:
             # Must return something that has .value if we get past selection
             # but here we test the final 'else' raise in create_conversion_workflow
             mock_select.return_value = (MagicMock(value="invalid"), StrategyConfig())
@@ -72,9 +69,9 @@ class TestParallelOrchestrator:
 
         orchestrator.current_strategy = OrchestrationStrategy.SEQUENTIAL
         orchestrator.current_config = StrategyConfig(max_parallel_tasks=1)
-        
+
         graph = orchestrator._create_sequential_workflow(TaskGraph(), {"base": "data"})
-        
+
         results = await orchestrator.execute_workflow(graph)
         assert "analyze" in results
         assert "validate" in results
@@ -84,8 +81,10 @@ class TestParallelOrchestrator:
         """Test execute_workflow when an exception occurs."""
         orchestrator.current_config = StrategyConfig()
         orchestrator.current_strategy = OrchestrationStrategy.SEQUENTIAL
-        
-        with patch.object(orchestrator, '_execute_sequential', side_effect=RuntimeError("Exec fail")):
+
+        with patch.object(
+            orchestrator, "_execute_sequential", side_effect=RuntimeError("Exec fail")
+        ):
             with pytest.raises(RuntimeError, match="Exec fail"):
                 await orchestrator.execute_workflow(TaskGraph())
             assert orchestrator.execution_end_time is not None
@@ -102,9 +101,9 @@ class TestParallelOrchestrator:
 
         orchestrator.current_strategy = OrchestrationStrategy.PARALLEL_BASIC
         orchestrator.current_config = StrategyConfig(max_parallel_tasks=2)
-        
+
         graph = orchestrator._create_parallel_basic_workflow(TaskGraph(), {"base": "data"})
-        
+
         results = await orchestrator.execute_workflow(graph)
         assert "analyze" in results
         assert "validate" in results
@@ -125,7 +124,9 @@ class TestParallelOrchestrator:
     def test_planning_spawn_callback(self, orchestrator):
         callback = orchestrator._create_planning_spawn_callback({})
         mock_res = MagicMock()
-        f1 = MagicMock(); f1.id = "f1"; f1.requires_specialized_processing = True
+        f1 = MagicMock()
+        f1.id = "f1"
+        f1.requires_specialized_processing = True
         mock_res.complex_features = [f1]
         spawned = callback(mock_res)
         assert len(spawned) == 1
@@ -152,10 +153,10 @@ class TestParallelOrchestrator:
         orchestrator.current_config = StrategyConfig(task_timeout=0.01)
         graph = TaskGraph()
         # Empty graph - no tasks to execute
-        
+
         mock_pool = MagicMock()
         mock_pool.submit_task_async = AsyncMock(return_value=MagicMock())
-        
+
         res = await orchestrator._execute_parallel(graph, mock_pool)
         # Empty graph returns empty results
         assert res == {}
@@ -170,13 +171,14 @@ class TestParallelOrchestrator:
         assert res == {}
 
     def test_analyze_mod_complexity(self, orchestrator):
-        with patch("pathlib.Path.exists", return_value=True), \
-             patch("pathlib.Path.stat") as mock_stat:
-            
+        with (
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.stat") as mock_stat,
+        ):
             mock_stat.return_value.st_size = 1 * 1024 * 1024
             complexity = orchestrator._analyze_mod_complexity("small.jar")
             assert complexity["num_features"] == 5
-            
+
             mock_stat.return_value.st_size = 7 * 1024 * 1024
             complexity = orchestrator._analyze_mod_complexity("med.jar")
             assert complexity["num_features"] == 10
@@ -186,7 +188,7 @@ class TestParallelOrchestrator:
             assert complexity["num_features"] == 15
 
     def test_get_system_resources(self, orchestrator):
-        with patch('os.path.exists', return_value=True):
+        with patch("os.path.exists", return_value=True):
             res = orchestrator._get_system_resources()
             assert res["is_containerized"] is True
 
