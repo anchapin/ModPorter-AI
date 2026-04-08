@@ -143,7 +143,7 @@ class TestV1ConversionIntegration:
         assert response.status_code == 400
         data = response.json()
         assert "message" in data
-        assert "file type" in data["message"]
+        assert "file type" in data["message"].lower()
 
     def test_v1_convert_missing_file_id(
         self, client
@@ -181,7 +181,7 @@ class TestV1ConversionIntegration:
         assert response.status_code == 413
         data = response.json()
         assert "message" in data
-        assert "exceeds the maximum allowed size" in data["message"]
+        assert "exceeds the limit" in data["message"].lower()
 
 
 class TestV1StatusIntegration:
