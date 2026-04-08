@@ -67,7 +67,7 @@ jobs:
         run: |
           cd backend
           python3 -m pytest src/tests/unit/test_a*.py src/tests/unit/test_b*.py src/tests/unit/test_c*.py \
-            -q --tb=short --ignore=src/tests/unit/test_task_worker_coverage.py
+            -q --tb=short --ignore=src/tests/unit/test_task_worker_coverage.py --cov-fail-under=0
 
   unit-tests-batch-2:
     name: Unit Tests (d-m*)
@@ -92,7 +92,7 @@ jobs:
             src/tests/unit/test_f*.py src/tests/unit/test_g*.py src/tests/unit/test_h*.py \
             src/tests/unit/test_i*.py src/tests/unit/test_j*.py src/tests/unit/test_k*.py \
             src/tests/unit/test_l*.py src/tests/unit/test_m*.py \
-            -q --tb=short --ignore=src/tests/unit/test_task_worker_coverage.py
+            -q --tb=short --ignore=src/tests/unit/test_task_worker_coverage.py --cov-fail-under=0
 
   unit-tests-batch-3:
     name: Unit Tests (n-z*)
@@ -118,7 +118,7 @@ jobs:
             src/tests/unit/test_s*.py src/tests/unit/test_t*.py src/tests/unit/test_u*.py \
             src/tests/unit/test_v*.py src/tests/unit/test_w*.py src/tests/unit/test_x*.py \
             src/tests/unit/test_y*.py src/tests/unit/test_z*.py \
-            -q --tb=short --ignore=src/tests/unit/test_task_worker_coverage.py
+            -q --tb=short --ignore=src/tests/unit/test_task_worker_coverage.py --cov-fail-under=0
 
   # ============================================
   # UNIT TESTS - COVERAGE
@@ -178,7 +178,7 @@ jobs:
       - name: Run Integration Tests
         run: |
           cd backend
-          python3 -m pytest src/tests/integration/ -v --tb=short
+          python3 -m pytest src/tests/integration/ -v --tb=short --cov-fail-under=0
 
   # ============================================
   # SECURITY SCANNING

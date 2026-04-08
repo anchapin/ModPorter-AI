@@ -54,7 +54,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd backend
-          python -m pip install --upgrade pip
+          python3 -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest pytest-asyncio pytest-cov pytest-timeout pytest-xdist
 
@@ -63,7 +63,7 @@ jobs:
           cd backend
           # Run tests in parallel using pytest-xdist with loadfile distribution
           # This groups tests by file to minimize cross-file pollution
-          python -m pytest src/tests/unit/ \
+          python3 -m pytest src/tests/unit/ \
             -n auto \
             --dist=loadfile \
             -v --tb=short \
@@ -72,8 +72,7 @@ jobs:
             --cov-report=json:coverage.json \
             --cov-report=term-missing \
             --cov-fail-under=80 \
-            --ignore=src/tests/unit/test_ingestion_base.py \
-            --ignore=src/tests/unit/test_quality_validator.py
+            --ignore=src/tests/unit/test_task_worker_coverage.py
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
