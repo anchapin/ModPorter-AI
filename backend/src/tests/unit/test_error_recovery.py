@@ -538,4 +538,8 @@ class TestSupervisorWithContext:
             {"operation": mock_op, "feature": "conversion"},
         )
 
-        assert result.status in [RecoveryStatus.SUCCEEDED, RecoveryStatus.DEGRADED, RecoveryStatus.ESCALATED]
+        assert result.status in [
+            RecoveryStatus.SUCCEEDED,
+            RecoveryStatus.DEGRADED,
+            RecoveryStatus.ESCALATED,
+        ]
