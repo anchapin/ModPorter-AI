@@ -1171,9 +1171,6 @@ jobs:
       - name: Check duplicates
         run: pnpm run lint:duplicates
 
-      - name: Check duplicates
-        run: pnpm run lint:duplicates
-
       - name: Build frontend with bundle analysis
         run: cd frontend && pnpm build:analyze
 
