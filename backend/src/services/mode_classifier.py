@@ -513,19 +513,18 @@ class ModeClassifier:
             from pathlib import Path
 
             # Extract only the filename from the provided path to prevent directory traversal
+            # and verify it does not contain any directory separators
             filename = os.path.basename(request.file_path)
-
-            # If the original path contained directory components, reject it
-            # This is a strict defense-in-depth measure
-            if filename != request.file_path:
+            if filename != request.file_path or "/" in request.file_path or "\\" in request.file_path:
                 raise ValueError("Access denied: Only filenames are allowed, not directory paths")
 
             # Construct a safe path using only the base filename within the allowed directory
-            upload_dir = os.path.abspath(os.environ.get("UPLOAD_DIR", "/tmp/uploads"))
-            safe_path = os.path.join(upload_dir, filename)
+            upload_dir = os.path.realpath(os.environ.get("UPLOAD_DIR", "/tmp/uploads"))
+            safe_path = os.path.realpath(os.path.join(upload_dir, filename))
 
             # Ensure the constructed path is actually within the upload directory
-            if not os.path.abspath(safe_path).startswith(upload_dir):
+            # using os.path.commonpath which CodeQL recognizes as a sanitizer
+            if os.path.commonpath([safe_path, upload_dir]) != upload_dir:
                 raise ValueError("Access denied: Path escape detected")
 
             if not os.path.exists(safe_path) or not os.path.isfile(safe_path):
