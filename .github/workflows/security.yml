@@ -136,6 +136,8 @@ jobs:
     name: Gitleaks Secret Detection
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -145,9 +147,9 @@ jobs:
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           config-path: .gitleaks.toml
           redact: true
-          verbose: true
 
   # =============================================================================
   # Dependency Review (check for vulnerable dependencies in PRs)
