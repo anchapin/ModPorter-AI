@@ -510,15 +510,28 @@ class ModeClassifier:
             features = request.features
         elif request.file_path:
             import os
-            # Make sure it's a valid safe path to prevent path traversal
-            safe_path = os.path.abspath(request.file_path)
-            # Ensure it's inside an allowed temp or storage directory if necessary
-            # For now, just ensure it doesn't do traversal
-            if not os.path.exists(safe_path) or not os.path.isfile(safe_path):
+
+            # Verify the path is safe
+            requested_path = os.path.abspath(request.file_path)
+            allowed_dirs = [
+                os.path.abspath(os.environ.get("UPLOAD_DIR", "/tmp/uploads")),
+                os.path.abspath(os.environ.get("TEMP_DIR", "/tmp"))
+            ]
+
+            is_safe = False
+            for allowed_dir in allowed_dirs:
+                if requested_path.startswith(allowed_dir + os.sep):
+                    is_safe = True
+                    break
+
+            if not is_safe:
+                raise ValueError("Access denied: File path outside of allowed directories")
+
+            if not os.path.exists(requested_path) or not os.path.isfile(requested_path):
                  raise ValueError("Invalid file path")
 
             # Extract from file path
-            with open(safe_path, 'rb') as f:
+            with open(requested_path, 'rb') as f:
                 content = f.read()
             features = self.feature_agent.extract_from_jar(content)
         else:

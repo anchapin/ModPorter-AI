@@ -36,9 +36,9 @@ from src.models.conversion_mode import (
     ClassificationConfidence,
     ConversionSettings,
     ModeSpecificPipelineConfig,
-    DEFAULT_CLASSIFICATION_RULES,
-    MODE_PIPELINES,
 )
+from src.services.mode_classifier import get_mode_classifier
+from src.services.mode_classifier import DEFAULT_CLASSIFICATION_RULES, MODE_PIPELINES
 
 
 # =============================================================================
@@ -552,6 +552,23 @@ class TestModeClassifier:
         request = ModeClassificationRequest()
         
         with pytest.raises(ValueError, match="Must provide"):
+            await mode_classifier.classify(request)
+
+    @pytest.mark.asyncio
+    @patch('os.path.exists', return_value=False)
+    async def test_classify_with_invalid_file_path(self, mock_exists, mode_classifier):
+        """Test that classify rejects invalid file paths."""
+        request = ModeClassificationRequest(file_path="/tmp/uploads/invalid.jar")
+
+        with pytest.raises(ValueError, match="Invalid file path"):
+            await mode_classifier.classify(request)
+
+    @pytest.mark.asyncio
+    async def test_classify_with_path_traversal(self, mode_classifier):
+        """Test that classify rejects path traversal attempts."""
+        request = ModeClassificationRequest(file_path="../../../etc/passwd")
+
+        with pytest.raises(ValueError, match="Access denied"):
             await mode_classifier.classify(request)
 
     def test_get_pipeline_config_delegates_to_router(self, mode_classifier):
