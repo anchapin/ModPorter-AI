@@ -16,7 +16,7 @@ import logging
 from typing import List, Dict, Any, Optional, Tuple
 from concurrent.futures import ThreadPoolExecutor
 
-from src.models.conversion_mode import (
+from models.conversion_mode import (
     ConversionMode,
     ModFeatures,
     ComplexFeature,
@@ -510,9 +510,14 @@ class ModeClassifier:
             features = request.features
         elif request.file_path:
             import os
+            from pathlib import Path
 
             # Verify the path is safe
-            requested_path = os.path.abspath(request.file_path)
+            requested_path_str = os.path.abspath(request.file_path)
+
+            # Use pathlib to verify the path explicitly as an extra security measure
+            path_obj = Path(requested_path_str)
+
             allowed_dirs = [
                 os.path.abspath(os.environ.get("UPLOAD_DIR", "/tmp/uploads")),
                 os.path.abspath(os.environ.get("TEMP_DIR", "/tmp"))
@@ -520,18 +525,25 @@ class ModeClassifier:
 
             is_safe = False
             for allowed_dir in allowed_dirs:
-                if requested_path.startswith(allowed_dir + os.sep):
+                allowed_path = Path(allowed_dir)
+                try:
+                    # This raises an error if requested_path is not relative to allowed_dir
+                    path_obj.relative_to(allowed_path)
                     is_safe = True
                     break
+                except ValueError:
+                    continue
 
             if not is_safe:
                 raise ValueError("Access denied: File path outside of allowed directories")
 
-            if not os.path.exists(requested_path) or not os.path.isfile(requested_path):
+            # Now safe to use the path
+            resolved_path = str(path_obj)
+            if not os.path.exists(resolved_path) or not os.path.isfile(resolved_path):
                  raise ValueError("Invalid file path")
 
             # Extract from file path
-            with open(requested_path, 'rb') as f:
+            with open(resolved_path, 'rb') as f:
                 content = f.read()
             features = self.feature_agent.extract_from_jar(content)
         else:

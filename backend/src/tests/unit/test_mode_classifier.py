@@ -21,13 +21,14 @@ from typing import List
 # Add the src directory to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from src.services.mode_classifier import (
+from services.mode_classifier import (
     FeatureExtractionAgent,
     ClassifierAgent,
     RouterAgent,
     ModeClassifier,
+    get_mode_classifier,
 )
-from src.models.conversion_mode import (
+from models.conversion_mode import (
     ConversionMode,
     ModFeatures,
     ComplexFeature,
@@ -37,8 +38,7 @@ from src.models.conversion_mode import (
     ConversionSettings,
     ModeSpecificPipelineConfig,
 )
-from src.services.mode_classifier import get_mode_classifier
-from src.services.mode_classifier import DEFAULT_CLASSIFICATION_RULES, MODE_PIPELINES
+from services.mode_classifier import DEFAULT_CLASSIFICATION_RULES, MODE_PIPELINES
 
 
 # =============================================================================

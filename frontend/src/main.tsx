@@ -42,7 +42,7 @@ if (sentryDsn) {
   console.log('Sentry error tracking initialized');
 }
 
-Sentry.addCaptureConsoleIntegration();
+// Sentry.addCaptureConsoleIntegration(); // Not available in this Sentry version
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

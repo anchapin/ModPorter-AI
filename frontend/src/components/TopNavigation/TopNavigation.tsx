@@ -26,7 +26,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
     { to: '/experiments', label: 'Experiments' },
     { to: '/experiment-results', label: 'Results' },
     { to: '/docs', label: 'Documentation' },
-    { to: '/settings', label: '⚙️' },
+    { to: '/settings', label: '⚙️', ariaLabel: 'Settings' },
   ];
 
   return (
@@ -37,13 +37,15 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
         </Link>
 
         <div className="top-navigation__links">
-          {navigationLinks.map(({ to, label }) => (
+          {navigationLinks.map(({ to, label, ariaLabel }) => (
             <Link
               key={to}
               to={to}
               className={`top-navigation__link ${isActive(to) ? 'top-navigation__link--active' : ''}`}
+              aria-label={ariaLabel}
+              title={ariaLabel}
             >
-              {label}
+              {ariaLabel ? <span aria-hidden="true">{label}</span> : label}
             </Link>
           ))}
         </div>
