@@ -43,7 +43,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd ai-engine
-          pip install --no-cache-dir --timeout=600 -r requirements.txt
+          pip install --no-cache-dir --timeout=600 --use-deprecated=legacy-resolver -r requirements.txt
           pip install --no-cache-dir --timeout=600 pytest pytest-asyncio pytest-timeout pytest-cov pytest-xdist
 
       - name: Run tests without coverage (baseline)
