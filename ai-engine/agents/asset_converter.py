@@ -4543,8 +4543,10 @@ _stub_method_names = (
     'convert_models_tool', 'convert_audio_tool', 'validate_bedrock_assets_tool',
     'extract_jar_textures_tool', '_analyze_texture', '_validate_single_asset', 'clear_cache',
 )
+import sys as _sys
 for _name in _stub_method_names:
-    _func = locals().get(_name)
-    if callable(_func):
+    _mod = _sys.modules[__name__]
+    _func = vars(_mod).get(_name)
+    if _func is not None:
         setattr(AssetConverterAgent, _name, _func)
 
