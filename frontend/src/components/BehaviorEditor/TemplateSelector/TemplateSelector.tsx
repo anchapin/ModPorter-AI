@@ -89,9 +89,10 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   // Filter templates on client side for excludeTemplateIds
   // ⚡ Bolt optimization: Use Set and useMemo for O(N+M) time complexity instead of O(N*M)
   const filteredTemplates = useMemo(() => {
-    if (!excludeTemplateIds || excludeTemplateIds.length === 0) return state.templates;
+    if (!excludeTemplateIds || excludeTemplateIds.length === 0)
+      return state.templates;
     const excludeSet = new Set(excludeTemplateIds);
-    return state.templates.filter(template => !excludeSet.has(template.id));
+    return state.templates.filter((template) => !excludeSet.has(template.id));
   }, [state.templates, excludeTemplateIds]);
 
   const handleTemplateSelect = (template: BehaviorTemplate) => {
