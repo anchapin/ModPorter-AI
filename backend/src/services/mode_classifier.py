@@ -510,17 +510,16 @@ class ModeClassifier:
             features = request.features
         elif request.file_path:
             import os
-            import re
 
-            # Extremely strict validation using regex
-            # Only alphanumeric characters, dots, dashes, and underscores are allowed.
-            # This completely eliminates any possibility of directory traversal.
-            if not re.match(r'^[\w\-. ]+$', request.file_path):
-                raise ValueError("Access denied: Invalid filename format")
+            # Use os.path.basename to sanitize the input against path traversal.
+            # CodeQL explicitly recognizes os.path.basename as a path injection sanitizer.
+            filename = os.path.basename(request.file_path)
 
-            # Construct a safe path using only the base filename within the allowed directory
-            upload_dir = os.path.realpath(os.environ.get("UPLOAD_DIR", "/tmp/uploads"))
-            safe_path = os.path.join(upload_dir, request.file_path)
+            if not filename or filename != request.file_path:
+                raise ValueError("Invalid file path")
+
+            upload_dir = os.environ.get("UPLOAD_DIR", "/tmp/uploads")
+            safe_path = os.path.join(upload_dir, filename)
 
             if not os.path.exists(safe_path) or not os.path.isfile(safe_path):
                  raise ValueError("Invalid file path")
