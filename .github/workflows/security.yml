@@ -32,7 +32,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install Bandit
-        run: pip install bandit
+        run: pip install --timeout=300 bandit
 
       - name: Run Bandit SAST
         run: |
@@ -146,10 +146,6 @@ jobs:
 
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2.3.9
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          config-path: .gitleaks.toml
-          redact: true
 
   # =============================================================================
   # Dependency Review (check for vulnerable dependencies in PRs)

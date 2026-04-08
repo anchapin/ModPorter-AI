@@ -48,7 +48,6 @@ pydantic-settings~=2.11.0
 
 # Monitoring - align with backend version
 prometheus_client>=0.17.0
-psutil
 structlog>=24.0.0
 
 # Distributed Tracing - OpenTelemetry
