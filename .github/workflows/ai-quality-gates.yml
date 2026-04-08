@@ -61,7 +61,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r backend/requirements.txt
-          pip install pytest pytest-cov pytest-asyncio
+          pip install -r backend/requirements-dev.txt
+          pip install pytest pytest-cov pytest-asyncio PyJWT psutil
       
       - name: Run Batch 1 Tests
         run: |
@@ -86,7 +87,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r backend/requirements.txt
-          pip install pytest pytest-cov pytest-asyncio
+          pip install pytest pytest-cov pytest-asyncio PyJWT psutil
       
       - name: Run Batch 2 Tests
         run: |
@@ -113,7 +114,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r backend/requirements.txt
-          pip install pytest pytest-cov pytest-asyncio
+          pip install pytest pytest-cov pytest-asyncio PyJWT psutil
       
       - name: Run Batch 3 Tests
         run: |
@@ -143,7 +144,7 @@ jobs:
         run: |
           pip install -r backend/requirements.txt
           pip install -r backend/requirements-dev.txt
-          pip install pytest pytest-cov pytest-asyncio pytest-randomly pytest-xdist pytest-timeout PyJWT psutil
+          pip install pytest pytest-cov pytest-asyncio PyJWT psutil pytest-randomly pytest-xdist pytest-timeout
       
       - name: Run Coverage Tests
         run: |
