@@ -53,7 +53,7 @@ jobs:
             --no-thresholds \
             --summary-export=results/smoke.json
         env:
-          BASE_URL: '${{ inputs.base_url || 'http://localhost:8080' }}'
+          BASE_URL: "${{ inputs.base_url || 'http://localhost:8080' }}"
 
       - name: Run load test
         if: ${{ inputs.test_type == 'load' }}
