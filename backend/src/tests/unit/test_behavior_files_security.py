@@ -72,10 +72,9 @@ class TestBehaviorFilesSecurity:
                 content="{}",
             )
             assert file.file_path == path
+
     @pytest.mark.serial
-    async def test_export_zip_sanitization(
-        self, db_session: AsyncSession, sample_conversion_job
-    ):
+    async def test_export_zip_sanitization(self, db_session: AsyncSession, sample_conversion_job):
         """Test that zip export sanitizes paths."""
 
         # Mock behavior file object
@@ -88,10 +87,20 @@ class TestBehaviorFilesSecurity:
         malicious_file.updated_at = datetime.now()
 
         # Use patch as context manager instead of pytest-mock mocker fixture
-        with patch("db.crud.get_behavior_files_by_conversion", new_callable=AsyncMock, return_value=[malicious_file]):
-            with patch("db.crud.get_job", new_callable=AsyncMock, return_value=sample_conversion_job):
+        with patch(
+            "db.crud.get_behavior_files_by_conversion",
+            new_callable=AsyncMock,
+            return_value=[malicious_file],
+        ):
+            with patch(
+                "db.crud.get_job", new_callable=AsyncMock, return_value=sample_conversion_job
+            ):
                 with patch("db.crud.get_addon_details", new_callable=AsyncMock, return_value=None):
-                    with patch("services.cache.CacheService.set_export_data", new_callable=AsyncMock, return_value=True) as mock_set:
+                    with patch(
+                        "services.cache.CacheService.set_export_data",
+                        new_callable=AsyncMock,
+                        return_value=True,
+                    ) as mock_set:
                         # Execute export
                         request = ExportRequest(
                             conversion_id=str(sample_conversion_job.id),

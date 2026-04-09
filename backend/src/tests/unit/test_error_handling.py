@@ -211,9 +211,7 @@ class TestConversionFailureAnalysis:
         assert determine_failure_severity("parse_error", 1) == FailureSeverity.HIGH
 
         # Medium category = medium
-        assert (
-            determine_failure_severity("validation_error", 0) == FailureSeverity.MEDIUM
-        )
+        assert determine_failure_severity("validation_error", 0) == FailureSeverity.MEDIUM
 
         # Unknown = low
         assert determine_failure_severity("unknown_error", 0) == FailureSeverity.LOW
@@ -228,14 +226,8 @@ class TestConversionFailureAnalysis:
         assert determine_failure_source("upload") == FailureSource.FILE_UPLOAD
         assert determine_failure_source("parsing") == FailureSource.FILE_PARSING
         assert determine_failure_source("analyzing") == FailureSource.MOD_ANALYSIS
-        assert (
-            determine_failure_source("asset conversion")
-            == FailureSource.ASSET_CONVERSION
-        )
-        assert (
-            determine_failure_source("code translation")
-            == FailureSource.CODE_TRANSLATION
-        )
+        assert determine_failure_source("asset conversion") == FailureSource.ASSET_CONVERSION
+        assert determine_failure_source("code translation") == FailureSource.CODE_TRANSLATION
         assert determine_failure_source("packaging") == FailureSource.PACKAGING
         assert determine_failure_source("validation") == FailureSource.VALIDATION
         assert determine_failure_source(None) == FailureSource.UNKNOWN

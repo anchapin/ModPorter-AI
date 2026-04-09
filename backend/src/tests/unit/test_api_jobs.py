@@ -1,4 +1,3 @@
-
 import pytest
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
@@ -9,9 +8,11 @@ import uuid
 app = FastAPI()
 app.include_router(router)
 
+
 @pytest.fixture
 def mock_manager():
     return AsyncMock()
+
 
 @pytest.fixture
 def client(mock_manager):
@@ -47,22 +48,23 @@ def client(mock_manager):
 
     app.dependency_overrides.clear()
 
+
 class TestJobsAPI:
     def test_create_job(self, mock_manager, client):
         mock_manager.create_job.return_value = "job-123"
-        
+
         request_data = {
             "file_path": "/tmp/mod.jar",
             "original_filename": "mod.jar",
             "options": {
                 "conversion_mode": "standard",
                 "target_version": "1.20",
-                "output_format": "mcaddon"
-            }
+                "output_format": "mcaddon",
+            },
         }
-        
+
         response = client.post("/api/v1/jobs", json=request_data)
-        
+
         assert response.status_code == 201
         assert response.json()["job_id"] == "job-123"
         mock_manager.create_job.assert_called_once()
@@ -80,11 +82,11 @@ class TestJobsAPI:
         mock_job.created_at = "2023-01-01T00:00:00Z"
         mock_job.updated_at = "2023-01-01T00:00:00Z"
         mock_job.completed_at = None
-        
+
         mock_manager.list_jobs.return_value = [mock_job]
-        
+
         response = client.get("/api/v1/jobs")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["total"] == 1
@@ -104,20 +106,20 @@ class TestJobsAPI:
         mock_job.created_at = "2023-01-01T00:00:00Z"
         mock_job.updated_at = "2023-01-01T00:00:00Z"
         mock_job.completed_at = None
-        
+
         mock_manager.get_job.return_value = mock_job
-        
+
         response = client.get(f"/api/v1/jobs/{job_id}")
-        
+
         assert response.status_code == 200
         assert response.json()["job_id"] == job_id
 
     def test_get_job_not_found(self, mock_manager, client):
         mock_manager.get_job.return_value = None
-        
+
         job_id = str(uuid.uuid4())
         response = client.get(f"/api/v1/jobs/{job_id}")
-        
+
         assert response.status_code == 404
 
     def test_cancel_job_success(self, mock_manager, client):
@@ -128,9 +130,9 @@ class TestJobsAPI:
         mock_job.status = JobStatus.PROCESSING
         mock_manager.get_job.return_value = mock_job
         mock_manager.cancel_job.return_value = True
-        
+
         response = client.delete(f"/api/v1/jobs/{job_id}")
-        
+
         assert response.status_code == 200
         assert "cancelled successfully" in response.json()["message"]
 
@@ -140,7 +142,7 @@ class TestJobsAPI:
         mock_job.job_id = job_id
         mock_job.user_id = "other_user"
         mock_manager.get_job.return_value = mock_job
-        
+
         response = client.delete(f"/api/v1/jobs/{job_id}")
-        
+
         assert response.status_code == 403

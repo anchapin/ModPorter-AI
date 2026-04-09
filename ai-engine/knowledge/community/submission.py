@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class SubmissionStatus(Enum):
     """Pattern submission status."""
+
     PENDING = "pending"
     UNDER_REVIEW = "under_review"
     APPROVED = "approved"
@@ -28,6 +29,7 @@ class PatternSubmission:
 
     Contains Java and Bedrock code examples, description, and metadata.
     """
+
     id: str
     java_pattern: str
     bedrock_pattern: str
@@ -90,7 +92,9 @@ class PatternSubmission:
             created_at=datetime.fromisoformat(data["created_at"]),
             reviewed_by=data.get("reviewed_by"),
             review_notes=data.get("review_notes"),
-            reviewed_at=datetime.fromisoformat(data["reviewed_at"]) if data.get("reviewed_at") else None,
+            reviewed_at=datetime.fromisoformat(data["reviewed_at"])
+            if data.get("reviewed_at")
+            else None,
             upvotes=data.get("upvotes", 0),
             downvotes=data.get("downvotes", 0),
             tags=data.get("tags", []),
@@ -113,6 +117,7 @@ class CommunityPatternManager:
     def __init__(self):
         """Initialize manager."""
         from .validation import PatternValidator
+
         self.validator = PatternValidator()
         self.submissions: dict = {}  # In-memory storage (would use database in production)
 
@@ -151,6 +156,7 @@ class CommunityPatternManager:
 
         # Create submission
         import uuid
+
         submission = PatternSubmission(
             id=str(uuid.uuid4()),
             java_pattern=java_pattern,
@@ -206,7 +212,6 @@ class CommunityPatternManager:
         # If approved, add to pattern library
         if approved:
             from ..patterns.base import ConversionPattern, PatternLibrary
-            from ..patterns.mappings import PatternMapping, PatternMappingRegistry
 
             # Create pattern from submission
             pattern = ConversionPattern(
@@ -271,10 +276,7 @@ class CommunityPatternManager:
         Returns:
             List of pending submissions, sorted by created_at DESC
         """
-        pending = [
-            s for s in self.submissions.values()
-            if s.status == SubmissionStatus.PENDING
-        ]
+        pending = [s for s in self.submissions.values() if s.status == SubmissionStatus.PENDING]
 
         # Sort by created_at descending
         pending.sort(key=lambda x: x.created_at, reverse=True)

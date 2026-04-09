@@ -2,6 +2,7 @@
 Integration tests for database initialization.
 Tests src/db/init_db.py with real database operations.
 """
+
 import pytest
 import asyncio
 from unittest.mock import AsyncMock, patch, MagicMock
@@ -42,10 +43,12 @@ class TestInitDbIntegration:
 
         # Mock the async_engine to fail twice then succeed
         mock_conn = AsyncMock()
-        mock_conn.__aenter__ = AsyncMock(side_effect=[
-            Exception("Connection failed"),  # First attempt fails
-            Exception("Connection failed"),  # Second attempt fails
-        ])
+        mock_conn.__aenter__ = AsyncMock(
+            side_effect=[
+                Exception("Connection failed"),  # First attempt fails
+                Exception("Connection failed"),  # Second attempt fails
+            ]
+        )
         mock_conn.__aexit__ = AsyncMock(return_value=None)
 
         with patch("db.init_db.async_engine") as mock_engine:

@@ -23,6 +23,7 @@ class ValidationResult:
         errors: List of error messages (critical issues)
         warnings: List of warning messages (non-critical issues)
     """
+
     is_valid: bool
     errors: List[str]
     warnings: List[str]
@@ -65,7 +66,9 @@ class QualityValidator:
 
         # Check for meaningful content
         if not self._is_meaningful(content):
-            errors.append(f"Content lacks meaningful text (alphanumeric ratio < {self.MIN_ALPHANUMERIC_RATIO})")
+            errors.append(
+                f"Content lacks meaningful text (alphanumeric ratio < {self.MIN_ALPHANUMERIC_RATIO})"
+            )
 
         # Check metadata completeness
         if not metadata.get("title"):
@@ -128,6 +131,7 @@ class QualityValidator:
 
         # Count occurrences
         from collections import Counter
+
         sentence_counts = Counter(sentences)
 
         # If any sentence appears 5+ times, it's repetitive

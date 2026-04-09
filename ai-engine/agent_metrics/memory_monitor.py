@@ -367,7 +367,9 @@ def get_memory_report() -> Dict:
 class MemoryTracker:
     """Context manager for tracking memory usage of a code block"""
 
-    def __init__(self, label: str = "", metadata: Dict[str, Any] = None, monitor: MemoryMonitor = None):
+    def __init__(
+        self, label: str = "", metadata: Dict[str, Any] = None, monitor: MemoryMonitor = None
+    ):
         self.label = label
         self.metadata = metadata or {}
         self.monitor = monitor or memory_monitor

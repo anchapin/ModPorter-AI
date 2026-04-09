@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 class QueuePriority(str, Enum):
     """Queue priority levels for job scheduling."""
+
     LOW = "low"
     NORMAL = "normal"
     HIGH = "high"
@@ -44,13 +45,14 @@ class QueuePriority(str, Enum):
             QueuePriority.LOW: 0,
             QueuePriority.NORMAL: 1,
             QueuePriority.HIGH: 2,
-            QueuePriority.CRITICAL: 3
+            QueuePriority.CRITICAL: 3,
         }
         return scores[self]
 
 
 class BatchJobStatus(str, Enum):
     """Status of a batch job."""
+
     PENDING = "pending"
     QUEUED = "queued"
     PROCESSING = "processing"
@@ -62,6 +64,7 @@ class BatchJobStatus(str, Enum):
 @dataclass
 class BatchJob:
     """Represents a single job in the batch queue."""
+
     job_id: str
     user_id: str
     mod_data: Dict[str, Any]
@@ -87,6 +90,7 @@ class BatchJob:
 @dataclass
 class BatchGroup:
     """A group of similar jobs batched together."""
+
     group_id: str
     mode: ConversionMode
     jobs: List[BatchJob] = field(default_factory=list)
@@ -465,7 +469,11 @@ class IntelligentBatchQueue:
                 if job.mode:
                     mode_counts[job.mode] += 1
 
-            dominant_mode = max(mode_counts.keys(), key=lambda m: mode_counts[m]) if mode_counts else ConversionMode.STANDARD
+            dominant_mode = (
+                max(mode_counts.keys(), key=lambda m: mode_counts[m])
+                if mode_counts
+                else ConversionMode.STANDARD
+            )
 
             group_id = str(uuid.uuid4())
             group = BatchGroup(
@@ -605,7 +613,9 @@ class IntelligentBatchQueue:
             stats["active_batch_groups"] = len(self._batch_groups)
 
             # Calculate total queued
-            total_queued = sum(len(q) for q in self._mode_queues.values()) + len(self._priority_queue)
+            total_queued = sum(len(q) for q in self._mode_queues.values()) + len(
+                self._priority_queue
+            )
             stats["total_queued"] = total_queued
 
             return stats
@@ -652,23 +662,29 @@ class IntelligentBatchQueue:
 
         for job, result in zip(batch.jobs, task_results):
             if isinstance(result, Exception):
-                results["failed"].append({
-                    "job_id": job.job_id,
-                    "error": str(result),
-                })
+                results["failed"].append(
+                    {
+                        "job_id": job.job_id,
+                        "error": str(result),
+                    }
+                )
                 await self.update_job_status(job.job_id, BatchJobStatus.FAILED, str(result))
             elif result.get("success"):
-                results["completed"].append({
-                    "job_id": job.job_id,
-                    "result": result,
-                })
+                results["completed"].append(
+                    {
+                        "job_id": job.job_id,
+                        "result": result,
+                    }
+                )
                 await self.update_job_status(job.job_id, BatchJobStatus.COMPLETED)
             else:
                 error = result.get("error", "Unknown error")
-                results["failed"].append({
-                    "job_id": job.job_id,
-                    "error": error,
-                })
+                results["failed"].append(
+                    {
+                        "job_id": job.job_id,
+                        "error": error,
+                    }
+                )
                 await self.update_job_status(job.job_id, BatchJobStatus.FAILED, error)
 
         # Mark batch as completed

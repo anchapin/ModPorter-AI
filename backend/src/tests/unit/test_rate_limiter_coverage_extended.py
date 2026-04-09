@@ -24,18 +24,12 @@ class TestRateLimitConfigExtended:
 
     def test_user_requests_per_minute_config(self):
         """Test user-specific per-minute rate limit config."""
-        config = RateLimitConfig(
-            requests_per_minute=100,
-            user_requests_per_minute=50
-        )
+        config = RateLimitConfig(requests_per_minute=100, user_requests_per_minute=50)
         assert config.user_requests_per_minute == 50
 
     def test_user_requests_per_hour_config(self):
         """Test user-specific per-hour rate limit config."""
-        config = RateLimitConfig(
-            requests_per_hour=1000,
-            user_requests_per_hour=500
-        )
+        config = RateLimitConfig(requests_per_hour=1000, user_requests_per_hour=500)
         assert config.user_requests_per_hour == 500
 
     def test_burst_size_config(self):
@@ -86,7 +80,7 @@ class TestRateLimiterClientKey:
         mock_request.client.host = "127.0.0.1"
         mock_request.state = MagicMock()
         mock_request.state.user_id = None  # Explicitly set to None
-        
+
         client_key = limiter._get_client_key(mock_request)
         assert client_key == "ip:192.168.1.1"
 
@@ -98,7 +92,7 @@ class TestRateLimiterClientKey:
         mock_request.client.host = "192.168.1.100"
         mock_request.state = MagicMock()
         mock_request.state.user_id = None  # Explicitly set to None
-        
+
         client_key = limiter._get_client_key(mock_request)
         assert client_key == "ip:192.168.1.100"
 
@@ -110,7 +104,7 @@ class TestRateLimiterClientKey:
         mock_request.client.host = "192.168.1.100"
         mock_request.state = MagicMock()
         mock_request.state.user_id = "user123"
-        
+
         client_key = limiter._get_client_key(mock_request)
         assert client_key == "user:user123"
 
@@ -121,7 +115,7 @@ class TestRateLimiterClientKey:
         mock_request.client = None
         mock_request.state = MagicMock()
         mock_request.state.user_id = None  # Explicitly set to None
-        
+
         client_key = limiter._get_client_key(mock_request)
         assert client_key == "ip:unknown"
 
@@ -138,7 +132,7 @@ class TestRateLimiterUserConfig:
         mock_request = MagicMock()
         mock_request.state = MagicMock()
         mock_request.state.user_tier = "free"
-        
+
         config = limiter._get_user_config(mock_request)
         assert config.requests_per_minute == 60  # Default
 
@@ -147,7 +141,7 @@ class TestRateLimiterUserConfig:
         mock_request = MagicMock()
         mock_request.state = MagicMock()
         mock_request.state.user_tier = "premium"
-        
+
         config = limiter._get_user_config(mock_request)
         assert config.requests_per_minute == 300
         assert config.requests_per_hour == 10000
@@ -157,10 +151,10 @@ class TestRateLimiterUserConfig:
         mock_request = MagicMock()
         mock_request.state = MagicMock()
         mock_request.state.user_tier = "free"
-        
+
         base_config = RateLimitConfig(requests_per_minute=10)
         config = limiter._get_user_config(mock_request, base_config=base_config)
-        
+
         assert config.requests_per_minute == 10
 
 
@@ -169,21 +163,15 @@ class TestRateLimiterLocalCheck:
 
     @pytest.fixture
     def limiter(self):
-        config = RateLimitConfig(
-            requests_per_minute=10,
-            requests_per_hour=100,
-            burst_size=5
-        )
+        config = RateLimitConfig(requests_per_minute=10, requests_per_hour=100, burst_size=5)
         return RateLimiter(config=config)
 
     def test_check_local_allowed_request(self, limiter):
         """Test local check allows request within limit."""
         is_allowed, metadata = limiter._check_local(
-            "test_client",
-            RateLimitConfig(requests_per_minute=10, burst_size=5),
-            time.time()
+            "test_client", RateLimitConfig(requests_per_minute=10, burst_size=5), time.time()
         )
-        
+
         assert is_allowed is True
         assert "limit_minute" in metadata
         assert "remaining_minute" in metadata
@@ -191,13 +179,15 @@ class TestRateLimiterLocalCheck:
     def test_check_local_exceeds_limit(self, limiter):
         """Test local check denies when limit exceeded."""
         config = RateLimitConfig(requests_per_minute=1, burst_size=1)
-        
+
         # First request
         is_allowed_1, _ = limiter._check_local("test_client_exceed", config, time.time())
         assert is_allowed_1 is True
-        
+
         # Second request should be blocked (burst exhausted)
-        is_allowed_2, metadata = limiter._check_local("test_client_exceed", config, time.time() + 0.1)
+        is_allowed_2, metadata = limiter._check_local(
+            "test_client_exceed", config, time.time() + 0.1
+        )
         # May be allowed or blocked depending on token bucket state
         assert "limit_minute" in metadata
 
@@ -205,10 +195,10 @@ class TestRateLimiterLocalCheck:
         """Test local check resets window after 60 seconds."""
         client_key = "window_reset_test"
         config = RateLimitConfig(requests_per_minute=10, burst_size=5)
-        
+
         # First request
         limiter._check_local(client_key, config, time.time())
-        
+
         # Request after window reset
         is_allowed, _ = limiter._check_local(client_key, config, time.time() + 61)
         assert is_allowed is True
@@ -230,11 +220,11 @@ class TestRateLimiterStatus:
         mock_request.headers = {}
         mock_request.client = MagicMock()
         mock_request.client.host = "127.0.0.1"
-        
+
         limiter._use_redis = False
-        
+
         status = await limiter.get_rate_limit_status(mock_request)
-        
+
         assert "limit_minute" in status
         assert "remaining_minute" in status
         assert "used_minute" in status
@@ -249,11 +239,11 @@ class TestRateLimiterStatus:
         mock_request.headers = {}
         mock_request.client = MagicMock()
         mock_request.client.host = "127.0.0.1"
-        
+
         limiter._use_redis = False
-        
+
         status = await limiter.get_rate_limit_status(mock_request)
-        
+
         assert status["limit_minute"] == 300  # Premium tier
 
 
@@ -273,14 +263,14 @@ class TestRateLimiterRedisCheck:
         mock_request.headers = {}
         mock_request.client = MagicMock()
         mock_request.client.host = "127.0.0.1"
-        
+
         # Setup Redis mock that raises error
         limiter._use_redis = True
         limiter._redis = AsyncMock()
         limiter._redis.incr = AsyncMock(side_effect=Exception("Redis error"))
-        
+
         is_allowed, metadata = await limiter.check_rate_limit(mock_request)
-        
+
         # Should fallback to local check
         assert "limit_minute" in metadata
 
@@ -301,11 +291,11 @@ class TestRateLimitMiddlewareDispatch:
         """Test middleware skips rate limiting for excluded paths."""
         mock_request = MagicMock()
         mock_request.url.path = "/api/v1/health"
-        
+
         mock_call_next = AsyncMock(return_value=MagicMock())
-        
+
         response = await middleware.dispatch(mock_request, mock_call_next)
-        
+
         mock_call_next.assert_called_once()
 
     @pytest.mark.asyncio
@@ -318,23 +308,26 @@ class TestRateLimitMiddlewareDispatch:
         mock_request.headers = {}
         mock_request.client = MagicMock()
         mock_request.client.host = "127.0.0.1"
-        
+
         # Mock limiter to return allowed
         middleware.rate_limiter.check_rate_limit = AsyncMock(
-            return_value=(True, {
-                "limit_minute": 10,
-                "remaining_minute": 9,
-                "reset_at_minute": int(time.time() + 60),
-                "used_minute": 1
-            })
+            return_value=(
+                True,
+                {
+                    "limit_minute": 10,
+                    "remaining_minute": 9,
+                    "reset_at_minute": int(time.time() + 60),
+                    "used_minute": 1,
+                },
+            )
         )
-        
+
         mock_response = MagicMock()
         mock_response.headers = {}  # Fix: use actual dict for headers
         mock_call_next = AsyncMock(return_value=mock_response)
-        
+
         response = await middleware.dispatch(mock_request, mock_call_next)
-        
+
         assert response.headers["X-RateLimit-Limit"] == "10"
 
     @pytest.mark.asyncio
@@ -347,19 +340,22 @@ class TestRateLimitMiddlewareDispatch:
         mock_request.headers = {}
         mock_request.client = MagicMock()
         mock_request.client.host = "127.0.0.1"
-        
+
         # Mock limiter to return blocked
         middleware.rate_limiter.check_rate_limit = AsyncMock(
-            return_value=(False, {
-                "limit_minute": 60,
-                "remaining_minute": 0,
-                "reset_at_minute": int(time.time() + 60),
-                "retry_after": 30
-            })
+            return_value=(
+                False,
+                {
+                    "limit_minute": 60,
+                    "remaining_minute": 0,
+                    "reset_at_minute": int(time.time() + 60),
+                    "retry_after": 30,
+                },
+            )
         )
-        
+
         response = await middleware.dispatch(mock_request, AsyncMock())
-        
+
         assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
         assert "X-RateLimit-Limit" in response.headers
 
@@ -373,22 +369,25 @@ class TestRateLimitMiddlewareDispatch:
         mock_request.headers = {}
         mock_request.client = MagicMock()
         mock_request.client.host = "127.0.0.1"
-        
+
         middleware.rate_limiter.check_rate_limit = AsyncMock(
-            return_value=(True, {
-                "limit_minute": 60,
-                "remaining_minute": 59,
-                "reset_at_minute": int(time.time() + 60),
-                "used_minute": 1
-            })
+            return_value=(
+                True,
+                {
+                    "limit_minute": 60,
+                    "remaining_minute": 59,
+                    "reset_at_minute": int(time.time() + 60),
+                    "used_minute": 1,
+                },
+            )
         )
-        
+
         mock_response = MagicMock()
         mock_response.headers = {}  # Fix: use actual dict for headers
         mock_call_next = AsyncMock(return_value=mock_response)
-        
+
         response = await middleware.dispatch(mock_request, mock_call_next)
-        
+
         assert response.headers["X-RateLimit-Limit"] == "60"
 
 
@@ -408,15 +407,13 @@ class TestRateLimiterEdgeCases:
         mock_request.headers = {}
         mock_request.client = MagicMock()
         mock_request.client.host = "127.0.0.1"
-        
+
         override_config = RateLimitConfig(requests_per_minute=5)
-        
+
         is_allowed, metadata = await limiter.check_rate_limit(
-            mock_request,
-            endpoint="/test",
-            override_config=override_config
+            mock_request, endpoint="/test", override_config=override_config
         )
-        
+
         assert "limit_minute" in metadata
         assert metadata["limit_minute"] == 5
 
@@ -430,16 +427,16 @@ class TestRateLimiterEdgeCases:
         """Test close method handles missing Redis."""
         limiter = RateLimiter()
         limiter._redis = None
-        
+
         # Should not raise
         await limiter.close()
-        
+
     @pytest.mark.asyncio
     async def test_rate_limiter_close_with_redis(self):
         """Test close method closes Redis connection."""
         limiter = RateLimiter()
         limiter._redis = AsyncMock()
-        
+
         await limiter.close()
-        
+
         limiter._redis.close.assert_called_once()

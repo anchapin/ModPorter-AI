@@ -9,7 +9,6 @@ import multiprocessing
 import asyncio
 import os
 from typing import Dict, List, Any, Optional, Callable
-from concurrent.futures import Future, as_completed
 import json
 from pathlib import Path
 
@@ -337,7 +336,7 @@ class ParallelOrchestrator:
 
             except asyncio.CancelledError:
                 raise  # Always re-raise CancelledError — never swallow it
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 raise  # Re-raise timeouts too
             except Exception as e:
                 logger.error(f"Error in analysis spawn callback: {e}")
@@ -374,7 +373,7 @@ class ParallelOrchestrator:
 
             except asyncio.CancelledError:
                 raise  # Always re-raise CancelledError — never swallow it
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 raise  # Re-raise timeouts too
             except Exception as e:
                 logger.error(f"Error in planning spawn callback: {e}")
@@ -428,7 +427,7 @@ class ParallelOrchestrator:
 
             except asyncio.CancelledError:
                 raise  # Always re-raise CancelledError — never swallow it
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 raise  # Re-raise timeouts too
             except Exception as e:
                 logger.error(f"Workflow execution failed: {e}")
@@ -437,7 +436,9 @@ class ParallelOrchestrator:
             finally:
                 self.worker_pool = None
 
-    async def _execute_sequential(self, task_graph: TaskGraph, worker_pool: WorkerPool) -> Dict[str, Any]:
+    async def _execute_sequential(
+        self, task_graph: TaskGraph, worker_pool: WorkerPool
+    ) -> Dict[str, Any]:
         """Execute tasks sequentially (mimics original CrewAI behavior)"""
 
         task_order = ["analyze", "plan", "translate", "convert_assets", "package", "validate"]
@@ -481,7 +482,7 @@ class ParallelOrchestrator:
                             task_graph.mark_task_completed(spawned_task.task_id, spawned_result)
                         except asyncio.CancelledError:
                             raise
-                        except asyncio.TimeoutError:
+                        except TimeoutError:
                             raise
                         except Exception as e:
                             logger.error(f"Spawned task {spawned_task.task_id} failed: {e}")
@@ -491,7 +492,7 @@ class ParallelOrchestrator:
 
             except asyncio.CancelledError:
                 raise
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 raise
             except Exception as e:
                 logger.error(f"Task {task_id} failed: {e}")
@@ -499,7 +500,9 @@ class ParallelOrchestrator:
                     logger.info(f"Retrying task {task_id}")
                     # Re-execute the task
                     try:
-                        retry_future = worker_pool.submit_task(task, self.agent_executors[task.agent_name])
+                        retry_future = worker_pool.submit_task(
+                            task, self.agent_executors[task.agent_name]
+                        )
                         retry_result = retry_future.result(timeout=self.current_config.task_timeout)
                         spawned_tasks = task_graph.mark_task_completed(task_id, retry_result)
                         results[task_id] = retry_result
@@ -514,29 +517,35 @@ class ParallelOrchestrator:
                                     spawned_result = spawned_future.result(
                                         timeout=self.current_config.task_timeout
                                     )
-                                    task_graph.mark_task_completed(spawned_task.task_id, spawned_result)
+                                    task_graph.mark_task_completed(
+                                        spawned_task.task_id, spawned_result
+                                    )
                                 except asyncio.CancelledError:
                                     raise
-                                except asyncio.TimeoutError:
+                                except TimeoutError:
                                     raise
                                 except Exception as spawn_e:
-                                    logger.error(f"Spawned task {spawned_task.task_id} failed: {spawn_e}")
+                                    logger.error(
+                                        f"Spawned task {spawned_task.task_id} failed: {spawn_e}"
+                                    )
                                     task_graph.mark_task_failed(spawned_task.task_id, str(spawn_e))
                         continue  # Continue to next task in sequence
                     except asyncio.CancelledError:
                         raise
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         raise
                     except Exception as retry_e:
                         logger.error(f"Task {task_id} failed on retry: {retry_e}")
                         # Fall through to permanent failure
-                
+
                 task_graph.mark_task_failed(task_id, str(e))
                 break  # Stop sequential execution on failure
 
         return results
 
-    async def _execute_parallel(self, task_graph: TaskGraph, worker_pool: WorkerPool) -> Dict[str, Any]:
+    async def _execute_parallel(
+        self, task_graph: TaskGraph, worker_pool: WorkerPool
+    ) -> Dict[str, Any]:
         """Execute tasks in parallel"""
 
         results = {}
@@ -605,7 +614,7 @@ class ParallelOrchestrator:
 
                 except asyncio.CancelledError:
                     raise
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     raise
                 except Exception as e:
                     logger.error(f"Task {task_id} failed: {e}")
@@ -630,7 +639,7 @@ class ParallelOrchestrator:
                         task_graph.mark_task_completed(task_id, result)
                     except asyncio.CancelledError:
                         raise
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         raise
                     except Exception as e:
                         logger.error(f"Final task {task_id} failed: {e}")

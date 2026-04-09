@@ -8,9 +8,8 @@ This module provides functionality to:
 """
 
 import logging
-from typing import List, Dict, Any, Optional, Set
+from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
-import uuid
 import numpy as np
 
 logger = logging.getLogger(__name__)

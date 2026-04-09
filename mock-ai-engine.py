@@ -9,6 +9,7 @@ This FastAPI app provides a mock AI conversion endpoint that:
 
 Use this for integration testing without hitting real AI infrastructure.
 """
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 import uvicorn
@@ -28,28 +29,26 @@ async def health():
 async def convert(request: dict):
     """
     Mock conversion endpoint.
-    
+
     Accepts conversion requests and returns a valid response structure
     without actually performing any AI processing.
     """
     # Validate required fields
     if "file_path" not in request and "jar_bytes" not in request:
         return JSONResponse(
-            status_code=400,
-            content={"error": "Missing required field: file_path or jar_bytes"}
+            status_code=400, content={"error": "Missing required field: file_path or jar_bytes"}
         )
-    
+
     if "target_version" not in request:
         return JSONResponse(
-            status_code=400,
-            content={"error": "Missing required field: target_version"}
+            status_code=400, content={"error": "Missing required field: target_version"}
         )
-    
+
     # Simulate processing delay (optional, can disable with fast=true)
     fast = request.get("fast", False)
     if not fast:
         await asyncio.sleep(0.5)  # Simulate processing time
-    
+
     # Return valid response structure
     return {
         "success": True,
@@ -61,11 +60,11 @@ async def convert(request: dict):
             "parsed_mod": {
                 "name": "MockMod",
                 "version": "1.0.0",
-                "mc_version": request.get("target_version", "1.20.0")
-            }
+                "mc_version": request.get("target_version", "1.20.0"),
+            },
         },
         "processing_time_ms": 500,
-        "model_version": "mock-v1.0"
+        "model_version": "mock-v1.0",
     }
 
 
@@ -73,7 +72,7 @@ async def convert(request: dict):
 async def batch_convert(requests: list[dict]):
     """
     Mock batch conversion endpoint.
-    
+
     Accepts multiple conversion requests and returns a list of results.
     """
     results = []
@@ -83,12 +82,8 @@ async def batch_convert(requests: list[dict]):
             results.append({"success": False, "error": "Validation failed"})
         else:
             results.append(result)
-    
-    return {
-        "success": True,
-        "total": len(requests),
-        "results": results
-    }
+
+    return {"success": True, "total": len(requests), "results": results}
 
 
 @app.get("/status/{job_id}")
@@ -100,7 +95,7 @@ async def get_status(job_id: str):
         "job_id": job_id,
         "status": "completed",
         "progress": 100,
-        "result_url": "https://storage.example.com/mock-result.mcaddon"
+        "result_url": "https://storage.example.com/mock-result.mcaddon",
     }
 
 

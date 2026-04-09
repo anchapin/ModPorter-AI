@@ -321,7 +321,7 @@ class TestAIEngineClientDownloadConvertedFile:
             mock_http_client.get = AsyncMock(
                 return_value=MagicMock(
                     status_code=200,
-                    json=MagicMock(return_value={"status": "completed", "progress": 100})
+                    json=MagicMock(return_value={"status": "completed", "progress": 100}),
                 )
             )
             mock_get.return_value = mock_http_client

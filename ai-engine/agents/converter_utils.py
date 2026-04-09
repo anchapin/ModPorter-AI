@@ -2,8 +2,6 @@
 Converter utilities - shared helper functions for asset conversion.
 """
 
-from typing import Tuple
-
 
 def is_power_of_2(n: int) -> bool:
     """Check if a number is a power of 2"""
