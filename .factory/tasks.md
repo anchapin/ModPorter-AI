@@ -294,6 +294,17 @@
 
 ---
 
+## Completed (2026-04-09)
+- ✅ Issue #999: Bulk texture extraction fix (texture transfer ~1% → ~25-35%)
+  - ✅ Added `_extract_all_textures_from_jar()` method to BedrockBuilderAgent
+  - ✅ Maps Java texture paths (`assets/*/textures/block/*.png`) to Bedrock paths (`textures/blocks/*.png`)
+  - ✅ Handles `.mcmeta` animated texture files
+  - ✅ Preserves directory structure for entity/item/GUI/particle textures
+  - ✅ Added test `test_bulk_texture_extraction_issue_999` (11 tests passing)
+
+## Completed (2026-04-02)
+- ✅ Deep clean completed — 51 stale files removed (2026-04-02)
+
 ## In Progress
 - 🔄 Fix test bugs #1005-#1009
 

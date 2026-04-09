@@ -14,7 +14,7 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN pnpm run build
 
 # Python dependencies build stage (consolidates all Python deps)
-FROM python:3.14-slim AS python-builder
+FROM python:3.11-slim AS python-builder
 WORKDIR /tmp
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc g++ curl libmagic1 ffmpeg && \
@@ -38,7 +38,7 @@ RUN apk add --no-cache python3 py3-pip curl postgresql-client redis \
     && ln -sf python3 /usr/bin/python
 
 # Copy Python packages from consolidated builder
-COPY --from=python-builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
+COPY --from=python-builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=python-builder /usr/local/bin /usr/local/bin
 
 # Copy application code

@@ -69,6 +69,87 @@ class TestBedrockBuilderMVP:
         assert len(result["rp_files"]) > 0
         assert len(result["errors"]) == 0
 
+        # Verify bulk texture extraction (Issue #999 fix)
+        # The test JAR has 1 texture, bulk extraction should find and copy it
+        assert "bulk_textures_extracted" in result
+        assert result["bulk_textures_extracted"] >= 1, (
+            "Bulk texture extraction should find textures"
+        )
+
+    def test_bulk_texture_extraction_issue_999(self, builder, output_dir):
+        """Test bulk texture extraction fix for Issue #999.
+
+        Before the fix, only ~1% of textures were extracted because extraction
+        was limited to explicitly referenced textures. The bulk extraction should
+        find and copy ALL textures from assets/*/textures/.
+        """
+        # Create JAR with multiple textures of different types
+        with tempfile.NamedTemporaryFile(suffix=".jar", delete=False) as jar_file:
+            with zipfile.ZipFile(jar_file.name, "w") as zf:
+                from PIL import Image
+                import io
+
+                # Create textures of different types
+                textures = [
+                    ("assets/test_mod/textures/block/stone.png", (128, 128, 128, 255)),
+                    ("assets/test_mod/textures/block/dirt.png", (139, 69, 19, 255)),
+                    ("assets/test_mod/textures/item/iron_sword.png", (200, 200, 200, 255)),
+                    ("assets/test_mod/textures/entity/chicken.png", (255, 255, 0, 255)),
+                    ("assets/test_mod/textures/particle/flame.png", (255, 100, 0, 255)),
+                ]
+
+                for texture_path, color in textures:
+                    img = Image.new("RGBA", (16, 16), color)
+                    png_buffer = io.BytesIO()
+                    img.save(png_buffer, format="PNG")
+                    zf.writestr(texture_path, png_buffer.getvalue())
+
+                # Also add an animated texture with .mcmeta
+                animated_texture = Image.new("RGBA", (16, 16), (0, 255, 0, 255))
+                png_buffer = io.BytesIO()
+                animated_texture.save(png_buffer, format="PNG")
+                zf.writestr(
+                    "assets/test_mod/textures/block/animated_block.png", png_buffer.getvalue()
+                )
+                zf.writestr(
+                    "assets/test_mod/textures/block/animated_block.png.mcmeta",
+                    b'{"animation": {"frametime": 2}}',
+                )
+
+            try:
+                result = builder.build_block_addon_mvp(
+                    registry_name="test_mod:bulk_test",
+                    texture_path="assets/test_mod/textures/block/stone.png",
+                    jar_path=jar_file.name,
+                    output_dir=output_dir,
+                )
+
+                assert result["success"] is True
+
+                # Bulk extraction should have found all 5 textures (6 entries total if mcmeta counted)
+                # Note: mcmeta files are also tracked, so we may see 6 copied entries
+                assert result["bulk_textures_extracted"] >= 5, (
+                    f"Expected at least 5 textures, got {result['bulk_textures_extracted']}"
+                )
+                assert result["bulk_textures_copied"] >= 5
+
+                # Verify the resource pack contains all texture subdirectories
+                rp_path = Path(output_dir) / "resource_pack"
+                assert (rp_path / "textures" / "blocks").exists(), "blocks texture dir should exist"
+                assert (rp_path / "textures" / "items").exists(), "items texture dir should exist"
+                assert (rp_path / "textures" / "entity").exists(), "entity texture dir should exist"
+                assert (rp_path / "textures" / "particle").exists(), (
+                    "particle texture dir should exist"
+                )
+
+                # Verify animated texture mcmeta was copied
+                assert (rp_path / "textures" / "blocks" / "animated_block.png.mcmeta").exists(), (
+                    "Animated texture mcmeta should be copied"
+                )
+
+            finally:
+                os.unlink(jar_file.name)
+
     def test_build_block_addon_mvp_registry_parsing(
         self, builder, test_jar_with_texture, output_dir
     ):
