@@ -2,8 +2,6 @@ import pytest
 from agents.mod_dependency_analyzer import (
     ModDependencyAnalyzer,
     ModInfo,
-    ModDependency,
-    DependencyType,
     DependencyGraph,
     ConflictResolution
 )

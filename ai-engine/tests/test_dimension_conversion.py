@@ -7,7 +7,6 @@ to Bedrock's dimension files, biome definitions, and world generation.
 
 import pytest
 import sys
-import json
 from pathlib import Path
 
 # Add ai-engine to path
@@ -18,8 +17,6 @@ from converters.dimension_converter import (
     DimensionConverter,
     StructureConverter,
     DimensionType,
-    DimensionProperties,
-    BiomeDefinition,
     BiomeCategory,
 )
 from knowledge.patterns.dimension_patterns import (
@@ -76,7 +73,7 @@ class TestDimensionConversion:
         assert "minecraft:dimension" in dim
         comp = dim["minecraft:dimension"]["components"]
         assert comp["minecraft:ambient"] == 0.1
-        assert comp["minecraft:has_ceiling"] == True
+        assert comp["minecraft:has_ceiling"]
 
     def test_dimension_type_enum(self):
         """Test dimension type enum values."""

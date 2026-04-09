@@ -16,7 +16,7 @@ def test_conversions_module_exists():
 
 
 def test_conversions_module_can_be_parsed():
-    """conversions module should be valid Python"""
+    """Conversions module should be valid Python"""
     with open("/home/alex/Projects/ModPorter-AI/backend/src/api/conversions.py") as f:
         source = f.read()
     

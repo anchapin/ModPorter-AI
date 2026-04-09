@@ -7,8 +7,7 @@ caching, performance, and edge cases.
 
 import pytest
 import time
-from unittest.mock import Mock, patch, MagicMock
-from dataclasses import dataclass
+from unittest.mock import Mock, patch
 
 from search.rag_pipeline import (
     RAGPipeline,
@@ -17,11 +16,6 @@ from search.rag_pipeline import (
     QueryAnalysis,
 )
 
-from search.multi_stage_reranker import (
-    MultiStageReranker,
-    LIGHTWEIGHT,
-    STANDARD,
-)
 
 from search.pipeline_cache import (
     PipelineCache,
@@ -31,7 +25,6 @@ from search.pipeline_cache import (
 
 from search.query_rewriter import (
     QueryRewriter,
-    RewriteResult,
     RewriteType,
 )
 
@@ -300,7 +293,7 @@ class TestRAGPipelineIntegration:
         pipeline = RAGPipeline(config)
 
         start = time.time()
-        result = pipeline.search("test query")
+        pipeline.search("test query")
         elapsed = (time.time() - start) * 1000
 
         assert elapsed < 1000
@@ -339,7 +332,7 @@ class TestPipelinePerformance:
         pipeline = RAGPipeline(config)
 
         start = time.time()
-        result = pipeline.search("block")
+        pipeline.search("block")
         elapsed = (time.time() - start) * 1000
 
         assert elapsed < 100, f"Simple query took {elapsed}ms, expected <100ms"
@@ -355,7 +348,7 @@ class TestPipelinePerformance:
         pipeline.search("test query")
 
         start = time.time()
-        result = pipeline.search("test query")
+        pipeline.search("test query")
         elapsed = (time.time() - start) * 1000
 
         assert elapsed < 50, f"Cache hit took {elapsed}ms, expected <50ms"

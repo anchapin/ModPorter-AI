@@ -4,10 +4,9 @@ Tests semantic linking, database storage, and graph building.
 """
 
 import pytest
-import uuid
 import numpy as np
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from knowledge.cross_reference import CrossReferenceDetector, DetectedConcept, RelationshipCandidate
+from unittest.mock import AsyncMock, patch, MagicMock
+from knowledge.cross_reference import CrossReferenceDetector
 
 class TestCrossReferenceDetectorComprehensive:
     @pytest.fixture
@@ -131,7 +130,7 @@ class TestCrossReferenceDetectorComprehensive:
         
         # Mock ConceptNode creation to set ID
         with patch('knowledge.schema.ConceptNode') as mock_node_cls, \
-             patch('knowledge.schema.ConceptRelationship') as mock_rel_cls:
+             patch('knowledge.schema.ConceptRelationship'):
             
             # Setup mock nodes
             node_a = MagicMock()

@@ -29,8 +29,7 @@ from pathlib import Path
 
 # Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -40,52 +39,68 @@ ai_engine_root = project_root / "ai-engine"
 sys.path.insert(0, str(ai_engine_root))
 sys.path.insert(0, str(project_root))
 
+
 # Mock pydub before importing agents
 class MockModule:
     def __getattr__(self, name):
         return MockModule()
+
     def __call__(self, *args, **kwargs):
         return MockModule()
+
     def __iter__(self):
         return iter([])
+
     def __getitem__(self, key):
         return MockModule()
 
-sys.modules['pydub'] = MockModule()
-sys.modules['pydub.exceptions'] = MockModule()
-sys.modules['pydub.utils'] = MockModule()
+
+sys.modules["pydub"] = MockModule()
+sys.modules["pydub.exceptions"] = MockModule()
+sys.modules["pydub.utils"] = MockModule()
+
 
 # Mock crewai to avoid dependency issues in tests
 class MockCrewAI:
-    class tools:
+    class Tools:
         @staticmethod
         def tool(func):
             return func
+
         class BaseTool:
             pass
+
     class Agent:
         pass
+
     class Task:
         pass
+
     class Crew:
         pass
-    BaseTool = tools.BaseTool
 
-sys.modules['crewai'] = MockCrewAI()
-sys.modules['crewai.tools'] = MockCrewAI.tools
-sys.modules['crewai.tools.BaseTool'] = MockCrewAI.tools.BaseTool
+    BaseTool = Tools.BaseTool
+
+
+sys.modules["crewai"] = MockCrewAI()
+sys.modules["crewai.tools"] = MockCrewAI.Tools
+sys.modules["crewai.tools.BaseTool"] = MockCrewAI.Tools.BaseTool
+
 
 # Mock local tools package to prevent import conflicts
 class MockToolsModule:
     """Proper mock for tools module"""
+
     def __getattr__(self, name):
         return MockModule()
+
     def __iter__(self):
         return iter([])
 
-sys.modules['tools'] = MockToolsModule()
 
-os.environ['TESTING'] = 'true'
+sys.modules["tools"] = MockToolsModule()
+
+os.environ["TESTING"] = "true"
 
 # Now import agents
 from agents.java_analyzer import JavaAnalyzerAgent
@@ -95,9 +110,9 @@ from agents.packaging_agent import PackagingAgent
 
 def print_header(text):
     """Print a formatted header."""
-    logger.info("\n" + "="*70)
+    logger.info("\n" + "=" * 70)
     logger.info(text)
-    logger.info("="*70)
+    logger.info("=" * 70)
 
 
 def print_section(text):
@@ -105,7 +120,7 @@ def print_section(text):
     logger.info(f"\n{text}")
 
 
-def test_simple_block_conversion():
+def test_simple_block_conversion():  # noqa: C901
     """
     Test end-to-end conversion of a simple block mod (happy path).
 
@@ -153,15 +168,15 @@ def test_simple_block_conversion():
         logger.info(f"  Success: {analysis_result['success']}")
 
         # Verify analysis results
-        if not analysis_result['success']:
+        if not analysis_result["success"]:
             logger.info(f"ERROR: Analysis failed: {analysis_result.get('errors', [])}")
             return False
 
-        if 'simple_copper:polished_copper' not in analysis_result['registry_name']:
+        if "simple_copper:polished_copper" not in analysis_result["registry_name"]:
             logger.info(f"ERROR: Unexpected registry name: {analysis_result['registry_name']}")
             return False
 
-        if not analysis_result['texture_path']:
+        if not analysis_result["texture_path"]:
             logger.info("ERROR: Texture path not found")
             return False
 
@@ -171,22 +186,22 @@ def test_simple_block_conversion():
 
         with tempfile.TemporaryDirectory() as build_dir:
             build_result = bedrock_builder.build_block_addon_mvp(
-                registry_name=analysis_result['registry_name'],
-                texture_path=analysis_result['texture_path'],
+                registry_name=analysis_result["registry_name"],
+                texture_path=analysis_result["texture_path"],
                 jar_path=str(fixture_path),
-                output_dir=build_dir
+                output_dir=build_dir,
             )
 
             build_time = time.time() - build_start
             logger.info(f"✓ Build completed in {build_time:.2f}s")
 
-            if not build_result['success']:
+            if not build_result["success"]:
                 logger.info(f"ERROR: Build failed: {build_result.get('errors', [])}")
                 return False
 
             # Verify build results
-            bp_path = Path(build_result['behavior_pack_dir'])
-            rp_path = Path(build_result['resource_pack_dir'])
+            bp_path = Path(build_result["behavior_pack_dir"])
+            rp_path = Path(build_result["resource_pack_dir"])
 
             logger.info(f"  Behavior pack: {bp_path}")
             logger.info(f"  Resource pack: {rp_path}")
@@ -222,24 +237,24 @@ def test_simple_block_conversion():
             logger.info(f"  Found {len(texture_files)} texture file(s)")
 
             # Verify manifest content
-            with open(bp_manifest, 'r') as f:
+            with open(bp_manifest, "r") as f:
                 bp_manifest_data = json.load(f)
-                if 'format_version' not in bp_manifest_data:
+                if "format_version" not in bp_manifest_data:
                     logger.info("ERROR: Missing format_version in BP manifest")
                     return False
-                if 'header' not in bp_manifest_data:
+                if "header" not in bp_manifest_data:
                     logger.info("ERROR: Missing header in BP manifest")
                     return False
-                if 'uuid' not in bp_manifest_data['header']:
+                if "uuid" not in bp_manifest_data["header"]:
                     logger.info("ERROR: Missing UUID in BP manifest")
                     return False
 
-            with open(rp_manifest, 'r') as f:
+            with open(rp_manifest, "r") as f:
                 rp_manifest_data = json.load(f)
-                if 'format_version' not in rp_manifest_data:
+                if "format_version" not in rp_manifest_data:
                     logger.info("ERROR: Missing format_version in RP manifest")
                     return False
-                if 'header' not in rp_manifest_data:
+                if "header" not in rp_manifest_data:
                     logger.info("ERROR: Missing header in RP manifest")
                     return False
 
@@ -249,16 +264,16 @@ def test_simple_block_conversion():
 
             mcaddon_path = temp_path / "simple_copper_polished_copper.mcaddon"
             package_result = packaging_agent.build_mcaddon_mvp(
-                temp_dir=build_dir,
-                output_path=str(mcaddon_path),
-                mod_name="simple_copper"
+                temp_dir=build_dir, output_path=str(mcaddon_path), mod_name="simple_copper"
             )
 
             package_time = time.time() - package_start
             logger.info(f"✓ Package completed in {package_time:.2f}s")
 
-            if not package_result['success']:
-                logger.info(f"ERROR: Packaging failed: {package_result.get('error', 'Unknown error')}")
+            if not package_result["success"]:
+                logger.info(
+                    f"ERROR: Packaging failed: {package_result.get('error', 'Unknown error')}"
+                )
                 return False
 
             if not mcaddon_path.exists():
@@ -270,7 +285,7 @@ def test_simple_block_conversion():
 
             # Step 4: Validate .mcaddon structure
             print_section("[Step 4/4] Validating .mcaddon file...")
-            validation = package_result.get('validation', {})
+            validation = package_result.get("validation", {})
 
             logger.info(f"  File count: {validation.get('file_count', 0)}")
             logger.info(f"  Valid ZIP: {validation.get('is_valid_zip', False)}")
@@ -278,44 +293,46 @@ def test_simple_block_conversion():
             logger.info(f"  Has resource pack: {validation.get('has_resource_pack', False)}")
             logger.info(f"  Manifest count: {validation.get('manifest_count', 0)}")
 
-            if not validation.get('is_valid_zip', False):
+            if not validation.get("is_valid_zip", False):
                 logger.info("ERROR: Generated .mcaddon is not a valid ZIP file")
                 return False
 
-            if not validation.get('has_behavior_pack', False):
+            if not validation.get("has_behavior_pack", False):
                 logger.info("ERROR: Missing behavior_packs/ in .mcaddon")
                 return False
 
-            if not validation.get('has_resource_pack', False):
+            if not validation.get("has_resource_pack", False):
                 logger.info("ERROR: Missing resource_packs/ in .mcaddon")
                 return False
 
-            if validation.get('manifest_count', 0) < 2:
+            if validation.get("manifest_count", 0) < 2:
                 logger.info("ERROR: Expected at least 2 manifest files")
                 return False
 
             # Verify internal structure
-            with zipfile.ZipFile(mcaddon_path, 'r') as zf:
+            with zipfile.ZipFile(mcaddon_path, "r") as zf:
                 file_list = zf.namelist()
 
                 # Check for correct Bedrock structure
-                if not any('behavior_packs/' in f for f in file_list):
+                if not any("behavior_packs/" in f for f in file_list):
                     logger.info("ERROR: Missing behavior_packs/ directory in .mcaddon")
                     return False
 
-                if not any('resource_packs/' in f for f in file_list):
+                if not any("resource_packs/" in f for f in file_list):
                     logger.info("ERROR: Missing resource_packs/ directory in .mcaddon")
                     return False
 
                 # Check no legacy incorrect structure
-                has_legacy_bp = any(f.startswith('behavior_pack/') for f in file_list)
-                has_legacy_rp = any(f.startswith('resource_pack/') for f in file_list)
+                has_legacy_bp = any(f.startswith("behavior_pack/") for f in file_list)
+                has_legacy_rp = any(f.startswith("resource_pack/") for f in file_list)
                 if has_legacy_bp or has_legacy_rp:
-                    logger.info("ERROR: Found legacy incorrect folder structure (singular instead of plural)")
+                    logger.info(
+                        "ERROR: Found legacy incorrect folder structure (singular instead of plural)"
+                    )
                     return False
 
                 # Extract and verify block definition
-                block_files = [f for f in file_list if f.endswith('.json') and 'blocks' in f]
+                block_files = [f for f in file_list if f.endswith(".json") and "blocks" in f]
                 if len(block_files) == 0:
                     logger.info("ERROR: No block definition JSON files found")
                     return False
@@ -324,10 +341,10 @@ def test_simple_block_conversion():
                 block_file = block_files[0]
                 with zf.open(block_file) as bf:
                     block_data = json.load(bf)
-                    if 'format_version' not in block_data:
+                    if "format_version" not in block_data:
                         logger.info("ERROR: Block JSON missing format_version")
                         return False
-                    if 'minecraft:block' not in block_data:
+                    if "minecraft:block" not in block_data:
                         logger.info("ERROR: Block JSON missing minecraft:block")
                         return False
 
@@ -362,6 +379,7 @@ def test_simple_block_conversion():
     except Exception as e:
         logger.info(f"\nERROR: Test failed with exception: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -378,7 +396,7 @@ def main():
     results = {}
 
     # Run tests
-    results['simple_block_conversion'] = test_simple_block_conversion()
+    results["simple_block_conversion"] = test_simple_block_conversion()
 
     # Summary
     print_header("TEST SUMMARY")
@@ -399,5 +417,5 @@ def main():
         return 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

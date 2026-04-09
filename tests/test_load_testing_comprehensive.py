@@ -386,7 +386,7 @@ class TestBreakingPoint:
                 if error_rate > 0.5:  # More than 50% failure
                     breaking_point = concurrent_users
                     break
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 breaking_point = concurrent_users
                 break
         

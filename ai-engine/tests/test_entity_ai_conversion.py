@@ -12,7 +12,7 @@ from pathlib import Path
 ai_engine_root = Path(__file__).parent.parent
 sys.path.insert(0, str(ai_engine_root))
 
-from agents.entity_converter import EntityConverter, EntityType, EntityProperties
+from agents.entity_converter import EntityConverter, EntityType
 from knowledge.patterns.entity_behavior_patterns import (
     ENTITY_BEHAVIOR_PATTERNS,
     get_behavior_pattern,
@@ -178,7 +178,7 @@ class TestEntityConverter:
         )
         assert config["priority"] == 3
         assert config["speed_multiplier"] == 1.5
-        assert config["track_target"] == False
+        assert not config["track_target"]
 
         # Test follow config
         config = self.converter._build_behavior_config("follow", 5, {"distance": 8.0})
@@ -205,8 +205,8 @@ class TestEntityConverter:
         assert properties.movement_speed == 0.35
         assert properties.attack_damage == 10.0
         assert properties.entity_type == EntityType.HOSTILE
-        assert properties.can_swim == True
-        assert properties.can_fly == False
+        assert properties.can_swim
+        assert not properties.can_fly
 
 
 class TestEntityBehaviorPatterns:

@@ -3,7 +3,7 @@ Tests for knowledge module - CrossReferenceDetector and schema
 """
 
 import pytest
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 
 class TestConceptTypeAndRelationshipType:
@@ -198,7 +198,7 @@ class TestCrossReferenceDetector:
     @patch("knowledge.cross_reference.CrossReferenceDetector._load_embedding_model")
     def test_initialize_with_mock_db(self, mock_load, detector):
         """Test initialize with mock database session"""
-        mock_session = Mock()
+        Mock()
         
         # Run initialize
         detector._initialized = True  # Skip actual init

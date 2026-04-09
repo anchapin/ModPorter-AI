@@ -315,7 +315,7 @@ def test_secrets_manager_get_secret_returns_default():
 # ============================================
 
 def test_core_init_file_exists():
-    """core directory should have __init__.py"""
+    """Core directory should have __init__.py"""
     core_init = Path(__file__).parent.parent / "backend/src/core/__init__.py"
     assert core_init.exists(), f"Module not found at {core_init}"
 

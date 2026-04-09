@@ -17,7 +17,7 @@ import pytest
 
 
 def test_agents_directory_exists():
-    """agents directory should exist"""
+    """Agents directory should exist"""
     path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents"
     assert os.path.isdir(path), f"agents directory not found at {path}"
 

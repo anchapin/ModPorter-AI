@@ -10,7 +10,7 @@ class TestServiceHealth:
 
     def test_all_services_are_healthy(self, docker_environment):
         """
-        This test relies on the docker_environment fixture to ensure all services
+        Relies on the docker_environment fixture to ensure all services
         have started and passed their initial health checks.
         It then performs an additional explicit check on the backend's health endpoint
         and a basic check on the frontend.
@@ -23,10 +23,12 @@ class TestServiceHealth:
 
         try:
             response = requests.get(backend_health_url, timeout=10)
-            response.raise_for_status() # Raises an exception for 4XX/5XX status codes
+            response.raise_for_status()  # Raises an exception for 4XX/5XX status codes
 
             health_data = response.json()
-            assert health_data.get("status") == "healthy", f"Backend service reported unhealthy: {health_data}"
+            assert health_data.get("status") == "healthy", (
+                f"Backend service reported unhealthy: {health_data}"
+            )
             # Backend health endpoint check passed
 
         except requests.RequestException as e:
@@ -39,8 +41,9 @@ class TestServiceHealth:
             response.raise_for_status()
             # Basic check for frontend content (e.g., HTML doctype or Vite-specific script)
             # This confirms the frontend server is up and serving something.
-            assert "<!doctype html>" in response.text.lower() or "vite" in response.text.lower(), \
+            assert "<!doctype html>" in response.text.lower() or "vite" in response.text.lower(), (
                 f"Frontend content at {frontend_url} did not seem like a valid HTML page."
+            )
             # Frontend URL check passed, content validation successful
 
         except requests.RequestException as e:

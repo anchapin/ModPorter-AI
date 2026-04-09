@@ -4,9 +4,8 @@ Unit tests for RateLimiter and LLM wrappers.
 
 import pytest
 import time
-import os
-from unittest.mock import MagicMock, patch, Mock
-from utils.rate_limiter import RateLimiter, RateLimitConfig, with_rate_limiting, _execute_with_retry, RateLimitedChatOpenAI, create_ollama_llm, RateLimitedZAI, get_llm_backend, get_fallback_llm, ZAIConfig
+from unittest.mock import MagicMock, patch
+from utils.rate_limiter import RateLimiter, RateLimitConfig, with_rate_limiting, _execute_with_retry, RateLimitedChatOpenAI, create_ollama_llm, RateLimitedZAI
 
 class TestRateLimiter:
     def test_clean_old_requests(self):

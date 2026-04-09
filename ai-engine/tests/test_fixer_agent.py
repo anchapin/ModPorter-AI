@@ -2,11 +2,9 @@
 
 import json
 import tempfile
-import time
 from pathlib import Path
 from datetime import datetime
 
-import pytest
 
 from qa.fixer import FixerAgent, FixResult
 from qa.context import QAContext
@@ -376,7 +374,7 @@ class TestValidationResultsStorage:
             )
 
             agent = FixerAgent()
-            result = agent.execute(context)
+            agent.execute(context)
 
             assert "fixer" in context.validation_results
             assert "fixes_applied" in context.validation_results["fixer"]

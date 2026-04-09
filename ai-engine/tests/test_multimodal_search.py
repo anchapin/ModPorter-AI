@@ -9,15 +9,12 @@ Tests:
 """
 
 import unittest
-import pytest
-import asyncio
 import tempfile
 import json
 import os
 import sys
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
+from unittest.mock import patch
 
-from search.multimodal_search_engine import MultiModalSearchEngine
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -541,7 +538,7 @@ class TestMultiModalSearchEngine(unittest.IsolatedAsyncioTestCase):
 
         engine = MultiModalSearchEngine()
 
-        results = await engine.search_by_modality(
+        await engine.search_by_modality(
             query_text="test query",
             modalities=["texture"],
             top_k=5,
@@ -656,7 +653,6 @@ class TestIntegration(unittest.TestCase):
     def test_extractor_to_search_pipeline(self):
         """Test full pipeline from extraction to search."""
         import asyncio
-        from utils.texture_metadata_extractor import TextureMetadataExtractor
         from search.multimodal_search_engine import MultiModalSearchEngine
         from schemas.multimodal_schema import SearchQuery, ContentType
 

@@ -5,9 +5,7 @@ Tests DuckDuckGo search integration, formatting, and utility functions.
 
 import pytest
 import json
-import asyncio
-from unittest.mock import Mock, patch, MagicMock
-from typing import List, Dict, Any
+from unittest.mock import patch, MagicMock
 
 try:
     from tools.web_search_tool import WebSearchTool, search_web, search_minecraft_docs, search_programming_help

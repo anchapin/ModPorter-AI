@@ -5,10 +5,7 @@ Tests semantic search, document search, similarity search, and fallback mechanis
 
 import pytest
 import json
-import asyncio
 from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from typing import List, Dict, Any, Optional
-import logging
 
 # Set up imports
 try:

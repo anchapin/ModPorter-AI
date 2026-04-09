@@ -7,7 +7,6 @@ to Bedrock's villager entities, profession components, and trade tables.
 
 import pytest
 import sys
-import json
 from pathlib import Path
 
 # Add ai-engine to path
@@ -18,12 +17,9 @@ from converters.villager_converter import (
     VillagerConverter,
     TradeOfferConverter,
     VillagerProfession,
-    VillagerDefinition,
     TradeDefinition,
-    convert_villager,
     convert_profession,
     convert_trade,
-    create_trade_table,
 )
 from knowledge.patterns.villager_patterns import (
     VillagerPatternLibrary,
@@ -202,8 +198,8 @@ class TestTradeOfferConversion:
         """Test experience flag conversion."""
         converter = TradeOfferConverter()
 
-        assert converter.convert_experience(True) == True
-        assert converter.convert_experience(False) == False
+        assert converter.convert_experience(True)
+        assert not converter.convert_experience(False)
 
     def test_convert_price_adjustment(self):
         """Test price multiplier conversion."""

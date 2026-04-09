@@ -7,7 +7,6 @@ to Bedrock's sounds.json format.
 
 import pytest
 import sys
-import json
 from pathlib import Path
 
 # Add ai-engine to path
@@ -20,7 +19,6 @@ from converters.sound_converter import (
     MusicDiscConverter,
     SoundEvent,
     SoundPool,
-    JukeboxSong,
 )
 from knowledge.patterns.sound_patterns import (
     SoundPatternLibrary,
@@ -28,7 +26,6 @@ from knowledge.patterns.sound_patterns import (
     SoundPattern,
     get_sound_pattern,
     search_sound_patterns,
-    get_sound_stats,
 )
 
 
@@ -307,7 +304,7 @@ class TestSoundsJsonGeneration:
         manifest = converter.generate_sounds_manifest(sounds)
 
         sound_def = manifest["sound_definitions"]["music_test"]
-        assert sound_def["sounds"][0].get("stream", False) == True
+        assert sound_def["sounds"][0].get("stream", False)
 
 
 class TestSoundPatternLibrary:

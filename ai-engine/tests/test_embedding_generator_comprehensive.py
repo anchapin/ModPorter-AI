@@ -5,9 +5,7 @@ Tests OpenAI, Local, and Storage components with caching and validation.
 
 import pytest
 import numpy as np
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from typing import List, Dict, Any, Optional
-import logging
+from unittest.mock import Mock, patch, MagicMock
 
 # Set up imports
 try:
@@ -300,7 +298,7 @@ class TestEmbeddingCache:
         import time
 
         time.sleep(0.1)
-        result = cache.get("text", "model")
+        cache.get("text", "model")
 
         # Due to timing, this might still be in cache
         # Just verify the mechanism works

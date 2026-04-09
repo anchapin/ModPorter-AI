@@ -7,7 +7,6 @@ to Bedrock's particle definitions and entity/block attachments.
 
 import pytest
 import sys
-import json
 from pathlib import Path
 
 # Add ai-engine to path
@@ -18,18 +17,11 @@ from converters.particle_converter import (
     ParticleConverter,
     ParticleEmitterConverter,
     ParticleType,
-    JavaParticleCategory,
-    ParticleDefinition,
-    EmitterDefinition,
-    EmitterBurst,
-    EmitterInterval,
 )
 from knowledge.patterns.particle_patterns import (
     ParticlePatternLibrary,
     ParticleCategory,
-    ParticlePattern,
     get_particle_pattern,
-    search_particle_patterns,
     get_particle_stats,
 )
 

@@ -11,7 +11,6 @@ import sys
 import os
 import uuid
 import pytest
-import json
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -93,7 +92,7 @@ class TestCorrectionStore:
         mock_result.scalars.return_value.all.return_value = [mock_correction]
         mock_db.execute.return_value = mock_result
         
-        with patch('sqlalchemy.select') as mock_select:
+        with patch('sqlalchemy.select'):
             res = await store.get_corrections(status="pending")
             assert len(res) == 1
             assert res[0]["status"] == "pending"
@@ -135,7 +134,7 @@ class TestCorrectionStore:
         mock_result.scalar_one_or_none.return_value = mock_correction
         mock_db.execute.return_value = mock_result
         
-        with patch('sqlalchemy.select') as mock_select:
+        with patch('sqlalchemy.select'):
             res = await store.update_correction_status(
                 correction_id=mock_correction.id,
                 status="approved",

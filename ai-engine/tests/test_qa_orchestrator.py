@@ -1,12 +1,8 @@
 import pytest
 import asyncio
-import time
 from pathlib import Path
-from unittest.mock import AsyncMock, patch, MagicMock
 from qa.orchestrator import QAOrchestrator
 from qa.context import QAContext
-from qa.validators import AgentOutput
-from utils.error_recovery import CircuitBreaker, CircuitBreakerOpenError
 
 
 @pytest.fixture

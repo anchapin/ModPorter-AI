@@ -3,8 +3,7 @@ Unit tests for RAG Pipeline and Multi-Stage Reranker.
 """
 
 import pytest
-from unittest.mock import Mock, MagicMock, patch
-from dataclasses import dataclass
+from unittest.mock import Mock
 
 from search.rag_pipeline import (
     RAGPipeline,
@@ -13,9 +12,6 @@ from search.rag_pipeline import (
     QueryAnalysis,
     QueryAnalysisStage,
     QueryExpansionStage,
-    SearchStage,
-    RerankingStage,
-    FusionStage,
     QueryType,
     ComplexityLevel,
 )

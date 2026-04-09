@@ -3,10 +3,8 @@ Test suite for Behavioral Framework in testing/behavioral_framework.py
 """
 
 import pytest
-import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 import sys
-import os
 from pathlib import Path
 
 # Ensure ai-engine is in path

@@ -4,10 +4,8 @@ Tests RAG pipelines, agent coordination, and end-to-end conversions.
 """
 
 import pytest
-import json
 import asyncio
-from unittest.mock import Mock, AsyncMock, patch, MagicMock, call
-from typing import Dict, List, Any, Optional
+from unittest.mock import AsyncMock
 
 # Set up imports
 try:
@@ -293,7 +291,7 @@ class TestAgentErrorHandling:
     async def test_agent_timeout_handling(self, mock_java_analyzer):
         """Test handling agent timeout."""
         mock_java_analyzer.analyze_jar = AsyncMock(
-            side_effect=asyncio.TimeoutError("Analysis timed out")
+            side_effect=TimeoutError("Analysis timed out")
         )
         
         with pytest.raises(asyncio.TimeoutError):
@@ -522,7 +520,7 @@ class TestAgentMonitoring:
             execution_log.append({"agent": "analyzer", "status": "completed"})
             return result
         
-        result = await tracked_analyze("/tmp/test.jar")
+        await tracked_analyze("/tmp/test.jar")
         
         assert len(execution_log) == 2
         assert execution_log[0]["status"] == "started"

@@ -4,7 +4,6 @@ Unit tests for MultiModalEmbeddingGenerator and related specialized generators.
 
 import pytest
 import numpy as np
-import asyncio
 from unittest.mock import MagicMock, patch, AsyncMock
 from utils.multimodal_embedding_generator import (
     MultiModalEmbeddingGenerator, 

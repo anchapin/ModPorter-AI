@@ -8,7 +8,6 @@ and animation controllers.
 
 import pytest
 import sys
-import json
 from pathlib import Path
 
 # Add ai-engine to path
@@ -39,10 +38,7 @@ from converters.rendering_converter import (
 from knowledge.patterns.rendering_patterns import (
     RenderingPatternLibrary,
     RenderingPatternCategory,
-    RenderingPattern,
     get_rendering_pattern,
-    search_rendering_patterns,
-    get_rendering_stats,
 )
 
 
@@ -329,7 +325,7 @@ class TestIntegration:
 
     def test_pattern_lookup_in_conversion(self):
         """Test pattern lookup is used in conversion."""
-        converter = RenderingConverter()
+        RenderingConverter()
         pattern = get_rendering_pattern("BipedModel")
         assert pattern is not None
         assert "biped" in pattern.bedrock_render_id

@@ -5,8 +5,7 @@ Comprehensive unit tests for ParallelOrchestrator.
 import pytest
 import time
 import json
-from pathlib import Path
-from unittest.mock import MagicMock, patch, Mock
+from unittest.mock import MagicMock, patch
 from orchestration.orchestrator import ParallelOrchestrator
 from orchestration.strategy_selector import OrchestrationStrategy, StrategyConfig
 from orchestration.task_graph import TaskGraph, TaskNode
@@ -155,7 +154,7 @@ class TestParallelOrchestrator:
         mock_pool.submit_task.return_value = mock_future
         
         with patch('orchestration.orchestrator.as_completed', return_value=[mock_future]):
-            res = orchestrator._execute_parallel(graph, mock_pool)
+            orchestrator._execute_parallel(graph, mock_pool)
             assert graph.nodes["t1"].status.value == "failed"
 
     def test_execute_parallel_stuck(self, orchestrator):

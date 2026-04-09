@@ -5,8 +5,6 @@ Tests initialization, agent setup, task creation, and tool integration.
 
 import pytest
 from unittest.mock import MagicMock, patch, mock_open
-import os
-import yaml
 from crew.rag_crew import RAGCrew, RAGTasks, get_llm_instance
 
 @pytest.fixture
@@ -181,7 +179,7 @@ class TestRAGTasks:
         s_task = tasks.search_task(agent, "query")
         assert mock_crewai['Task'].called
         
-        sum_task = tasks.summarize_task(agent, "query", s_task)
+        tasks.summarize_task(agent, "query", s_task)
         assert mock_crewai['Task'].called
 
 def test_get_llm_instance_mock():

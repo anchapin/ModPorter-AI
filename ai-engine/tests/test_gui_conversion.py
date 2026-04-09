@@ -7,7 +7,6 @@ inventory layouts to Bedrock's UI JSON, forms, and inventory definitions.
 
 import pytest
 import sys
-import json
 from pathlib import Path
 
 # Add ai-engine to path
@@ -18,18 +17,12 @@ from converters.gui_converter import (
     GUIConverter,
     ContainerConverter,
     GUIComponentType,
-    ScreenType,
-    ContainerType,
-    GUIButton,
-    GUIComponent,
 )
 from knowledge.patterns.gui_patterns import (
     GUIPatternLibrary,
     GUICategory,
     GUIPattern,
     get_gui_pattern,
-    search_gui_patterns,
-    get_gui_stats,
 )
 
 

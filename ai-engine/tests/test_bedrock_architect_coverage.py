@@ -3,7 +3,6 @@ Tests for Bedrock Architect Agent to improve coverage.
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 
 
 class TestBedrockArchitect:

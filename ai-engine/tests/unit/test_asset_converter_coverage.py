@@ -1,8 +1,5 @@
 import pytest
 import json
-import io
-import zipfile
-from pathlib import Path
 from unittest.mock import MagicMock, patch, mock_open
 from agents.asset_converter import AssetConverterAgent
 

@@ -4,8 +4,7 @@ Unit tests for ProgressCallback system.
 
 import pytest
 import json
-import os
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 from utils.progress_callback import ProgressCallback, ProgressCallbackManager, create_progress_callback, cleanup_progress_callback, get_progress_manager
 
 class TestProgressCallback:

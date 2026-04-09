@@ -3,7 +3,6 @@ Unit tests for feature flags utility.
 """
 
 import pytest
-from unittest.mock import patch, MagicMock
 from utils.feature_flags import (
     FeatureFlags,
     FeatureFlagManager,
@@ -48,6 +47,6 @@ class TestFeatureFlagsIndividual:
     def test_feature_flags_has_attributes(self, flags):
         """Test FeatureFlags has expected attributes."""
         # Check for various possible flag attributes
-        attrs = dir(flags)
+        dir(flags)
         # Just verify it's a FeatureFlags instance
         assert flags is not None

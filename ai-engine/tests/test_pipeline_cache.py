@@ -127,7 +127,7 @@ class TestPipelineCache:
         time.sleep(1.5)
 
         # Should be expired now
-        result = cache.get("key1")
+        cache.get("key1")
         # May or may not be expired depending on implementation
 
     def test_multiple_keys(self, cache):

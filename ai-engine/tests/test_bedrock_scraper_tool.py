@@ -4,8 +4,7 @@ Unit tests for BedrockScraperTool.
 
 import pytest
 import json
-import asyncio
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 from tools.bedrock_scraper_tool import (
     BedrockScraperTool,
     scrape_bedrock_docs,

@@ -1,5 +1,4 @@
 
-import pytest
 import uuid
 from agents.validation_agent import (
     ValidationAgent, 
@@ -9,10 +8,6 @@ from agents.validation_agent import (
     ManifestValidator
 )
 from models.validation import (
-    ManifestValidationResult,
-    SemanticAnalysisResult,
-    BehaviorPredictionResult,
-    AssetValidationResult,
     ValidationReport
 )
 

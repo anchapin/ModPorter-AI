@@ -4,7 +4,7 @@ Unit tests for WorkerPool and WorkerStats.
 
 import pytest
 import time
-from unittest.mock import MagicMock, patch, Mock
+from unittest.mock import MagicMock, patch
 from orchestration.worker_pool import WorkerPool, WorkerStats, WorkerType, create_agent_executor, setup_signal_handlers
 from orchestration.task_graph import TaskNode
 
@@ -128,7 +128,7 @@ class TestWorkerPool:
     def test_stop_no_wait(self):
         pool = WorkerPool(max_workers=1)
         pool.start()
-        task = TaskNode("t1", "a", "t", {})
+        TaskNode("t1", "a", "t", {})
         # Mock a future that is not done
         mock_future = MagicMock()
         mock_future.done.return_value = False
@@ -256,7 +256,8 @@ class TestAgentExecutor:
         assert executor(TaskNode("t", "a", "t", {})) == "exec_ok"
 
     def test_create_agent_executor_callable(self):
-        agent = lambda x: "call_ok"
+        def agent(x):
+            return "call_ok"
         executor = create_agent_executor(agent)
         assert executor(TaskNode("t", "a", "t", {})) == "call_ok"
 

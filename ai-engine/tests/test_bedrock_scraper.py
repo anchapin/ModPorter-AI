@@ -6,7 +6,6 @@ Target: Increase coverage to >80%
 """
 
 import pytest
-import asyncio
 import sys
 import os
 

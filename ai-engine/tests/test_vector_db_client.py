@@ -3,10 +3,8 @@ Unit tests for VectorDBClient.
 """
 
 import unittest
-import pytest
 import httpx
-import json
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from utils.vector_db_client import VectorDBClient
 
 class TestVectorDBClient(unittest.IsolatedAsyncioTestCase):

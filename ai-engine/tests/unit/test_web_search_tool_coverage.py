@@ -4,7 +4,6 @@ Comprehensive unit tests for tools/web_search_tool.py to improve coverage.
 
 import pytest
 import json
-import asyncio
 from unittest.mock import MagicMock, patch, ANY
 from tools.web_search_tool import (
     WebSearchTool,

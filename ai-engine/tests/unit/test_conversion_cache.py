@@ -3,7 +3,6 @@ import pytest
 import time
 import shutil
 import os
-from pathlib import Path
 from utils.conversion_cache import (
     ConversionCache, 
     ParallelProcessor, 

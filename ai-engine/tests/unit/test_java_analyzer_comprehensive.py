@@ -1,9 +1,7 @@
 import pytest
 import json
-import os
 import zipfile
-from pathlib import Path
-from unittest.mock import MagicMock, patch, mock_open
+from unittest.mock import patch
 from agents.java_analyzer import JavaAnalyzerAgent
 
 class TestJavaAnalyzerAgentComprehensive:

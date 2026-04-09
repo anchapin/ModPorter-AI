@@ -1,7 +1,7 @@
 
 import pytest
 import json
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 from pathlib import Path
 from crew.conversion_crew import ModPorterConversionCrew
 
@@ -101,7 +101,7 @@ class TestModPorterConversionCrew:
     def test_initialization_ollama(self, mock_crewai, mock_agents):
         """Test initialization with Ollama enabled."""
         with patch.dict('os.environ', {'USE_OLLAMA': 'true', 'OLLAMA_MODEL': 'llama3'}):
-            crew = ModPorterConversionCrew()
+            ModPorterConversionCrew()
             assert mock_crewai['create_ollama_llm'].called
             # Check if ollama_model was passed correctly
             args, kwargs = mock_crewai['create_ollama_llm'].call_args

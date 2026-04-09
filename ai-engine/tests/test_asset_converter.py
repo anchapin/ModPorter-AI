@@ -631,7 +631,7 @@ class TestAssetConverterAgent:
 
     def test_extract_textures_from_alt_locations(self):
         """Test extraction from alternative JAR locations"""
-        with patch("zipfile.ZipFile") as mock_zip:
+        with patch("zipfile.ZipFile"):
             mock_jar = MagicMock()
             # File in an alternative location
             mock_jar.namelist.return_value = ["textures/block/alt.png"]

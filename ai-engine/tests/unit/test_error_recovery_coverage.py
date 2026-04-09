@@ -3,7 +3,6 @@ Unit tests for error recovery utility.
 """
 
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
 from utils.error_recovery import (
     ErrorRecoverySystem,
     RecoveryStrategy,

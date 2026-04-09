@@ -22,7 +22,7 @@ def test_embeddings_module_exists():
 
 
 def test_embeddings_module_can_be_parsed():
-    """embeddings module should be valid Python"""
+    """Embeddings module should be valid Python"""
     with open("/home/alex/Projects/ModPorter-AI/backend/src/api/embeddings.py") as f:
         source = f.read()
     
@@ -40,7 +40,7 @@ def test_embeddings_has_router():
 
 
 def test_embeddings_has_prefix():
-    """embeddings router should have /embeddings prefix or endpoints"""
+    """Embeddings router should have /embeddings prefix or endpoints"""
     with open("/home/alex/Projects/ModPorter-AI/backend/src/api/embeddings.py") as f:
         source = f.read()
     

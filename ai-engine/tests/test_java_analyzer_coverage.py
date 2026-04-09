@@ -5,7 +5,7 @@ import os
 import zipfile
 import tempfile
 import javalang
-from unittest.mock import MagicMock, patch, mock_open
+from unittest.mock import MagicMock, patch
 from agents.java_analyzer import JavaAnalyzerAgent, JAVASSIST_AVAILABLE
 
 class TestJavaAnalyzerCoverage:
@@ -53,7 +53,7 @@ class TestJavaAnalyzerCoverage:
 
     def test_analyze_jar_for_mvp_empty(self, analyzer):
         with tempfile.NamedTemporaryFile(suffix=".jar") as tmp:
-            with zipfile.ZipFile(tmp.name, "w") as zf:
+            with zipfile.ZipFile(tmp.name, "w"):
                 pass
             result = analyzer.analyze_jar_for_mvp(tmp.name)
             assert result["success"] is True

@@ -7,7 +7,6 @@ scoreboard commands, and triggers to Bedrock format.
 
 import pytest
 import sys
-import json
 from pathlib import Path
 
 # Add ai-engine to path
@@ -30,9 +29,7 @@ from converters.command_converter import (
 from knowledge.patterns.command_patterns import (
     CommandPatternLibrary,
     CommandCategory,
-    CommandPattern,
     get_command_pattern,
-    search_command_patterns,
     get_command_stats,
 )
 

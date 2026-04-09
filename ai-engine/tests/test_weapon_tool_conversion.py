@@ -7,7 +7,6 @@ to Bedrock's item components system.
 
 import pytest
 import sys
-import json
 from pathlib import Path
 
 # Add ai-engine to path
@@ -17,18 +16,15 @@ sys.path.insert(0, str(ai_engine_root))
 from converters.weapon_tool_converter import (
     WeaponToolConverter,
     ToolAttributeConverter,
-    ItemDefinition,
     ToolDefinition,
     WeaponDefinition,
     ArmorDefinition,
     ToolType,
     ArmorType,
     ItemTier,
-    convert_item,
     convert_tool,
     convert_weapon,
     convert_armor,
-    generate_item_file,
     generate_tool_file,
     generate_weapon_file,
     generate_armor_file,
@@ -36,10 +32,7 @@ from converters.weapon_tool_converter import (
 from knowledge.patterns.weapon_tool_patterns import (
     WeaponToolPatternLibrary,
     WeaponToolCategory,
-    WeaponToolPattern,
     get_weapon_tool_pattern,
-    search_weapon_tool_patterns,
-    get_weapon_tool_stats,
 )
 
 

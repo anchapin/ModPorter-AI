@@ -1,8 +1,5 @@
 import pytest
 import json
-import uuid
-import os
-from pathlib import Path
 from agents.bedrock_manifest_generator import BedrockManifestGenerator, PackType
 
 class TestBedrockManifestGenerator:

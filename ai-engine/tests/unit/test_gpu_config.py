@@ -2,7 +2,6 @@
 Unit tests for GPU Configuration Manager.
 """
 
-import pytest
 import os
 from unittest.mock import MagicMock, patch
 from utils.gpu_config import GPUConfig, GPUType, get_gpu_config, reinitialize_gpu_config, get_torch_device, get_device_string, get_onnx_providers, optimize_for_inference

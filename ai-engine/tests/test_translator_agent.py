@@ -1,12 +1,9 @@
 """Unit tests for TranslatorAgent."""
 
-import json
 import tempfile
-import time
 from pathlib import Path
 from datetime import datetime
 
-import pytest
 
 from qa.translator import TranslatorAgent
 from qa.context import QAContext

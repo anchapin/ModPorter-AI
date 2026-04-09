@@ -7,7 +7,6 @@ and achievements to Bedrock's achievement system.
 
 import pytest
 import sys
-import json
 from pathlib import Path
 
 # Add ai-engine to path
@@ -20,9 +19,7 @@ from converters.advancement_converter import (
     AdvancementDefinition,
     AdvancementDisplay,
     AdvancementCriteria,
-    AdvancementRewards,
     CriteriaConverter,
-    ToastNotification,
 )
 from knowledge.patterns.advancement_patterns import (
     AdvancementPatternLibrary,

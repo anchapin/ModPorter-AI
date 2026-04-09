@@ -3,8 +3,7 @@ import pytest
 import json
 import zipfile
 import io
-from pathlib import Path
-from agents.addon_validator import AddonValidator, ValidationLevel
+from agents.addon_validator import AddonValidator
 
 class TestAddonValidator:
     @pytest.fixture

@@ -1,8 +1,6 @@
 import pytest
 import time
-import threading
-from unittest.mock import MagicMock, patch
-from datetime import datetime
+from unittest.mock import patch
 from agent_metrics.performance_monitor import (
     PerformanceMonitor,
     OperationMetric,
@@ -16,12 +14,10 @@ from agent_metrics.llm_usage_tracker import (
 from agent_metrics.memory_monitor import (
     MemoryMonitor,
     MemorySnapshot,
-    MemoryAlert,
     MemoryTracker
 )
 from agent_metrics.alerts import (
     AlertManager,
-    Alert,
     AlertSeverity
 )
 from agent_metrics.dashboard import MetricsDashboard

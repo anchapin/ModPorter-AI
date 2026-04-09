@@ -1,7 +1,5 @@
 
-import pytest
 import json
-import os
 from unittest.mock import patch, mock_open
 from agents.variant_loader import VariantLoader
 

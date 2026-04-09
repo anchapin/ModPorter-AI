@@ -3,10 +3,8 @@ Test suite for RL components: AgentOptimizer, TrainingLoop, QualityScorer
 """
 
 import pytest
-import json
 from unittest.mock import MagicMock, patch, AsyncMock
 import sys
-import os
 from pathlib import Path
 
 # Ensure ai-engine is in path

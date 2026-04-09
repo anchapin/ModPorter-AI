@@ -4,7 +4,7 @@ Tests ConversionPattern and PatternLibrary.
 """
 
 import pytest
-from knowledge.patterns.base import ConversionPattern, PatternLibrary, ComplexityLevel
+from knowledge.patterns.base import ConversionPattern, PatternLibrary
 
 class TestConversionPattern:
     def test_creation_success(self):

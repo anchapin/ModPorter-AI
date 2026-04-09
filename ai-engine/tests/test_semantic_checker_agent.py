@@ -1,18 +1,13 @@
 """Unit tests for SemanticCheckerAgent."""
 
-import json
 import tempfile
 from pathlib import Path
 from datetime import datetime
 
-import pytest
 
 from qa.semantic_checker import (
     SemanticCheckerAgent,
     check_semantics,
-    DataFlowNode,
-    ControlFlowNode,
-    SemanticDrift,
 )
 from qa.context import QAContext
 from qa.validators import AgentOutput
@@ -161,7 +156,7 @@ class TestControlFlowAnalysis:
             agent = SemanticCheckerAgent()
 
             java_nodes = agent._extract_java_control_flow(java_path)
-            bedrock_nodes = agent._extract_bedrock_control_flow(bedrock_path)
+            agent._extract_bedrock_control_flow(bedrock_path)
 
             assert len(java_nodes) >= 1
 

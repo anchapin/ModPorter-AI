@@ -3,7 +3,6 @@ Tests for Asset Converter Agent to improve coverage.
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 
 
 class TestAssetConverter:

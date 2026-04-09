@@ -2,11 +2,9 @@
 
 import json
 import tempfile
-import time
 from pathlib import Path
 from datetime import datetime
 
-import pytest
 
 from qa.reviewer import ReviewerAgent, ValidationIssue
 from qa.context import QAContext
@@ -346,7 +344,7 @@ class TestValidationResultsStorage:
             )
 
             agent = ReviewerAgent()
-            result = agent.execute(context)
+            agent.execute(context)
 
             assert "reviewer" in context.validation_results
             assert "quality_score" in context.validation_results["reviewer"]

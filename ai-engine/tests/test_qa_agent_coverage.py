@@ -3,8 +3,7 @@ Tests for AI Engine QA Agent to improve coverage.
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-import json
+from unittest.mock import MagicMock
 
 
 class TestQAAgent:

@@ -1,5 +1,4 @@
 
-import pytest
 from utils.chunker import Chunker
 
 class TestChunker:

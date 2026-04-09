@@ -6,9 +6,6 @@ import json
 import os
 import sys
 import tempfile
-import zipfile
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -227,14 +224,14 @@ class TestPackagingAgent:
         """Test generate_enhanced_manifests_tool"""
         input_data = json.dumps({"mod_name": "EnhancedMod", "mod_version": [1, 0, 0]})
         result = agent.generate_enhanced_manifests_tool.run(mod_data=input_data)
-        result_data = json.loads(result)
+        json.loads(result)
         # May fail due to dependencies but should handle gracefully
 
     def test_generate_blocks_and_items_tool(self, agent):
         """Test generate_blocks_and_items_tool"""
         input_data = json.dumps({"blocks": [], "items": []})
         result = agent.generate_blocks_and_items_tool.run(conversion_data=input_data)
-        result_data = json.loads(result)
+        json.loads(result)
         # Should handle gracefully
 
     def test_package_constraints(self, agent):

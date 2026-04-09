@@ -10,7 +10,6 @@ from utils.token_optimizer import (
     ContextTrimmer, 
     CostTracker, 
     TokenOptimizer,
-    TokenUsage,
     TOKEN_PRICING,
     get_llm_stats,
     optimize_llm_call,

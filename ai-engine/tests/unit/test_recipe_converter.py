@@ -6,8 +6,6 @@ which converts Java mod recipes to Bedrock format.
 """
 
 import pytest
-import json
-from unittest.mock import Mock, patch, MagicMock
 
 # Import the agent
 from agents.recipe_converter import RecipeConverterAgent
@@ -237,7 +235,7 @@ class TestRecipeConverterAgent:
         # Should return error dict for unknown type
         assert result is not None
         if isinstance(result, dict):
-            assert result.get("success") == False or "unknown" in str(result).lower()
+            assert not result.get("success") or "unknown" in str(result).lower()
 
 
 class TestRecipeConverterTools:
@@ -322,7 +320,7 @@ class TestRecipeConverterEdgeCases:
         """Test handling of empty recipe"""
         result = agent.convert_recipe({})
         # Empty recipe has no type so returns None or error
-        assert result is None or (isinstance(result, dict) and result.get("success") == False)
+        assert result is None or (isinstance(result, dict) and not result.get("success"))
 
     def test_none_recipe(self, agent):
         """Test handling of None recipe"""
@@ -345,12 +343,6 @@ class TestRecipeConverterEdgeCases:
 
     def test_recipe_with_count(self, agent):
         """Test recipe with count > 1"""
-        recipe = {
-            "type": "minecraft:crafting_shaped",
-            "pattern": ["X"],
-            "key": {"X": {"item": "minecraft:iron_ingot"}},
-            "result": {"item": "minecraft:iron_block", "count": 4}
-        }
         result = agent._convert_shaped_to_bedrock(
             {"pattern": ["X"], "key": {"X": {"item": "minecraft:iron_ingot"}}, 
              "result_item": "minecraft:iron_block", "result_count": 4, "result_data": 0},

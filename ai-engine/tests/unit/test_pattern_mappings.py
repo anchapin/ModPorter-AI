@@ -4,7 +4,7 @@ Tests PatternMapping and PatternMappingRegistry.
 """
 
 import pytest
-from knowledge.patterns.mappings import PatternMapping, PatternMappingRegistry, MappingConfidence
+from knowledge.patterns.mappings import PatternMapping, PatternMappingRegistry
 
 class TestPatternMapping:
     def test_creation_success(self):

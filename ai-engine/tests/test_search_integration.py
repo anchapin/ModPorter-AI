@@ -6,10 +6,8 @@ using real search engine implementations.
 """
 
 import pytest
-import asyncio
 import sys
 from pathlib import Path
-from typing import List
 
 # Add ai-engine to path
 ai_engine_root = Path(__file__).parent.parent
@@ -23,7 +21,6 @@ from search.hybrid_search_engine import (
 from search.reranking_engine import CrossEncoderReRanker
 from search.query_expansion import QueryExpansionEngine
 from schemas.multimodal_schema import SearchQuery
-from tests.fixtures.search_fixtures import mock_documents, mock_embeddings, mock_query_embedding, test_queries
 
 
 class TestSearchIntegration:
@@ -88,8 +85,8 @@ class TestSearchIntegration:
         print(f"Re-ranking returned {len(reranked_results)} results")
 
         # Verify re-ranking changed order
-        original_ranks = [r.rank for r in search_results[:3]]
-        reranked_ranks = [r.original_rank for r in reranked_results]
+        [r.rank for r in search_results[:3]]
+        [r.original_rank for r in reranked_results]
         # Note: Reranking may or may not change order, but we verify it ran
 
     @pytest.mark.asyncio
@@ -180,7 +177,7 @@ class TestSearchIntegration:
 
         # Time re-ranking
         start_time = time.time()
-        reranked_results = reranker.rerank(
+        reranker.rerank(
             query="custom block",
             results=search_results[:10],
             top_k=5,

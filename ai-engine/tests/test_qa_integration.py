@@ -1,7 +1,3 @@
-import pytest
-import tempfile
-from pathlib import Path
-from unittest.mock import patch, MagicMock
 from qa.hooks import QAIntegrationHook, run_post_conversion_qa
 from qa.context import QAContext
 

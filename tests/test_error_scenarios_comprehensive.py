@@ -364,7 +364,7 @@ class TestDeadlockPrevention:
                     asyncio.sleep(100),
                     timeout=timeout
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 deadlock_detected = True
         
         await detect_deadlock(timeout=0.01)

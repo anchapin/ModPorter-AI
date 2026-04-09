@@ -7,7 +7,6 @@ to Bedrock's entity effects component and potion items.
 
 import pytest
 import sys
-import json
 from pathlib import Path
 
 # Add ai-engine to path
@@ -19,10 +18,6 @@ from converters.potion_converter import (
     CustomEffectConverter,
     EffectType,
     EffectDefinition,
-    PotionItem,
-    convert_effect,
-    convert_potion,
-    convert_custom_effect,
 )
 from knowledge.patterns.potion_patterns import (
     PotionPatternLibrary,

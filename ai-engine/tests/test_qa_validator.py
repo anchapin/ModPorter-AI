@@ -8,7 +8,6 @@ import sys
 import tempfile
 import zipfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -135,32 +134,32 @@ class TestQAValidatorAgent:
     def test_validate_mcaddon_tool_invalid_path(self, agent):
         """Test validate_mcaddon_tool with invalid path"""
         result = agent.validate_mcaddon_tool.run(mcaddon_path="/nonexistent/path/addon.mcaddon")
-        result_data = json.loads(result)
+        json.loads(result)
         # Should handle gracefully
 
     def test_validate_conversion_quality_tool(self, agent):
         """Test validate_conversion_quality_tool"""
         input_data = json.dumps({"mcaddon_path": "/fake/path/addon.mcaddon"})
         result = agent.validate_conversion_quality_tool.run(quality_data=input_data)
-        result_data = json.loads(result)
+        json.loads(result)
 
     def test_run_functional_tests_tool(self, agent):
         """Test run_functional_tests_tool"""
         input_data = json.dumps({"mcaddon_path": "/fake/path/addon.mcaddon"})
         result = agent.run_functional_tests_tool.run(test_data=input_data)
-        result_data = json.loads(result)
+        json.loads(result)
 
     def test_analyze_bedrock_compatibility_tool(self, agent):
         """Test analyze_bedrock_compatibility_tool"""
         input_data = json.dumps({"mcaddon_path": "/fake/path/addon.mcaddon"})
         result = agent.analyze_bedrock_compatibility_tool.run(compatibility_data=input_data)
-        result_data = json.loads(result)
+        json.loads(result)
 
     def test_assess_performance_metrics_tool(self, agent):
         """Test assess_performance_metrics_tool"""
         input_data = json.dumps({"mcaddon_path": "/fake/path/addon.mcaddon"})
         result = agent.assess_performance_metrics_tool.run(performance_data=input_data)
-        result_data = json.loads(result)
+        json.loads(result)
 
     def test_generate_qa_report_tool(self, agent):
         """Test generate_qa_report_tool"""
@@ -184,31 +183,31 @@ class TestQAValidatorAgent:
         """Test validate_conversion_quality method"""
         input_data = json.dumps({"mcaddon_path": "/fake/path"})
         result = agent.validate_conversion_quality(input_data)
-        result_data = json.loads(result)
+        json.loads(result)
 
     def test_run_functional_tests_method(self, agent):
         """Test run_functional_tests method"""
         input_data = json.dumps({"mcaddon_path": "/fake/path"})
         result = agent.run_functional_tests(input_data)
-        result_data = json.loads(result)
+        json.loads(result)
 
     def test_analyze_bedrock_compatibility_method(self, agent):
         """Test analyze_bedrock_compatibility method"""
         input_data = json.dumps({"mcaddon_path": "/fake/path"})
         result = agent.analyze_bedrock_compatibility(input_data)
-        result_data = json.loads(result)
+        json.loads(result)
 
     def test_assess_performance_metrics_method(self, agent):
         """Test assess_performance_metrics method"""
         input_data = json.dumps({"mcaddon_path": "/fake/path"})
         result = agent.assess_performance_metrics(input_data)
-        result_data = json.loads(result)
+        json.loads(result)
 
     def test_generate_qa_report_method(self, agent):
         """Test generate_qa_report method"""
         input_data = json.dumps({"validation_results": {"overall_score": 85, "checks": []}})
         result = agent.generate_qa_report(input_data)
-        result_data = json.loads(result)
+        json.loads(result)
 
 
 class TestValidationCache:
@@ -266,7 +265,7 @@ class TestQAValidatorEdgeCases:
         return QAValidatorAgent.get_instance()
 
     def test_validate_manifest_invalid_json(self, agent, tmp_path):
-        temp_dir = str(tmp_path)
+        str(tmp_path)
         """Test validate_manifest with invalid JSON"""
         manifest = {"invalid": "json"}
         result = agent._validate_manifest_schema(manifest, "manifest.json")

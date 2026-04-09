@@ -4,11 +4,9 @@ Tests integration between parallel orchestrator and CrewAI agents.
 """
 
 import pytest
-import json
 from pathlib import Path
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 from orchestration.crew_integration import EnhancedConversionCrew
-from orchestration.strategy_selector import OrchestrationStrategy
 
 class TestEnhancedConversionCrew:
     @pytest.fixture

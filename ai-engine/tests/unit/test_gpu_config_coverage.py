@@ -3,7 +3,7 @@ Unit tests for GPU config utility.
 """
 
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from utils.gpu_config import (
     GPUConfig,
     GPUType,

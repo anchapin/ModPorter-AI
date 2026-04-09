@@ -4,7 +4,7 @@ Tests for agent_metrics module
 
 import pytest
 import time
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 
 
 class TestAlertManager:
