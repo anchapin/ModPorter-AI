@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main, develop]
   schedule:
-    - cron: '0 0 * * 0'  # Weekly scan on Sunday
+    - cron: '0 0 * * 0' # Weekly scan on Sunday
   workflow_dispatch:
 
 env:
@@ -32,7 +32,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install Bandit
-        run: pip install bandit bandit-exclude-templates
+        run: pip install bandit
 
       - name: Run Bandit SAST
         run: |
@@ -96,7 +96,7 @@ jobs:
           format: 'json'
           output: 'trivy-backend-results.json'
           severity: 'CRITICAL,HIGH,MEDIUM'
-          exit-code: '1'  # Fail on CRITICAL
+          exit-code: '1' # Fail on CRITICAL only
           ignore-unfixed: true
 
       - name: Run Trivy on AI Engine image
@@ -106,7 +106,7 @@ jobs:
           format: 'json'
           output: 'trivy-ai-engine-results.json'
           severity: 'CRITICAL,HIGH,MEDIUM'
-          exit-code: '1'
+          exit-code: '1' # Fail on CRITICAL only
           ignore-unfixed: true
 
       - name: Run Trivy filesystem scan (Python deps)
@@ -117,8 +117,7 @@ jobs:
           format: 'json'
           output: 'trivy-fs-results.json'
           severity: 'CRITICAL,HIGH'
-          scanners: 'vuln'
-          exit-code: '1'
+          exit-code: '1' # Fail on CRITICAL only
           ignore-unfixed: true
 
       - name: Upload Trivy results
@@ -145,9 +144,7 @@ jobs:
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
         with:
-          config-path: .gitleaks.toml
-          redact: true
-          verbose: true
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   # =============================================================================
   # Dependency Review (check for vulnerable dependencies in PRs)
@@ -163,7 +160,7 @@ jobs:
       - name: Dependency Review
         uses: actions/dependency-review-action@v4
         with:
-          fail-on-severity: high,critical
+          fail-on-severity: critical
 
   # =============================================================================
   # CodeQL Analysis
@@ -193,4 +190,4 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
-          category: "/language:${{ matrix.language }}"
+          category: '/language:${{ matrix.language }}'

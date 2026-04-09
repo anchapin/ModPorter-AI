@@ -10,6 +10,7 @@ See: docs/GAP-ANALYSIS-v2.5.md
 """
 
 import re
+import os
 import zipfile
 import io
 import logging
@@ -571,7 +572,7 @@ class ModeClassifier:
         Returns:
             Complete classification result with settings
         """
-        logger.info(f"Starting mode classification for request {request}")
+        logger.info(f"Starting mode classification for request {request!r}")
 
         # Step 1: Feature Extraction
         if request.file_content:
@@ -581,8 +582,10 @@ class ModeClassifier:
             # Use pre-extracted features
             features = request.features
         elif request.file_path:
-            # Extract from file path
-            with open(request.file_path, "rb") as f:
+            abs_path = os.path.abspath(request.file_path)
+            if not os.path.isfile(abs_path):
+                raise ValueError(f"File not found: {request.file_path}")
+            with open(abs_path, "rb") as f:
                 content = f.read()
             features = self.feature_agent.extract_from_jar(content)
         else:
