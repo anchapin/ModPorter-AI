@@ -365,33 +365,14 @@ class TestS3Fallback:
                 backend=StorageBackend.S3, base_path=tmpdir, s3_bucket="test-bucket"
             )
             content = b"s3 fallback content"
-            path = await manager.save_file(
-                content=content,
-                job_id="s3_fallback",
-                filename="test.jar",
-                user_id="user1",
-                category="original",
-            )
-            assert os.path.exists(path)
-
-    @pytest.mark.asyncio
-    async def test_s3_get_falls_back_to_local(self):
-        """Test S3 get falls back to local storage."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            manager = StorageManager(
-                backend=StorageBackend.S3, base_path=tmpdir, s3_bucket="test-bucket"
-            )
-            content = b"s3 fallback get content"
-            path = await manager.save_file(
-                content=content,
-                job_id="s3_get_fallback",
-                filename="test.jar",
-                user_id="user1",
-                category="original",
-            )
-            # S3 fallback saves to local, but _get_s3 returns None
-            # So we test the fallback by reading directly
-            assert os.path.exists(path)
+            with pytest.raises(NotImplementedError):
+                await manager.save_file(
+                    content=content,
+                    job_id="s3_fallback",
+                    filename="test.jar",
+                    user_id="user1",
+                    category="original",
+                )
 
     @pytest.mark.asyncio
     async def test_s3_delete_falls_back(self):
@@ -573,11 +554,11 @@ class TestEdgeCases:
 
     @pytest.mark.asyncio
     async def test_s3_get_not_implemented(self):
-        """Test S3 get returns None."""
+        """Test S3 get raises NotImplementedError when not implemented."""
         with tempfile.TemporaryDirectory() as tmpdir:
             manager = StorageManager(backend=StorageBackend.S3, base_path=tmpdir)
-            result = await manager._get_s3("job", "file.jar", "user")
-            assert result is None
+            with pytest.raises(NotImplementedError):
+                await manager._get_s3("job", "file.jar", "user")
 
     @pytest.mark.asyncio
     async def test_s3_delete_not_implemented(self):

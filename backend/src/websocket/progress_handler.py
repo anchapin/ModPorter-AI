@@ -121,7 +121,9 @@ class ProgressHandler:
                 f"Progress broadcast for {conversion_id}: {agent} - {progress}% - {message}"
             )
         except Exception as e:
-            logger.error("Failed to broadcast progress", conversion_id=conversion_id, error=str(e), exc_info=True)
+            logger.error(
+                "Failed to broadcast progress for %s: %s", conversion_id, str(e), exc_info=True
+            )
 
     @staticmethod
     async def broadcast_agent_start(conversion_id: str, agent: str, message: Optional[str] = None):
@@ -229,9 +231,14 @@ class ProgressHandler:
 
         try:
             await manager.broadcast(msg.model_dump(), conversion_id)
-            logger.info(f"Conversion complete broadcast for {conversion_id}")
+            logger.info("Conversion complete broadcast for %s", conversion_id)
         except Exception as e:
-            logger.error("Failed to broadcast conversion complete", conversion_id=conversion_id, error=str(e), exc_info=True)
+            logger.error(
+                "Failed to broadcast conversion complete for %s: %s",
+                conversion_id,
+                str(e),
+                exc_info=True,
+            )
 
     @staticmethod
     async def broadcast_conversion_failed(conversion_id: str, error_message: str):
@@ -255,6 +262,11 @@ class ProgressHandler:
 
         try:
             await manager.broadcast(msg.model_dump(), conversion_id)
-            logger.info(f"Conversion failed broadcast for {conversion_id}")
+            logger.info("Conversion failed broadcast for %s", conversion_id)
         except Exception as e:
-            logger.error("Failed to broadcast conversion failed", conversion_id=conversion_id, error=str(e), exc_info=True)
+            logger.error(
+                "Failed to broadcast conversion failed for %s: %s",
+                conversion_id,
+                str(e),
+                exc_info=True,
+            )
