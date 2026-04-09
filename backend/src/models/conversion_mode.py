@@ -16,23 +16,23 @@ import uuid
 
 class ConversionMode(str, Enum):
     """4 conversion modes based on mod complexity."""
-    
+
     SIMPLE = "simple"
     """1-5 classes, 0-2 dependencies, no complex features. 99% automation."""
-    
+
     STANDARD = "standard"
     """5-20 classes, 2-5 dependencies, entities/recipes. 95% automation."""
-    
+
     COMPLEX = "complex"
     """20-50 classes, 5-10 dependencies, multiblock/machines. 85% automation."""
-    
+
     EXPERT = "expert"
     """50+ classes, 10+ dependencies, dimensions/worldgen. 70% automation."""
 
 
 class ModeClassificationRule(BaseModel):
     """A rule for classifying a mod into a conversion mode."""
-    
+
     mode: ConversionMode
     min_classes: int = 1
     max_classes: int = 999
@@ -44,7 +44,7 @@ class ModeClassificationRule(BaseModel):
 
 class ComplexFeature(BaseModel):
     """Represents a detected complex feature in a mod."""
-    
+
     feature_type: str
     description: str
     impact: str  # "blocking", "warning", "info"
@@ -54,35 +54,35 @@ class ComplexFeature(BaseModel):
 
 class ModFeatures(BaseModel):
     """Extracted features from a mod used for classification."""
-    
+
     total_classes: int = 0
     total_dependencies: int = 0
     has_items: bool = False
     has_blocks: bool = False
     has_entities: bool = False
     has_recipes: bool = False
-    has_GUI: bool = False
+    has_GUI: bool = False  # noqa: N815
     has_network_packets: bool = False
-    has_ASM: bool = False
+    has_ASM: bool = False  # noqa: N815
     has_dimensions: bool = False
     has_worldgen: bool = False
     has_biomes: bool = False
     has_multiblock: bool = False
-    has_custom_AI: bool = False
+    has_custom_AI: bool = False  # noqa: N815
     has_custom_rendering: bool = False
     has_custom_models: bool = False
     has_sounds: bool = False
     has_resources: bool = False
-    
+
     complex_features: List[ComplexFeature] = Field(default_factory=list)
-    
+
     mod_loader: Optional[str] = None  # "forge", "fabric", "neoforge"
     target_version: Optional[str] = None
 
 
 class ClassificationConfidence(BaseModel):
     """Confidence score for a mode classification."""
-    
+
     mode: ConversionMode
     confidence: float = Field(ge=0.0, le=1.0)
     reasons: List[str] = Field(default_factory=list)
@@ -91,7 +91,7 @@ class ClassificationConfidence(BaseModel):
 
 class ModeClassificationResult(BaseModel):
     """Result of mode classification with confidence scoring."""
-    
+
     mode: ConversionMode
     confidence: float = Field(ge=0.0, le=1.0)
     features: ModFeatures
@@ -99,13 +99,13 @@ class ModeClassificationResult(BaseModel):
     convertible_percentage: float = Field(ge=0.0, le=100.0)
     estimated_time_seconds: int = 0
     automation_level: int = Field(ge=0, le=100)  # percentage
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 class ModeClassificationRequest(BaseModel):
     """Request to classify a mod's conversion mode."""
-    
+
     file_path: Optional[str] = None  # Path to uploaded mod file
     file_content: Optional[bytes] = None  # Raw file content
     features: Optional[ModFeatures] = None  # Pre-extracted features
@@ -114,7 +114,7 @@ class ModeClassificationRequest(BaseModel):
 
 class ModeClassificationResponse(BaseModel):
     """Response with mode classification result."""
-    
+
     classification_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     mode: ConversionMode
     confidence: float
@@ -130,7 +130,7 @@ class ModeClassificationResponse(BaseModel):
 
 class ConversionSettings(BaseModel):
     """Recommended settings for a conversion based on mode."""
-    
+
     mode: ConversionMode
     detail_level: str = "standard"  # "minimal", "standard", "detailed"
     validation_level: str = "standard"  # "basic", "standard", "strict"
@@ -144,7 +144,7 @@ class ConversionSettings(BaseModel):
 
 class ModeSpecificPipelineConfig(BaseModel):
     """Configuration for mode-specific conversion pipeline."""
-    
+
     mode: ConversionMode
     pipeline_name: str
     steps: List[str]
@@ -161,14 +161,11 @@ DEFAULT_CLASSIFICATION_RULES: List[ModeClassificationRule] = [
         min_classes=50,
         min_dependencies=10,
         has_complex_features=True,
-        confidence_boost=0.2
+        confidence_boost=0.2,
     ),
     # Expert mode (class/dependency based)
     ModeClassificationRule(
-        mode=ConversionMode.EXPERT,
-        min_classes=50,
-        min_dependencies=10,
-        confidence_boost=0.1
+        mode=ConversionMode.EXPERT, min_classes=50, min_dependencies=10, confidence_boost=0.1
     ),
     # Complex mode
     ModeClassificationRule(
@@ -176,27 +173,17 @@ DEFAULT_CLASSIFICATION_RULES: List[ModeClassificationRule] = [
         min_classes=20,
         min_dependencies=5,
         has_complex_features=True,
-        confidence_boost=0.2
+        confidence_boost=0.2,
     ),
     ModeClassificationRule(
-        mode=ConversionMode.COMPLEX,
-        min_classes=20,
-        min_dependencies=5,
-        confidence_boost=0.1
+        mode=ConversionMode.COMPLEX, min_classes=20, min_dependencies=5, confidence_boost=0.1
     ),
     # Standard mode
     ModeClassificationRule(
-        mode=ConversionMode.STANDARD,
-        min_classes=5,
-        min_dependencies=2,
-        confidence_boost=0.1
+        mode=ConversionMode.STANDARD, min_classes=5, min_dependencies=2, confidence_boost=0.1
     ),
     # Simple mode (default)
-    ModeClassificationRule(
-        mode=ConversionMode.SIMPLE,
-        min_classes=1,
-        confidence_boost=0.0
-    ),
+    ModeClassificationRule(mode=ConversionMode.SIMPLE, min_classes=1, confidence_boost=0.0),
 ]
 
 
@@ -219,7 +206,15 @@ MODE_PIPELINES: Dict[ConversionMode, ModeSpecificPipelineConfig] = {
     ConversionMode.COMPLEX: ModeSpecificPipelineConfig(
         mode=ConversionMode.COMPLEX,
         pipeline_name="complex-pipeline",
-        steps=["parse", "extract", "translate", "qa-review", "semantic-check", "validate", "export"],
+        steps=[
+            "parse",
+            "extract",
+            "translate",
+            "qa-review",
+            "semantic-check",
+            "validate",
+            "export",
+        ],
         estimated_success_rate=0.85,
         requires_human_review=True,
         special_requirements=["additional_qa", "extended_validation"],
@@ -227,7 +222,16 @@ MODE_PIPELINES: Dict[ConversionMode, ModeSpecificPipelineConfig] = {
     ConversionMode.EXPERT: ModeSpecificPipelineConfig(
         mode=ConversionMode.EXPERT,
         pipeline_name="expert-pipeline",
-        steps=["parse", "extract", "translate", "qa-review", "semantic-check", "expert-review", "validate", "export"],
+        steps=[
+            "parse",
+            "extract",
+            "translate",
+            "qa-review",
+            "semantic-check",
+            "expert-review",
+            "validate",
+            "export",
+        ],
         estimated_success_rate=0.70,
         requires_human_review=True,
         special_requirements=["expert_qa", "manual_inspection", "extended_validation"],

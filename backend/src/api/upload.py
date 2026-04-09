@@ -147,11 +147,11 @@ async def upload_jar_file(
         file_size = len(content)
 
         # Validate file size (max 100MB)
-        MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB
-        if file_size > MAX_UPLOAD_SIZE:
+        max_upload_size = 100 * 1024 * 1024  # 100 MB
+        if file_size > max_upload_size:
             raise HTTPException(
                 status_code=413,
-                detail=f"File size exceeds the limit of {MAX_UPLOAD_SIZE // (1024 * 1024)}MB",
+                detail=f"File size exceeds the limit of {max_upload_size // (1024 * 1024)}MB",
             )
 
         # Save file using storage manager

@@ -885,6 +885,7 @@ async def get_related_across_modalities(
         doc_id: Document ID to find related content for
         target_modalities: Comma-separated list of target modalities (optional)
         limit: Maximum number of related items to return
+        db: Database session (injected via dependency).
     """
     try:
         from ai_engine.search.cross_modal_retriever import CrossModalRetriever

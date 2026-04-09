@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 class ResourceType(str, Enum):
     """Types of resources that can be allocated."""
+
     GPU = "gpu"
     CPU = "cpu"
     MEMORY = "memory"
@@ -33,12 +34,13 @@ class ResourceType(str, Enum):
 class AllocationStrategy(str, Enum):
     """
     Resource allocation strategies.
-    
+
     - ROUND_ROBIN: Distribute evenly across workers
     - CAPACITY_BASED: Allocate based on job requirements vs available capacity
     - MODE_BASED: Allocate dedicated resources per conversion mode
     - PRIORITY_BASED: Higher priority jobs get more resources
     """
+
     ROUND_ROBIN = "round_robin"
     CAPACITY_BASED = "capacity_based"
     MODE_BASED = "mode_based"
@@ -48,6 +50,7 @@ class AllocationStrategy(str, Enum):
 @dataclass
 class ResourcePool:
     """A pool of homogeneous resources (e.g., all GPUs of a specific type)."""
+
     pool_id: str
     resource_type: ResourceType
     total_capacity: float
@@ -71,6 +74,7 @@ class ResourcePool:
 @dataclass
 class ResourceAllocation:
     """Represents a resource allocation for a job or batch."""
+
     allocation_id: str
     job_id: str
     resource_type: ResourceType
@@ -88,6 +92,7 @@ class ResourceAllocation:
 @dataclass
 class WorkerNode:
     """Represents a worker node with its resources."""
+
     node_id: str
     hostname: str
     gpu_count: int = 0
@@ -160,19 +165,16 @@ class WorkerNode:
     ):
         """Release resources back to this node."""
         self.gpu_memory_available = min(
-            self.gpu_memory_total,
-            self.gpu_memory_available + gpu_amount
+            self.gpu_memory_total, self.gpu_memory_available + gpu_amount
         )
-        self.memory_available = min(
-            self.memory_total,
-            self.memory_available + memory_amount
-        )
+        self.memory_available = min(self.memory_total, self.memory_available + memory_amount)
         self.current_load = max(0, self.current_load - 10)
 
 
 @dataclass
 class ResourceAllocationRequest:
     """Request for resource allocation."""
+
     job_id: str
     mode: Optional[ConversionMode] = None
     priority: int = 0
@@ -183,9 +185,10 @@ class ResourceAllocationRequest:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
-@dataclass 
+@dataclass
 class ResourceAllocationResult:
     """Result of a resource allocation request."""
+
     allocation_id: str
     success: bool
     job_id: str
@@ -475,8 +478,7 @@ class ResourceAllocator:
                 self._stats.successful_allocations += 1
                 self._stats.current_active_allocations = len(self._allocations)
                 self._stats.peak_allocations = max(
-                    self._stats.peak_allocations,
-                    self._stats.current_active_allocations
+                    self._stats.peak_allocations, self._stats.current_active_allocations
                 )
                 if request.mode:
                     self._stats.allocation_by_mode[request.mode] += 1
@@ -509,8 +511,12 @@ class ResourceAllocator:
             )
 
         # Round-robin selection
-        node_id = healthy_nodes[self._round_robin_index.get("global", 0) % len(healthy_nodes)].node_id
-        self._round_robin_index["global"] = (self._round_robin_index.get("global", 0) + 1) % len(healthy_nodes)
+        node_id = healthy_nodes[
+            self._round_robin_index.get("global", 0) % len(healthy_nodes)
+        ].node_id
+        self._round_robin_index["global"] = (self._round_robin_index.get("global", 0) + 1) % len(
+            healthy_nodes
+        )
 
         node = self._nodes[node_id]
 
@@ -524,7 +530,9 @@ class ResourceAllocator:
             allocation = ResourceAllocation(
                 allocation_id=allocation_id,
                 job_id=request.job_id,
-                resource_type=ResourceType.GPU if request.gpu_memory_required > 0 else ResourceType.MEMORY,
+                resource_type=ResourceType.GPU
+                if request.gpu_memory_required > 0
+                else ResourceType.MEMORY,
                 pool_id=node_id,
                 allocated_amount=request.gpu_memory_required or request.memory_required,
             )
@@ -560,14 +568,17 @@ class ResourceAllocator:
 
         # Find node with best fit
         best_node = None
-        best_utilization = float('inf')
+        best_utilization = float("inf")
 
         for node in self._nodes.values():
             if not node.can_accept_work:
                 continue
 
             # Check if node can satisfy requirements
-            if (request.gpu_memory_required > 0 and request.gpu_memory_required > node.gpu_memory_available):
+            if (
+                request.gpu_memory_required > 0
+                and request.gpu_memory_required > node.gpu_memory_available
+            ):
                 continue
             if request.memory_required > node.memory_available:
                 continue
@@ -598,7 +609,9 @@ class ResourceAllocator:
         allocation = ResourceAllocation(
             allocation_id=allocation_id,
             job_id=request.job_id,
-            resource_type=ResourceType.GPU if request.gpu_memory_required > 0 else ResourceType.MEMORY,
+            resource_type=ResourceType.GPU
+            if request.gpu_memory_required > 0
+            else ResourceType.MEMORY,
             pool_id=best_node.node_id,
             allocated_amount=request.gpu_memory_required or request.memory_required,
         )
@@ -627,17 +640,19 @@ class ResourceAllocator:
         # First, try to find a node with matching mode affinity
         if request.mode and self.enable_mode_affinity:
             affinity_nodes = [
-                n for n in self._nodes.values()
+                n
+                for n in self._nodes.values()
                 if n.can_accept_work and n.mode_affinity == request.mode
             ]
 
             if affinity_nodes:
                 # Use capacity-based allocation among affinity nodes
                 for node in affinity_nodes:
-                    if (request.gpu_memory_required <= node.gpu_memory_available and
-                        request.memory_required <= node.memory_available and
-                        request.cpu_cores_required <= node.cpu_cores):
-
+                    if (
+                        request.gpu_memory_required <= node.gpu_memory_available
+                        and request.memory_required <= node.memory_available
+                        and request.cpu_cores_required <= node.cpu_cores
+                    ):
                         node.allocate_resources(
                             gpu_required=request.gpu_memory_required,
                             memory_required=request.memory_required,
@@ -647,7 +662,9 @@ class ResourceAllocator:
                         allocation = ResourceAllocation(
                             allocation_id=allocation_id,
                             job_id=request.job_id,
-                            resource_type=ResourceType.GPU if request.gpu_memory_required > 0 else ResourceType.MEMORY,
+                            resource_type=ResourceType.GPU
+                            if request.gpu_memory_required > 0
+                            else ResourceType.MEMORY,
                             pool_id=node.node_id,
                             allocated_amount=request.gpu_memory_required or request.memory_required,
                         )
@@ -678,15 +695,15 @@ class ResourceAllocator:
 
         # Sort nodes by availability (most available first)
         sorted_nodes = sorted(
-            [n for n in self._nodes.values() if n.can_accept_work],
-            key=lambda n: n.current_load
+            [n for n in self._nodes.values() if n.can_accept_work], key=lambda n: n.current_load
         )
 
         for node in sorted_nodes:
-            if (request.gpu_memory_required <= node.gpu_memory_available and
-                request.memory_required <= node.memory_available and
-                request.cpu_cores_required <= node.cpu_cores):
-
+            if (
+                request.gpu_memory_required <= node.gpu_memory_available
+                and request.memory_required <= node.memory_available
+                and request.cpu_cores_required <= node.cpu_cores
+            ):
                 node.allocate_resources(
                     gpu_required=request.gpu_memory_required,
                     memory_required=request.memory_required,
@@ -696,7 +713,9 @@ class ResourceAllocator:
                 allocation = ResourceAllocation(
                     allocation_id=allocation_id,
                     job_id=request.job_id,
-                    resource_type=ResourceType.GPU if request.gpu_memory_required > 0 else ResourceType.MEMORY,
+                    resource_type=ResourceType.GPU
+                    if request.gpu_memory_required > 0
+                    else ResourceType.MEMORY,
                     pool_id=node.node_id,
                     allocated_amount=request.gpu_memory_required or request.memory_required,
                 )
@@ -794,19 +813,13 @@ class ResourceAllocator:
             return []
 
         return [
-            self._allocations[aid]
-            for aid in node.active_allocations
-            if aid in self._allocations
+            self._allocations[aid] for aid in node.active_allocations if aid in self._allocations
         ]
 
     async def get_job_allocations(self, job_id: str) -> List[ResourceAllocation]:
         """Get all allocations for a job."""
         allocation_ids = self._job_allocations.get(job_id, [])
-        return [
-            self._allocations[aid]
-            for aid in allocation_ids
-            if aid in self._allocations
-        ]
+        return [self._allocations[aid] for aid in allocation_ids if aid in self._allocations]
 
     async def process_wait_queue(self) -> int:
         """
