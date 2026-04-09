@@ -1,5 +1,14 @@
 # Current Tasks
 
+## In Progress
+- 🔄 Issue #969: Production secrets management and security hardening
+  - ✅ Created nginx-fly.conf with HTTPS redirect and security headers
+  - ✅ Added Strict-Transport-Security header to SecurityHeadersMiddleware
+  - ✅ Updated .env.example with Fly.io secrets generation instructions
+  - ✅ Hardened JWT token expiry (ACCESS_TOKEN_EXPIRE_MINUTES=5, REFRESH_TOKEN_EXPIRE_DAYS=1)
+  - ✅ Updated CORS to enforce modporter.ai domains in production
+  - ✅ Added all security headers to nginx-fly.conf
+
 ## Completed
 - ✅ Test Coverage Wave 9 - Backend Test Stabilization & Coverage Measurement (COMPLETED)
   - ✅ Task 1: Diagnose test failures (COMPLETE)
