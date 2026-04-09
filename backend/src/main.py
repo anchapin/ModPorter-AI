@@ -408,7 +408,7 @@ async def simulate_ai_conversion(job_id: str):
         async with AsyncSessionLocal() as session:
             job = await crud.get_job(session, PyUUID(job_id))  # Ensure job_id is UUID
             if not job:
-                logger.error("Job not found for AI simulation", job_id=job_id)
+                logger.error("Job not found for AI simulation: %s", job_id)
                 return
 
             original_mod_name = job.input_data.get("original_filename", "ConvertedAddon").split(
@@ -740,7 +740,7 @@ async def simulate_ai_conversion(job_id: str):
                 conversion_jobs_db[job_id] = mirror
                 await cache.set_job_status(job_id, mirror.model_dump())
                 await cache.set_progress(job_id, 0)
-                logger.error("Job status updated to FAILED due to processing error", job_id=job_id)
+                logger.error("Job status updated to FAILED due to processing error: %s", job_id)
 
                 # Broadcast failure to WebSocket clients
                 await ProgressHandler.broadcast_conversion_failed(job_id, str(e_inner))
@@ -1252,7 +1252,7 @@ async def try_ai_engine_or_fallback(job_id: str):
                 return
     except Exception as e:
         # This catches errors when trying to connect to AI Engine
-        logger.error("Failed to connect to AI Engine", job_id=job_id, error=str(e), exc_info=True)
+        logger.error("Failed to connect to AI Engine: %s, error: %s", job_id, str(e), exc_info=True)
         # Fallback to simulation will be handled by the caller
 
 

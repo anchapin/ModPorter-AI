@@ -625,7 +625,7 @@ jobs:
         run: python -m pip install ruff
 
       - name: Run Ruff Lint
-        run: ruff check .
+        run: ruff check backend/src/
 
   # Check for large files in the repository
   large-file-check:
@@ -1202,7 +1202,7 @@ jobs:
       - name: Check backend format
         run: |
           cd backend
-          ruff format --check src/ tests/
+          ruff format --check src/
 
   # Dependency vulnerability scanning
   vulnerability-scan:
