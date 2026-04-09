@@ -295,7 +295,22 @@
 ---
 
 ## In Progress
-- 🔄 Fix lint errors in PR #1011 (unrelated to test fixes)
+- 🔄 Fix remaining CI failures in PR #1011
+
+## Completed (2026-04-09)
+- ✅ Fix CI workflow paths and logger calls causing test failures
+  - Fixed ci.yml Format Check: `ruff format --check src/ tests/` → `ruff format --check src/`
+  - Fixed ci.yml Ruff Lint: `ruff check .` → `ruff check backend/src/`
+  - Fixed deploy.yml: `pytest tests/` → `pytest src/tests/` (correct backend test path)
+  - Fixed main.py logger calls: `logger.error("msg", job_id=job_id)` → `logger.error("msg: %s", job_id)`
+  - Fixed enhanced_manager.py logger calls: `logger.error("msg", error=str(e))` → `logger.error("msg: %s", str(e))`
+  - Integration test now passes: TypeError: Logger._log() fixed
+
+## Pending Investigation
+- ⚠️ Security scan failures (Bandit, Trivy, Gitleaks, Dependency Review) - likely CI infrastructure issues
+- ⚠️ CodeQL high severity alert - needs investigation
+- ⚠️ Mutation testing threshold exceeded - may need to adjust threshold
+- ⚠️ Integration tests still failing in CI - need database/redis services
 
 ## Completed (2026-04-08)
 - ✅ Fix test bugs #1005-#1009 (PR #1011)
