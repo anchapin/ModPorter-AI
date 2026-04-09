@@ -208,10 +208,7 @@ async def register(
     await db.commit()
     await db.refresh(user)
 
-    logger.info(f"Email verification token for {request_data.email}: {verification_token}")
-    logger.info(
-        f"Verification URL: http://localhost:8080/api/v1/auth/verify-email/{verification_token}"
-    )
+    logger.info(f"Email verification token generated for {request_data.email}")
 
     return RegisterResponse(
         message="User registered. Please check email for verification link.",
@@ -347,8 +344,7 @@ async def forgot_password(
         user.reset_token_expires = datetime.now(timezone.utc) + timedelta(hours=1)
         await db.commit()
 
-        logger.info(f"Password reset token for {request_data.email}: {reset_token}")
-        logger.info(f"Reset URL: http://localhost:8080/api/v1/auth/reset-password/{reset_token}")
+        logger.info(f"Password reset token generated for {request_data.email}")
 
     return MessageResponse(
         message="If the email is registered, a password reset link has been sent."
