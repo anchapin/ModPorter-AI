@@ -202,8 +202,9 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
             className="notification-close-btn"
             onClick={handleRemove}
             aria-label="Close notification"
+            title="Close"
           >
-            ✕
+            <span aria-hidden="true">✕</span>
           </button>
         </div>
       </div>
