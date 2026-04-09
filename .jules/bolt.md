@@ -14,3 +14,6 @@
 ## 2026-03-19 - [Avoid O(N*M) lookups inside list renders]
 **Learning:** Passing a callback that performs `.filter` on a full array down to child components that iterate over lists (like `FormBuilder` iterating over `fields` and calling `getFieldErrors(field.name)`) results in O(N*M) time complexity.
 **Action:** Replace callback filters with a single pass O(M) `.reduce` or loop inside a `useMemo` to construct a grouped hash map by ID, turning child component lookups into O(1).
+## 2024-05-14 - Optimize array filtering with Set and Map
+**Learning:** Found an `O(N*M)` performance bottleneck in `VisualEditor.tsx` where array filtering inside a callback (`fields.filter((field) => category.fields.includes(field.name))`) was occurring on every render.
+**Action:** Replaced it with a pre-computed `Map` using `useMemo` and an inner `Set` to provide `O(1)` lookups, significantly improving rendering performance for forms with many fields and categories.
