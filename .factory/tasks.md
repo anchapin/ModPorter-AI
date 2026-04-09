@@ -295,10 +295,16 @@
 ---
 
 ## In Progress
-- 🔄 Fix test bugs #1005-#1009 (PR #1011)
+- 🔄 Fix lint errors in PR #1011 (unrelated to test fixes)
 
-## Pending
-- ⏳ Verify fixes with test run
+## Completed (2026-04-08)
+- ✅ Fix test bugs #1005-#1009 (PR #1011)
+  - Fixed `websocket/manager.py` - logger.error keyword args
+  - Fixed `websocket/progress_handler.py` - 3 logger.error calls
+  - Fixed `test_core_storage_targeted.py` - S3 test expectations
+  - Fixed `test_retry_service_coverage.py` - retry test expectation
+  - All 2738 tests pass locally, 86.57% coverage
+  - Note: CI still failing due to pre-existing lint issues in other PR files
 
 ## Completed (2026-04-08)
 - ✅ Fix #1005: test_mvp_conversion.py JAR fixture path - use existing fixture file (created by test script)
