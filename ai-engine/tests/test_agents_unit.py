@@ -403,8 +403,18 @@ class TestRAGAgents:
     def mock_llm(self):
         """Create a mock LLM"""
         mock = Mock()
-        # Add attributes that CrewAI Agent might check
         mock.model_name = "mock-model"
+        # Add CrewAI-required attributes
+        mock.supports_stop_words = True
+        mock._liu_supports_stop_words = True
+        mock.supports_vision = False
+        mock.supports_function_calling = False
+        mock.supports_system_message = False
+        mock.model = "mock-model"
+        # Add attributes to avoid URL Mock issues
+        mock.base_url = "https://api.openai.com/v1"
+        mock.api_base = "https://api.openai.com/v1"
+        mock.api_key = "test-key"
         return mock
 
     @pytest.fixture

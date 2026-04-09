@@ -6,7 +6,12 @@ import pytest
 import json
 import asyncio
 from unittest.mock import MagicMock, patch, AsyncMock
-from tools.bedrock_scraper_tool import BedrockScraperTool, scrape_bedrock_docs, extract_bedrock_api_examples, process_bedrock_schemas
+from tools.bedrock_scraper_tool import (
+    BedrockScraperTool,
+    scrape_bedrock_docs,
+    extract_bedrock_api_examples,
+    process_bedrock_schemas,
+)
 from schemas.multimodal_schema import MultiModalDocument, ContentType
 
 
@@ -15,46 +20,54 @@ def mock_scraper():
     """Mock BedrockDocsScraper."""
     with patch("tools.bedrock_scraper_tool.BedrockDocsScraper", autospec=True) as mock_class:
         mock_instance = mock_class.return_value
-        mock_instance.scrape_documentation = AsyncMock(return_value=[
-            MultiModalDocument(
-                id="doc1",
-                content_hash="hash1",
-                source_path="https://test.com/doc1",
-                content_type=ContentType.TEXT,
-                content_text="Test content 1",
-                content_metadata={"title": "Test 1"}
-            )
-        ])
-        mock_instance.scrape_site = AsyncMock(return_value=[
-            MultiModalDocument(
-                id="site_doc1",
-                content_hash="hash2",
-                source_path="https://specific.com/1",
-                content_type=ContentType.TEXT,
-                content_text="Site content 1",
-                content_metadata={"title": "Site 1"}
-            )
-        ])
-        mock_instance.extract_api_examples = AsyncMock(return_value=[
-            MultiModalDocument(
-                id="api1",
-                content_hash="hash3",
-                source_path="https://test.com/api1",
-                content_type=ContentType.CODE,
-                content_text="API Example 1",
-                content_metadata={"title": "API 1"}
-            )
-        ])
-        mock_instance.process_json_schemas = AsyncMock(return_value=[
-            MultiModalDocument(
-                id="schema1",
-                content_hash="hash4",
-                source_path="https://test.com/schema1",
-                content_type=ContentType.CONFIGURATION,
-                content_text='{"type": "object"}',
-                content_metadata={"title": "Schema 1"}
-            )
-        ])
+        mock_instance.scrape_documentation = AsyncMock(
+            return_value=[
+                MultiModalDocument(
+                    id="doc1",
+                    content_hash="hash1",
+                    source_path="https://test.com/doc1",
+                    content_type=ContentType.TEXT,
+                    content_text="Test content 1",
+                    content_metadata={"title": "Test 1"},
+                )
+            ]
+        )
+        mock_instance.scrape_site = AsyncMock(
+            return_value=[
+                MultiModalDocument(
+                    id="site_doc1",
+                    content_hash="hash2",
+                    source_path="https://specific.com/1",
+                    content_type=ContentType.TEXT,
+                    content_text="Site content 1",
+                    content_metadata={"title": "Site 1"},
+                )
+            ]
+        )
+        mock_instance.extract_api_examples = AsyncMock(
+            return_value=[
+                MultiModalDocument(
+                    id="api1",
+                    content_hash="hash3",
+                    source_path="https://test.com/api1",
+                    content_type=ContentType.CODE,
+                    content_text="API Example 1",
+                    content_metadata={"title": "API 1"},
+                )
+            ]
+        )
+        mock_instance.process_json_schemas = AsyncMock(
+            return_value=[
+                MultiModalDocument(
+                    id="schema1",
+                    content_hash="hash4",
+                    source_path="https://test.com/schema1",
+                    content_type=ContentType.CONFIGURATION,
+                    content_text='{"type": "object"}',
+                    content_metadata={"title": "Schema 1"},
+                )
+            ]
+        )
         mock_instance.close = AsyncMock()
         yield mock_instance
 
@@ -74,7 +87,7 @@ class TestBedrockScraperTool:
         tool = BedrockScraperTool()
         result = tool._run(json.dumps({"action": "scrape_all"}))
         result_data = json.loads(result)
-        
+
         assert result_data["success"] is True
         assert result_data["total_documents"] == 1
         assert result_data["action"] == "scrape_all"
@@ -83,12 +96,11 @@ class TestBedrockScraperTool:
     def test_run_scrape_site(self, mock_scraper):
         """Test scrape_site action."""
         tool = BedrockScraperTool()
-        result = tool._run(json.dumps({
-            "action": "scrape_site",
-            "site_url": "https://specific.com"
-        }))
+        result = tool._run(
+            json.dumps({"action": "scrape_site", "site_url": "https://specific.com"})
+        )
         result_data = json.loads(result)
-        
+
         assert result_data["success"] is True
         assert result_data["site_url"] == "https://specific.com"
         mock_scraper.scrape_site.assert_called_once_with("https://specific.com", max_depth=2)
@@ -98,7 +110,7 @@ class TestBedrockScraperTool:
         tool = BedrockScraperTool()
         result = tool._run(json.dumps({"action": "scrape_site"}))
         result_data = json.loads(result)
-        
+
         assert "error" in result_data
         assert "site_url required" in result_data["error"]
 
@@ -107,7 +119,7 @@ class TestBedrockScraperTool:
         tool = BedrockScraperTool()
         result = tool._run("extract_api_examples")
         result_data = json.loads(result)
-        
+
         assert result_data["success"] is True
         assert result_data["total_examples"] == 1
         mock_scraper.extract_api_examples.assert_called_once()
@@ -117,7 +129,7 @@ class TestBedrockScraperTool:
         tool = BedrockScraperTool()
         result = tool._run("process_schemas")
         result_data = json.loads(result)
-        
+
         assert result_data["success"] is True
         assert result_data["total_schemas"] == 1
         mock_scraper.process_json_schemas.assert_called_once()
@@ -127,7 +139,7 @@ class TestBedrockScraperTool:
         tool = BedrockScraperTool()
         result = tool._run("unknown_action")
         result_data = json.loads(result)
-        
+
         assert "error" in result_data
         assert "Unknown action" in result_data["error"]
 
@@ -137,7 +149,7 @@ class TestBedrockScraperTool:
         tool = BedrockScraperTool()
         result = tool._run("scrape_all")
         result_data = json.loads(result)
-        
+
         assert "error" in result_data
         assert "Network error" in result_data["error"]
 
@@ -168,3 +180,11 @@ class TestUtilityFunctions:
         result = process_bedrock_schemas()
         assert result == '{"success": true}'
         mock_run.assert_called_with("process_schemas")
+
+    def test_utility_functions_integration(self):
+        """Integration test for utility functions in CI environment."""
+        # Test with patched _run to avoid actual scraping
+        with patch("tools.bedrock_scraper_tool.BedrockScraperTool._run") as mock_run:
+            mock_run.return_value = '{"success": true, "total_documents": 0}'
+            result = scrape_bedrock_docs("scrape_all")
+            assert '"success": true' in result
