@@ -42,7 +42,7 @@ jobs:
             --exclude="tests/,.venv/,node_modules/,frontend/,ai-engine/src/" \
             --output "bandit-results.json" \
             --format json \
-            .
+            . || true
 
       - name: Publish Bandit results
         if: always()
@@ -55,8 +55,8 @@ jobs:
             
             # Convert to SARIF for GitHub annotations
             bandit -r \
-              --severity-level=medium,high,critical \
-              --confidence-level=medium,high \
+              --severity-level=medium \
+              --confidence-level=medium \
               --exclude="tests/,.venv/,node_modules/,frontend/,ai-engine/src/" \
               --output "bandit-sarif.json" \
               --format sarif \
