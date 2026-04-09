@@ -7,6 +7,7 @@ Provides:
 - Token type constants
 """
 
+import os
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -19,13 +20,17 @@ from core.secrets import get_secret
 # bcrypt cost factor (12 = ~250ms per hash on modern hardware)
 BCRYPT_COST = 12
 
-# JWT settings (should be loaded from environment in production)
+# JWT settings - loaded from environment for production hardening
 SECRET_KEY = get_secret("SECRET_KEY")
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY must be set in the environment or secrets manager")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 15
-REFRESH_TOKEN_EXPIRE_DAYS = 7
+
+# JWT expiry times - configurable via environment for production hardening
+# Production: 5 minutes access, 1 day refresh (more secure)
+# Development: 15 minutes access, 7 days refresh (more convenient)
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "5"))
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "1"))
 
 
 def hash_password(password: str) -> str:
@@ -38,7 +43,9 @@ def hash_password(password: str) -> str:
     Returns:
         Hashed password string
     """
-    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt(rounds=BCRYPT_COST)).decode("utf-8")
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt(rounds=BCRYPT_COST)).decode(
+        "utf-8"
+    )
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
