@@ -97,10 +97,16 @@ app = FastAPI(
     },
 )
 
-# CORS middleware - Restrict origins for security
-allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8080").split(
-    ","
-)
+# CORS middleware - Restrict to modporter.ai domains in production
+# Use ALLOWED_ORIGINS env var (Fly.io secrets) for production
+if os.getenv("ENVIRONMENT") == "production":
+    allowed_origins = os.getenv(
+        "ALLOWED_ORIGINS", "https://modporter.ai,https://www.modporter.ai"
+    ).split(",")
+else:
+    allowed_origins = os.getenv(
+        "ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8080"
+    ).split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
