@@ -18,7 +18,7 @@ from schemas.multimodal_schema import MultiModalDocument, ContentType
 @pytest.fixture
 def mock_scraper():
     """Mock BedrockDocsScraper."""
-    with patch("tools.bedrock_scraper_tool.BedrockDocsScraper", autospec=True) as mock_class:
+    with patch("tools.bedrock_scraper_tool.BedrockDocsScraper") as mock_class:
         mock_instance = mock_class.return_value
         mock_instance.scrape_documentation = AsyncMock(
             return_value=[
@@ -29,6 +29,11 @@ def mock_scraper():
                     content_type=ContentType.TEXT,
                     content_text="Test content 1",
                     content_metadata={"title": "Test 1"},
+                    chunk_index=0,
+                    total_chunks=1,
+                    processing_status="completed",
+                    indexed_at=None,
+                    project_context=None,
                 )
             ]
         )
@@ -41,6 +46,11 @@ def mock_scraper():
                     content_type=ContentType.TEXT,
                     content_text="Site content 1",
                     content_metadata={"title": "Site 1"},
+                    chunk_index=0,
+                    total_chunks=1,
+                    processing_status="completed",
+                    indexed_at=None,
+                    project_context=None,
                 )
             ]
         )
@@ -53,6 +63,11 @@ def mock_scraper():
                     content_type=ContentType.CODE,
                     content_text="API Example 1",
                     content_metadata={"title": "API 1"},
+                    chunk_index=0,
+                    total_chunks=1,
+                    processing_status="completed",
+                    indexed_at=None,
+                    project_context=None,
                 )
             ]
         )
@@ -65,6 +80,11 @@ def mock_scraper():
                     content_type=ContentType.CONFIGURATION,
                     content_text='{"type": "object"}',
                     content_metadata={"title": "Schema 1"},
+                    chunk_index=0,
+                    total_chunks=1,
+                    processing_status="completed",
+                    indexed_at=None,
+                    project_context=None,
                 )
             ]
         )
