@@ -177,34 +177,37 @@ class TestBedrockScraperTool:
 class TestUtilityFunctions:
     """Test utility functions for BedrockScraperTool."""
 
-    @patch("tools.bedrock_scraper_tool.BedrockScraperTool._run")
-    def test_scrape_bedrock_docs_utility(self, mock_run):
+    def test_scrape_bedrock_docs_utility(self):
         """Test scrape_bedrock_docs utility."""
-        mock_run.return_value = '{"success": true}'
-        result = scrape_bedrock_docs("scrape_all")
-        assert result == '{"success": true}'
-        mock_run.assert_called_with("scrape_all")
+        with patch("tools.bedrock_scraper_tool.BedrockScraperTool") as mock_tool_class:
+            mock_instance = mock_tool_class.return_value
+            mock_instance._run.return_value = '{"success": true}'
+            result = scrape_bedrock_docs("scrape_all")
+            assert result == '{"success": true}'
+            mock_instance._run.assert_called_with("scrape_all")
 
-    @patch("tools.bedrock_scraper_tool.BedrockScraperTool._run")
-    def test_extract_bedrock_api_examples_utility(self, mock_run):
+    def test_extract_bedrock_api_examples_utility(self):
         """Test extract_bedrock_api_examples utility."""
-        mock_run.return_value = '{"success": true}'
-        result = extract_bedrock_api_examples()
-        assert result == '{"success": true}'
-        mock_run.assert_called_with("extract_api_examples")
+        with patch("tools.bedrock_scraper_tool.BedrockScraperTool") as mock_tool_class:
+            mock_instance = mock_tool_class.return_value
+            mock_instance._run.return_value = '{"success": true}'
+            result = extract_bedrock_api_examples()
+            assert result == '{"success": true}'
+            mock_instance._run.assert_called_with("extract_api_examples")
 
-    @patch("tools.bedrock_scraper_tool.BedrockScraperTool._run")
-    def test_process_bedrock_schemas_utility(self, mock_run):
+    def test_process_bedrock_schemas_utility(self):
         """Test process_bedrock_schemas utility."""
-        mock_run.return_value = '{"success": true}'
-        result = process_bedrock_schemas()
-        assert result == '{"success": true}'
-        mock_run.assert_called_with("process_schemas")
+        with patch("tools.bedrock_scraper_tool.BedrockScraperTool") as mock_tool_class:
+            mock_instance = mock_tool_class.return_value
+            mock_instance._run.return_value = '{"success": true}'
+            result = process_bedrock_schemas()
+            assert result == '{"success": true}'
+            mock_instance._run.assert_called_with("process_schemas")
 
     def test_utility_functions_integration(self):
         """Integration test for utility functions in CI environment."""
-        # Test with patched _run to avoid actual scraping
-        with patch("tools.bedrock_scraper_tool.BedrockScraperTool._run") as mock_run:
-            mock_run.return_value = '{"success": true, "total_documents": 0}'
+        with patch("tools.bedrock_scraper_tool.BedrockScraperTool") as mock_tool_class:
+            mock_instance = mock_tool_class.return_value
+            mock_instance._run.return_value = '{"success": true, "total_documents": 0}'
             result = scrape_bedrock_docs("scrape_all")
             assert '"success": true' in result
