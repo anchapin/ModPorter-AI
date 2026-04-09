@@ -3,7 +3,7 @@ Re-ranking module for improving search result quality.
 
 This module provides various re-ranking strategies including:
 - Semantic re-ranking
-- Keyword-based re-ranking  
+- Keyword-based re-ranking
 - Hybrid re-ranking
 - Cross-encoder re-ranking
 - Learning-to-rank approaches
@@ -20,7 +20,7 @@ from .reranking import (
 
 __all__ = [
     "EnsembleReRanker",
-    "ReRankingEngine", 
+    "ReRankingEngine",
     "RerankingConfig",
     "RerankingStrategy",
     "SearchQuery",

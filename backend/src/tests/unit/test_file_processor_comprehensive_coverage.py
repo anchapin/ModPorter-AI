@@ -395,7 +395,7 @@ class TestDownloadFromUrl:
             async def mock_async_gen():
                 yield b"PK\x03\x04"
                 yield b"content"
-            
+
             # Create response with all needed attributes
             mock_response = MagicMock()
             mock_response.status_code = 200
@@ -408,12 +408,12 @@ class TestDownloadFromUrl:
             # Create async client using proper async context manager pattern
             async def mock_client_get(*args, **kwargs):
                 return mock_response
-            
+
             mock_client = MagicMock()
             mock_client.get = mock_client_get
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client.__aexit__ = AsyncMock(return_value=None)
-            
+
             mock_client_class.return_value = mock_client
 
             result = await processor.download_from_url("https://example.com/test.zip", "job-123")
@@ -651,9 +651,9 @@ class TestCleanupTempFiles:
             # Mock shutil.rmtree to raise PermissionError
             with patch("shutil.rmtree") as mock_rmtree:
                 mock_rmtree.side_effect = PermissionError("Permission denied")
-                
+
                 result = processor.cleanup_temp_files(job_id)
-                
+
                 # Should return False when permission error occurs
                 assert result is False
                 mock_rmtree.assert_called_once()
@@ -662,6 +662,7 @@ class TestCleanupTempFiles:
             if temp_dir.exists():
                 temp_dir.chmod(0o755)
                 import shutil
+
                 shutil.rmtree(temp_dir)
 
 

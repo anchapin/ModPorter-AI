@@ -57,11 +57,11 @@ class TestRateLimiter:
 
     def test_limiter_has_config(self, limiter):
         """Test RateLimiter has config."""
-        assert hasattr(limiter, 'config') or hasattr(limiter, '_config')
+        assert hasattr(limiter, "config") or hasattr(limiter, "_config")
 
     def test_limiter_has_check_rate_limit(self, limiter):
         """Test RateLimiter has check_rate_limit method."""
-        assert hasattr(limiter, 'check_rate_limit')
+        assert hasattr(limiter, "check_rate_limit")
 
 
 class TestRateLimitMiddleware:

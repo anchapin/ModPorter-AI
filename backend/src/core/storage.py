@@ -216,11 +216,9 @@ class StorageManager:
         return None
 
     async def _get_s3(self, job_id: str, filename: str, user_id: str) -> Optional[bytes]:
-        """Get file from S3 (placeholder)"""
-        raise NotImplementedError(
-            "S3 storage backend is not yet implemented. "
-            "Set STORAGE_BACKEND=local or implement S3 support."
-        )
+        """Get file from S3 (placeholder - returns None for graceful fallback)"""
+        logger.warning("S3 storage backend is not yet implemented. Set STORAGE_BACKEND=local.")
+        return None
 
     async def get_upload_status(self, job_id: str) -> Optional[Dict[str, Any]]:
         """

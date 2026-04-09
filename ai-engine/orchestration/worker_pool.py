@@ -122,7 +122,7 @@ class WorkerPool:
 
         except asyncio.CancelledError:
             raise
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise
         except Exception as e:
             logger.error(f"Failed to start WorkerPool: {e}")
@@ -207,7 +207,7 @@ class WorkerPool:
 
             except asyncio.CancelledError:
                 raise
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 raise
             except Exception as e:
                 # Record failure stats
@@ -241,7 +241,9 @@ class WorkerPool:
         """
         # Run synchronous submit in a thread pool to avoid blocking the event loop
         loop = asyncio.get_running_loop()
-        future = await loop.run_in_executor(self.executor, lambda: self._submit_sync(task, agent_executor))
+        future = await loop.run_in_executor(
+            self.executor, lambda: self._submit_sync(task, agent_executor)
+        )
         # wrap the concurrent.futures.Future in an asyncio.Future for await
         return asyncio.wrap_future(future)
 
@@ -274,7 +276,7 @@ class WorkerPool:
 
             except asyncio.CancelledError:
                 raise
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 raise
             except Exception as e:
                 if self.enable_monitoring:
@@ -341,7 +343,7 @@ class WorkerPool:
 
                 except asyncio.CancelledError:
                     raise
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     raise
                 except Exception as e:
                     failed_tasks.append({"task_id": task_id, "error": str(e)})
@@ -449,7 +451,7 @@ class WorkerPool:
 
             except asyncio.CancelledError:
                 raise
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 raise
             except Exception as e:
                 logger.error(f"Error in worker monitoring: {e}")
@@ -500,7 +502,7 @@ def create_agent_executor(agent_instance, tools_mapping: Optional[Dict[str, Any]
 
         except asyncio.CancelledError:
             raise
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise
         except Exception as e:
             logger.error(f"Agent execution failed for task {task.task_id}: {e}")

@@ -83,10 +83,7 @@ class TestProgressCallback:
         callback.subscribe("job-1", AsyncMock())
 
         await callback.update_progress(
-            job_id="job-1",
-            progress=50,
-            current_stage="translating",
-            message="Processing files"
+            job_id="job-1", progress=50, current_stage="translating", message="Processing files"
         )
 
         history = callback.get_progress_history("job-1")
@@ -102,11 +99,7 @@ class TestProgressCallback:
         subscriber = AsyncMock()
         callback.subscribe("job-1", subscriber)
 
-        await callback.update_progress(
-            job_id="job-1",
-            progress=75,
-            current_stage="validating"
-        )
+        await callback.update_progress(job_id="job-1", progress=75, current_stage="validating")
 
         subscriber.assert_called_once()
         call_args = subscriber.call_args[0][0]
@@ -119,11 +112,7 @@ class TestProgressCallback:
         callback = ProgressCallback()
 
         # Should not raise
-        await callback.update_progress(
-            job_id="job-1",
-            progress=25,
-            current_stage="analyzing"
-        )
+        await callback.update_progress(job_id="job-1", progress=25, current_stage="analyzing")
 
         # Should still store history
         assert "job-1" in callback._progress_history
@@ -139,11 +128,7 @@ class TestProgressCallback:
         callback.subscribe("job-1", failing_callback)
 
         # Should not raise
-        await callback.update_progress(
-            job_id="job-1",
-            progress=50,
-            current_stage="translating"
-        )
+        await callback.update_progress(job_id="job-1", progress=50, current_stage="translating")
 
     def test_get_progress_history_nonexistent_job(self):
         """Test getting history for job that doesn't exist."""

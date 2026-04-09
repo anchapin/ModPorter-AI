@@ -157,11 +157,7 @@ class TestRetryConfig:
     def test_custom_values(self):
         """Test custom configuration values."""
         config = RetryConfig(
-            max_attempts=5,
-            base_delay=2.0,
-            max_delay=120.0,
-            exponential_base=3.0,
-            jitter=False
+            max_attempts=5, base_delay=2.0, max_delay=120.0, exponential_base=3.0, jitter=False
         )
 
         assert config.max_attempts == 5
@@ -183,8 +179,7 @@ class TestRetryConfig:
         custom_non_retryable = (ValueError,)
 
         config = RetryConfig(
-            retryable_exceptions=custom_retryable,
-            non_retryable_exceptions=custom_non_retryable
+            retryable_exceptions=custom_retryable, non_retryable_exceptions=custom_non_retryable
         )
 
         assert config.retryable_exceptions == custom_retryable
@@ -259,20 +254,14 @@ class TestIsRetryable:
 
     def test_custom_retryable_exceptions(self):
         """Test custom retryable exceptions."""
-        config = RetryConfig(
-            retryable_exceptions=(ValueError,),
-            non_retryable_exceptions=()
-        )
+        config = RetryConfig(retryable_exceptions=(ValueError,), non_retryable_exceptions=())
         error = ValueError("test")
 
         assert is_retryable(error, config) is True
 
     def test_custom_non_retryable_exceptions(self):
         """Test custom non-retryable exceptions."""
-        config = RetryConfig(
-            retryable_exceptions=(),
-            non_retryable_exceptions=(NetworkError,)
-        )
+        config = RetryConfig(retryable_exceptions=(), non_retryable_exceptions=(NetworkError,))
         error = NetworkError("test")
 
         assert is_retryable(error, config) is False

@@ -189,7 +189,9 @@ class FeedbackReranker:
                     else:
                         submitted_date = submitted_at
 
-                    days_since = (datetime.now(timezone.utc) - submitted_date.replace(tzinfo=None)).days
+                    days_since = (
+                        datetime.now(timezone.utc) - submitted_date.replace(tzinfo=None)
+                    ).days
                     recency_factor = self.decay_factor ** max(days_since, 0)
                 except Exception:
                     recency_factor = 1.0

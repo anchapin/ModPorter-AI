@@ -32,7 +32,7 @@ class TestRawDocument:
             doc_type=DocumentType.MARKDOWN,
             metadata={},
         )
-        
+
         assert doc.content == "# Test Content"
         assert doc.source_url == "https://example.com/test"
         assert doc.doc_type == DocumentType.MARKDOWN
@@ -47,7 +47,7 @@ class TestRawDocument:
             metadata={"author": "test"},
             title="Test Title",
         )
-        
+
         assert doc.title == "Test Title"
         assert doc.metadata["author"] == "test"
 
@@ -59,7 +59,7 @@ class TestRawDocument:
             doc_type=DocumentType.HTML,
             metadata=None,
         )
-        
+
         assert doc.metadata == {}
 
     def test_post_init_sets_metadata_dict(self):
@@ -70,7 +70,7 @@ class TestRawDocument:
             doc_type=DocumentType.HTML,
             metadata={"key": "value"},
         )
-        
+
         assert isinstance(doc.metadata, dict)
         assert doc.metadata["key"] == "value"
 
@@ -85,26 +85,29 @@ class TestBaseSourceAdapter:
 
     def test_subclass_must_implement_methods(self):
         """Test that subclass must implement abstract methods."""
+
         class IncompleteAdapter(BaseSourceAdapter):
             pass
-        
+
         with pytest.raises(TypeError):
             IncompleteAdapter()
 
     def test_subclass_can_implement_methods(self):
         """Test that proper subclass can be instantiated."""
+
         class CompleteAdapter(BaseSourceAdapter):
             async def fetch(self, config):
                 return []
-            
+
             def validate_config(self, config):
                 return True
-        
+
         adapter = CompleteAdapter()
-        
+
         # These should not raise
         import asyncio
+
         result = asyncio.run(adapter.fetch({}))
         assert result == []
-        
+
         assert adapter.validate_config({}) is True

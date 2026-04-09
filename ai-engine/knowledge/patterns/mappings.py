@@ -11,6 +11,7 @@ from enum import Enum
 
 class MappingConfidence(Enum):
     """Confidence levels for pattern mappings."""
+
     HIGH = "high"  # Direct, proven equivalent
     MEDIUM = "medium"  # Functional equivalent with minor differences
     LOW = "low"  # Conceptual equivalent, requires manual review
@@ -24,6 +25,7 @@ class PatternMapping:
 
     Includes confidence score, conversion notes, and limitations.
     """
+
     java_pattern_id: str
     bedrock_pattern_id: str
     confidence: float  # 0.0-1.0
@@ -409,9 +411,7 @@ class PatternMappingRegistry:
             List of mappings meeting the threshold
         """
         return [
-            mapping
-            for mapping in self.mappings.values()
-            if mapping.confidence >= min_confidence
+            mapping for mapping in self.mappings.values() if mapping.confidence >= min_confidence
         ]
 
     def get_manual_review_required(self) -> List[PatternMapping]:
@@ -421,11 +421,7 @@ class PatternMappingRegistry:
         Returns:
             List of mappings requiring manual review
         """
-        return [
-            mapping
-            for mapping in self.mappings.values()
-            if mapping.requires_manual_review
-        ]
+        return [mapping for mapping in self.mappings.values() if mapping.requires_manual_review]
 
     def get_stats(self) -> Dict[str, int]:
         """

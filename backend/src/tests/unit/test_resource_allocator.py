@@ -834,8 +834,12 @@ class TestResourceAllocator:
     async def test_get_stats(self, allocator):
         """Test getting allocator statistics."""
         # Register nodes
-        await allocator.register_node(hostname="node-1", gpu_count=1, gpu_memory=8.0, memory=16.0, cpu_cores=4)
-        await allocator.register_node(hostname="node-2", gpu_count=2, gpu_memory=16.0, memory=32.0, cpu_cores=8)
+        await allocator.register_node(
+            hostname="node-1", gpu_count=1, gpu_memory=8.0, memory=16.0, cpu_cores=4
+        )
+        await allocator.register_node(
+            hostname="node-2", gpu_count=2, gpu_memory=16.0, memory=32.0, cpu_cores=8
+        )
 
         stats = await allocator.get_stats()
 

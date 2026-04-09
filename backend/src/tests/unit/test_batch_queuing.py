@@ -219,9 +219,7 @@ class TestIntelligentBatchQueue:
     @pytest.mark.asyncio
     async def test_enqueue_batch(self, queue, sample_mod_data):
         """Test enqueueing multiple jobs as a batch."""
-        jobs_data = [
-            sample_mod_data.copy() for _ in range(5)
-        ]
+        jobs_data = [sample_mod_data.copy() for _ in range(5)]
 
         job_ids = await queue.enqueue_batch(
             user_id="user-123",

@@ -30,9 +30,10 @@ logger = logging.getLogger(__name__)
 # Data Models
 # =============================================================================
 
+
 class DefaultSelectionRule(BaseModel):
     """A rule for selecting default settings based on mode and features."""
-    
+
     name: str
     priority: int = 0  # Higher priority rules are evaluated first
     applies_to_modes: List[ConversionMode]
@@ -42,7 +43,7 @@ class DefaultSelectionRule(BaseModel):
 
 class PatternMatch(BaseModel):
     """Result of matching against historical patterns."""
-    
+
     pattern_id: str
     pattern_name: str
     similarity_score: float = Field(ge=0.0, le=1.0)
@@ -53,7 +54,7 @@ class PatternMatch(BaseModel):
 
 class HistoricalConversion(BaseModel):
     """Historical conversion record for pattern learning."""
-    
+
     conversion_id: str
     user_id: str
     mode: ConversionMode
@@ -66,7 +67,7 @@ class HistoricalConversion(BaseModel):
 
 class SmartDefaultsResult(BaseModel):
     """Result from smart defaults engine."""
-    
+
     settings: ConversionSettings
     confidence: float = Field(ge=0.0, le=1.0)
     sources: List[str] = Field(default_factory=list)  # Which rules/patterns contributed
@@ -90,9 +91,8 @@ MODE_DEFAULT_RULES: List[DefaultSelectionRule] = [
             "timeout_seconds": 120,
             "parallel_processing": False,
             "quality_threshold": 0.9,
-        }
+        },
     ),
-    
     # STANDARD mode - balanced processing
     DefaultSelectionRule(
         name="standard_balanced",
@@ -105,9 +105,8 @@ MODE_DEFAULT_RULES: List[DefaultSelectionRule] = [
             "timeout_seconds": 300,
             "parallel_processing": True,
             "quality_threshold": 0.8,
-        }
+        },
     ),
-    
     # COMPLEX mode - detailed processing
     DefaultSelectionRule(
         name="complex_detailed",
@@ -120,9 +119,8 @@ MODE_DEFAULT_RULES: List[DefaultSelectionRule] = [
             "timeout_seconds": 600,
             "parallel_processing": True,
             "quality_threshold": 0.7,
-        }
+        },
     ),
-    
     # EXPERT mode - manual review required
     DefaultSelectionRule(
         name="expert_manual_review",
@@ -136,7 +134,7 @@ MODE_DEFAULT_RULES: List[DefaultSelectionRule] = [
             "timeout_seconds": 900,
             "parallel_processing": True,
             "quality_threshold": 0.6,
-        }
+        },
     ),
 ]
 
@@ -149,7 +147,7 @@ FEATURE_ADJUSTMENT_RULES: List[DefaultSelectionRule] = [
         condition="features.has_items == True",
         settings_adjustments={
             "timeout_seconds": 180,  # Add 60s for item processing
-        }
+        },
     ),
     DefaultSelectionRule(
         name="has_blocks_increase_timeout",
@@ -158,7 +156,7 @@ FEATURE_ADJUSTMENT_RULES: List[DefaultSelectionRule] = [
         condition="features.has_blocks == True",
         settings_adjustments={
             "timeout_seconds": 240,  # Add 60s for block processing
-        }
+        },
     ),
     DefaultSelectionRule(
         name="has_entities_requires_strict_validation",
@@ -168,7 +166,7 @@ FEATURE_ADJUSTMENT_RULES: List[DefaultSelectionRule] = [
         settings_adjustments={
             "validation_level": "strict",
             "timeout_seconds": 400,
-        }
+        },
     ),
     DefaultSelectionRule(
         name="has_multiblock_increase_retries",
@@ -178,7 +176,7 @@ FEATURE_ADJUSTMENT_RULES: List[DefaultSelectionRule] = [
         settings_adjustments={
             "max_retries": 7,
             "timeout_seconds": 800,
-        }
+        },
     ),
     DefaultSelectionRule(
         name="has_dimensions_expert_mode",
@@ -188,7 +186,7 @@ FEATURE_ADJUSTMENT_RULES: List[DefaultSelectionRule] = [
         settings_adjustments={
             "enable_auto_fix": False,
             "timeout_seconds": 1200,
-        }
+        },
     ),
 ]
 
@@ -244,21 +242,22 @@ PATTERN_LIBRARY: Dict[str, PatternMatch] = {
 # Smart Defaults Engine
 # =============================================================================
 
+
 class SmartDefaultsEngine:
     """
     Rule-based default selection engine with pattern matching and learning.
-    
+
     Implements the Learning from History pattern:
     - Rule-based: IF mode=SIMPLE THEN detail_level=minimal
     - Pattern-based: Match similar successful conversions
     - Learning: Updates user preferences from conversion history
     """
-    
+
     def __init__(self):
         self.mode_rules = MODE_DEFAULT_RULES
         self.feature_rules = FEATURE_ADJUSTMENT_RULES
         self.pattern_library = PATTERN_LIBRARY
-    
+
     async def get_defaults(
         self,
         mode: ConversionMode,
@@ -268,35 +267,35 @@ class SmartDefaultsEngine:
     ) -> SmartDefaultsResult:
         """
         Get recommended defaults for a conversion.
-        
+
         Args:
             mode: The conversion mode (SIMPLE, STANDARD, COMPLEX, EXPERT)
             user_id: Optional user ID for personalized defaults
             historical_data: Optional list of historical conversions for pattern matching
             features: Optional extracted mod features for feature-based adjustments
-            
+
         Returns:
             SmartDefaultsResult with settings, confidence, and sources
         """
         logger.info(f"Computing smart defaults for mode={mode}, user_id={user_id}")
-        
+
         sources = []
         settings_dict: Dict[str, Any] = {}
         confidence_factors: List[float] = []
-        
+
         # Step 1: Apply mode-specific rules (highest priority)
         mode_settings, mode_confidence = self._apply_mode_rules(mode)
         settings_dict.update(mode_settings)
         confidence_factors.append(mode_confidence)
         sources.append(f"mode_rule:{mode.value}")
-        
+
         # Step 2: Apply feature-based adjustments
         if features:
             feature_settings, feature_confidence = self._apply_feature_rules(mode, features)
             settings_dict.update(feature_settings)
             confidence_factors.append(feature_confidence)
             sources.append("feature_rules")
-        
+
         # Step 3: Apply pattern matching from historical data
         if historical_data:
             pattern_settings, pattern_confidence = self._apply_pattern_matching(
@@ -306,21 +305,21 @@ class SmartDefaultsEngine:
                 settings_dict.update(pattern_settings)
                 confidence_factors.append(pattern_confidence)
                 sources.append("historical_patterns")
-        
+
         # Step 4: Apply user preferences if available
         if user_id:
             prefs = self._get_user_preferences(user_id)
             if prefs:
-                user_settings, user_confidence = self._apply_user_preferences(
-                    mode, prefs
-                )
+                user_settings, user_confidence = self._apply_user_preferences(mode, prefs)
                 settings_dict.update(user_settings)
                 confidence_factors.append(user_confidence)
                 sources.append(f"user_preferences:{user_id}")
-        
+
         # Calculate overall confidence
-        overall_confidence = sum(confidence_factors) / len(confidence_factors) if confidence_factors else 0.5
-        
+        overall_confidence = (
+            sum(confidence_factors) / len(confidence_factors) if confidence_factors else 0.5
+        )
+
         # Build final settings
         final_settings = ConversionSettings(
             mode=mode,
@@ -333,58 +332,53 @@ class SmartDefaultsEngine:
             parallel_processing=settings_dict.get("parallel_processing", False),
             quality_threshold=settings_dict.get("quality_threshold", 0.8),
         )
-        
+
         return SmartDefaultsResult(
             settings=final_settings,
             confidence=min(overall_confidence, 1.0),
             sources=sources,
         )
-    
-    def _apply_mode_rules(
-        self, mode: ConversionMode
-    ) -> tuple[Dict[str, Any], float]:
+
+    def _apply_mode_rules(self, mode: ConversionMode) -> tuple[Dict[str, Any], float]:
         """Apply mode-specific rules to get base settings."""
         settings = {}
-        
+
         # Find highest priority rule for this mode
-        matching_rules = [
-            r for r in self.mode_rules
-            if mode in r.applies_to_modes
-        ]
+        matching_rules = [r for r in self.mode_rules if mode in r.applies_to_modes]
         matching_rules.sort(key=lambda r: r.priority, reverse=True)
-        
+
         if matching_rules:
             rule = matching_rules[0]
             settings = rule.settings_adjustments.copy()
             confidence = 0.8 + (rule.priority / 100)  # Base 0.8 + priority bonus
             return settings, min(confidence, 1.0)
-        
+
         # Default fallback
         return {"detail_level": "standard", "validation_level": "standard"}, 0.5
-    
+
     def _apply_feature_rules(
         self, mode: ConversionMode, features: ModFeatures
     ) -> tuple[Dict[str, Any], float]:
         """Apply feature-based adjustment rules."""
         settings = {}
         matched_rules = 0
-        
+
         for rule in self.feature_rules:
             if mode not in rule.applies_to_modes:
                 continue
-            
+
             # Evaluate simple condition if present
             if rule.condition:
                 if not self._evaluate_condition(rule.condition, features):
                     continue
-            
+
             settings.update(rule.settings_adjustments)
             matched_rules += 1
-        
+
         # Confidence based on how many rules matched
         confidence = 0.6 + (matched_rules * 0.05) if matched_rules > 0 else 0.5
         return settings, min(confidence, 0.9)
-    
+
     def _apply_pattern_matching(
         self,
         mode: ConversionMode,
@@ -393,16 +387,13 @@ class SmartDefaultsEngine:
         """Apply pattern matching from historical conversions."""
         if not historical_data:
             return {}, 0.0
-        
+
         # Find similar successful conversions
-        similar_conversions = [
-            c for c in historical_data
-            if c.mode == mode and c.success
-        ]
-        
+        similar_conversions = [c for c in historical_data if c.mode == mode and c.success]
+
         if not similar_conversions:
             return {}, 0.0
-        
+
         # Aggregate settings from similar conversions
         settings_aggregate: Dict[str, Any] = {}
         for conv in similar_conversions[:10]:  # Use last 10 similar conversions
@@ -410,7 +401,7 @@ class SmartDefaultsEngine:
                 if key not in settings_aggregate:
                     settings_aggregate[key] = []
                 settings_aggregate[key].append(value)
-        
+
         # Average the settings
         averaged_settings = {}
         for key, values in settings_aggregate.items():
@@ -422,19 +413,19 @@ class SmartDefaultsEngine:
                     averaged_settings[key] = sum(values) / len(values)
                 else:
                     averaged_settings[key] = values[0]  # Use most common
-        
+
         # Calculate confidence based on sample size and success rate
         avg_success_rate = sum(c.success for c in similar_conversions) / len(similar_conversions)
         confidence = min(0.7 + (len(similar_conversions) * 0.02), 0.9) * avg_success_rate
-        
+
         return averaged_settings, confidence
-    
+
     def _get_user_preferences(self, user_id: str) -> Optional[Dict[str, Any]]:
         """Get cached user preferences (placeholder for Redis enhancement)."""
         # In production, this would fetch from Redis or database
         # For now, returns None (will be enhanced with user_preferences.py)
         return None
-    
+
     def _apply_user_preferences(
         self,
         mode: ConversionMode,
@@ -443,18 +434,20 @@ class SmartDefaultsEngine:
         """Apply user-specific preferences."""
         # Filter preferences to only valid settings fields
         valid_fields = {
-            "detail_level", "validation_level", "enable_auto_fix",
-            "enable_ai_assistance", "max_retries", "timeout_seconds",
-            "parallel_processing", "quality_threshold"
+            "detail_level",
+            "validation_level",
+            "enable_auto_fix",
+            "enable_ai_assistance",
+            "max_retries",
+            "timeout_seconds",
+            "parallel_processing",
+            "quality_threshold",
         }
-        
-        filtered_prefs = {
-            k: v for k, v in preferences.items()
-            if k in valid_fields
-        }
-        
+
+        filtered_prefs = {k: v for k, v in preferences.items() if k in valid_fields}
+
         return filtered_prefs, 0.85  # User preferences have high confidence
-    
+
     def _evaluate_condition(self, condition: str, features: ModFeatures) -> bool:
         """Evaluate a simple condition expression against features."""
         try:
@@ -474,19 +467,19 @@ class SmartDefaultsEngine:
         except Exception as e:
             logger.warning(f"Failed to evaluate condition '{condition}': {e}")
             return False
-    
+
     def learn_from_conversion(
         self,
         conversion: HistoricalConversion,
     ) -> None:
         """
         Learn from a completed conversion to improve future defaults.
-        
+
         This updates the pattern library based on successful conversions.
         In production, this would persist to Redis or a database.
         """
         logger.info(f"Learning from conversion {conversion.conversion_id}")
-        
+
         # Create a new pattern from the conversion
         new_pattern = PatternMatch(
             pattern_id=f"learned_{conversion.conversion_id}",
@@ -496,22 +489,22 @@ class SmartDefaultsEngine:
             usage_count=1,
             success_rate=1.0 if conversion.success else 0.0,
         )
-        
+
         # In production, this would be persisted
         # For now, we just log the learning
         logger.debug(f"Learned new pattern: {new_pattern.pattern_id}")
-    
+
     def get_pattern_suggestions(
         self,
         features: ModFeatures,
     ) -> List[PatternMatch]:
         """
         Get pattern suggestions based on mod features.
-        
+
         Returns patterns from the library that match the given features.
         """
         suggestions = []
-        
+
         # Priority-based matching: most specific first
         if features.has_multiblock:
             suggestions.append(self.pattern_library.get("complex_multiblock"))
@@ -519,7 +512,7 @@ class SmartDefaultsEngine:
             suggestions.append(self.pattern_library.get("standard_block_mod"))
         elif features.has_items:
             suggestions.append(self.pattern_library.get("simple_item_mod"))
-        
+
         return [s for s in suggestions if s is not None]
 
 

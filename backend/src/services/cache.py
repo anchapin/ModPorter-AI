@@ -28,13 +28,15 @@ class CacheService:
     def __init__(self, redis_url: Optional[str] = None, disable_redis: bool = False) -> None:
         """
         Initialize CacheService.
-        
+
         Args:
             redis_url: Optional Redis URL override. Defaults to settings.redis_url.
             disable_redis: If True, disable Redis explicitly (useful for testing).
         """
         # Check if Redis is disabled for tests
-        self._redis_disabled = disable_redis or os.getenv("DISABLE_REDIS", "false").lower() == "true"
+        self._redis_disabled = (
+            disable_redis or os.getenv("DISABLE_REDIS", "false").lower() == "true"
+        )
 
         self._cache_hits = 0
         self._cache_misses = 0
@@ -48,8 +50,7 @@ class CacheService:
             self._redis_available = True
             try:
                 self._client = aioredis.from_url(
-                    redis_url or settings.redis_url, 
-                    decode_responses=True
+                    redis_url or settings.redis_url, decode_responses=True
                 )
                 logger.info("Redis cache initialized successfully")
             except Exception as e:

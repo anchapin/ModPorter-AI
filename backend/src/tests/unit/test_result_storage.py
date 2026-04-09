@@ -102,7 +102,11 @@ class TestResultStorageInit:
 
     def test_constants(self):
         """Module-level constants are defined with expected values."""
-        from services.result_storage import RESULT_EXPIRY_DAYS, TEMP_UPLOADS_DIR, CONVERSION_OUTPUTS_DIR
+        from services.result_storage import (
+            RESULT_EXPIRY_DAYS,
+            TEMP_UPLOADS_DIR,
+            CONVERSION_OUTPUTS_DIR,
+        )
 
         assert RESULT_EXPIRY_DAYS == 30
         assert isinstance(TEMP_UPLOADS_DIR, Path)
