@@ -1,5 +1,5 @@
 # Core FastAPI for AI Engine API - align with backend version
-fastapi==0.135.2
+fastapi==0.135.3
 uvicorn[standard]==0.42.0
 python-multipart==0.0.22
 
