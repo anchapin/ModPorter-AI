@@ -268,7 +268,8 @@ jobs:
       # Skip Python setup in container jobs - container already has Python pre-installed
       # The actions/setup-python step runs on the host runner, not inside the container
       - name: Set up Python 3.11 (fallback)
-        if: false # Never run in container jobs - use container's Python directly
+        if: false
+        run: echo "Skipped - using container's Python instead"
 
       # Install system dependencies for health checks (only if not already available)
       - name: Install system dependencies
