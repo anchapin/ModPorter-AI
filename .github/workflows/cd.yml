@@ -65,7 +65,7 @@ jobs:
           push: true
           tags: |
             ${{ steps.meta.outputs.tags }}-backend
-            ${{ env.REGISTRY }}/${{ github.repository }}-backend:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/modporter-ai-backend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
@@ -78,7 +78,7 @@ jobs:
           push: true
           tags: |
             ${{ steps.meta.outputs.tags }}-ai-engine
-            ${{ env.REGISTRY }}/${{ github.repository }}-ai-engine:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/modporter-ai-ai-engine:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
@@ -91,7 +91,7 @@ jobs:
           push: true
           tags: |
             ${{ steps.meta.outputs.tags }}-frontend
-            ${{ env.REGISTRY }}/${{ github.repository }}-frontend:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/modporter-ai-frontend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
@@ -125,15 +125,15 @@ jobs:
 
           # Update image tags in Kubernetes manifests
           kubectl set image deployment/backend \
-            backend=${{ env.REGISTRY }}/${{ github.repository }}-backend:${{ github.sha }} \
+            backend=${{ env.REGISTRY }}/${{ github.repository_owner }}/modporter-ai-backend:${{ github.sha }} \
             --namespace=staging
             
           kubectl set image deployment/ai-engine \
-            ai-engine=${{ env.REGISTRY }}/${{ github.repository }}-ai-engine:${{ github.sha }} \
+            ai-engine=${{ env.REGISTRY }}/${{ github.repository_owner }}/modporter-ai-ai-engine:${{ github.sha }} \
             --namespace=staging
             
           kubectl set image deployment/frontend \
-            frontend=${{ env.REGISTRY }}/${{ github.repository }}-frontend:${{ github.sha }} \
+            frontend=${{ env.REGISTRY }}/${{ github.repository_owner }}/modporter-ai-frontend:${{ github.sha }} \
             --namespace=staging
 
       - name: Wait for deployment
@@ -179,15 +179,15 @@ jobs:
 
           # Update image tags in Kubernetes manifests
           kubectl set image deployment/backend \
-            backend=${{ env.REGISTRY }}/${{ github.repository }}-backend:${{ github.sha }} \
+            backend=${{ env.REGISTRY }}/${{ github.repository_owner }}/modporter-ai-backend:${{ github.sha }} \
             --namespace=production
             
           kubectl set image deployment/ai-engine \
-            ai-engine=${{ env.REGISTRY }}/${{ github.repository }}-ai-engine:${{ github.sha }} \
+            ai-engine=${{ env.REGISTRY }}/${{ github.repository_owner }}/modporter-ai-ai-engine:${{ github.sha }} \
             --namespace=production
             
           kubectl set image deployment/frontend \
-            frontend=${{ env.REGISTRY }}/${{ github.repository }}-frontend:${{ github.sha }} \
+            frontend=${{ env.REGISTRY }}/${{ github.repository_owner }}/modporter-ai-frontend:${{ github.sha }} \
             --namespace=production
 
       - name: Wait for deployment

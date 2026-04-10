@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main, develop]
   schedule:
-    - cron: '0 0 * * 0'  # Weekly scan on Sunday
+    - cron: '0 0 * * 0' # Weekly scan on Sunday
   workflow_dispatch:
 
 env:
@@ -96,7 +96,7 @@ jobs:
           format: 'json'
           output: 'trivy-backend-results.json'
           severity: 'CRITICAL,HIGH,MEDIUM'
-          exit-code: '0'  # Report only, don't fail workflow
+          exit-code: '0' # Report only, don't fail workflow
           ignore-unfixed: true
 
       - name: Run Trivy on AI Engine image
@@ -106,7 +106,7 @@ jobs:
           format: 'json'
           output: 'trivy-ai-engine-results.json'
           severity: 'CRITICAL,HIGH,MEDIUM'
-          exit-code: '0'  # Report only, don't fail workflow
+          exit-code: '0' # Report only, don't fail workflow
           ignore-unfixed: true
 
       - name: Run Trivy filesystem scan (Python deps)
@@ -156,6 +156,9 @@ jobs:
     name: Dependency Review
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -193,4 +196,4 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
-          category: "/language:${{ matrix.language }}"
+          category: '/language:${{ matrix.language }}'
