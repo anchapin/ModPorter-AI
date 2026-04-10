@@ -4,6 +4,10 @@
  */
 
 import React, { useState } from 'react';
+import {
+  useSuccessNotification,
+  useErrorNotification,
+} from '../components/NotificationSystem';
 import { ConversionFlowManager } from '../components/ConversionFlow';
 import { BatchConversionManager } from '../components/BatchConversion';
 import {
@@ -30,18 +34,33 @@ export const ConvertPage: React.FC = () => {
     DEFAULT_ADVANCED_OPTIONS
   );
 
+  const successNotification = useSuccessNotification();
+  const errorNotification = useErrorNotification();
+
   const handleComplete = (jobId: string, filename: string) => {
     console.log('Conversion completed:', jobId, filename);
-    // You could trigger analytics, notifications, etc.
+    successNotification(
+      'Conversion Complete!',
+      `${filename} is ready for download.`
+    );
   };
 
   const handleError = (error: string) => {
     console.error('Conversion failed:', error);
-    // You could trigger error reporting, etc.
+    errorNotification('Conversion Failed', error);
   };
 
   const handleBatchComplete = (jobIds: string[]) => {
     console.log('Batch conversion completed:', jobIds);
+    successNotification(
+      'Batch Conversion Complete!',
+      `${jobIds.length} mods converted successfully.`
+    );
+  };
+
+  const handleBatchError = (error: string) => {
+    console.error('Batch conversion failed:', error);
+    errorNotification('Batch Conversion Failed', error);
   };
 
   return (
@@ -86,7 +105,7 @@ export const ConvertPage: React.FC = () => {
       ) : (
         <BatchConversionManager
           onComplete={handleBatchComplete}
-          onError={handleError}
+          onError={handleBatchError}
         />
       )}
 

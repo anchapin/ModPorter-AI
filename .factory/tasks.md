@@ -1,6 +1,22 @@
 # Current Tasks
 
 ## Completed
+- ✅ Issue #974: User-facing error handling and conversion failure feedback (COMPLETED)
+  - ✅ Created `frontend/src/utils/conversionErrors.ts` with:
+    - `ConversionErrorType` enum for all failure modes
+    - `categorizeError()` function to classify errors
+    - `getUserFriendlyError()` with user-friendly messages per failure mode
+    - `processError()` utility combining categorization and message lookup
+  - ✅ Enhanced `ConversionFlowManager.tsx`:
+    - Added Sentry integration for error reporting
+    - Added user-friendly error display based on error type
+    - Added toast notifications for success/error via NotificationSystem
+  - ✅ Enhanced `ConversionUploadEnhanced.tsx`:
+    - Added toast notification for upload failures
+  - ✅ Enhanced `ConvertPage.tsx`:
+    - Added toast notifications for batch conversion complete/failed
+  - ✅ Sentry already initialized in `main.tsx` - works automatically
+
 - ✅ Test Coverage Wave 9 - Backend Test Stabilization & Coverage Measurement (COMPLETED)
   - ✅ Task 1: Diagnose test failures (COMPLETE)
     - ✅ Root cause #1: `test_task_worker_coverage.py` hangs (asyncio.create_task() deadlock)

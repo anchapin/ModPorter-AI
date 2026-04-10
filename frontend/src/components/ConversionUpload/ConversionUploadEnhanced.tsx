@@ -18,6 +18,10 @@ import {
   ConversionStatus,
   ConversionStatusEnum,
 } from '../../types/api';
+import {
+  useSuccessNotification,
+  useErrorNotification,
+} from '../NotificationSystem';
 import ConversionProgress from '../ConversionProgress/ConversionProgress';
 import ConversionOptions from './ConversionOptions';
 import './ConversionUpload.css';
@@ -80,6 +84,9 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
     null
   );
   const isMountedRef = useRef(true);
+
+  const successNotification = useSuccessNotification();
+  const errorNotification = useErrorNotification();
 
   // File validation
   const validateFile = useCallback(
@@ -444,11 +451,11 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
     } catch (err: any) {
       setIsUploading(false);
       setIsConverting(false);
-      setError(
-        err.message
-          ? `Conversion request failed: ${err.message}. Please try again.`
-          : 'Conversion request failed. Please check your connection and try again.'
-      );
+      const errorMsg =
+        err.message ||
+        'Conversion request failed. Please check your connection and try again.';
+      setError(errorMsg);
+      errorNotification('Upload Failed', errorMsg);
     }
   };
 
