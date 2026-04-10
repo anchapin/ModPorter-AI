@@ -1,6 +1,6 @@
 name: CD
 
-on:
+'on':
   push:
     branches: [main]
     tags:

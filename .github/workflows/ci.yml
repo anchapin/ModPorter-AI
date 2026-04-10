@@ -1,6 +1,6 @@
 name: CI - Integration Tests (Optimized)
 
-on:
+'on':
   pull_request:
     branches: [main, develop]
     paths-ignore:

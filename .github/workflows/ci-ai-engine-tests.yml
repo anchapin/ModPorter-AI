@@ -1,6 +1,6 @@
 name: CI - AI Engine Tests
 
-on:
+'on':
   push:
     branches: [main, develop]
     paths:

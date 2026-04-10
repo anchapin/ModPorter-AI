@@ -1,6 +1,6 @@
 name: CI - Backend Unit Tests (Parallel)
 
-on:
+'on':
   pull_request:
     branches: [main, develop]
     paths:

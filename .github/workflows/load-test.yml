@@ -1,6 +1,6 @@
 name: Load Testing
 
-on:
+'on':
   workflow_dispatch:
     inputs:
       test_type:

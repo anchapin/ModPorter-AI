@@ -1,6 +1,6 @@
 name: AI Quality Gates
 
-on:
+'on':
   push:
     branches: [main, develop]
   pull_request:
