@@ -328,9 +328,12 @@ class TestLogicTranslatorCoverage:
             "target_type": "block",
             "context": {"class_name": "Test", "namespace": "test"},
         }
-        res = agent.translate_java_code_with_llm(
-            java_code=data["java_code"], target_type=data["target_type"], context=data["context"]
-        )
+        with patch.object(agent, "_get_llm_client", return_value=None):
+            res = agent.translate_java_code_with_llm(
+                java_code=data["java_code"],
+                target_type=data["target_type"],
+                context=data["context"],
+            )
         assert res["success"] is True
         assert res["translation_pipeline"] == "AST→NL→Bedrock"
 
