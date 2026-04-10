@@ -16,12 +16,13 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-__all__ = ['convert_single_model', 'analyze_model', 'generate_model_structure']
+__all__ = ["convert_single_model", "analyze_model", "generate_model_structure"]
 
 
 # ============================================================================
 # _convert_single_model
 # ============================================================================
+
 
 def _convert_single_model(agent, model_path: str, metadata: Dict, entity_type: str) -> Dict:
     warnings = []
@@ -78,9 +79,7 @@ def _convert_single_model(agent, model_path: str, metadata: Dict, entity_type: s
                     f"Handling as '{java_parent}'. Display transformations not applied."
                 )
             elif java_parent == "item/handheld":
-                warnings.append(
-                    "Handling as 'item/handheld'. Display transformations not applied."
-                )
+                warnings.append("Handling as 'item/handheld'. Display transformations not applied.")
 
             texture_layers = java_model.get("textures", {})
             layer_count = 0
@@ -235,9 +234,7 @@ def _convert_single_model(agent, model_path: str, metadata: Dict, entity_type: s
             not processed_as_item_specific_type and not java_elements
         ):  # No item-specific handling, no elements
             if java_parent:
-                warnings.append(
-                    f"Model has unhandled parent '{java_parent}' and no local elements"
-                )
+                warnings.append(f"Model has unhandled parent '{java_parent}' and no local elements")
             else:
                 warnings.append("Model has no elements and no parent")
             # Set default small bounds for an empty or placeholder model
@@ -285,9 +282,11 @@ def _convert_single_model(agent, model_path: str, metadata: Dict, entity_type: s
             "warnings": warnings,
         }
 
+
 # ============================================================================
 # _analyze_model
 # ============================================================================
+
 
 def _analyze_model(agent, model_path: str, metadata: Dict) -> Dict:
     """Analyze a single model for conversion needs"""
@@ -335,9 +334,11 @@ def _analyze_model(agent, model_path: str, metadata: Dict) -> Dict:
         },
     }
 
+
 # ============================================================================
 # _generate_model_structure
 # ============================================================================
+
 
 def _generate_model_structure(agent, models: List[Dict]) -> Dict:
     # Ensure only successful conversions are included

@@ -208,13 +208,14 @@ class TestModImportService:
     @pytest.mark.asyncio
     async def test_get_mod_info_curseforge_search_fallback(self, service, mock_curseforge):
         """Test CurseForge mod info with search fallback."""
+
         # When called with a non-numeric ID (slug), raise ValueError
         # When called with a numeric ID, return success
         async def mock_get_mod_info(mod_id):
             if not isinstance(mod_id, int):
                 raise ValueError("Invalid ID")
             return {"data": {"name": "Test Mod", "id": mod_id}}
-        
+
         mock_curseforge.get_mod_info = AsyncMock(side_effect=mock_get_mod_info)
         mock_curseforge.search_mods = AsyncMock(return_value={"data": {"mods": [{"id": 123}]}})
 

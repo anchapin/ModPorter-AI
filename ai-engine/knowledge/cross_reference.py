@@ -444,7 +444,9 @@ class CrossReferenceDetector:
 
             similarities = []
             for chunk_id, embeddings in existing_embeddings.items():
-                if embeddings is not None and (isinstance(embeddings, list) or isinstance(embeddings, np.ndarray)):
+                if embeddings is not None and (
+                    isinstance(embeddings, list) or isinstance(embeddings, np.ndarray)
+                ):
                     doc_embedding = (
                         np.array(embeddings[0])
                         if isinstance(embeddings, list)

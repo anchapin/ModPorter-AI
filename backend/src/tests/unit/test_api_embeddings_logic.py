@@ -1,4 +1,3 @@
-
 import pytest
 import uuid
 import sys
@@ -9,6 +8,7 @@ from httpx import AsyncClient, ASGITransport
 from main import app
 from db.models import DocumentEmbedding
 from models.embedding_models import DocumentEmbeddingResponse
+
 
 @pytest.mark.asyncio
 class TestEmbeddingsAPILogic:
@@ -25,9 +25,10 @@ class TestEmbeddingsAPILogic:
         mock_embedding.created_at = now
         mock_embedding.updated_at = now
 
-        with patch("db.crud.get_document_embedding_by_hash", new_callable=AsyncMock) as mock_get, \
-             patch("db.crud.create_document_embedding", new_callable=AsyncMock) as mock_create:
-            
+        with (
+            patch("db.crud.get_document_embedding_by_hash", new_callable=AsyncMock) as mock_get,
+            patch("db.crud.create_document_embedding", new_callable=AsyncMock) as mock_create,
+        ):
             mock_get.return_value = None
             mock_create.return_value = mock_embedding
 
@@ -38,8 +39,8 @@ class TestEmbeddingsAPILogic:
                     json={
                         "embedding": [0.1, 0.2],
                         "document_source": "source",
-                        "content_hash": "new-hash"
-                    }
+                        "content_hash": "new-hash",
+                    },
                 )
 
             assert response.status_code == status.HTTP_201_CREATED
@@ -80,8 +81,8 @@ class TestEmbeddingsAPILogic:
                         json={
                             "embedding": [0.1, 0.2],
                             "document_source": "source",
-                            "content_hash": "existing-hash"
-                        }
+                            "content_hash": "existing-hash",
+                        },
                     )
 
             assert response.status_code == status.HTTP_200_OK
@@ -107,10 +108,7 @@ class TestEmbeddingsAPILogic:
             async with AsyncClient(transport=transport, base_url="http://test") as ac:
                 response = await ac.post(
                     "/api/v1/embeddings/embeddings/search/",
-                    json={
-                        "query_embedding": [0.1, 0.2],
-                        "limit": 5
-                    }
+                    json={"query_embedding": [0.1, 0.2], "limit": 5},
                 )
 
             assert response.status_code == status.HTTP_200_OK
@@ -124,11 +122,7 @@ class TestEmbeddingsAPILogic:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
             response = await ac.post(
-                "/api/v1/embeddings/embeddings/search/",
-                json={
-                    "query_embedding": [],
-                    "limit": 5
-                }
+                "/api/v1/embeddings/embeddings/search/", json={"query_embedding": [], "limit": 5}
             )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -139,35 +133,33 @@ class TestEmbeddingsAPILogic:
         mock_result = MagicMock()
         mock_result.embedding = MagicMock()
         mock_result.embedding.tolist.return_value = [0.1, 0.2]
-        
+
         # We need to mock the components imported inside the endpoint
         # First, ensure utils.embedding_generator can be imported by mocking it in sys.modules
         mock_gen_module = MagicMock()
         sys.modules["utils.embedding_generator"] = mock_gen_module
-        
-        with patch("utils.embedding_generator.OpenAIEmbeddingGenerator") as mock_openai_gen, \
-             patch("utils.embedding_generator.LocalEmbeddingGenerator") as mock_local_gen:
-                
-                mock_instance = mock_local_gen.return_value
-                mock_instance.generate_embeddings.return_value = [mock_result]
-                
-                # Force use of local generator
-                mock_openai_gen_instance = mock_openai_gen.return_value
-                mock_openai_gen_instance._client = None
 
-                transport = ASGITransport(app=app)
-                async with AsyncClient(transport=transport, base_url="http://test") as ac:
-                    response = await ac.post(
-                        "/api/v1/embeddings/embeddings/generate",
-                        json={
-                            "texts": ["hello world"],
-                            "provider": "local"
-                        }
-                    )
+        with (
+            patch("utils.embedding_generator.OpenAIEmbeddingGenerator") as mock_openai_gen,
+            patch("utils.embedding_generator.LocalEmbeddingGenerator") as mock_local_gen,
+        ):
+            mock_instance = mock_local_gen.return_value
+            mock_instance.generate_embeddings.return_value = [mock_result]
 
-                assert response.status_code == status.HTTP_200_OK
-                data = response.json()
-                assert data == [[0.1, 0.2]]
+            # Force use of local generator
+            mock_openai_gen_instance = mock_openai_gen.return_value
+            mock_openai_gen_instance._client = None
+
+            transport = ASGITransport(app=app)
+            async with AsyncClient(transport=transport, base_url="http://test") as ac:
+                response = await ac.post(
+                    "/api/v1/embeddings/embeddings/generate",
+                    json={"texts": ["hello world"], "provider": "local"},
+                )
+
+            assert response.status_code == status.HTTP_200_OK
+            data = response.json()
+            assert data == [[0.1, 0.2]]
 
     async def test_get_document_success(self):
         """Test getting a document by ID."""
@@ -177,16 +169,16 @@ class TestEmbeddingsAPILogic:
         mock_doc.title = "Test Doc"
         mock_doc.document_source = "source"
         mock_doc.metadata_json = {"key": "value"}
-        
+
         mock_chunk = MagicMock()
         mock_chunk.id = uuid.uuid4()
         mock_chunk.content_hash = "chunk-hash"
         mock_chunk.chunk_index = 0
         mock_chunk.metadata_json = {
-            "char_start": 0, 
+            "char_start": 0,
             "char_end": 10,
             "heading_context": ["H1"],
-            "original_heading": "Heading"
+            "original_heading": "Heading",
         }
 
         with patch("db.crud.get_document_with_chunks", new_callable=AsyncMock) as mock_get:
@@ -222,11 +214,11 @@ class TestEmbeddingsAPILogic:
         mock_chunk.id = uuid.uuid4()
         mock_chunk.chunk_index = 0
         mock_chunk.metadata_json = {
-            "content": "chunk content", 
-            "char_start": 0, 
+            "content": "chunk content",
+            "char_start": 0,
             "char_end": 10,
             "heading_context": [],
-            "original_heading": ""
+            "original_heading": "",
         }
 
         with patch("db.crud.get_chunks_by_parent", new_callable=AsyncMock) as mock_get:
@@ -253,17 +245,20 @@ class TestEmbeddingsAPILogic:
 
         # Mock dependencies in sys.modules to avoid import errors
         sys.modules["utils.embedding_generator"] = MagicMock()
-        
-        with patch("db.crud.find_similar_embeddings", new_callable=AsyncMock) as mock_find, \
-             patch("utils.embedding_generator.LocalEmbeddingGenerator") as mock_gen_class, \
-             patch("utils.embedding_generator.OpenAIEmbeddingGenerator") as mock_openai_gen_class:
-            
+
+        with (
+            patch("db.crud.find_similar_embeddings", new_callable=AsyncMock) as mock_find,
+            patch("utils.embedding_generator.LocalEmbeddingGenerator") as mock_gen_class,
+            patch("utils.embedding_generator.OpenAIEmbeddingGenerator") as mock_openai_gen_class,
+        ):
             mock_gen_instance = mock_gen_class.return_value
-            mock_gen_instance.generate_embeddings.return_value = [MagicMock(embedding=MagicMock(tolist=lambda: [0.1, 0.2]))]
-            
+            mock_gen_instance.generate_embeddings.return_value = [
+                MagicMock(embedding=MagicMock(tolist=lambda: [0.1, 0.2]))
+            ]
+
             mock_openai_gen_instance = mock_openai_gen_class.return_value
-            mock_openai_gen_instance._client = None # Force fallback to local
-            
+            mock_openai_gen_instance._client = None  # Force fallback to local
+
             mock_find.return_value = [mock_result]
 
             transport = ASGITransport(app=app)
@@ -274,8 +269,8 @@ class TestEmbeddingsAPILogic:
                         "query": "test query",
                         "search_mode": "vector_only",
                         "expand_query": False,
-                        "use_reranker": False
-                    }
+                        "use_reranker": False,
+                    },
                 )
 
             assert response.status_code == status.HTTP_200_OK
@@ -291,14 +286,14 @@ class TestEmbeddingsAPILogic:
             mock_factory = MagicMock()
             mock_extractor_class = MagicMock()
             mock_get_indexing.return_value = (mock_factory, mock_extractor_class)
-            
+
             mock_strategy = MagicMock()
             mock_factory.create.return_value = mock_strategy
-            
+
             mock_chunk = MagicMock()
             mock_chunk.content = "chunk content"
             mock_strategy.chunk.return_value = [mock_chunk]
-            
+
             mock_extractor = mock_extractor_class.return_value
             # Return an object with document_type and metadata attribute
             mock_metadata_obj = MagicMock()
@@ -308,12 +303,17 @@ class TestEmbeddingsAPILogic:
 
             # Also need to mock LocalEmbeddingGenerator which is imported inside the function
             sys.modules["utils.embedding_generator"] = MagicMock()
-            with patch("utils.embedding_generator.LocalEmbeddingGenerator") as mock_gen_class, \
-                 patch("db.crud.create_document_with_chunks", new_callable=AsyncMock) as mock_create_db:
-                
+            with (
+                patch("utils.embedding_generator.LocalEmbeddingGenerator") as mock_gen_class,
+                patch(
+                    "db.crud.create_document_with_chunks", new_callable=AsyncMock
+                ) as mock_create_db,
+            ):
                 mock_gen_instance = mock_gen_class.return_value
-                mock_gen_instance.generate_embeddings.return_value = [MagicMock(embedding=MagicMock(tolist=lambda: [0.1, 0.2]))]
-                
+                mock_gen_instance.generate_embeddings.return_value = [
+                    MagicMock(embedding=MagicMock(tolist=lambda: [0.1, 0.2]))
+                ]
+
                 mock_parent_doc = MagicMock()
                 mock_parent_doc.id = uuid.uuid4()
                 # Return a list of chunks as second element
@@ -327,8 +327,8 @@ class TestEmbeddingsAPILogic:
                             "content": "some document content",
                             "source": "test-source",
                             "metadata": {"author": "test"},
-                            "chunking_strategy": "fixed"
-                        }
+                            "chunking_strategy": "fixed",
+                        },
                     )
 
                 assert response.status_code == status.HTTP_201_CREATED
@@ -340,14 +340,14 @@ class TestEmbeddingsAPILogic:
     async def test_hybrid_search_full(self):
         """Test hybrid search with more options."""
         mock_result_id = uuid.uuid4()
-        
+
         # We need a result object that has all these attributes
         mock_result = MagicMock()
         mock_result.document = MagicMock()
         mock_result.document.id = str(mock_result_id)
         mock_result.document.content = "text"
         mock_result.document.metadata = {"source": "source", "title": "Title"}
-        
+
         mock_result.final_score = 0.7
         mock_result.similarity_score = 0.8
         mock_result.keyword_score = 0.5
@@ -357,21 +357,24 @@ class TestEmbeddingsAPILogic:
 
         # Mock dependencies in sys.modules to avoid import errors
         sys.modules["utils.embedding_generator"] = MagicMock()
-        
-        with patch("api.embeddings.get_hybrid_engine") as mock_get_engine, \
-             patch("utils.embedding_generator.LocalEmbeddingGenerator") as mock_gen_class, \
-             patch("utils.embedding_generator.OpenAIEmbeddingGenerator") as mock_openai_gen_class:
-            
+
+        with (
+            patch("api.embeddings.get_hybrid_engine") as mock_get_engine,
+            patch("utils.embedding_generator.LocalEmbeddingGenerator") as mock_gen_class,
+            patch("utils.embedding_generator.OpenAIEmbeddingGenerator") as mock_openai_gen_class,
+        ):
             mock_engine = AsyncMock()
             mock_engine.search.return_value = [mock_result]
             mock_get_engine.return_value = mock_engine
-            
+
             mock_gen_instance = mock_gen_class.return_value
-            mock_gen_instance.generate_embeddings.return_value = [MagicMock(embedding=MagicMock(tolist=lambda: [0.1, 0.2]))]
-            
+            mock_gen_instance.generate_embeddings.return_value = [
+                MagicMock(embedding=MagicMock(tolist=lambda: [0.1, 0.2]))
+            ]
+
             mock_openai_gen_instance = mock_openai_gen_class.return_value
             mock_openai_gen_instance._client = None
-            
+
             # Mock DB result for documents
             mock_db_result = MagicMock()
             mock_db_doc = MagicMock()
@@ -382,7 +385,9 @@ class TestEmbeddingsAPILogic:
             mock_db_doc.metadata_json = {}
             mock_db_result.scalars.return_value.all.return_value = [mock_db_doc]
 
-            with patch("sqlalchemy.ext.asyncio.AsyncSession.execute", new_callable=AsyncMock) as mock_execute:
+            with patch(
+                "sqlalchemy.ext.asyncio.AsyncSession.execute", new_callable=AsyncMock
+            ) as mock_execute:
                 mock_execute.return_value = mock_db_result
 
                 transport = ASGITransport(app=app)
@@ -393,8 +398,8 @@ class TestEmbeddingsAPILogic:
                             "query": "test query",
                             "search_mode": "hybrid",
                             "expand_query": False,
-                            "use_reranker": False
-                        }
+                            "use_reranker": False,
+                        },
                     )
 
                 assert response.status_code == status.HTTP_200_OK
@@ -405,34 +410,39 @@ class TestEmbeddingsAPILogic:
     async def test_search_enhanced_success(self):
         """Test enhanced search endpoint successfully."""
         mock_result_id = uuid.uuid4()
-        
+
         # Mock dependencies in sys.modules to avoid import errors
         sys.modules["utils.embedding_generator"] = MagicMock()
         sys.modules["schemas.multimodal_schema"] = MagicMock()
         sys.modules["search.hybrid_search_engine"] = MagicMock()
-        
+
         # Mock the internal imports and helpers
-        with patch("api.embeddings.get_query_expander") as mock_get_expander, \
-             patch("api.embeddings.get_hybrid_engine") as mock_get_engine, \
-             patch("utils.embedding_generator.LocalEmbeddingGenerator") as mock_gen_class, \
-             patch("schemas.multimodal_schema.MultiModalDocument") as mock_doc_class, \
-             patch("schemas.multimodal_schema.ContentType") as mock_content_type, \
-             patch("schemas.multimodal_schema.SearchQuery") as mock_query_class, \
-             patch("search.hybrid_search_engine.SearchMode") as mock_search_mode:
-            
+        with (
+            patch("api.embeddings.get_query_expander") as mock_get_expander,
+            patch("api.embeddings.get_hybrid_engine") as mock_get_engine,
+            patch("utils.embedding_generator.LocalEmbeddingGenerator") as mock_gen_class,
+            patch("schemas.multimodal_schema.MultiModalDocument") as mock_doc_class,
+            patch("schemas.multimodal_schema.ContentType") as mock_content_type,
+            patch("schemas.multimodal_schema.SearchQuery") as mock_query_class,
+            patch("search.hybrid_search_engine.SearchMode") as mock_search_mode,
+        ):
             # Mock expander
             mock_expander = MagicMock()
             mock_expander.expand_query.return_value = MagicMock(expanded_query="expanded query")
             mock_get_expander.return_value = mock_expander
-            
+
             # Mock generator
             mock_gen_instance = mock_gen_class.return_value
-            mock_gen_instance.generate_embeddings.return_value = [MagicMock(embedding=MagicMock(tolist=lambda: [0.1, 0.2]))]
-            
+            mock_gen_instance.generate_embeddings.return_value = [
+                MagicMock(embedding=MagicMock(tolist=lambda: [0.1, 0.2]))
+            ]
+
             # Mock engine
             mock_engine = AsyncMock()
             mock_search_result = MagicMock()
-            mock_search_result.document = MagicMock(id=str(mock_result_id), content="text", metadata={})
+            mock_search_result.document = MagicMock(
+                id=str(mock_result_id), content="text", metadata={}
+            )
             mock_search_result.matched_content = "text"
             mock_search_result.similarity_score = 0.8
             mock_search_result.keyword_score = 0.5
@@ -441,7 +451,7 @@ class TestEmbeddingsAPILogic:
             mock_search_result.match_explanation = "test"
             mock_engine.search.return_value = [mock_search_result]
             mock_get_engine.return_value = mock_engine
-            
+
             # Mock DB
             mock_db_result = MagicMock()
             mock_db_doc = MagicMock()
@@ -451,7 +461,9 @@ class TestEmbeddingsAPILogic:
             mock_db_doc.metadata_json = {}
             mock_db_result.scalars.return_value.all.return_value = [mock_db_doc]
 
-            with patch("sqlalchemy.ext.asyncio.AsyncSession.execute", new_callable=AsyncMock) as mock_execute:
+            with patch(
+                "sqlalchemy.ext.asyncio.AsyncSession.execute", new_callable=AsyncMock
+            ) as mock_execute:
                 mock_execute.return_value = mock_db_result
 
                 transport = ASGITransport(app=app)
@@ -462,12 +474,11 @@ class TestEmbeddingsAPILogic:
                             "query_text": "test query",
                             "use_hybrid": True,
                             "use_reranker": False,
-                            "expand_query": True
-                        }
+                            "expand_query": True,
+                        },
                     )
 
                 assert response.status_code == status.HTTP_200_OK
                 data = response.json()
                 assert data["total_results"] == 1
                 assert data["results"][0]["document_id"] == str(mock_result_id)
-

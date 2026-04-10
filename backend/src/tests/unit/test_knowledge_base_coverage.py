@@ -30,17 +30,13 @@ class TestRouterConfiguration:
     def test_router_path_construction(self):
         """Test router path construction logic."""
         import os
+        from pathlib import Path
+
+        # Use dynamic path resolution instead of hardcoded path
+        project_root = Path(__file__).resolve().parent.parent.parent.parent
 
         result = os.path.join(
-            os.path.dirname(
-                os.path.dirname(
-                    os.path.dirname(
-                        os.path.dirname(
-                            "/home/alex/Projects/ModPorter-AI/backend/src/api/knowledge_base.py"
-                        )
-                    )
-                )
-            ),
+            project_root,
             "ai-engine",
         )
         assert "ai-engine" in result

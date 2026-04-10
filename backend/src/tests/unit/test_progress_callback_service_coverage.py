@@ -2,6 +2,7 @@
 Tests for progress_callback module.
 Covers: services/progress_callback.py
 """
+
 import pytest
 from unittest.mock import AsyncMock, Mock
 from services.progress_callback import (
@@ -181,11 +182,13 @@ class TestGetProgressCallback:
     def test_singleton_returns_same_instance(self):
         # Import fresh each time to test singleton
         from services.progress_callback import get_progress_callback
+
         instance1 = get_progress_callback()
         instance2 = get_progress_callback()
         assert instance1 is instance2
 
     def test_singleton_is_progress_callback(self):
         from services.progress_callback import get_progress_callback
+
         instance = get_progress_callback()
         assert isinstance(instance, ProgressCallback)

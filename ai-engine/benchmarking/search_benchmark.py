@@ -8,7 +8,7 @@ to validate the < 500ms performance target.
 import time
 import asyncio
 import statistics
-from typing import Dict, List, Tuple
+from typing import Dict
 import sys
 from pathlib import Path
 
@@ -19,11 +19,10 @@ sys.path.insert(0, str(ai_engine_root))
 from search.hybrid_search_engine import HybridSearchEngine, SearchMode, RankingStrategy
 from search.reranking_engine import CrossEncoderReRanker
 from search.query_expansion import QueryExpansionEngine
-from schemas.multimodal_schema import SearchQuery, MultiModalDocument, ContentType
+from schemas.multimodal_schema import SearchQuery
 
 # Import fixtures
 sys.path.insert(0, str(Path(__file__).parent.parent / "tests"))
-from fixtures.search_fixtures import mock_documents, mock_embeddings, test_queries
 
 
 class SearchBenchmark:
@@ -53,7 +52,7 @@ class SearchBenchmark:
         self.queries = test_queries()
 
         # Build BM25 index
-        if hasattr(self.engine, 'build_index'):
+        if hasattr(self.engine, "build_index"):
             self.engine.build_index(self.documents)
             print("BM25 index built")
 
@@ -67,7 +66,7 @@ class SearchBenchmark:
         for query_name, query_data in self.queries.items():
             for _ in range(num_runs):
                 start_time = time.time()
-                expanded = self.expander.expand_query(
+                _ = self.expander.expand_query(
                     SearchQuery(query_text=query_data["query"]),
                     strategies=["domain_expansion", "synonym_expansion"],
                     max_expansion_terms=10,
@@ -104,6 +103,7 @@ class SearchBenchmark:
 
         # Use mock query embedding
         import random
+
         random.seed(123)
         query_embedding = [random.uniform(-1, 1) for _ in range(384)]
         norm = sum(x**2 for x in query_embedding) ** 0.5
@@ -153,24 +153,27 @@ class SearchBenchmark:
 
         # First, get search results to re-rank
         import random
+
         random.seed(123)
         query_embedding = [random.uniform(-1, 1) for _ in range(384)]
         norm = sum(x**2 for x in query_embedding) ** 0.5
         query_embedding = [x / norm for x in query_embedding]
 
         # Get search results asynchronously
-        search_results = asyncio.run(self.engine.search(
-            query=SearchQuery(query_text="custom block creation", top_k=num_candidates),
-            documents=self.documents,
-            embeddings=self.embeddings,
-            query_embedding=query_embedding,
-            search_mode=SearchMode.HYBRID,
-        ))
+        search_results = asyncio.run(
+            self.engine.search(
+                query=SearchQuery(query_text="custom block creation", top_k=num_candidates),
+                documents=self.documents,
+                embeddings=self.embeddings,
+                query_embedding=query_embedding,
+                search_mode=SearchMode.HYBRID,
+            )
+        )
 
         latencies = []
         for _ in range(num_runs):
             start_time = time.time()
-            reranked_results = self.reranker.rerank(
+            _ = self.reranker.rerank(
                 query="custom block creation",
                 results=search_results[:num_candidates],
                 top_k=10,
@@ -215,6 +218,7 @@ class SearchBenchmark:
         }
 
         import random
+
         random.seed(123)
         query_embedding = [random.uniform(-1, 1) for _ in range(384)]
         norm = sum(x**2 for x in query_embedding) ** 0.5
@@ -247,7 +251,7 @@ class SearchBenchmark:
 
             # Step 3: Re-ranking
             step_start = time.time()
-            reranked_results = self.reranker.rerank(
+            _ = self.reranker.rerank(
                 query=expanded.expanded_query,
                 results=search_results[:50],
                 top_k=10,
@@ -276,9 +280,11 @@ class SearchBenchmark:
         print(f"  Max: {max_latency:.2f}ms")
 
         print(f"\nBreakdown (Average):")
-        print(f"  Query Expansion: {avg_expansion:.2f}ms ({avg_expansion/avg_latency*100:.1f}%)")
-        print(f"  Hybrid Search: {avg_search:.2f}ms ({avg_search/avg_latency*100:.1f}%)")
-        print(f"  Re-ranking: {avg_rerank:.2f}ms ({avg_rerank/avg_latency*100:.1f}%)")
+        print(
+            f"  Query Expansion: {avg_expansion:.2f}ms ({avg_expansion / avg_latency * 100:.1f}%)"
+        )
+        print(f"  Hybrid Search: {avg_search:.2f}ms ({avg_search / avg_latency * 100:.1f}%)")
+        print(f"  Re-ranking: {avg_rerank:.2f}ms ({avg_rerank / avg_latency * 100:.1f}%)")
 
         # Performance target validation
         print(f"\nPerformance Target (< 500ms):")

@@ -1,4 +1,3 @@
-
 import pytest
 import uuid
 from fastapi import FastAPI
@@ -13,13 +12,14 @@ from api.advanced_events import router, EventType, EventTriggerType, EventAction
 app = FastAPI()
 app.include_router(router)
 
+
 @pytest.fixture
 def client():
     with TestClient(app) as test_client:
         yield test_client
 
+
 class TestAdvancedEventsAPITargeted:
-    
     def test_get_event_types(self, client):
         response = client.get("/events/types")
         assert response.status_code == 200
@@ -45,13 +45,13 @@ class TestAdvancedEventsAPITargeted:
     @patch("api.advanced_events.crud")
     async def test_create_event_system_success(self, mock_crud, mock_get_db, client):
         mock_get_db.return_value = AsyncMock()
-        
+
         conversion_id = str(uuid.uuid4())
         mock_job = MagicMock()
         mock_job.id = conversion_id
         mock_crud.get_job = AsyncMock(return_value=mock_job)
         mock_crud.create_behavior_file = AsyncMock()
-        
+
         payload = {
             "name": "Test System",
             "description": "Test Description",
@@ -60,24 +60,29 @@ class TestAdvancedEventsAPITargeted:
                 "namespace": "test",
                 "priority": 0,
                 "enabled": True,
-                "debug": False
+                "debug": False,
             },
             "triggers": [],
             "actions": [],
             "variables": {},
-            "version": "1.0.0"
+            "version": "1.0.0",
         }
-        
+
         response = client.post(f"/events/systems?conversion_id={conversion_id}", json=payload)
-        
+
         assert response.status_code == 201
         assert response.json()["name"] == "Test System"
         mock_crud.create_behavior_file.assert_called_once()
 
     def test_create_event_system_invalid_uuid(self, client):
         payload = {
-            "name": "Test", "description": "Test", "config": {"event_type": "custom"},
-            "triggers": [], "actions": [], "variables": {}, "version": "1.0.0"
+            "name": "Test",
+            "description": "Test",
+            "config": {"event_type": "custom"},
+            "triggers": [],
+            "actions": [],
+            "variables": {},
+            "version": "1.0.0",
         }
         response = client.post("/events/systems?conversion_id=invalid-uuid", json=payload)
         assert response.status_code == 400
@@ -88,12 +93,20 @@ class TestAdvancedEventsAPITargeted:
     async def test_create_event_system_not_found(self, mock_crud, mock_get_db, client):
         mock_get_db.return_value = AsyncMock()
         mock_crud.get_job = AsyncMock(return_value=None)
-        
+
         conversion_id = str(uuid.uuid4())
-        response = client.post(f"/events/systems?conversion_id={conversion_id}", json={
-            "name": "Test", "description": "Test", "config": {"event_type": "custom"},
-            "triggers": [], "actions": [], "variables": {}, "version": "1.0.0"
-        })
+        response = client.post(
+            f"/events/systems?conversion_id={conversion_id}",
+            json={
+                "name": "Test",
+                "description": "Test",
+                "config": {"event_type": "custom"},
+                "triggers": [],
+                "actions": [],
+                "variables": {},
+                "version": "1.0.0",
+            },
+        )
         assert response.status_code == 404
 
     def test_get_event_system_not_implemented(self, client):
@@ -101,11 +114,7 @@ class TestAdvancedEventsAPITargeted:
         assert response.status_code == 501
 
     def test_test_event_system(self, client):
-        payload = {
-            "test_data": {"mock_actions": [{}, {}]},
-            "expected_results": [],
-            "dry_run": True
-        }
+        payload = {"test_data": {"mock_actions": [{}, {}]}, "expected_results": [], "dry_run": True}
         response = client.post("/events/systems/some-id/test", json=payload)
         assert response.status_code == 200
         assert response.json()["success"] is True

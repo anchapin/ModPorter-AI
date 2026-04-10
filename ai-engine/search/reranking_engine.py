@@ -1097,7 +1097,14 @@ class CrossEncoderReRanker:
                         original_score=result.final_score,
                         reranked_score=float(score),
                         final_score=float(score),
-                        features_used=[ReRankingFeature(name="cross_encoder", weight=1.0, value=float(score), explanation=f"Cross-encoder score: {score:.4f}")],
+                        features_used=[
+                            ReRankingFeature(
+                                name="cross_encoder",
+                                weight=1.0,
+                                value=float(score),
+                                explanation=f"Cross-encoder score: {score:.4f}",
+                            )
+                        ],
                         relevance_features={
                             "cross_encoder_score": float(score),
                             "semantic_similarity": result.similarity_score,
@@ -1153,7 +1160,7 @@ class CrossEncoderReRanker:
                             name="combined_score",
                             value=score,
                             weight=1.0,
-                            explanation=f"Combined semantic ({result.similarity_score:.3f}) and keyword ({result.keyword_score:.3f}) scores"
+                            explanation=f"Combined semantic ({result.similarity_score:.3f}) and keyword ({result.keyword_score:.3f}) scores",
                         )
                     ],
                     relevance_features={

@@ -1,8 +1,8 @@
 """Weighted quality score calculation."""
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Any
-from qa.report.models import AgentResult, QualityScore, RefinementImprovement
+from typing import Dict, List, Any
+from qa.report.models import AgentResult, QualityScore
 from qa.context import QAContext
 
 

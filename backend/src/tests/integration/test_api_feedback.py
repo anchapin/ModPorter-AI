@@ -15,8 +15,7 @@ def test_submit_feedback_invalid_job_id(client):
     # Error format uses 'message' or 'details' instead of 'detail'
     msg = data.get("message") or str(data.get("details") or "")
     assert (
-        f"Conversion job with ID '{invalid_job_id}' not found" in msg
-        or "not found" in msg.lower()
+        f"Conversion job with ID '{invalid_job_id}' not found" in msg or "not found" in msg.lower()
     )
 
 

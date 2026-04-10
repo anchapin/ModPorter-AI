@@ -37,7 +37,7 @@ def pytest_configure(config):
     def _mock_get_secret(key: str) -> str:
         return _mock_secrets_store.get(key) or ""
 
-    # Only mock aiohttp if not available - don't mock markdown/bs4 
+    # Only mock aiohttp if not available - don't mock markdown/bs4
     # since ingestion processor tests need real code
     for _mod_name, _mock_class in [
         ("aiohttp", MagicMock),

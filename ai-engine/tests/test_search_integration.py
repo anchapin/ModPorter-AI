@@ -7,6 +7,7 @@ using real search engine implementations.
 
 import pytest
 import asyncio
+import os
 import sys
 from pathlib import Path
 from typing import List

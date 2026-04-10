@@ -23,9 +23,7 @@ async def sample_conversion_job(db_session: AsyncSession):
 class TestBehaviorFilesCRUD:
     """Test behavior files CRUD operations."""
 
-    async def test_create_behavior_file(
-        self, db_session: AsyncSession, sample_conversion_job
-    ):
+    async def test_create_behavior_file(self, db_session: AsyncSession, sample_conversion_job):
         """Test creating a behavior file."""
         behavior_file = await crud.create_behavior_file(
             db_session,
@@ -43,9 +41,7 @@ class TestBehaviorFilesCRUD:
         assert behavior_file.created_at is not None
         assert behavior_file.updated_at is not None
 
-    async def test_get_behavior_file(
-        self, db_session: AsyncSession, sample_conversion_job
-    ):
+    async def test_get_behavior_file(self, db_session: AsyncSession, sample_conversion_job):
         """Test retrieving a behavior file by ID."""
         # Create a behavior file
         created_file = await crud.create_behavior_file(
@@ -128,7 +124,9 @@ class TestBehaviorFilesCRUD:
         original_updated_at = behavior_file.updated_at
 
         # Update the content
-        new_content = '{"minecraft:recipe_shaped": {"description": {"identifier": "test:recipe_new"}}}'
+        new_content = (
+            '{"minecraft:recipe_shaped": {"description": {"identifier": "test:recipe_new"}}}'
+        )
         updated_file = await crud.update_behavior_file_content(
             db_session, str(behavior_file.id), new_content
         )
@@ -188,9 +186,7 @@ class TestBehaviorFilesCRUD:
         assert len(scripts) == 1
         assert scripts[0].file_type == "script"
 
-    async def test_delete_behavior_file(
-        self, db_session: AsyncSession, sample_conversion_job
-    ):
+    async def test_delete_behavior_file(self, db_session: AsyncSession, sample_conversion_job):
         """Test deleting a behavior file."""
         # Create a behavior file
         behavior_file = await crud.create_behavior_file(
@@ -240,9 +236,7 @@ class TestBehaviorFilesCRUD:
         result = await crud.get_behavior_file(db_session, "not-a-uuid")
         assert result is None
 
-        result = await crud.update_behavior_file_content(
-            db_session, "not-a-uuid", "content"
-        )
+        result = await crud.update_behavior_file_content(db_session, "not-a-uuid", "content")
         assert result is None
 
         success = await crud.delete_behavior_file(db_session, "not-a-uuid")

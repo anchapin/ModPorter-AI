@@ -17,8 +17,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from indexing.chunking_strategies import (
     ChunkingStrategyFactory,
     SemanticChunking,
-    RecursiveChunking,
-    FixedSizeChunking,
 )
 from indexing.metadata_extractor import DocumentMetadataExtractor
 
@@ -26,6 +24,7 @@ from indexing.metadata_extractor import DocumentMetadataExtractor
 @dataclass
 class BenchmarkResult:
     """Result of a single benchmark run."""
+
     test_name: str
     duration_ms: float
     chunks_per_second: float
@@ -140,7 +139,7 @@ class IndexingBenchmark:
             # Extract metadata
             extractor = DocumentMetadataExtractor()
             start = time.time()
-            metadata = extractor.extract(test_doc, source="benchmark")
+            _ = extractor.extract(test_doc, source="benchmark")
             extract_time = (time.time() - start) * 1000
 
             # Chunk document
@@ -186,25 +185,20 @@ class IndexingBenchmark:
             "Minecraft modding is an exciting way to customize your gameplay experience. "
             "By creating mods, you can add new blocks, items, mobs, and even entire dimensions to the game. "
             "The process begins with setting up a development environment using tools like Forge or Fabric.",
-
             "Java programming is the foundation of Minecraft modding. "
             "Understanding object-oriented programming concepts such as classes, inheritance, and polymorphism "
             "is essential for creating complex mods. Many modders start with simple block additions before "
             "moving on to more advanced features like custom entities and AI.",
-
             "```java\npublic class CustomBlock extends Block {\n    public CustomBlock() {\n        super(Properties.create(Material.ROCK));\n    }\n}\n```",
-
             "When developing mods, it's important to consider performance optimization. "
             "Efficient code ensures that your mod doesn't cause lag or framerate issues for players. "
             "Common optimization techniques include caching, lazy loading, and minimizing unnecessary calculations.",
-
             "## Advanced Modding Topics\n\n"
             "Once you've mastered the basics, you can explore advanced topics like:\n"
             "- Custom rendering and shaders\n"
             "- Network packets and multiplayer support\n"
             "- Custom data serializers\n"
             "- Dimension and biome creation",
-
             "Testing your mods thoroughly is crucial before release. "
             "Use JUnit for unit testing and consider integration testing with actual Minecraft instances. "
             "Many modders also find it helpful to get feedback from the community through beta testing programs.",
@@ -279,4 +273,5 @@ def main():
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

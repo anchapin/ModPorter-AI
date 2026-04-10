@@ -29,6 +29,9 @@ jobs:
     name: Tests + Coverage (${{ env.COVERAGE_THRESHOLD }}% min)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 
@@ -43,15 +46,23 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-asyncio pytest-timeout pytest-cov pytest-xdist
 
+      - name: Run tests without coverage (baseline)
+        run: |
+          cd ai-engine
+          echo "===== Running tests without coverage to verify baseline ====="
+          python -m pytest tests/ -q --tb=short --no-cov -n 2 --dist=loadscope
+
       - name: Run tests with coverage (parallel)
         run: |
           cd ai-engine
+          # Run tests with coverage and xdist parallel execution
+          # Use limited parallelism to reduce resource contention
           python -m pytest tests/ -q --tb=short \
             --cov=. \
             --cov-report=json \
             --cov-fail-under=${{ env.COVERAGE_THRESHOLD }} \
-            -n auto \
-            --dist=loadfile
+            -n 2 \
+            --dist=loadscope
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4

@@ -915,11 +915,7 @@ world.afterEvents.playerSpawn.subscribe((event) => {
         Returns:
             List of patterns in the category
         """
-        return [
-            pattern
-            for pattern in self.patterns.values()
-            if pattern.category == category
-        ]
+        return [pattern for pattern in self.patterns.values() if pattern.category == category]
 
     def get_stats(self) -> Dict[str, int]:
         """

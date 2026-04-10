@@ -35,13 +35,13 @@ class TestLoggingMiddlewareDispatch:
         """Test LoggingMiddleware has dispatch method."""
         mock_app = MagicMock()
         middleware = LoggingMiddleware(mock_app)
-        assert hasattr(middleware, 'dispatch')
+        assert hasattr(middleware, "dispatch")
 
     def test_should_exclude_path(self):
         """Test path exclusion logic."""
         mock_app = MagicMock()
         middleware = LoggingMiddleware(mock_app)
-        
+
         assert middleware._should_exclude("/health") is True
         assert middleware._should_exclude("/api/test") is False
 
@@ -57,4 +57,4 @@ class TestRequestContextMiddleware:
         """Test RequestContextMiddleware has dispatch method."""
         mock_app = MagicMock()
         middleware = RequestContextMiddleware(mock_app)
-        assert hasattr(middleware, 'dispatch')
+        assert hasattr(middleware, "dispatch")

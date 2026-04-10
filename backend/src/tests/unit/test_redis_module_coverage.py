@@ -608,9 +608,10 @@ class TestRedisModuleFunctions:
         """Test close_redis function"""
         from core.redis import close_redis, _redis_client, _job_queue, _rate_limiter
 
-        with patch("core.redis._redis_client") as mock_client:
-            with patch("core.redis._job_queue") as mock_queue:
-                with patch("core.redis._rate_limiter") as mock_limiter:
+        # Use AsyncMock for async disconnect calls
+        with patch("core.redis._redis_client", new_callable=AsyncMock) as mock_client:
+            with patch("core.redis._job_queue", new_callable=AsyncMock) as mock_queue:
+                with patch("core.redis._rate_limiter", new_callable=AsyncMock) as mock_limiter:
                     await close_redis()
 
 

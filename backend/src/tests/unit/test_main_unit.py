@@ -88,9 +88,7 @@ class TestFileUploadEndpoint:
         file_data = ("test.txt", io.BytesIO(file_content), "text/plain")
 
         response = client.post("/api/v1/upload", files={"file": file_data})
-        assert (
-            response.status_code == 400
-        )  # The API returns 400 for unsupported extensions
+        assert response.status_code == 400  # The API returns 400 for unsupported extensions
 
         data = response.json()
         assert "File type .txt not supported" in data["message"]
@@ -326,9 +324,7 @@ class TestConversionRequestValidation:
         response = client.post("/api/v1/convert", json=request_data)
         assert response.status_code == 200
 
-    def test_conversion_request_missing_file_id(
-        self, client: TestClient
-    ):  # Renamed test
+    def test_conversion_request_missing_file_id(self, client: TestClient):  # Renamed test
         """Test conversion request with missing file_id."""
         request_data = {"original_filename": "test-mod.jar", "target_version": "1.20.0"}
         # This will likely fail due to Pydantic model validation on backend if file_id is mandatory

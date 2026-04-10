@@ -136,12 +136,24 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({
     [fields, categories]
   );
 
+  // ⚡ Bolt optimization: Group validation errors by field in a single O(M) pass
+  // instead of filtering the array inside a callback for every single field O(N*M).
+  const fieldErrorsMap = useMemo(() => {
+    return validationErrors.reduce((acc, error) => {
+      if (!acc[error.field]) {
+        acc[error.field] = [];
+      }
+      acc[error.field].push(error);
+      return acc;
+    }, {} as Record<string, ValidationRule[]>);
+  }, [validationErrors]);
+
   // Get field errors
   const getFieldErrors = useCallback(
     (fieldName: string): ValidationRule[] => {
-      return validationErrors.filter((error) => error.field === fieldName);
+      return fieldErrorsMap[fieldName] || [];
     },
-    [validationErrors]
+    [fieldErrorsMap]
   );
 
   // Check if form has unsaved changes
