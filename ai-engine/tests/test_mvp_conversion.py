@@ -63,6 +63,7 @@ sys.modules["pydub.utils"] = pydub_mock.utils
 def tool(func):
     return func
 
+
 def patch_modules():
     if "crewai" not in sys.modules or not hasattr(sys.modules["crewai"], "Agent"):
         mock_crewai = type(sys)("crewai")
@@ -71,17 +72,19 @@ def patch_modules():
         mock_crewai.Task = type("Task", (), {})
         mock_crewai.LLM = type("LLM", (), {})
         sys.modules["crewai"] = mock_crewai
-        
+
         mock_crewai_tools = type(sys)("crewai.tools")
         mock_crewai_tools.tool = tool
         mock_crewai_tools.BaseTool = type("BaseTool", (), {})
         sys.modules["crewai.tools"] = mock_crewai_tools
 
     # Mock models.smart_assumptions
-    if "models.smart_assumptions" not in sys.modules or not hasattr(sys.modules["models.smart_assumptions"], "SmartAssumptionEngine"):
+    if "models.smart_assumptions" not in sys.modules or not hasattr(
+        sys.modules["models.smart_assumptions"], "SmartAssumptionEngine"
+    ):
         if "models" not in sys.modules:
             sys.modules["models"] = type(sys)("models")
-        
+
         mock_smart = type(sys)("models.smart_assumptions")
         mock_smart.SmartAssumptionEngine = type("SmartAssumptionEngine", (), {})
         mock_smart.AssumptionResult = type("AssumptionResult", (), {})
@@ -90,10 +93,12 @@ def patch_modules():
         sys.modules["models.smart_assumptions"] = mock_smart
 
     # Mock models.validation
-    if "models.validation" not in sys.modules or not hasattr(sys.modules["models.validation"], "ValidationReport"):
+    if "models.validation" not in sys.modules or not hasattr(
+        sys.modules["models.validation"], "ValidationReport"
+    ):
         if "models" not in sys.modules:
             sys.modules["models"] = type(sys)("models")
-            
+
         mock_val = type(sys)("models.validation")
         mock_val.ManifestValidationResult = type("ManifestValidationResult", (), {})
         mock_val.SemanticAnalysisResult = type("SemanticAnalysisResult", (), {})
@@ -101,6 +106,7 @@ def patch_modules():
         mock_val.AssetValidationResult = type("AssetValidationResult", (), {})
         mock_val.ValidationReport = type("ValidationReport", (), {})
         sys.modules["models.validation"] = mock_val
+
 
 # Apply patches before imports
 patch_modules()
@@ -111,6 +117,7 @@ from agents.packaging_agent import PackagingAgent
 
 # Import test fixtures from ai-engine fixtures
 from fixtures.test_jar_generator import JarGenerator, create_test_mod_suite
+
 
 class TestMVPEndToEndConversion:
     """
@@ -132,8 +139,6 @@ class TestMVPEndToEndConversion:
         if self.temp_path.exists():
             shutil.rmtree(self.temp_path)
 
-
-
     @pytest.fixture
     def simple_copper_block_jar(self):
         """
@@ -151,8 +156,130 @@ class TestMVPEndToEndConversion:
         """
         # Look for fixture in project root tests/fixtures directory
         fixture_path = project_root / "tests" / "fixtures" / "simple_copper_block.jar"
+
+        # Generate the JAR dynamically if it doesn't exist
         if not fixture_path.exists():
-            pytest.skip(f"Test fixture not found: {fixture_path}")
+            try:
+                import zipfile
+                import json
+                import tempfile
+                import os
+                from pathlib import Path
+
+                # Create a temporary directory for building the JAR contents
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    # Create META-INF first
+                    meta_dir = os.path.join(tmpdir, "META-INF")
+                    os.makedirs(meta_dir, exist_ok=True)
+                    with open(os.path.join(meta_dir, "MANIFEST.MF"), "w") as f:
+                        f.write("""Manifest-Version: 1.0
+Created-By: ModPorter AI Test Suite
+Specification-Title: Simple Copper Block
+Specification-Version: 1.0.0
+Implementation-Title: simple_copper
+Implementation-Version: 1.0.0
+""")
+
+                    # Create a valid 16x16 PNG block texture (copper color)
+                    textures_dir = os.path.join(
+                        tmpdir, "assets", "simple_copper", "textures", "block"
+                    )
+                    os.makedirs(textures_dir, exist_ok=True)
+                    # Create a simple PNG using raw bytes (minimal valid PNG)
+                    png_header = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x10\x00\x00\x00\x10\x08\x06\x00\x00\x00\x1f\xf3\xffa\x00\x00\x00\x19IDATx\x9cc\xfc\xff\xff?\x03)\x00\x00\x01\x00\x01\x00\x18\xdd\x8d\xb4|\x00\x00\x00\x00IEND\xaeB`\x82"
+                    with open(os.path.join(textures_dir, "polished_copper.png"), "wb") as f:
+                        f.write(png_header)
+
+                    # Add fabric.mod.json with complete metadata
+                    fabric_mod = {
+                        "schemaVersion": 1,
+                        "id": "simple_copper",
+                        "version": "1.0.0",
+                        "name": "Simple Copper Block",
+                        "description": "A simple mod that adds a polished copper block",
+                        "authors": ["ModPorter AI"],
+                        "license": "MIT",
+                        "environment": "*",
+                        "entrypoints": {"main": ["com.example.simple_copper.SimpleCopperMod"]},
+                        "depends": {"fabricloader": ">=0.14.0", "minecraft": "~1.19.2"},
+                    }
+                    with open(os.path.join(tmpdir, "fabric.mod.json"), "w") as f:
+                        json.dump(fabric_mod, f, indent=2)
+
+                    # Add Java source file for more realistic testing
+                    java_source = """package com.example.simple_copper;
+
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
+import net.minecraft.world.level.material.Material;
+
+/**
+ * Simple polished copper block for testing ModPorter AI conversion.
+ * Registry name should be extracted as "polished_copper"
+ */
+public class PolishedCopperBlock extends Block {
+    
+    public PolishedCopperBlock() {
+        super(Properties.of(Material.METAL)
+            .strength(3.0F, 6.0F)
+            .sound(SoundType.COPPER)
+            .requiresCorrectToolForDrops());
+    }
+}
+"""
+                    java_dir = os.path.join(tmpdir, "com", "example", "simple_copper")
+                    os.makedirs(java_dir, exist_ok=True)
+                    with open(os.path.join(java_dir, "PolishedCopperBlock.java"), "w") as f:
+                        f.write(java_source)
+
+                    # Add mod main class
+                    main_java = """package com.example.simple_copper;
+
+import net.fabricmc.api.ModInitializer;
+import net.minecraft.core.Registry;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.Block;
+
+public class SimpleCopperMod implements ModInitializer {
+    
+    public static final Block POLISHED_COPPER_BLOCK = new PolishedCopperBlock();
+    
+    @Override
+    public void onInitialize() {
+        Registry.register(Registry.BLOCK, 
+                         new ResourceLocation("simple_copper", "polished_copper"), 
+                         POLISHED_COPPER_BLOCK);
+    }
+}
+"""
+                    with open(os.path.join(java_dir, "SimpleCopperMod.java"), "w") as f:
+                        f.write(main_java)
+
+                    # Add mixins.json for completeness
+                    mixins_config = {
+                        "required": True,
+                        "package": "com.example.simple_copper.mixins",
+                        "compatibilityLevel": "JAVA_17",
+                        "refmap": "simple_copper.refmap.json",
+                        "mixins": [],
+                        "client": [],
+                        "server": [],
+                        "minVersion": "0.8",
+                    }
+                    with open(os.path.join(tmpdir, "simple_copper.mixins.json"), "w") as f:
+                        json.dump(mixins_config, f, indent=2)
+
+                    # Create the JAR file
+                    with zipfile.ZipFile(fixture_path, "w") as zf:
+                        for root, dirs, files in os.walk(tmpdir):
+                            for file in files:
+                                file_path = os.path.join(root, file)
+                                arcname = os.path.relpath(file_path, tmpdir)
+                                zf.write(file_path, arcname)
+            except Exception as e:
+                pytest.skip(f"Failed to generate test fixture: {e}")
+
         return str(fixture_path)
 
     # ========================================
