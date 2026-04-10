@@ -3,7 +3,7 @@ Logic Translator Agent for Java to JavaScript code conversion
 Enhanced for Issue #546: Block Generation from Java block analysis
 """
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 import json
 from crewai.tools import tool
@@ -16,6 +16,9 @@ from utils.logging_config import get_agent_logger, log_performance
 
 # Use enhanced agent logger
 logger = get_agent_logger("logic_translator")
+
+# LLM Translation temperature for code generation (per research: 0.2 is optimal)
+LLM_CODE_TEMPERATURE = 0.2
 
 
 # ========== Bedrock Block Templates (Issue #546) ==========
@@ -1303,7 +1306,9 @@ class LogicTranslatorAgent:
             logger.error(f"Error translating method with AST: {e}")
             return {"success": False, "error": str(e), "warnings": []}
 
-    def convert_java_body_to_javascript(self, java_body: str, context: dict = None) -> str:
+    def convert_java_body_to_javascript(
+        self, java_body: str, context: Optional[Dict[str, Any]] = None
+    ) -> str:
         """Convert Java body to JavaScript"""
         try:
             # Store original body for context
@@ -3001,3 +3006,440 @@ world.beforeEvents.tick.subscribe((event) => {
             LogicTranslatorAgent.translate_code_to_js_tool,
             LogicTranslatorAgent.get_smart_assumptions_tool,
         ]
+
+    # ========== LLM-Powered Translation Pipeline (Issue #990) ==========
+    # Implements AST → NL → Bedrock translation based on research:
+    # - Chain-of-Thought with NL intermediates: 13.8% improvement on CodeNet
+    # - K³Trans (triple knowledge augmentation): 135.9% relative improvement on Pass@1
+    # - Recommended temperature: 0.2 for code generation
+
+    def _get_llm_client(self):
+        """
+        Get LLM client for code translation.
+        Uses Ollama with LiteLLM if available, falls back to environment-configured LLM.
+        """
+        try:
+            from utils.rate_limiter import create_ollama_llm
+
+            return create_ollama_llm(model_name="codellama", temperature=LLM_CODE_TEMPERATURE)
+        except Exception as e:
+            logger.warning(f"Could not create Ollama LLM: {e}, using fallback")
+            try:
+                from utils.rate_limiter import get_fallback_llm
+
+                return get_fallback_llm()
+            except Exception:
+                return None
+
+    def _serialize_ast_for_llm(self, tree) -> str:
+        """
+        Serialize Java AST to a text representation for LLM consumption.
+        Extracts methods, fields, and structure information.
+        """
+        if tree is None:
+            return ""
+
+        lines = []
+        lines.append("Java Class Structure:")
+        lines.append("=" * 50)
+
+        for path, node in tree.filter(javalang.tree.CompilationUnit):
+            for import_decl in node.imports:
+                lines.append(f"Import: {import_decl.path}")
+
+            for type_decl in node.types:
+                if hasattr(type_decl, "name"):
+                    lines.append(f"\nClass: {type_decl.name}")
+                    lines.append(f"Modifiers: {getattr(type_decl, 'modifiers', set())}")
+
+                if hasattr(type_decl, "body"):
+                    for member in type_decl.body:
+                        if isinstance(member, javalang.tree.MethodDeclaration):
+                            params = []
+                            if member.parameters:
+                                for p in member.parameters:
+                                    ptype = getattr(p, "type", None)
+                                    pname = getattr(p, "name", "unknown")
+                                    params.append(f"{getattr(ptype, 'name', str(ptype))} {pname}")
+                            rtype = (
+                                getattr(member.return_type, "name", str(member.return_type))
+                                if member.return_type
+                                else "void"
+                            )
+                            lines.append(f"  Method: {rtype} {member.name}({', '.join(params)})")
+                        elif isinstance(member, javalang.tree.FieldDeclaration):
+                            ftype = (
+                                getattr(member.type, "name", str(member.type))
+                                if member.type
+                                else "unknown"
+                            )
+                            decls = [getattr(d, "name", str(d)) for d in member.declarators]
+                            lines.append(f"  Field: {ftype} {', '.join(decls)}")
+
+        return "\n".join(lines)
+
+    def generate_nl_summary_from_ast(
+        self, java_code: str, context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Step 1 of AST → NL → Bedrock pipeline.
+        Generate a natural language description of what the Java code does.
+
+        Args:
+            java_code: Java source code to analyze
+            context: Optional context (class_name, registry_name, etc.)
+
+        Returns:
+            Dictionary with NL summary and metadata
+        """
+        try:
+            # Parse Java to AST
+            tree = javalang.parse.parse(java_code)
+
+            # Serialize AST structure
+            ast_repr = self._serialize_ast_for_llm(tree)
+
+            # Get class name from context or AST
+            class_name = context.get("class_name", "UnknownClass") if context else "UnknownClass"
+            code_type = context.get("code_type", "generic") if context else "generic"
+
+            # Build prompt for NL summary generation
+            prompt = f"""You are a Minecraft mod migration expert. Analyze the following Java code for a {code_type}
+and describe what it does in natural language. Focus on:
+1. What the component does (block, item, entity, recipe, etc.)
+2. Key properties (hardness, damage, health, behavior)
+3. Event handlers and interactions
+4. Any notable features that need careful translation
+
+Class: {class_name}
+Code Type: {code_type}
+
+AST Structure:
+{ast_repr}
+
+Original Java Code:
+{java_code[:2000]}
+
+Provide a concise natural language description of this Java mod component."""
+
+            # Call LLM
+            llm = self._get_llm_client()
+            if llm is None:
+                logger.warning("No LLM client available, using mock NL summary")
+                return {
+                    "success": True,
+                    "nl_summary": f"Java {code_type} class {class_name} with standard behavior",
+                    "ast_structure": ast_repr,
+                    "llm_used": False,
+                }
+
+            response = llm.invoke(prompt)
+            nl_summary = response.content if hasattr(response, "content") else str(response)
+
+            logger.info(f"Generated NL summary for {class_name} ({len(nl_summary)} chars)")
+
+            return {
+                "success": True,
+                "nl_summary": nl_summary,
+                "ast_structure": ast_repr,
+                "llm_used": True,
+            }
+
+        except javalang.parser.JavaSyntaxError as e:
+            logger.error(f"Java syntax error: {e}")
+            return {
+                "success": False,
+                "error": f"Java syntax error: {str(e)}",
+                "nl_summary": None,
+                "llm_used": False,
+            }
+        except Exception as e:
+            logger.error(f"Error generating NL summary: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "nl_summary": None,
+                "llm_used": False,
+            }
+
+    def generate_bedrock_from_nl(
+        self,
+        nl_summary: str,
+        target_type: str,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Step 2 of AST → NL → Bedrock pipeline.
+        Generate Bedrock-compatible output from NL summary using templates as few-shot examples.
+
+        Args:
+            nl_summary: Natural language description from Step 1
+            target_type: Type of output (block, item, entity, recipe)
+            context: Optional context (namespace, class_name, etc.)
+
+        Returns:
+            Dictionary with generated Bedrock JSON and metadata
+        """
+        try:
+            namespace = context.get("namespace", "modporter") if context else "modporter"
+            class_name = context.get("class_name", "unknown") if context else "unknown"
+            registry_name = (
+                context.get(
+                    "registry_name", class_name.lower().replace("Block", "").replace("Item", "")
+                )
+                if context
+                else "unknown"
+            )
+
+            # Few-shot examples from existing templates
+            examples = {
+                "block": """Example Bedrock block JSON for a metal block:
+{{
+  "format_version": "1.20.10",
+  "minecraft:block": {{
+    "description": {{
+      "identifier": "{namespace}:copper_block",
+      "menu_category": {{"category": "construction"}}
+    }},
+    "components": {{
+      "minecraft:destroy_time": 5.0,
+      "minecraft:explosion_resistance": 6.0,
+      "minecraft:unit_cube": {{}},
+      "minecraft:material_instances": {{
+        "*": {{"texture": "copper_block", "render_method": "opaque"}}
+      }}
+    }}
+  }}
+}}""",
+                "item": """Example Bedrock item JSON for a tool:
+{{
+  "format_version": "1.20.10",
+  "minecraft:item": {{
+    "description": {{
+      "identifier": "{namespace}:iron_pickaxe",
+      "menu_category": {{"category": "tools"}}
+    }},
+    "components": {{
+      "minecraft:icon": {{"texture": "iron_pickaxe"}},
+      "minecraft:display_name": {{"value": "Iron Pickaxe"}},
+      "minecraft:max_stack_size": 1,
+      "minecraft:durability": {{"max_durability": 251}},
+      "minecraft:mining_speed": 6.0,
+      "minecraft:damage": 2
+    }}
+  }}
+}}""",
+            }
+
+            example = examples.get(target_type, examples["block"]).format(namespace=namespace)
+
+            prompt = f"""You are a Minecraft Bedrock edition expert. Convert the following natural language description
+into a valid Bedrock {target_type} JSON. Use the example format as a guide.
+
+Namespace: {namespace}
+Registry Name: {registry_name}
+Component Class: {class_name}
+
+Natural Language Description:
+{nl_summary}
+
+Example Bedrock {target_type} JSON format:
+{example}
+
+Generate ONLY the JSON, no explanations. The JSON must be valid and complete."""
+
+            # Call LLM
+            llm = self._get_llm_client()
+            if llm is None:
+                logger.warning("No LLM client available, using template fallback")
+                return self._generate_fallback_bedrock(target_type, context)
+
+            response = llm.invoke(prompt)
+            bedrock_json_str = str(response.content if hasattr(response, "content") else response)
+
+            # Parse and validate the JSON
+            try:
+                # Try to extract JSON from response (handle potential markdown code blocks)
+                json_str = bedrock_json_str.strip()
+                if json_str.startswith("```"):
+                    lines = json_str.split("\n")
+                    json_str = "\n".join(lines[1:-1])
+                elif json_str.startswith("```json"):
+                    json_str = json_str[7:]
+
+                bedrock_json = json.loads(json_str)
+
+                return {
+                    "success": True,
+                    "bedrock_json": bedrock_json,
+                    "target_type": target_type,
+                    "llm_used": True,
+                }
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse LLM JSON response: {e}")
+                return self._generate_fallback_bedrock(target_type, context)
+
+        except Exception as e:
+            logger.error(f"Error generating Bedrock from NL: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "bedrock_json": None,
+                "llm_used": False,
+            }
+
+    def _generate_fallback_bedrock(
+        self, target_type: str, context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Generate fallback Bedrock JSON using templates when LLM is unavailable."""
+        try:
+            namespace = context.get("namespace", "modporter") if context else "modporter"
+            registry_name = context.get("registry_name", "unknown") if context else "unknown"
+
+            if target_type == "block":
+                template = BEDROCK_BLOCK_TEMPLATES.get("basic", BEDROCK_BLOCK_TEMPLATES["basic"])
+                import copy
+
+                result = copy.deepcopy(template)
+                result["minecraft:block"]["description"]["identifier"] = (
+                    f"{namespace}:{registry_name}"
+                )
+                return {
+                    "success": True,
+                    "bedrock_json": result,
+                    "llm_used": False,
+                    "fallback": True,
+                }
+            elif target_type == "item":
+                template = BEDROCK_ITEM_TEMPLATES.get("basic", BEDROCK_ITEM_TEMPLATES["basic"])
+                import copy
+
+                result = copy.deepcopy(template)
+                result["minecraft:item"]["description"]["identifier"] = (
+                    f"{namespace}:{registry_name}"
+                )
+                return {
+                    "success": True,
+                    "bedrock_json": result,
+                    "llm_used": False,
+                    "fallback": True,
+                }
+            elif target_type == "entity":
+                template = BEDROCK_ENTITY_TEMPLATES.get(
+                    "passive_mob", BEDROCK_ENTITY_TEMPLATES["passive_mob"]
+                )
+                import copy
+
+                result = copy.deepcopy(template)
+                result["minecraft:entity"]["description"]["identifier"] = (
+                    f"{namespace}:{registry_name}"
+                )
+                return {
+                    "success": True,
+                    "bedrock_json": result,
+                    "llm_used": False,
+                    "fallback": True,
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": f"Unknown target type: {target_type}",
+                    "bedrock_json": None,
+                    "llm_used": False,
+                }
+        except Exception as e:
+            return {"success": False, "error": str(e), "bedrock_json": None, "llm_used": False}
+
+    def translate_java_code_with_llm(
+        self,
+        java_code: str,
+        target_type: str = "block",
+        context: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Main LLM-powered translation pipeline: AST → NL → Bedrock.
+
+        Based on research showing that chain-of-thought with NL intermediates
+        achieves 13.8% improvement on CodeNet benchmarks vs zero-shot translation.
+
+        Args:
+            java_code: Java source code to translate
+            target_type: Type of component (block, item, entity, recipe)
+            context: Optional context (class_name, namespace, registry_name, etc.)
+
+        Returns:
+            Dictionary with translation results and metadata
+        """
+        try:
+            logger.info(f"Starting LLM translation pipeline for {target_type}")
+
+            # Step 1: Generate NL summary from AST
+            nl_result = self.generate_nl_summary_from_ast(java_code, context)
+            if not nl_result.get("success"):
+                return nl_result
+
+            nl_summary = nl_result.get("nl_summary", "")
+            logger.info(f"Step 1 complete: Generated NL summary ({len(nl_summary)} chars)")
+
+            # Step 2: Generate Bedrock from NL
+            bedrock_result = self.generate_bedrock_from_nl(nl_summary, target_type, context)
+            if not bedrock_result.get("success"):
+                return bedrock_result
+
+            logger.info(f"Step 2 complete: Generated Bedrock {target_type} JSON")
+
+            # Combine results
+            return {
+                "success": True,
+                "target_type": target_type,
+                "nl_summary": nl_summary,
+                "bedrock_json": bedrock_result.get("bedrock_json"),
+                "llm_used": bedrock_result.get("llm_used", False),
+                "fallback": bedrock_result.get("fallback", False),
+                "ast_structure": nl_result.get("ast_structure"),
+                "translation_pipeline": "AST→NL→Bedrock",
+                "research_backing": {
+                    "chain_of_thought": "13.8% improvement on CodeNet benchmarks",
+                    "k3trans": "135.9% relative improvement on Pass@1",
+                    "temperature": LLM_CODE_TEMPERATURE,
+                },
+            }
+
+        except Exception as e:
+            logger.error(f"Error in LLM translation pipeline: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "bedrock_json": None,
+                "translation_pipeline": "AST→NL→Bedrock",
+            }
+
+    @tool
+    @staticmethod
+    def translate_java_code_llm_tool(java_code_data: str) -> str:
+        """
+        LLM-powered Java to Bedrock translation tool.
+
+        Args:
+            java_code_data: JSON string containing:
+                - java_code: Java source code to translate
+                - target_type: Type of component (block, item, entity, recipe)
+                - context: Optional context dict
+
+        Returns:
+            JSON string with translation results
+        """
+        agent = LogicTranslatorAgent.get_instance()
+        try:
+            data = json.loads(java_code_data)
+            java_code = data.get("java_code", "")
+            target_type = data.get("target_type", "block")
+            context = data.get("context", {})
+
+            result = agent.translate_java_code_with_llm(
+                java_code=java_code, target_type=target_type, context=context
+            )
+
+            return json.dumps(result, indent=2)
+        except Exception as e:
+            return json.dumps({"success": False, "error": str(e)})
