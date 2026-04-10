@@ -445,3 +445,126 @@ class PatternMappingRegistry:
             "by_confidence": confidence_counts,
             "requires_manual_review": manual_review_count,
         }
+
+    def search_mappings(
+        self, query: str, feature_type: str = None, min_confidence: float = 0.0
+    ) -> List[PatternMapping]:
+        """
+        Search for mappings matching a query string.
+
+        Performs simple keyword matching on pattern IDs and notes.
+
+        Args:
+            query: Search query (e.g., "TileEntity energy storage")
+            feature_type: Optional feature type filter (block, item, entity, etc.)
+            min_confidence: Minimum confidence threshold
+
+        Returns:
+            List of matching PatternMappings sorted by relevance score
+        """
+        query_lower = query.lower()
+        query_words = set(query_lower.split())
+
+        feature_keywords = {
+            "block": ["block", "tile", "cube", "solid"],
+            "item": ["item", "tool", "weapon", "armor", "food"],
+            "entity": ["entity", "mob", "creature", "npc", "character"],
+            "recipe": ["recipe", "crafting", "smelting", "shaped", "shapeless"],
+            "event": ["event", "interact", "break", "spawn", "join"],
+            "capability": ["capability", "handler", "inventory", "container"],
+            "network": ["network", "packet", "sync", "通信"],
+            "tileentity": ["tile", "entity", "ticking", "energy", "storage"],
+        }
+
+        scored_mappings = []
+
+        for mapping in self.mappings.values():
+            if mapping.confidence < min_confidence:
+                continue
+
+            score = 0.0
+
+            if feature_type:
+                type_keywords = feature_keywords.get(feature_type.lower(), [feature_type.lower()])
+                if any(kw in mapping.java_pattern_id.lower() for kw in type_keywords):
+                    score += 0.5
+
+            for word in query_words:
+                if word in mapping.java_pattern_id.lower():
+                    score += 0.3
+                if word in mapping.bedrock_pattern_id.lower():
+                    score += 0.2
+                if word in mapping.notes.lower():
+                    score += 0.2
+                for limitation in mapping.limitations:
+                    if word in limitation.lower():
+                        score += 0.1
+
+            if score > 0:
+                scored_mappings.append((mapping, score))
+
+        scored_mappings.sort(key=lambda x: (x[1], x[0].confidence), reverse=True)
+
+        return [m[0] for m in scored_mappings]
+
+    def get_mappings_for_feature_type(self, feature_type: str) -> List[PatternMapping]:
+        """
+        Get all mappings relevant to a specific feature type.
+
+        Args:
+            feature_type: Type of feature (block, item, entity, etc.)
+
+        Returns:
+            List of PatternMappings for that feature type
+        """
+        feature_patterns = {
+            "block": [
+                "java_simple_block",
+                "java_block_properties",
+                "java_rotatable_block",
+                "java_tile_entity",
+                "java_ticking_tile",
+            ],
+            "item": [
+                "java_simple_item",
+                "java_item_properties",
+                "java_food_item",
+                "java_ranged_weapon",
+            ],
+            "entity": ["java_simple_entity", "java_entity_attributes"],
+            "recipe": ["java_shaped_recipe", "java_shapeless_recipe", "java_smelting_recipe"],
+            "event": ["java_player_interact", "java_block_break", "java_entity_join"],
+            "capability": ["java_item_handler", "java_fluid_handler"],
+            "network": ["java_network_packet"],
+        }
+
+        pattern_ids = feature_patterns.get(feature_type.lower(), [])
+        return [self.mappings[pid] for pid in pattern_ids if pid in self.mappings]
+
+    def to_indexable_documents(self) -> List[Dict[str, str]]:
+        """
+        Convert all mappings to documents suitable for vector DB indexing.
+
+        Returns:
+            List of documents with 'content' and 'source' fields
+        """
+        documents = []
+        for mapping in self.mappings.values():
+            content_parts = [
+                f"Java pattern: {mapping.java_pattern_id}",
+                f"Bedrock pattern: {mapping.bedrock_pattern_id}",
+                f"Confidence: {mapping.confidence}",
+                f"Description: {mapping.notes}",
+            ]
+            if mapping.limitations:
+                content_parts.append(f"Limitations: {'; '.join(mapping.limitations)}")
+
+            documents.append(
+                {
+                    "content": " | ".join(content_parts),
+                    "source": f"pattern_mapping:{mapping.java_pattern_id}",
+                    "metadata": mapping.to_dict(),
+                }
+            )
+
+        return documents
