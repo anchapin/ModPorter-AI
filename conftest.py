@@ -43,21 +43,20 @@ print(f"[ROOT CONFTEST] Final sys.path: {sys.path[:5]}")
 # PYTEST CONFIGURATION
 # ============================================================================
 
+
 def pytest_configure(config):
     """Configure pytest with markers and settings"""
     config.addinivalue_line(
         "markers", "asyncio: mark test as async (deselect with '-m \"not asyncio\"')"
     )
-    config.addinivalue_line(
-        "markers", "integration: mark test as integration test"
-    )
-    config.addinivalue_line(
-        "markers", "unit: mark test as unit test"
-    )
+    config.addinivalue_line("markers", "integration: mark test as integration test")
+    config.addinivalue_line("markers", "unit: mark test as unit test")
+
 
 # ============================================================================
 # ASYNC TEST SUPPORT (pytest-asyncio)
 # ============================================================================
+
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -66,9 +65,11 @@ def event_loop():
     yield loop
     loop.close()
 
+
 # ============================================================================
 # ENVIRONMENT & CONFIGURATION FIXTURES
 # ============================================================================
+
 
 @pytest.fixture(autouse=True)
 def setup_env():
@@ -85,11 +86,13 @@ def setup_env():
         else:
             os.environ[k] = v
 
+
 @pytest.fixture(scope="function")
 def django_settings_override():
     """Fixture to override Django settings per test"""
     try:
         from django.conf import settings
+
         original_debug = settings.DEBUG
         settings.DEBUG = True
         yield settings
@@ -97,19 +100,24 @@ def django_settings_override():
     except ImportError:
         yield None
 
+
 # ============================================================================
 # DEPENDENCY INJECTION & SERVICE MOCKS
 # ============================================================================
 
+
 @pytest.fixture
 def mock_service_factory():
     """Factory for creating mock services"""
+
     def _create_mock_service(name, **methods):
         mock = MagicMock(name=name)
         for method_name, method_impl in methods.items():
             setattr(mock, method_name, method_impl)
         return mock
+
     return _create_mock_service
+
 
 @pytest.fixture
 def mock_analytics_service():
@@ -120,6 +128,7 @@ def mock_analytics_service():
     mock.get_metrics = MagicMock(return_value={})
     return mock
 
+
 @pytest.fixture
 def mock_email_service():
     """Mock email service"""
@@ -127,6 +136,7 @@ def mock_email_service():
     mock.send_email = MagicMock(return_value=True)
     mock.send_batch = MagicMock(return_value=[])
     return mock
+
 
 @pytest.fixture
 def mock_storage_service():
@@ -137,50 +147,58 @@ def mock_storage_service():
     mock.delete_file = MagicMock(return_value=True)
     return mock
 
+
 # ============================================================================
 # DATABASE FIXTURES
 # ============================================================================
+
 
 @pytest.fixture
 def db_transaction(db):
     """Fixture for database transactions with rollback"""
     from django.db import transaction
+
     with transaction.atomic():
         yield db
         # Rollback happens automatically with transaction context manager
+
 
 @pytest.fixture
 def clean_db():
     """Clean database between tests"""
     try:
         from django.core.management import call_command
-        call_command('flush', '--noinput', verbosity=0)
+
+        call_command("flush", "--noinput", verbosity=0)
         yield
-        call_command('flush', '--noinput', verbosity=0)
+        call_command("flush", "--noinput", verbosity=0)
     except ImportError:
         yield
+
 
 # ============================================================================
 # EXTERNAL DEPENDENCY MOCKS
 # ============================================================================
 
+
 @pytest.fixture(autouse=True)
 def mock_external_deps():
     """Mock external dependencies that might not be available"""
     import sys
+
     old_modules = {}
-    
+
     # Don't mock markdown/bs4 - they need to run real code for ingestion processor tests
     # Only mock aiohttp if not available
     try:
         import aiohttp
     except ImportError:
-        sys.modules['aiohttp'] = MagicMock()
-        old_modules['aiohttp'] = 'new'
-    
+        sys.modules["aiohttp"] = MagicMock()
+        old_modules["aiohttp"] = "new"
+
     yield
-    
+
     # Cleanup
     for mod_name, status in old_modules.items():
-        if status == 'new':
+        if status == "new":
             del sys.modules[mod_name]

@@ -15,6 +15,7 @@ exclude = [
     "docker/",    # Docker files
     "docs/",      # Documentation
     "temp_init.py",  # UTF-16 encoded file
+    "pytest-of-alex/",  # pytest forked test isolation directories
 ]
 
 [tool.ruff.lint]
@@ -86,6 +87,10 @@ ignore = [
 
 # Scripts - allow unused variables and imports (legacy code)
 "scripts/*" = ["E402", "F401", "F841"]
+
+# Test files - allow unused imports (test fixtures may have intentional unused imports)
+"conftest.py" = ["F401"]
+"mock-ai-engine.py" = ["F401"]
 
 # Modporter CLI - legacy code
 "modporter/*" = ["E402", "F401", "E722", "F841"]

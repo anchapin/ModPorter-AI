@@ -7,7 +7,6 @@ This is the first QA agent (QA-02) in the multi-agent pipeline.
 
 import json
 import time
-import logging
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
@@ -230,7 +229,6 @@ class TranslatorAgent:
             Dictionary of generated Bedrock JSON files
         """
         output = {}
-        logic_translator = self._get_logic_translator()
 
         for cls in parsed_ast.get("classes", []):
             class_name = cls["name"]

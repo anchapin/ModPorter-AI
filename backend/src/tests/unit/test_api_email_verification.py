@@ -13,10 +13,9 @@ class TestRegisterWithVerificationRequest:
     def test_valid_registration_request(self):
         """Test valid registration with email verification request."""
         from api.email_verification import RegisterWithVerificationRequest
-        
+
         request = RegisterWithVerificationRequest(
-            email="test@example.com",
-            password="SecurePass123!"
+            email="test@example.com", password="SecurePass123!"
         )
         assert request.email == "test@example.com"
         assert request.password == "SecurePass123!"
@@ -25,7 +24,7 @@ class TestRegisterWithVerificationRequest:
         """Test invalid email format."""
         from api.email_verification import RegisterWithVerificationRequest
         from pydantic import ValidationError
-        
+
         with pytest.raises(ValidationError):
             RegisterWithVerificationRequest(email="invalid-email", password="pass")
 
@@ -36,7 +35,7 @@ class TestResendVerificationRequest:
     def test_valid_resend_request(self):
         """Test valid resend verification request."""
         from api.email_verification import ResendVerificationRequest
-        
+
         request = ResendVerificationRequest(email="test@example.com")
         assert request.email == "test@example.com"
 
@@ -44,7 +43,7 @@ class TestResendVerificationRequest:
         """Test invalid email for resend."""
         from api.email_verification import ResendVerificationRequest
         from pydantic import ValidationError
-        
+
         with pytest.raises(ValidationError):
             ResendVerificationRequest(email="not-an-email")
 
@@ -55,10 +54,9 @@ class TestResponseModels:
     def test_registration_response(self):
         """Test registration response model."""
         from api.email_verification import RegisterWithVerificationResponse
-        
+
         response = RegisterWithVerificationResponse(
-            message="Verification email sent",
-            user_id="user-123"
+            message="Verification email sent", user_id="user-123"
         )
         assert response.user_id == "user-123"
         assert "Verification" in response.message
@@ -66,8 +64,6 @@ class TestResponseModels:
     def test_resend_response(self):
         """Test resend verification response model."""
         from api.email_verification import ResendVerificationResponse
-        
-        response = ResendVerificationResponse(
-            message="Verification email resent"
-        )
+
+        response = ResendVerificationResponse(message="Verification email resent")
         assert "Verification" in response.message

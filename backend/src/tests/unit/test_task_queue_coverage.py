@@ -3,7 +3,7 @@ Tests for task_queue service.
 
 This module provides test coverage for the async task queue:
 - TaskStatus enum
-- TaskPriority enum  
+- TaskPriority enum
 - Task dataclass
 - AsyncTaskQueue class
 """
@@ -62,12 +62,8 @@ class TestTask:
 
     def test_task_creation(self):
         """Test creating a Task with required fields."""
-        task = Task(
-            id="task-123",
-            name="test_task",
-            payload={"key": "value"}
-        )
-        
+        task = Task(id="task-123", name="test_task", payload={"key": "value"})
+
         assert task.id == "task-123"
         assert task.name == "test_task"
         assert task.payload == {"key": "value"}
@@ -79,7 +75,7 @@ class TestTask:
         created = datetime.now(timezone.utc)
         started = datetime.now(timezone.utc)
         completed = datetime.now(timezone.utc)
-        
+
         task = Task(
             id="task-456",
             name="full_task",
@@ -92,23 +88,19 @@ class TestTask:
             result={"output": "result"},
             error=None,
             retry_count=1,
-            max_retries=3
+            max_retries=3,
         )
-        
+
         assert task.status == TaskStatus.PROCESSING
         assert task.priority == TaskPriority.HIGH
         assert task.retry_count == 1
 
     def test_task_to_dict(self):
         """Test Task.to_dict() method."""
-        task = Task(
-            id="task-789",
-            name="dict_task",
-            payload={"test": "data"}
-        )
-        
+        task = Task(id="task-789", name="dict_task", payload={"test": "data"})
+
         task_dict = task.to_dict()
-        
+
         assert task_dict["id"] == "task-789"
         assert task_dict["name"] == "dict_task"
         assert task_dict["payload"] == {"test": "data"}
@@ -118,7 +110,7 @@ class TestTask:
     def test_task_default_values(self):
         """Test Task has correct default values."""
         task = Task(id="test", name="test", payload={})
-        
+
         assert task.status == TaskStatus.QUEUED
         assert task.priority == TaskPriority.NORMAL
         assert task.retry_count == 0
@@ -133,7 +125,7 @@ class TestAsyncTaskQueue:
     def test_queue_names(self):
         """Test queue names for different priorities."""
         queue = AsyncTaskQueue()
-        
+
         assert queue._queue_names[TaskPriority.LOW] == "task_queue:low"
         assert queue._queue_names[TaskPriority.NORMAL] == "task_queue:normal"
         assert queue._queue_names[TaskPriority.HIGH] == "task_queue:high"
@@ -142,19 +134,15 @@ class TestAsyncTaskQueue:
     def test_default_values(self):
         """Test AsyncTaskQueue default values."""
         queue = AsyncTaskQueue()
-        
+
         assert queue.redis_url == "redis://localhost:6379"
         assert queue.max_retries == 3
         assert queue.default_timeout == 300
 
     def test_custom_values(self):
         """Test AsyncTaskQueue with custom values."""
-        queue = AsyncTaskQueue(
-            redis_url="redis://custom:6379",
-            max_retries=5,
-            default_timeout=600
-        )
-        
+        queue = AsyncTaskQueue(redis_url="redis://custom:6379", max_retries=5, default_timeout=600)
+
         assert queue.redis_url == "redis://custom:6379"
         assert queue.max_retries == 5
         assert queue.default_timeout == 600

@@ -18,6 +18,7 @@ import argparse
 @dataclass
 class PerformanceMetric:
     """Single performance metric"""
+
     step: str
     duration_seconds: float
     start_timestamp: float
@@ -56,7 +57,7 @@ class PerformanceTracker:
         )
 
         metric_file = self.data_dir / f"step-{step.replace('/', '-')}.json"
-        with open(metric_file, 'w') as f:
+        with open(metric_file, "w") as f:
             json.dump(metric.to_dict(), f, indent=2)
 
         print(f"✅ Recorded: {step} ({metric.duration_seconds:.1f}s)")
@@ -70,10 +71,10 @@ class PerformanceTracker:
         total_duration = 0
 
         for metric_file in sorted(metrics_files):
-            with open(metric_file, 'r') as f:
+            with open(metric_file, "r") as f:
                 metric = json.load(f)
                 steps.append(metric)
-                total_duration += metric['duration_seconds']
+                total_duration += metric["duration_seconds"]
 
         summary = {
             "workflow": os.getenv("GITHUB_WORKFLOW", "CI"),
@@ -89,7 +90,7 @@ class PerformanceTracker:
         }
 
         summary_file = self.data_dir / "summary.json"
-        with open(summary_file, 'w') as f:
+        with open(summary_file, "w") as f:
             json.dump(summary, f, indent=2)
 
         if metrics_files:
@@ -104,7 +105,7 @@ class PerformanceTracker:
         if not summary_file.exists():
             return None
 
-        with open(summary_file, 'r') as f:
+        with open(summary_file, "r") as f:
             return json.load(f)
 
     def compare_with_baseline(self) -> Dict:
@@ -116,20 +117,20 @@ class PerformanceTracker:
             print("❌ No metrics summary found")
             return {}
 
-        with open(summary_file, 'r') as f:
+        with open(summary_file, "r") as f:
             current = json.load(f)
 
         if not baseline_file.exists():
             print("ℹ️  No baseline found - creating first baseline")
-            with open(baseline_file, 'w') as f:
+            with open(baseline_file, "w") as f:
                 json.dump(current, f, indent=2)
             return {"status": "baseline_created"}
 
-        with open(baseline_file, 'r') as f:
+        with open(baseline_file, "r") as f:
             baseline = json.load(f)
 
-        current_dur = current['total_duration_seconds']
-        baseline_dur = baseline['total_duration_seconds']
+        current_dur = current["total_duration_seconds"]
+        baseline_dur = baseline["total_duration_seconds"]
         diff = current_dur - baseline_dur
         percent = (diff / baseline_dur * 100) if baseline_dur else 0
 
@@ -155,7 +156,7 @@ class PerformanceTracker:
         if not summary:
             return []
 
-        return [s for s in summary.get('steps', []) if s['duration_seconds'] > threshold_seconds]
+        return [s for s in summary.get("steps", []) if s["duration_seconds"] > threshold_seconds]
 
     def generate_pr_comment(self) -> str:
         """Generate markdown report for PR comment"""
@@ -165,8 +166,8 @@ class PerformanceTracker:
         if not summary:
             return "No performance metrics available"
 
-        total_dur = summary['total_duration_seconds']
-        steps_count = summary['steps_count']
+        total_dur = summary["total_duration_seconds"]
+        steps_count = summary["steps_count"]
         slow_steps = self.get_slow_steps()
 
         comment = f"""## 📊 Build Performance Report
@@ -174,17 +175,19 @@ class PerformanceTracker:
 ### Build Summary
 - **Total Duration:** {total_dur:.1f}s
 - **Steps:** {steps_count}
-- **Average Step Time:** {summary['average_step_duration']:.1f}s
-- **Branch:** {summary['branch']}
+- **Average Step Time:** {summary["average_step_duration"]:.1f}s
+- **Branch:** {summary["branch"]}
 
 ### Performance Comparison
 """
 
-        if comparison and 'status' in comparison:
-            status_emoji = "🟢" if comparison['status'] == 'improvement' else (
-                "🔴" if comparison['status'] == 'regression' else "🟡"
+        if comparison and "status" in comparison:
+            status_emoji = (
+                "🟢"
+                if comparison["status"] == "improvement"
+                else ("🔴" if comparison["status"] == "regression" else "🟡")
             )
-            if comparison['status'] == 'baseline_created':
+            if comparison["status"] == "baseline_created":
                 comment += f"🆕 Baseline created\n"
             else:
                 comment += f"{status_emoji} {comparison['status'].upper()}: {comparison['diff_seconds']:+.1f}s ({comparison['diff_percent']:+.1f}%)\n"
@@ -242,7 +245,7 @@ def main():
         parser.print_help()
         return
 
-    tracker = PerformanceTracker(args.dir if hasattr(args, 'dir') else ".github/perf-metrics")
+    tracker = PerformanceTracker(args.dir if hasattr(args, "dir") else ".github/perf-metrics")
 
     if args.command == "record":
         tracker.record_metric(args.step, args.start, args.end)
@@ -253,7 +256,7 @@ def main():
     elif args.command == "report":
         comment = tracker.generate_pr_comment()
         if args.output:
-            with open(args.output, 'w') as f:
+            with open(args.output, "w") as f:
                 f.write(comment)
             print(f"✅ Report written to {args.output}")
         else:
@@ -265,7 +268,7 @@ def main():
     elif args.command == "export":
         json_output = tracker.to_json()
         if args.output:
-            with open(args.output, 'w') as f:
+            with open(args.output, "w") as f:
                 f.write(json_output)
             print(f"✅ Exported to {args.output}")
         else:

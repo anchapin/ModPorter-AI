@@ -22,18 +22,26 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 __all__ = [
-    'convert_single_texture', 'detect_texture_atlas', 'extract_texture_atlas',
-    'parse_atlas_metadata', 'convert_atlas_to_bedrock', 'convert_java_texture_path',
-    'validate_texture', 'validate_textures_batch', 'generate_fallback_texture',
-    'generate_fallback_for_jar', 'extract_textures_from_jar',
-    'extract_texture_atlas_from_jar', 'convert_jar_textures_to_bedrock',
+    "convert_single_texture",
+    "detect_texture_atlas",
+    "extract_texture_atlas",
+    "parse_atlas_metadata",
+    "convert_atlas_to_bedrock",
+    "convert_java_texture_path",
+    "validate_texture",
+    "validate_textures_batch",
+    "generate_fallback_texture",
+    "generate_fallback_for_jar",
+    "extract_textures_from_jar",
+    "extract_texture_atlas_from_jar",
+    "convert_jar_textures_to_bedrock",
 ]
-
 
 
 # ============================================================================
 # _convert_single_texture
 # ============================================================================
+
 
 def _convert_single_texture(
     self, texture_path: str, metadata: Dict, usage: str, output_dir: Path = None
@@ -53,9 +61,7 @@ def _convert_single_texture(
     try:
         # Handle missing or corrupted files with fallback generation
         if not Path(texture_path).exists():
-            logger.warning(
-                f"Texture file not found: {texture_path}. Generating fallback texture."
-            )
+            logger.warning(f"Texture file not found: {texture_path}. Generating fallback texture.")
             img = agent._generate_fallback_texture(usage)
             original_dimensions = img.size
             is_valid_png = False
@@ -139,13 +145,9 @@ def _convert_single_texture(
                     animation_data = mcmeta_content["animation"]
                     optimizations_applied.append("Parsed .mcmeta animation data")
             except (json.JSONDecodeError, Exception) as e:
-                logger.warning(
-                    "Could not parse .mcmeta file for {}: {}".format(texture_path, e)
-                )
+                logger.warning("Could not parse .mcmeta file for {}: {}".format(texture_path, e))
 
-        base_name = (
-            Path(texture_path).stem if Path(texture_path).exists() else "fallback_texture"
-        )
+        base_name = Path(texture_path).stem if Path(texture_path).exists() else "fallback_texture"
         # Enhanced asset path mapping from Java mod structure to Bedrock structure
         # Handle common Java mod asset paths and map them to Bedrock equivalents
         texture_path_obj = (
@@ -264,9 +266,11 @@ def _convert_single_texture(
         agent._conversion_cache[cache_key] = error_result
         return error_result
 
+
 # ============================================================================
 # _generate_texture_pack_structure
 # ============================================================================
+
 
 def _generate_texture_pack_structure(agent, textures: List[Dict]) -> Dict:
     """Generate texture pack structure files with enhanced atlas handling"""
@@ -310,9 +314,7 @@ def _generate_texture_pack_structure(agent, textures: List[Dict]) -> Dict:
             atlas_name = base_name.split("_")[0]  # Group by prefix
             if atlas_name not in texture_atlases:
                 texture_atlases[atlas_name] = []
-            texture_atlases[atlas_name].append(
-                {"reference": bedrock_ref, "path": converted_path}
-            )
+            texture_atlases[atlas_name].append({"reference": bedrock_ref, "path": converted_path})
 
         if bedrock_ref.startswith("item_") or "/items/" in converted_path:
             item_texture_data[bedrock_ref] = texture_entry
@@ -330,9 +332,7 @@ def _generate_texture_pack_structure(agent, textures: List[Dict]) -> Dict:
             if frames_list and all(isinstance(f, dict) for f in frames_list):
                 try:
                     processed_frames = [
-                        int(f["index"])
-                        for f in frames_list
-                        if isinstance(f, dict) and "index" in f
+                        int(f["index"]) for f in frames_list if isinstance(f, dict) and "index" in f
                     ]
                     if not processed_frames:
                         processed_frames = []
@@ -378,9 +378,11 @@ def _generate_texture_pack_structure(agent, textures: List[Dict]) -> Dict:
 
     return result
 
+
 # ============================================================================
 # convert_textures
 # ============================================================================
+
 
 def convert_textures(agent, texture_list: str, output_path: str) -> str:
     """
@@ -480,9 +482,11 @@ def convert_textures(agent, texture_list: str, output_path: str) -> str:
             indent=2,
         )
 
+
 # ============================================================================
 # detect_texture_atlas
 # ============================================================================
+
 
 def detect_texture_atlas(agent, texture_path: str) -> Dict:
     """
@@ -547,9 +551,11 @@ def detect_texture_atlas(agent, texture_path: str) -> Dict:
         logger.error(f"Error detecting texture atlas: {e}")
         return {"is_atlas": False, "error": str(e)}
 
+
 # ============================================================================
 # extract_texture_atlas
 # ============================================================================
+
 
 def extract_texture_atlas(
     self,
@@ -638,9 +644,11 @@ def extract_texture_atlas(
         logger.error(f"Error extracting texture atlas: {e}")
         return {"success": False, "error": str(e)}
 
+
 # ============================================================================
 # parse_atlas_metadata
 # ============================================================================
+
 
 def parse_atlas_metadata(agent, mcmeta_path: str) -> Dict:
     """
@@ -697,9 +705,11 @@ def parse_atlas_metadata(agent, mcmeta_path: str) -> Dict:
         logger.error(f"Error parsing mcmeta file: {e}")
         return {"success": False, "error": str(e)}
 
+
 # ============================================================================
 # convert_atlas_to_bedrock
 # ============================================================================
+
 
 def convert_atlas_to_bedrock(
     self, atlas_path: str, output_dir: str, texture_names: List[str] = None
@@ -761,9 +771,11 @@ def convert_atlas_to_bedrock(
         logger.error(f"Error converting texture atlas: {e}")
         return {"success": False, "error": str(e)}
 
+
 # ============================================================================
 # convert_java_texture_path
 # ============================================================================
+
 
 def convert_java_texture_path(agent, java_path: str, bedrock_type: str = "blocks") -> str:
     """
@@ -812,9 +824,11 @@ def convert_java_texture_path(agent, java_path: str, bedrock_type: str = "blocks
     logger.debug(f"Converted Java path '{java_path}' to Bedrock path '{bedrock_path}'")
     return bedrock_path
 
+
 # ============================================================================
 # validate_texture
 # ============================================================================
+
 
 def validate_texture(agent, texture_path: str, metadata: Dict = None) -> Dict:
     """
@@ -894,9 +908,11 @@ def validate_texture(agent, texture_path: str, metadata: Dict = None) -> Dict:
 
     return result
 
+
 # ============================================================================
 # generate_fallback_for_jar
 # ============================================================================
+
 
 def generate_fallback_for_jar(
     self, output_path: str, block_name: str, texture_type: str = "blocks"
@@ -939,9 +955,11 @@ def generate_fallback_for_jar(
         logger.error(f"Error generating fallback texture: {e}")
         return {"success": False, "error": str(e)}
 
+
 # ============================================================================
 # _get_recommended_resolution
 # ============================================================================
+
 
 def _get_recommended_resolution(agent, width: int, height: int) -> str:
     """Get recommended resolution for texture"""
@@ -953,9 +971,11 @@ def _get_recommended_resolution(agent, width: int, height: int) -> str:
 
     return f"{target_width}x{target_height}"
 
+
 # ============================================================================
 # _generate_conversion_recommendations
 # ============================================================================
+
 
 def _generate_conversion_recommendations(agent, analysis: Dict) -> List[str]:
     """Generate conversion recommendations based on analysis"""
@@ -987,9 +1007,11 @@ def _generate_conversion_recommendations(agent, analysis: Dict) -> List[str]:
 
     return recommendations
 
+
 # ============================================================================
 # _assess_conversion_complexity
 # ============================================================================
+
 
 def _assess_conversion_complexity(agent, analysis: Dict) -> str:
     """Assess the complexity of the conversion task"""
@@ -1012,13 +1034,13 @@ def _assess_conversion_complexity(agent, analysis: Dict) -> str:
     else:
         return "complex"
 
+
 # ============================================================================
 # extract_textures_from_jar
 # ============================================================================
 
-def extract_textures_from_jar(
-    self, jar_path: str, output_dir: str, namespace: str = None
-) -> Dict:
+
+def extract_textures_from_jar(self, jar_path: str, output_dir: str, namespace: str = None) -> Dict:
     """
     Extract all textures from a Java mod JAR file.
 
@@ -1059,9 +1081,7 @@ def extract_textures_from_jar(
 
             # Filter by namespace if provided
             if namespace:
-                texture_files = [
-                    f for f in texture_files if f.startswith(f"assets/{namespace}/")
-                ]
+                texture_files = [f for f in texture_files if f.startswith(f"assets/{namespace}/")]
 
             # Also look for mcmeta animation files
             mcmeta_files = [
@@ -1129,9 +1149,11 @@ def extract_textures_from_jar(
             "extracted_textures": [],
         }
 
+
 # ============================================================================
 # _map_java_texture_to_bedrock
 # ============================================================================
+
 
 def _map_java_texture_to_bedrock(agent, java_path: str) -> str:
     """
@@ -1161,9 +1183,11 @@ def _map_java_texture_to_bedrock(agent, java_path: str) -> str:
     # Fallback: just use the filename in textures/
     return f"textures/{Path(java_path).name}"
 
+
 # ============================================================================
 # _map_texture_type
 # ============================================================================
+
 
 def _map_texture_type(agent, java_type: str) -> str:
     """
@@ -1190,9 +1214,11 @@ def _map_texture_type(agent, java_type: str) -> str:
 
     return type_mapping.get(java_type.lower(), "misc")
 
+
 # ============================================================================
 # _map_bedrock_texture_to_java
 # ============================================================================
+
 
 def _map_bedrock_texture_to_java(agent, bedrock_path: str, namespace: str) -> str:
     """
@@ -1221,9 +1247,11 @@ def _map_bedrock_texture_to_java(agent, bedrock_path: str, namespace: str) -> st
 
     return f"assets/{namespace}/textures/misc/{bedrock_path}"
 
+
 # ============================================================================
 # _map_bedrock_type_to_java
 # ============================================================================
+
 
 def _map_bedrock_type_to_java(agent, bedrock_type: str) -> str:
     """
@@ -1248,9 +1276,11 @@ def _map_bedrock_type_to_java(agent, bedrock_type: str) -> str:
 
     return type_mapping.get(bedrock_type.lower(), "misc")
 
+
 # ============================================================================
 # validate_textures_batch
 # ============================================================================
+
 
 def validate_textures_batch(agent, texture_paths: List[str], metadata: Dict = None) -> Dict:
     """
@@ -1288,13 +1318,13 @@ def validate_textures_batch(agent, texture_paths: List[str], metadata: Dict = No
         "results": results,
     }
 
+
 # ============================================================================
 # extract_texture_atlas_from_jar
 # ============================================================================
 
-def extract_texture_atlas_from_jar(
-    self, jar_path: str, atlas_type: str, output_dir: str
-) -> Dict:
+
+def extract_texture_atlas_from_jar(self, jar_path: str, atlas_type: str, output_dir: str) -> Dict:
     """
     Extract and convert a texture atlas from a mod JAR.
 
@@ -1306,8 +1336,6 @@ def extract_texture_atlas_from_jar(
     Returns:
         Dict with extraction results
     """
-    extracted_tiles = []
-    errors = []
 
     try:
         jar = zipfile.ZipFile(jar_path, "r")
@@ -1373,9 +1401,11 @@ def extract_texture_atlas_from_jar(
             "extracted_tiles": [],
         }
 
+
 # ============================================================================
 # convert_jar_textures_to_bedrock
 # ============================================================================
+
 
 def convert_jar_textures_to_bedrock(
     self, jar_path: str, output_dir: str, namespace: str = None
@@ -1421,9 +1451,7 @@ def convert_jar_textures_to_bedrock(
                 validation = agent.validate_texture(texture_path)
 
                 if not validation["valid"]:
-                    results["failed"].append(
-                        {"path": texture_path, "errors": validation["errors"]}
-                    )
+                    results["failed"].append({"path": texture_path, "errors": validation["errors"]})
                     results["warnings"].extend(validation["warnings"])
                     continue
 
@@ -1469,13 +1497,13 @@ def convert_jar_textures_to_bedrock(
 
     return results
 
+
 # ============================================================================
 # _generate_fallback_texture
 # ============================================================================
 
-def _generate_fallback_texture(
-    self, usage: str = "block", size: tuple = (16, 16)
-) -> Image.Image:
+
+def _generate_fallback_texture(self, usage: str = "block", size: tuple = (16, 16)) -> Image.Image:
     """Generate a fallback texture for edge cases"""
     # Create a simple colored texture based on usage type
     colors = {
@@ -1506,9 +1534,11 @@ def _generate_fallback_texture(
 
     return img
 
+
 # ============================================================================
 # _get_mod_ids_from_jar
 # ============================================================================
+
 
 def _get_mod_ids_from_jar(agent, jar: zipfile.ZipFile) -> List[str]:
     """Extract mod IDs/namespaces from JAR assets directory."""
@@ -1525,9 +1555,11 @@ def _get_mod_ids_from_jar(agent, jar: zipfile.ZipFile) -> List[str]:
     # Always include 'minecraft' as fallback
     return list(mod_ids) if mod_ids else ["minecraft"]
 
+
 # ============================================================================
 # _extract_textures_from_alt_locations
 # ============================================================================
+
 
 def _extract_textures_from_alt_locations(
     self, jar: zipfile.ZipFile, output_path: Path

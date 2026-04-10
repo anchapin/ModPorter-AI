@@ -8,8 +8,7 @@ category classification, tileability detection, and animation frame analysis.
 
 import os
 import logging
-from typing import Optional, Dict, Any, List
-from pathlib import Path
+from typing import Optional, List
 
 # Try to import PIL for image processing
 try:
@@ -183,21 +182,6 @@ class TextureMetadataExtractor:
 
                 # Calculate complexity score
                 complexity_score = self._calculate_complexity(img)
-
-                # Build result dictionary
-                result = {
-                    "width": width,
-                    "height": height,
-                    "channels": channels,
-                    "format": format_str,
-                    "file_size_bytes": file_size,
-                    "has_transparency": has_transparency,
-                    "color_palette": color_palette,
-                    "texture_category": category,
-                    "is_tileable": is_tileable,
-                    "animation_frames": animation_frames,
-                    "complexity_score": complexity_score,
-                }
 
                 # Add to image metadata - return as ImageMetadata model
                 return ImageMetadata(

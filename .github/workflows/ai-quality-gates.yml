@@ -61,13 +61,17 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r backend/requirements.txt
-          pip install pytest pytest-cov pytest-asyncio
+          pip install -r backend/requirements-dev.txt
+          pip install pytest pytest-cov pytest-asyncio PyJWT psutil
       
       - name: Run Batch 1 Tests
         run: |
           cd backend
+          # Run specific test batches WITHOUT coverage (coverage is handled separately by Coverage Gate job)
+          # Note: pytest.ini defaults include -n auto and --cov-fail-under=80, so we override
           python3 -m pytest src/tests/unit/test_a*.py src/tests/unit/test_b*.py src/tests/unit/test_c*.py \
-            -q --tb=short --ignore=src/tests/unit/test_task_worker_coverage.py
+            -q --tb=short --ignore=src/tests/unit/test_task_worker_coverage.py \
+            --no-cov --cov-fail-under=0
 
   unit-tests-batch-2:
     name: Unit Tests (d-m*)
@@ -83,16 +87,18 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r backend/requirements.txt
-          pip install pytest pytest-cov pytest-asyncio
+          pip install pytest pytest-cov pytest-asyncio PyJWT psutil
       
       - name: Run Batch 2 Tests
         run: |
           cd backend
+          # Note: -n 0 because pytest-xdist -n auto has issues with multiple glob patterns
+          # Only include globs that actually match files (no test_g*.py, test_h*.py exist)
           python3 -m pytest src/tests/unit/test_d*.py src/tests/unit/test_e*.py \
-            src/tests/unit/test_f*.py src/tests/unit/test_g*.py src/tests/unit/test_h*.py \
-            src/tests/unit/test_i*.py src/tests/unit/test_j*.py src/tests/unit/test_k*.py \
-            src/tests/unit/test_l*.py src/tests/unit/test_m*.py \
-            -q --tb=short --ignore=src/tests/unit/test_task_worker_coverage.py
+            src/tests/unit/test_f*.py src/tests/unit/test_i*.py src/tests/unit/test_j*.py \
+            src/tests/unit/test_k*.py src/tests/unit/test_l*.py src/tests/unit/test_m*.py \
+            -q --tb=short --ignore=src/tests/unit/test_task_worker_coverage.py \
+            -n 0 --no-cov --cov-fail-under=0
 
   unit-tests-batch-3:
     name: Unit Tests (n-z*)
@@ -108,17 +114,18 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r backend/requirements.txt
-          pip install pytest pytest-cov pytest-asyncio
+          pip install pytest pytest-cov pytest-asyncio PyJWT psutil
       
       - name: Run Batch 3 Tests
         run: |
           cd backend
-          python3 -m pytest src/tests/unit/test_n*.py src/tests/unit/test_o*.py \
-            src/tests/unit/test_p*.py src/tests/unit/test_q*.py src/tests/unit/test_r*.py \
-            src/tests/unit/test_s*.py src/tests/unit/test_t*.py src/tests/unit/test_u*.py \
-            src/tests/unit/test_v*.py src/tests/unit/test_w*.py src/tests/unit/test_x*.py \
-            src/tests/unit/test_y*.py src/tests/unit/test_z*.py \
-            -q --tb=short --ignore=src/tests/unit/test_task_worker_coverage.py
+          # Note: -n 0 because pytest-xdist -n auto has issues with multiple glob patterns
+          # Only include globs that actually match files (no test_n*.py, test_u*.py, test_x*.py, test_y*.py, test_z*.py exist)
+          python3 -m pytest src/tests/unit/test_o*.py src/tests/unit/test_p*.py \
+            src/tests/unit/test_q*.py src/tests/unit/test_r*.py src/tests/unit/test_s*.py \
+            src/tests/unit/test_t*.py src/tests/unit/test_v*.py src/tests/unit/test_w*.py \
+            -q --tb=short --ignore=src/tests/unit/test_task_worker_coverage.py \
+            -n 0 --no-cov --cov-fail-under=0
 
   # ============================================
   # UNIT TESTS - COVERAGE
@@ -137,7 +144,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r backend/requirements.txt
-          pip install pytest pytest-cov pytest-asyncio pytest-randomly
+          pip install -r backend/requirements-dev.txt
+          pip install pytest pytest-cov pytest-asyncio PyJWT psutil pytest-randomly pytest-xdist pytest-timeout
       
       - name: Run Coverage Tests
         run: |
@@ -173,12 +181,14 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r backend/requirements.txt
-          pip install pytest pytest-asyncio
+          pip install -r backend/requirements-dev.txt
+          pip install pytest pytest-asyncio PyJWT
       
       - name: Run Integration Tests
         run: |
           cd backend
-          python3 -m pytest src/tests/integration/ -v --tb=short
+          # Integration tests don't have enough coverage to hit 80%, so disable coverage check
+          python3 -m pytest src/tests/integration/ -v --tb=short --no-cov --cov-fail-under=0
 
   # ============================================
   # SECURITY SCANNING
@@ -204,7 +214,7 @@ jobs:
       
       - name: Run Bandit
         run: |
-          pip install bandit
+          pip install --timeout=300 bandit
           bandit -r backend/src -f json | tee bandit-results.json || true
       
       - name: Check for critical vulnerabilities

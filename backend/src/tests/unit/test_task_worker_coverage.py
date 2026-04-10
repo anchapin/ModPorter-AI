@@ -111,7 +111,7 @@ class TestTaskWorker:
         try:
             await asyncio.wait_for(
                 worker.worker_loop(worker_id=0),
-                timeout=0.3  # Give it enough time to dequeue once, then timeout
+                timeout=0.3,  # Give it enough time to dequeue once, then timeout
             )
         except asyncio.TimeoutError:
             # Expected - we timeout to stop the loop
@@ -139,10 +139,7 @@ class TestTaskWorker:
 
         # Use timeout context as safety net
         try:
-            await asyncio.wait_for(
-                worker.worker_loop(worker_id=0),
-                timeout=1.0
-            )
+            await asyncio.wait_for(worker.worker_loop(worker_id=0), timeout=1.0)
         except asyncio.TimeoutError:
             # Shouldn't happen now, but safe net
             pass
@@ -163,7 +160,7 @@ class TestTaskWorker:
         try:
             await asyncio.wait_for(
                 worker.worker_loop(worker_id=0),
-                timeout=0.2  # Short timeout
+                timeout=0.2,  # Short timeout
             )
         except asyncio.TimeoutError:
             # Expected - loop runs until timeout

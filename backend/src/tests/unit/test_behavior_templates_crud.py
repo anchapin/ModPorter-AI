@@ -1,4 +1,3 @@
-
 import pytest
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -135,7 +134,7 @@ class TestBehaviorTemplatesCRUD:
 
         template_id = str(uuid.uuid4())
         updates = {"name": "Updated Name", "is_public": False}
-        
+
         template = await behavior_templates_crud.update_behavior_template(
             session=mock_session,
             template_id=template_id,
@@ -168,7 +167,7 @@ class TestBehaviorTemplatesCRUD:
         template_id = str(uuid.uuid4())
         # Provide updates that are not in the allowed list
         updates = {"invalid_field": "value"}
-        
+
         template = await behavior_templates_crud.update_behavior_template(
             session=mock_session,
             template_id=template_id,
@@ -183,15 +182,15 @@ class TestBehaviorTemplatesCRUD:
     async def test_delete_behavior_template_success(self):
         """Test deleting a behavior template successfully."""
         mock_session = AsyncMock(spec=AsyncSession)
-        
+
         # Mock get_behavior_template to return something (template exists)
         mock_get_result = MagicMock()
         mock_get_result.scalar_one_or_none.return_value = MagicMock(spec=BehaviorTemplate)
-        
+
         # Mock delete execute
         mock_delete_result = MagicMock()
         mock_delete_result.rowcount = 1
-        
+
         mock_session.execute.side_effect = [mock_get_result, mock_delete_result]
 
         template_id = str(uuid.uuid4())
@@ -207,7 +206,7 @@ class TestBehaviorTemplatesCRUD:
     async def test_delete_behavior_template_not_found(self):
         """Test deleting a behavior template that doesn't exist."""
         mock_session = AsyncMock(spec=AsyncSession)
-        
+
         # Mock get_behavior_template to return None
         mock_get_result = MagicMock()
         mock_get_result.scalar_one_or_none.return_value = None
@@ -236,7 +235,7 @@ class TestBehaviorTemplatesCRUD:
     async def test_apply_behavior_template_success(self):
         """Test applying a behavior template successfully."""
         mock_session = AsyncMock(spec=AsyncSession)
-        
+
         mock_template = MagicMock(spec=BehaviorTemplate)
         mock_template.id = uuid.uuid4()
         mock_template.name = "Test Template"
@@ -244,15 +243,13 @@ class TestBehaviorTemplatesCRUD:
         mock_template.template_type = "crafting"
         mock_template.template_data = {"result": "diamond"}
         mock_template.category = "recipe"
-        
+
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_template
         mock_session.execute.return_value = mock_result
 
         result = await behavior_templates_crud.apply_behavior_template(
-            session=mock_session,
-            template_id=str(mock_template.id),
-            conversion_id="conv-123"
+            session=mock_session, template_id=str(mock_template.id), conversion_id="conv-123"
         )
 
         assert result["content"]["result"] == "diamond"
@@ -264,14 +261,12 @@ class TestBehaviorTemplatesCRUD:
     async def test_apply_behavior_template_not_found(self):
         """Test applying a non-existent behavior template."""
         mock_session = AsyncMock(spec=AsyncSession)
-        
+
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         mock_session.execute.return_value = mock_result
 
         with pytest.raises(ValueError, match="Template .* not found"):
             await behavior_templates_crud.apply_behavior_template(
-                session=mock_session,
-                template_id=str(uuid.uuid4()),
-                conversion_id="conv-123"
+                session=mock_session, template_id=str(uuid.uuid4()), conversion_id="conv-123"
             )
