@@ -13,7 +13,7 @@ This approach is practical at current scale and creates a self-improving system.
 import logging
 import json
 from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 import sqlite3

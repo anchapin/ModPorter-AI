@@ -13,7 +13,7 @@ from pathlib import Path
 
 from .quality_scorer import ConversionQualityScorer
 from .reward_system import RewardSignalGenerator, RewardSignal
-from .prompt_optimizer import get_rl_feedback_loop, PromptExampleStore, PromptStrategyTracker
+from .prompt_optimizer import get_rl_feedback_loop
 # Note: This will be imported dynamically to avoid circular imports
 # from ..training_manager import fetch_training_data_from_backend
 

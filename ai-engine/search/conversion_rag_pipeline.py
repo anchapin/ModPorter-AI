@@ -73,9 +73,9 @@ class ConversionRAGPipeline:
             config: Optional configuration dictionary
         """
         self.config = config or {}
-        self._rag_pipeline: Optional["RAGPipeline"] = None
-        self._search_engine: Optional["HybridSearchEngine"] = None
-        self._pattern_registry: Optional["PatternMappingRegistry"] = None
+        self._rag_pipeline: Optional[RAGPipeline] = None
+        self._search_engine: Optional[HybridSearchEngine] = None
+        self._pattern_registry: Optional[PatternMappingRegistry] = None
         self._initialized = False
 
     def initialize(
