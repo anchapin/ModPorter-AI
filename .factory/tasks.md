@@ -295,7 +295,17 @@
 ---
 
 ## In Progress
-- 🔄 Deep clean completed — 51 stale files removed (2026-04-02)
+- 🔄 Issue #1004: Conversion Report - per-mod breakdown (COMPLETED implementation)
+
+## Completed
+- ✅ Issue #1004 - B2B Conversion Report Implementation:
+  - ✅ Task 1: Added `CategoryConversionStatus` TypedDict + `ASSET_CATEGORIES` list (textures, models, recipes, entities, sounds, localization, blockstates, loot_tables, advancements, tags)
+  - ✅ Task 2: Added `category_breakdown`, `manual_work_estimate_hours`, `priority_order` to `SummaryReport` dataclass
+  - ✅ Task 3: Implemented `_generate_category_breakdown()`, `_estimate_manual_work_hours()`, `_generate_priority_order()` in comprehensive_report_generator.py
+  - ✅ Task 4: Added `category_breakdown_data` to MOCK_CONVERSION_RESULT_SUCCESS with realistic sample data
+  - ✅ Task 5: Enhanced HTML exporter template with category breakdown section, manual work estimate, and priority order display
+  - ✅ Task 6: Added 4 tests in `TestIssue1004CategoryBreakdown` (25 tests passing)
+  - ✅ All 25 tests pass in test_comprehensive_report_generator.py
 
 ## Completed (2026-04-01)
 - ✅ Closed 3 stale Dependabot PRs: #932, #942, #927 (superseded by main@82125a35 Sentinel fix)
