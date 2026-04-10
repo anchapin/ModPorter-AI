@@ -5,7 +5,7 @@ Provides pattern matching and retrieval for Java to Bedrock sound conversion
 scenarios including block sounds, item sounds, entity sounds, and music.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Dict, Optional
 from enum import Enum
 

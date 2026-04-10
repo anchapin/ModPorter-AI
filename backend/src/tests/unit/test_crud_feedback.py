@@ -146,9 +146,7 @@ async def test_list_all_feedback():
     mock_session.execute.reset_mock()
     mock_scalars.all.return_value = [fb3, fb2]  # Skip 1, limit 2
     mock_result.scalars = MagicMock(return_value=mock_scalars)
-    feedbacks_paginated = await crud.list_all_feedback(
-        session=mock_session, skip=1, limit=2
-    )
+    feedbacks_paginated = await crud.list_all_feedback(session=mock_session, skip=1, limit=2)
     assert len(feedbacks_paginated) == 2
     assert [f.id for f in feedbacks_paginated] == [fb3.id, fb2.id]
 
@@ -156,7 +154,5 @@ async def test_list_all_feedback():
     mock_session.execute.reset_mock()
     mock_scalars.all.return_value = []
     mock_result.scalars = MagicMock(return_value=mock_scalars)
-    feedbacks_empty = await crud.list_all_feedback(
-        session=mock_session, skip=4, limit=10
-    )
+    feedbacks_empty = await crud.list_all_feedback(session=mock_session, skip=4, limit=10)
     assert len(feedbacks_empty) == 0

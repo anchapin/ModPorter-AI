@@ -37,3 +37,7 @@
 **Vulnerability:** The application used a hardcoded fallback secret key (`"dev-secret-key-do-not-use-in-production-change-me"`) for JWT token generation and validation if the `SECRET_KEY` environment variable was missing.
 **Learning:** Hardcoded cryptographic secrets are a severe vulnerability (CWE-798). If the environment variable isn't set properly, the application falls back to an insecure, easily guessable default in production, compromising all tokens.
 **Prevention:** Never use default fallback values for cryptographic secrets. When removing hardcoded cryptographic secrets to use environment variables, ensure the application fails securely (e.g., raises a `ValueError`) if the variable is unset, rather than falling back to an insecure default. For testing, set dummy values in `conftest.py` before application imports.
+## 2024-04-10 - [Remove sensitive tokens from application logs]
+**Vulnerability:** Verification and password reset tokens were being logged in plaintext in the auth API endpoints.
+**Learning:** Even during development or when trying to be helpful for debugging, sensitive URLs containing single-use tokens must not be logged, as logs can be accessed by unauthorized personnel or systems.
+**Prevention:** Remove sensitive values from logger statements and only log the action that occurred (e.g. "Token generated for user X").

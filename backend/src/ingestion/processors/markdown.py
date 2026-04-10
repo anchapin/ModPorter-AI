@@ -145,11 +145,13 @@ class MarkdownProcessor:
             code = match.group(2)
             line_count = len(code.split("\n"))
 
-            code_blocks.append({
-                "language": language,
-                "line_count": line_count,
-                "preview": code[:200],  # First 200 chars
-            })
+            code_blocks.append(
+                {
+                    "language": language,
+                    "line_count": line_count,
+                    "preview": code[:200],  # First 200 chars
+                }
+            )
 
         return code_blocks
 

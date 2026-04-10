@@ -43,6 +43,13 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:
     """
     Convert a Java mod JAR to Bedrock .mcaddon format.
 
+    Supports both block and entity mods. The pipeline:
+    1. Runs block-only MVP analysis (analyze_jar_for_mvp)
+    2. Runs full AST analysis (analyze_jar_with_ast) to detect entities
+    3. Builds block add-on if blocks found
+    4. Converts entities via EntityConverter if entities found
+    5. Packages everything into .mcaddon
+
     Args:
         jar_path: Path to the Java mod JAR file
         output_dir: Optional output directory (defaults to same directory as JAR)
@@ -68,15 +75,11 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:
 
         logger.info(f"Converting {jar_file.name} to Bedrock add-on...")
 
-        # Step 1: Analyze the JAR file using AST-first approach (detects ALL entities)
-        logger.info("Step 1: Analyzing Java mod (AST-first)...")
         java_analyzer = JavaAnalyzerAgent()
 
-        # Try AST analysis first - this detects all entities, blocks, items, etc.
         ast_analysis_result = java_analyzer.analyze_jar_with_ast(str(jar_file))
 
         if not ast_analysis_result.get("success", False):
-            # Fall back to MVP analysis if AST fails
             logger.warning("AST analysis failed, falling back to MVP analysis...")
             analysis_result = java_analyzer.analyze_jar_for_mvp(str(jar_file))
             if not analysis_result.get("success", False):
@@ -86,26 +89,40 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:
             registry_name = analysis_result.get("registry_name", "unknown_block")
             texture_path = analysis_result.get("texture_path")
             entities = []
+            blocks = []
             features = {}
+            entity_textures = []
+            entity_models = []
         else:
-            # AST analysis succeeded - extract comprehensive features
             features = ast_analysis_result.get("features", {})
             entities = features.get("entities", [])
             blocks = features.get("blocks", [])
 
             logger.info(f"AST analysis found: {len(blocks)} blocks, {len(entities)} entities")
 
-            # Use first block for MVP-style addon name if we have blocks
             if blocks:
                 registry_name = blocks[0].get("registry_name", "unknown:block")
             else:
                 registry_name = "unknown:block"
 
-            # Get texture path from assets if available
             assets = ast_analysis_result.get("assets", {})
             texture_path = None
             if "block_textures" in assets and assets["block_textures"]:
                 texture_path = assets["block_textures"][0]
+
+            entity_textures = [t for t in assets.get("textures", []) if "/textures/entity/" in t]
+            entity_models = [
+                m for m in assets.get("models", []) if "/models/entity/" in m or "/entity/" in m
+            ]
+
+        has_blocks = len(blocks) > 0 or registry_name != "unknown_block"
+        has_entities = len(entities) > 0
+
+        if not has_blocks and not has_entities:
+            raise RuntimeError(
+                "Analysis found no blocks or entities to convert. "
+                "The mod may use unsupported features."
+            )
 
         logger.info(f"Primary entity: {registry_name}")
         if texture_path:
@@ -116,39 +133,57 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             bedrock_builder = BedrockBuilderAgent()
-            build_result = bedrock_builder.build_block_addon_mvp(
-                registry_name=registry_name,
-                texture_path=texture_path,
-                jar_path=str(jar_file),
-                output_dir=temp_dir,
-            )
 
-            if not build_result.get("success", False):
-                raise RuntimeError(
-                    f"Bedrock build failed: {build_result.get('error', 'Unknown error')}"
+            # Build block add-on if blocks were found
+            if not has_blocks:
+                bp_path = Path(temp_dir) / "behavior_pack"
+                rp_path = Path(temp_dir) / "resource_pack"
+                bp_path.mkdir(parents=True, exist_ok=True)
+                rp_path.mkdir(parents=True, exist_ok=True)
+                bedrock_builder.build_entity_addon_mvp(
+                    entities=entities,
+                    jar_path=str(jar_file),
+                    output_dir=temp_dir,
+                )
+            elif registry_name != "unknown_block":
+                build_result = bedrock_builder.build_block_addon_mvp(
+                    registry_name=registry_name,
+                    texture_path=texture_path,
+                    jar_path=str(jar_file),
+                    output_dir=temp_dir,
                 )
 
-            # If we detected entities, convert them and add to the addon
-            if entities:
+            if has_entities:
                 logger.info(f"Step 2b: Converting {len(entities)} entities...")
                 entity_converter = EntityConverter()
+
+                for entity in entities:
+                    entity_name = entity.get("name", "").lower()
+                    entity["textures"] = [t for t in entity_textures if entity_name in t.lower()]
+                    entity["models"] = [m for m in entity_models if entity_name in m.lower()]
+
                 bedrock_entities = entity_converter.convert_entities(entities)
 
                 if bedrock_entities:
-                    bp_path = (
-                        Path(build_result.get("behavior_pack_dir", temp_dir)) / "behavior_pack"
-                    )
-                    rp_path = (
-                        Path(build_result.get("resource_pack_dir", temp_dir)) / "resource_pack"
-                    )
+                    bp_path = Path(temp_dir) / "behavior_pack"
+                    rp_path = Path(temp_dir) / "resource_pack"
+                    bp_path.mkdir(parents=True, exist_ok=True)
+                    rp_path.mkdir(parents=True, exist_ok=True)
 
                     written = entity_converter.write_entities_to_disk(
                         bedrock_entities, bp_path, rp_path
                     )
                     logger.info(
-                        f"Wrote {len(written['entities'])} entities, "
-                        f"{len(written['behaviors'])} behaviors, "
-                        f"{len(written['animations'])} animations"
+                        f"Wrote {len(written.get('entities', []))} entity definitions, "
+                        f"{len(written.get('behaviors', []))} behaviors, "
+                        f"{len(written.get('animations', []))} animations"
+                    )
+
+                    _extract_entity_assets(
+                        jar_path=str(jar_file),
+                        entity_textures=entity_textures,
+                        entity_models=entity_models,
+                        rp_path=rp_path,
                     )
 
             # Step 3: Package as .mcaddon
@@ -157,6 +192,12 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:
 
             # Generate output filename
             mod_name = registry_name.replace(":", "_")  # Replace namespace separator
+            if has_entities and not has_blocks:
+                first_entity = entities[0]
+                mod_name = first_entity.get(
+                    "registry_name",
+                    first_entity.get("name", "entity_mod").lower(),
+                )
             output_path = output_dir / f"{mod_name}.mcaddon"
 
             package_result = packaging_agent.build_mcaddon_mvp(
@@ -178,6 +219,7 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:
             "entities_detected": len(entities),
             "blocks_detected": len(features.get("blocks", [])),
             "validation": package_result["validation"],
+            "entities_converted": len(entities) if has_entities else 0,
         }
 
         logger.info("✅ Conversion complete!")
@@ -186,12 +228,65 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:
         logger.info(
             f"🔍 Detected: {result['blocks_detected']} blocks, {result['entities_detected']} entities"
         )
+        if has_entities:
+            logger.info(f"🐾 Entities converted: {result['entities_converted']}")
 
         return result
 
     except Exception as e:
         logger.error(f"❌ Conversion failed: {e}")
         return {"success": False, "error": str(e)}
+
+
+def _extract_entity_assets(
+    jar_path: str,
+    entity_textures: list,
+    entity_models: list,
+    rp_path: Path,
+) -> None:
+    """
+    Extract entity textures and models from the source JAR into the resource pack.
+
+    Args:
+        jar_path: Path to the source JAR file
+        entity_textures: List of texture paths found in the JAR
+        entity_models: List of model paths found in the JAR
+        rp_path: Resource pack output directory
+    """
+    import zipfile
+
+    try:
+        with zipfile.ZipFile(jar_path, "r") as jar:
+            # Extract entity textures
+            textures_dir = rp_path / "textures" / "entity"
+            textures_dir.mkdir(parents=True, exist_ok=True)
+
+            for tex_path in entity_textures:
+                try:
+                    tex_data = jar.read(tex_path)
+                    tex_filename = Path(tex_path).name
+                    output_tex = textures_dir / tex_filename
+                    output_tex.write_bytes(tex_data)
+                    logger.info(f"Extracted entity texture: {tex_filename}")
+                except KeyError:
+                    logger.warning(f"Texture not found in JAR: {tex_path}")
+
+            # Extract entity models
+            models_dir = rp_path / "models" / "entity"
+            models_dir.mkdir(parents=True, exist_ok=True)
+
+            for model_path in entity_models:
+                try:
+                    model_data = jar.read(model_path)
+                    model_filename = Path(model_path).name
+                    output_model = models_dir / model_filename
+                    output_model.write_bytes(model_data)
+                    logger.info(f"Extracted entity model: {model_filename}")
+                except KeyError:
+                    logger.warning(f"Model not found in JAR: {model_path}")
+
+    except Exception as e:
+        logger.warning(f"Failed to extract entity assets: {e}")
 
 
 def main():

@@ -1529,7 +1529,11 @@ class JavaAnalyzerAgent:
                 # Check for Class.forName calls
                 if isinstance(node, javalang.tree.MethodInvocation):
                     member = node.member.lower() if hasattr(node, "member") else ""
-                    qualifier = node.qualifier.lower() if hasattr(node, "qualifier") and node.qualifier else ""
+                    qualifier = (
+                        node.qualifier.lower()
+                        if hasattr(node, "qualifier") and node.qualifier
+                        else ""
+                    )
 
                     if member == "forname" and qualifier == "class":
                         reflection_info["detected"] = True

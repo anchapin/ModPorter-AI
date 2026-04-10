@@ -372,8 +372,18 @@ class TestEdgeCases:
         limiter = ResourceLimiter(limits=limits)
         limiter._start_time = datetime(2020, 1, 1, tzinfo=timezone.utc)
 
-        with pytest.raises(ResourceLimitExceeded) as exc_info:
-            limiter.check_limits()
+        # Mock get_current_usage to isolate the processing_time check from
+        # real system metrics (memory, disk, etc.) which may exceed limits
+        fake_usage = MagicMock()
+        fake_usage.memory_mb = 0
+        fake_usage.disk_mb = 0
+        fake_usage.open_files = 0
+        fake_usage.processing_time_seconds = 999  # Far exceeds max=0
+        fake_usage.cpu_time_seconds = 0
+
+        with patch.object(limiter, "get_current_usage", return_value=fake_usage):
+            with pytest.raises(ResourceLimitExceeded) as exc_info:
+                limiter.check_limits()
         assert exc_info.value.resource_type == "processing_time"
 
     def test_track_operation_concurrent_extractions(self):
@@ -381,9 +391,19 @@ class TestEdgeCases:
         limits = ResourceLimits(max_concurrent_extractions=1)
         limiter = ResourceLimiter(limits=limits)
 
-        with limiter.track_operation("extraction"):
-            with pytest.raises(ResourceLimitExceeded):
-                limiter.track_operation("extraction").__enter__()
+        # Mock get_current_usage to prevent real system metrics (memory, disk, etc.)
+        # from raising ResourceLimitExceeded before the concurrent extraction check runs
+        fake_usage = MagicMock()
+        fake_usage.memory_mb = 0
+        fake_usage.disk_mb = 0
+        fake_usage.open_files = 0
+        fake_usage.processing_time_seconds = 0
+        fake_usage.cpu_time_seconds = 0
+
+        with patch.object(limiter, "get_current_usage", return_value=fake_usage):
+            with limiter.track_operation("extraction"):
+                with pytest.raises(ResourceLimitExceeded):
+                    limiter.track_operation("extraction").__enter__()
 
     def test_directory_size_with_subdirs(self):
         """Test directory size calculation with subdirectories."""

@@ -6,7 +6,7 @@ and complexity to optimize search result relevance.
 """
 
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 from dataclasses import dataclass
 from enum import Enum
 

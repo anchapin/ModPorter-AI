@@ -35,6 +35,7 @@ router = APIRouter(prefix="/api/query-monitor", tags=["query-monitoring"])
 # Response Models
 class QueryStatsResponse(BaseModel):
     """Response model for query statistics."""
+
     total_queries: int = Field(description="Total number of unique queries")
     slow_queries: int = Field(description="Number of slow queries (above threshold)")
     avg_execution_time_ms: float = Field(description="Average query execution time in milliseconds")
@@ -43,6 +44,7 @@ class QueryStatsResponse(BaseModel):
 
 class SlowQueryResponse(BaseModel):
     """Response model for a slow query."""
+
     query_id: str = Field(description="Unique identifier for the query")
     query_text: str = Field(description="The SQL query text")
     execution_time_ms: float = Field(description="Execution time in milliseconds")

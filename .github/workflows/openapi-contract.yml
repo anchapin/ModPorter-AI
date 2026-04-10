@@ -27,77 +27,81 @@ jobs:
 
       - name: Generate OpenAPI spec
         run: |
-          curl -s http://localhost:8080/openapi.json | python3 -c "
-import json
-import sys
-spec = json.load(sys.stdin)
-# Remove server URLs (they may differ between envs)
-if 'servers' in spec:
-    del spec['servers']
-# Write cleaned spec
-with open('openapi.json', 'w') as f:
-    json.dump(spec, f, indent=2)
-print('OpenAPI spec saved')
-" || echo "Skipping spec generation - API not running"
+          set -e
+          curl -s http://localhost:8080/openapi.json -o /tmp/openapi_raw.json || {
+            echo "Skipping spec generation - API not running"
+            exit 0
+          }
+          python3 << 'PYTHON_SCRIPT'
+            import json
+            import sys
+            with open("/tmp/openapi_raw.json") as f:
+                spec = json.load(f)
+            if "servers" in spec:
+                del spec["servers"]
+            with open("openapi.json", "w") as f:
+                json.dump(spec, f, indent=2)
+            print("OpenAPI spec saved")
+          PYTHON_SCRIPT
 
       - name: Validate OpenAPI spec structure
         run: |
-          python3 -c "
-import json
-import sys
+          python3 << 'PYTHON_SCRIPT'
+            import json
+            import sys
 
-with open('openapi.json') as f:
-    spec = json.load(f)
+            with open('openapi.json') as f:
+                spec = json.load(f)
 
-errors = []
+            errors = []
 
-# Check required fields
-required = ['openapi', 'info', 'paths']
-for field in required:
-    if field not in spec:
-        errors.append(f'Missing required field: {field}')
+            # Check required fields
+            required = ['openapi', 'info', 'paths']
+            for field in required:
+                if field not in spec:
+                    errors.append(f'Missing required field: {field}')
 
-# Check OpenAPI version
-if 'openapi' in spec:
-    version = spec['openapi']
-    if not version.startswith('3.'):
-        errors.append(f'Invalid OpenAPI version: {version}')
+            # Check OpenAPI version
+            if 'openapi' in spec:
+                version = spec['openapi']
+                if not version.startswith('3.'):
+                    errors.append(f'Invalid OpenAPI version: {version}')
 
-# Check paths exist
-if 'paths' in spec:
-    paths = spec['paths']
-    if len(paths) == 0:
-        errors.append('No paths defined in API')
-    else:
-        print(f'Found {len(paths)} paths:')
-        for path in paths:
-            methods = list(paths[path].keys())
-            print(f'  {path}: {methods}')
+            # Check paths exist
+            if 'paths' in spec:
+                paths = spec['paths']
+                if len(paths) == 0:
+                    errors.append('No paths defined in API')
+                else:
+                    print(f'Found {len(paths)} paths:')
+                    for path in paths:
+                        methods = list(paths[path].keys())
+                        print(f'  {path}: {methods}')
 
-# Check for common endpoints
-required_endpoints = [
-    '/api/v1/health',
-    '/api/v1/upload',
-    '/api/v1/convert',
-]
-found_paths = list(spec.get('paths', {}).keys())
-for endpoint in required_endpoints:
-    if endpoint not in found_paths:
-        errors.append(f'Missing required endpoint: {endpoint}')
+            # Check for common endpoints
+            required_endpoints = [
+                '/api/v1/health',
+                '/api/v1/upload',
+                '/api/v1/convert',
+            ]
+            found_paths = list(spec.get('paths', {}).keys())
+            for endpoint in required_endpoints:
+                if endpoint not in found_paths:
+                    errors.append(f'Missing required endpoint: {endpoint}')
 
-if errors:
-    print('ERRORS FOUND:')
-    for e in errors:
-        print(f'  - {e}')
-    sys.exit(1)
-else:
-    print('OpenAPI spec validation PASSED')
-"
+            if errors:
+                print('ERRORS FOUND:')
+                for e in errors:
+                    print(f'  - {e}')
+                sys.exit(1)
+            else:
+                print('OpenAPI spec validation PASSED')
+          PYTHON_SCRIPT
 
       - name: Install Dredd for contract testing
         if: false # Disabled - requires running API
         run: |
-          npm install -g @dredd/hooks-template
+          npm install -g @dredd/hooks_template
           npm install -g dredd
 
       - name: Run OpenAPI validation against live API
@@ -123,22 +127,23 @@ else:
           # Test health response has required fields
           HEALTH=$(curl -s $API_URL/api/v1/health)
           
-          python3 -c "
-import json
-import sys
+          python3 << 'PYTHON_SCRIPT'
+            import json
+            import sys
 
-health = json.loads('''$HEALTH''')
-required_fields = ['status', 'services']
+            health = json.loads('''$HEALTH''')
+            required_fields = ['status', 'services']
 
-for field in required_fields:
-    if field not in health:
-        print(f'✗ Missing field in health response: {field}')
-        sys.exit(1)
-    else:
-        print(f'✓ Health response has {field}: {health[field]}')
+            for field in required_fields:
+                if field not in health:
+                    print(f'✗ Missing field in health response: {field}')
+                    sys.exit(1)
+                else:
+                    print(f'✓ Health response has {field}: {health[field]}')
 
-print('Schema validation PASSED')
-" || echo "Health check skipped - API not running"
+            print('Schema validation PASSED')
+          PYTHON_SCRIPT
+          || echo "Health check skipped - API not running"
 
       - name: Validate rate limit headers
         run: |
@@ -146,20 +151,20 @@ print('Schema validation PASSED')
           
           RESP=$(curl -sI $API_URL/api/v1/health)
           
-          python3 -c "
-import sys
-headers = '''$RESP'''.lower()
+          python3 << 'PYTHON_SCRIPT'
+            import sys
+            headers = '''$RESP'''.lower()
 
-# Check for rate limit headers (case-insensitive)
-rate_limit_found = 'x-ratelimit' in headers
-x_ratelimit_remaining_found = 'x-ratelimit-remaining' in headers
-x_ratelimit_limit_found = 'x-ratelimit-limit' in headers
+            # Check for rate limit headers (case-insensitive)
+            rate_limit_found = 'x-ratelimit' in headers
+            x_ratelimit_remaining_found = 'x-ratelimit-remaining' in headers
+            x_ratelimit_limit_found = 'x-ratelimit-limit' in headers
 
-if rate_limit_found or x_ratelimit_remaining_found or x_ratelimit_limit_found:
-    print('✓ Rate limit headers present')
-else:
-    print('ℹ Rate limit headers not found (may not be enabled)')
-"
+            if rate_limit_found or x_ratelimit_remaining_found or x_ratelimit_limit_found:
+                print('✓ Rate limit headers present')
+            else:
+                print('ℹ Rate limit headers not found (may not be enabled)')
+          PYTHON_SCRIPT
 
       - name: Check API documentation endpoints
         run: |
@@ -182,27 +187,27 @@ else:
 
       - name: Generate validation report
         run: |
-          python3 -c "
-import json
-from datetime import datetime
+          python3 << 'PYTHON_SCRIPT'
+            import json
+            from datetime import datetime
 
-report = {
-    'timestamp': datetime.now().isoformat(),
-    'validation': 'passed',
-    'checks': [
-        {'name': 'OpenAPI structure', 'status': 'passed'},
-        {'name': 'Required endpoints', 'status': 'passed'},
-        {'name': 'Response schemas', 'status': 'passed'},
-        {'name': 'Rate limit headers', 'status': 'passed'},
-        {'name': 'API documentation', 'status': 'passed'},
-    ]
-}
+            report = {
+                'timestamp': datetime.now().isoformat(),
+                'validation': 'passed',
+                'checks': [
+                    {'name': 'OpenAPI structure', 'status': 'passed'},
+                    {'name': 'Required endpoints', 'status': 'passed'},
+                    {'name': 'Response schemas', 'status': 'passed'},
+                    {'name': 'Rate limit headers', 'status': 'passed'},
+                    {'name': 'API documentation', 'status': 'passed'},
+                ]
+            }
 
-with open('openapi-validation-report.json', 'w') as f:
-    json.dump(report, f, indent=2)
+            with open('openapi-validation-report.json', 'w') as f:
+                json.dump(report, f, indent=2)
 
-print('Validation report generated: openapi-validation-report.json')
-"
+            print('Validation report generated: openapi-validation-report.json')
+          PYTHON_SCRIPT
 
       - name: Upload validation report
         uses: actions/upload-artifact@v4

@@ -334,9 +334,7 @@ async def get_specific_agent_performance(agent_type: str):
     """Get detailed performance metrics for a specific agent type."""
     # Dynamic import with better error handling
     # Do this BEFORE validating agent_type so import errors are caught first
-    ai_engine_path = os.path.join(
-        os.path.dirname(__file__), "..", "..", "..", "ai-engine", "src"
-    )
+    ai_engine_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "ai-engine", "src")
     if ai_engine_path not in sys.path:
         sys.path.append(ai_engine_path)
 
@@ -344,9 +342,7 @@ async def get_specific_agent_performance(agent_type: str):
         from rl.agent_optimizer import create_agent_optimizer
     except ImportError as ie:
         logger.error(f"Failed to import RL optimizer components: {ie}")
-        raise HTTPException(
-            status_code=503, detail="Agent performance monitoring is not available"
-        )
+        raise HTTPException(status_code=503, detail="Agent performance monitoring is not available")
 
     try:
         logger.info(f"Fetching performance metrics for agent: {agent_type}")

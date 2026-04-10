@@ -12,6 +12,7 @@ from enum import Enum
 
 class ComplexityLevel(Enum):
     """Pattern complexity levels."""
+
     SIMPLE = "simple"
     MEDIUM = "medium"
     COMPLEX = "complex"
@@ -25,6 +26,7 @@ class ConversionPattern:
     A pattern contains Java and Bedrock code examples for a specific
     conversion scenario (e.g., item registration, block definition).
     """
+
     id: str
     name: str
     description: str
@@ -180,11 +182,7 @@ class PatternLibrary:
         Returns:
             List of patterns in the category
         """
-        return [
-            pattern
-            for pattern in self.patterns.values()
-            if pattern.category == category
-        ]
+        return [pattern for pattern in self.patterns.values() if pattern.category == category]
 
     def get_stats(self) -> Dict[str, int]:
         """

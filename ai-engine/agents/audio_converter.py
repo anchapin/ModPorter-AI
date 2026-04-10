@@ -16,12 +16,13 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-__all__ = ['convert_single_audio', 'analyze_audio', 'generate_sound_structure']
+__all__ = ["convert_single_audio", "analyze_audio", "generate_sound_structure"]
 
 
 # ============================================================================
 # _convert_single_audio
 # ============================================================================
+
 
 def _convert_single_audio(agent, audio_path: str, metadata: Dict, audio_type: str) -> Dict:
     """Convert a single audio file to Bedrock-compatible format"""
@@ -116,9 +117,11 @@ def _convert_single_audio(agent, audio_path: str, metadata: Dict, audio_type: st
         logger.error(f"Audio conversion error for {audio_path}: {e}", exc_info=True)
         return {"success": False, "original_path": str(audio_path), "error": str(e)}
 
+
 # ============================================================================
 # _analyze_audio
 # ============================================================================
+
 
 def _analyze_audio(agent, audio_path: str, metadata: Dict) -> Dict:
     """Analyze a single audio file for conversion needs"""
@@ -168,9 +171,11 @@ def _analyze_audio(agent, audio_path: str, metadata: Dict) -> Dict:
         },
     }
 
+
 # ============================================================================
 # _generate_sound_structure
 # ============================================================================
+
 
 def _generate_sound_structure(agent, sounds: List[Dict]) -> Dict:
     sound_definitions = {}

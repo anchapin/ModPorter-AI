@@ -3,7 +3,7 @@
 import json
 from datetime import datetime
 from typing import Dict, Any
-from qa.report.models import QAReport, Issue, IssueSeverity, AgentResult
+from qa.report.models import QAReport, Issue, AgentResult
 from qa.report.exporters.base import BaseExporter, ExportFormat
 
 

@@ -41,6 +41,7 @@ class TestConfigureStructlog:
     def setup_log_dir(self, tmp_path):
         """Set LOG_DIR to tmp_path to avoid permission errors."""
         import os
+
         os.environ["LOG_DIR"] = str(tmp_path / "logs")
         yield
         # Cleanup handled by tmp_path
@@ -48,14 +49,20 @@ class TestConfigureStructlog:
     @patch("services.structured_logging.logging.getLogger")
     @patch("services.structured_logging.structlog.configure")
     @patch("services.structured_logging.structlog.get_logger")
-    def test_configure_structlog_default(self, mock_get_logger, mock_configure, mock_logging_get_logger):
+    def test_configure_structlog_default(
+        self, mock_get_logger, mock_configure, mock_logging_get_logger
+    ):
         """Test configure_structlog with default parameters."""
         mock_logger = MagicMock()
         mock_get_logger.return_value = mock_logger
         mock_root_logger = MagicMock()
         mock_logging_get_logger.return_value = mock_root_logger
 
-        with patch.dict(os.environ, {"LOG_LEVEL": "INFO", "LOG_JSON_FORMAT": "false", "ENVIRONMENT": "development"}, clear=False):
+        with patch.dict(
+            os.environ,
+            {"LOG_LEVEL": "INFO", "LOG_JSON_FORMAT": "false", "ENVIRONMENT": "development"},
+            clear=False,
+        ):
             result = structured_logging.configure_structlog()
 
         mock_configure.assert_called_once()
@@ -65,7 +72,9 @@ class TestConfigureStructlog:
     @patch("services.structured_logging.logging.getLogger")
     @patch("services.structured_logging.structlog.configure")
     @patch("services.structured_logging.structlog.get_logger")
-    def test_configure_structlog_json_format(self, mock_get_logger, mock_configure, mock_logging_get_logger):
+    def test_configure_structlog_json_format(
+        self, mock_get_logger, mock_configure, mock_logging_get_logger
+    ):
         """Test configure_structlog with JSON format enabled."""
         mock_logger = MagicMock()
         mock_get_logger.return_value = mock_logger
@@ -85,7 +94,9 @@ class TestConfigureStructlog:
     @patch("services.structured_logging.logging.getLogger")
     @patch("services.structured_logging.structlog.configure")
     @patch("services.structured_logging.structlog.get_logger")
-    def test_configure_structlog_debug_mode(self, mock_get_logger, mock_configure, mock_logging_get_logger):
+    def test_configure_structlog_debug_mode(
+        self, mock_get_logger, mock_configure, mock_logging_get_logger
+    ):
         """Test configure_structlog with debug mode enabled."""
         mock_logger = MagicMock()
         mock_get_logger.return_value = mock_logger
@@ -107,7 +118,12 @@ class TestConfigureStructlog:
     @patch("services.structured_logging.RotatingFileHandler")
     @patch("services.structured_logging.structlog.get_logger")
     def test_configure_structlog_custom_log_file(
-        self, mock_get_logger, mock_file_handler, mock_makedirs, mock_configure, mock_logging_get_logger
+        self,
+        mock_get_logger,
+        mock_file_handler,
+        mock_makedirs,
+        mock_configure,
+        mock_logging_get_logger,
     ):
         """Test configure_structlog with custom log file path."""
         mock_logger = MagicMock()
@@ -129,7 +145,9 @@ class TestConfigureStructlog:
     @patch("services.structured_logging.logging.getLogger")
     @patch("services.structured_logging.structlog.configure")
     @patch("services.structured_logging.structlog.get_logger")
-    def test_configure_structlog_log_level_from_env(self, mock_get_logger, mock_configure, mock_logging_get_logger):
+    def test_configure_structlog_log_level_from_env(
+        self, mock_get_logger, mock_configure, mock_logging_get_logger
+    ):
         """Test that log level is read from environment variable."""
         mock_logger = MagicMock()
         mock_get_logger.return_value = mock_logger
@@ -144,14 +162,18 @@ class TestConfigureStructlog:
     @patch("services.structured_logging.logging.getLogger")
     @patch("services.structured_logging.structlog.configure")
     @patch("services.structured_logging.structlog.get_logger")
-    def test_configure_structlog_production_env_enables_json(self, mock_get_logger, mock_configure, mock_logging_get_logger):
+    def test_configure_structlog_production_env_enables_json(
+        self, mock_get_logger, mock_configure, mock_logging_get_logger
+    ):
         """Test that production environment auto-enables JSON format."""
         mock_logger = MagicMock()
         mock_get_logger.return_value = mock_logger
         mock_root_logger = MagicMock()
         mock_logging_get_logger.return_value = mock_root_logger
 
-        with patch.dict(os.environ, {"ENVIRONMENT": "production", "LOG_JSON_FORMAT": "false"}, clear=False):
+        with patch.dict(
+            os.environ, {"ENVIRONMENT": "production", "LOG_JSON_FORMAT": "false"}, clear=False
+        ):
             result = structured_logging.configure_structlog()
 
         # Production should use JSON format
@@ -192,7 +214,9 @@ class TestGetStandardLogger:
     @patch("services.structured_logging.os.makedirs")
     @patch("services.structured_logging.RotatingFileHandler")
     @patch("services.structured_logging.logging.getLogger")
-    def test_get_standard_logger_first_call(self, mock_get_logger, mock_file_handler, mock_makedirs):
+    def test_get_standard_logger_first_call(
+        self, mock_get_logger, mock_file_handler, mock_makedirs
+    ):
         """Test get_standard_logger configures a new logger."""
         mock_logger = MagicMock()
         mock_logger.handlers = []  # No existing handlers
@@ -234,7 +258,9 @@ class TestCorrelationIdManagement:
         uuid_result = uuid.UUID(result)
         assert uuid_result is not None
         assert structured_logging.correlation_id_var.get() == result
-        structured_logging.structlog.contextvars.bind_contextvars.assert_called_once_with(correlation_id=result)
+        structured_logging.structlog.contextvars.bind_contextvars.assert_called_once_with(
+            correlation_id=result
+        )
 
     def test_set_correlation_id_with_value(self):
         """Test that set_correlation_id uses provided value."""
@@ -286,7 +312,9 @@ class TestRequestMetadataManagement:
         structured_logging.set_request_metadata(metadata)
 
         assert structured_logging.request_metadata_var.get() == metadata
-        structured_logging.structlog.contextvars.bind_contextvars.assert_called_once_with(**metadata)
+        structured_logging.structlog.contextvars.bind_contextvars.assert_called_once_with(
+            **metadata
+        )
 
     def test_set_request_metadata_empty(self):
         """Test setting empty request metadata."""
@@ -318,7 +346,9 @@ class TestLogContext:
         structured_logging.structlog.contextvars.clear_contextvars = MagicMock()
         structured_logging.structlog.contextvars.bind_contextvars = MagicMock()
 
-        with structured_logging.LogContext(correlation_id="new-correlation", user_id="user123") as ctx:
+        with structured_logging.LogContext(
+            correlation_id="new-correlation", user_id="user123"
+        ) as ctx:
             assert ctx.correlation_id == "new-correlation"
             assert structured_logging.correlation_id_var.get() == "new-correlation"
             assert structured_logging.request_metadata_var.get() == {"user_id": "user123"}
@@ -446,7 +476,9 @@ class TestLogConversionEvent:
         """Test conversion failed event."""
         mock_logger = MagicMock()
 
-        structured_logging.log_conversion_event(mock_logger, "job-123", "failed", error="Out of memory")
+        structured_logging.log_conversion_event(
+            mock_logger, "job-123", "failed", error="Out of memory"
+        )
 
         call_args = mock_logger.info.call_args
         assert call_args[1]["conversion_event"] == "failed"
@@ -487,7 +519,9 @@ class TestLogErrorWithContext:
         mock_logger = MagicMock()
         error = TypeError("Expected str, got int")
 
-        structured_logging.log_error_with_context(mock_logger, error, endpoint="/api/convert", method="POST")
+        structured_logging.log_error_with_context(
+            mock_logger, error, endpoint="/api/convert", method="POST"
+        )
 
         call_args = mock_logger.error.call_args
         assert call_args[1]["endpoint"] == "/api/convert"
@@ -929,7 +963,9 @@ class TestIntegrationScenarios:
         structured_logging.structlog.contextvars.clear_contextvars = MagicMock()
         structured_logging.structlog.contextvars.bind_contextvars = MagicMock()
 
-        with structured_logging.LogContext(correlation_id="req-789", user_id="user-999", ip="127.0.0.1"):
+        with structured_logging.LogContext(
+            correlation_id="req-789", user_id="user-999", ip="127.0.0.1"
+        ):
             # Inside context, all values should be available
             assert structured_logging.get_correlation_id() == "req-789"
             assert structured_logging.request_metadata_var.get()["user_id"] == "user-999"

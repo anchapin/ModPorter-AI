@@ -5,7 +5,7 @@ Provides pattern matching and retrieval for Java to Bedrock particle
 conversion including particle types, emitters, and effects.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Dict, Optional
 from enum import Enum
 

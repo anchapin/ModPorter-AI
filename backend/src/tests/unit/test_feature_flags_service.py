@@ -38,7 +38,9 @@ class TestFeatureFlagType:
 
 class TestFeatureFlag:
     def test_feature_flag_init_boolean(self):
-        flag = FeatureFlag(name="test_flag", flag_type=FeatureFlagType.BOOLEAN, default_value=True, enabled=True)
+        flag = FeatureFlag(
+            name="test_flag", flag_type=FeatureFlagType.BOOLEAN, default_value=True, enabled=True
+        )
         assert flag.name == "test_flag"
         assert flag.flag_type == FeatureFlagType.BOOLEAN
         assert flag.default_value is True
@@ -131,21 +133,21 @@ class TestFeatureFlagDecorator:
     def test_decorator_enabled(self, clean_manager):
         manager = get_feature_flag_manager()
         manager.register_flag(name="decorator_test", enabled=True)
-        
+
         @feature_flag("decorator_test")
         def test_func():
             return "executed"
-        
+
         assert test_func() == "executed"
 
     def test_decorator_disabled(self, clean_manager):
         manager = get_feature_flag_manager()
         manager.register_flag(name="disabled_decorator", enabled=False)
-        
+
         @feature_flag("disabled_decorator")
         def test_func():
             return "executed"
-        
+
         assert test_func() is None
 
 
@@ -153,35 +155,39 @@ class TestRequireFeature:
     def test_require_feature_raises_when_disabled(self, clean_manager):
         manager = get_feature_flag_manager()
         manager.register_flag(name="required_feature", enabled=False)
-        
+
         @require_feature("required_feature")
         def test_func():
             return "executed"
-        
+
         with pytest.raises(FeatureFlagNotEnabledError):
             test_func()
 
     def test_require_feature_passes_when_enabled(self, clean_manager):
         manager = get_feature_flag_manager()
         manager.register_flag(name="enabled_required", enabled=True)
-        
+
         @require_feature("enabled_required")
         def test_func():
             return "executed"
-        
+
         assert test_func() == "executed"
 
 
 class TestPercentageFlags:
     def test_percentage_rollout_100(self, clean_manager):
         manager = get_feature_flag_manager()
-        manager.register_flag(name="rollout", flag_type=FeatureFlagType.PERCENTAGE, percentage=100.0, enabled=True)
+        manager.register_flag(
+            name="rollout", flag_type=FeatureFlagType.PERCENTAGE, percentage=100.0, enabled=True
+        )
         result = manager.is_enabled("rollout", user_id="user1")
         assert result is True
 
     def test_percentage_rollout_0(self, clean_manager):
         manager = get_feature_flag_manager()
-        manager.register_flag(name="rollout", flag_type=FeatureFlagType.PERCENTAGE, percentage=0.0, enabled=True)
+        manager.register_flag(
+            name="rollout", flag_type=FeatureFlagType.PERCENTAGE, percentage=0.0, enabled=True
+        )
         result = manager.is_enabled("rollout", user_id="user1")
         assert result is False
 

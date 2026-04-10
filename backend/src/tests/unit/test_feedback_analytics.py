@@ -78,9 +78,7 @@ class TestFeedbackAnalyticsService:
     def test_get_satisfaction_score_empty(self, service):
         """Test satisfaction score with no data."""
         now = datetime.now(timezone.utc)
-        result = service.get_satisfaction_score(
-            now - timedelta(days=7), now
-        )
+        result = service.get_satisfaction_score(now - timedelta(days=7), now)
         assert result["average"] == 0.0
         assert result["count"] == 0
 
@@ -90,9 +88,7 @@ class TestFeedbackAnalyticsService:
             service.add_feedback(fb)
 
         now = datetime.now(timezone.utc)
-        result = service.get_satisfaction_score(
-            now - timedelta(days=7), now
-        )
+        result = service.get_satisfaction_score(now - timedelta(days=7), now)
 
         assert result["count"] == 4
         assert result["average"] == pytest.approx(3.0)
@@ -106,9 +102,7 @@ class TestFeedbackAnalyticsService:
             service.add_feedback(fb)
 
         now = datetime.now(timezone.utc)
-        result = service.get_feedback_by_type(
-            now - timedelta(days=7), now
-        )
+        result = service.get_feedback_by_type(now - timedelta(days=7), now)
 
         assert result["positive"] == 2
         assert result["negative"] == 2
@@ -116,18 +110,22 @@ class TestFeedbackAnalyticsService:
     def test_get_bug_summary(self, service):
         """Test bug summary."""
         now = datetime.now(timezone.utc)
-        service.add_bug_report({
-            "title": "Bug 1",
-            "severity": "critical",
-            "status": "open",
-            "timestamp": now - timedelta(days=1),
-        })
-        service.add_bug_report({
-            "title": "Bug 2",
-            "severity": "high",
-            "status": "resolved",
-            "timestamp": now - timedelta(days=2),
-        })
+        service.add_bug_report(
+            {
+                "title": "Bug 1",
+                "severity": "critical",
+                "status": "open",
+                "timestamp": now - timedelta(days=1),
+            }
+        )
+        service.add_bug_report(
+            {
+                "title": "Bug 2",
+                "severity": "high",
+                "status": "resolved",
+                "timestamp": now - timedelta(days=2),
+            }
+        )
 
         result = service.get_bug_summary(now - timedelta(days=7), now)
 
@@ -138,20 +136,24 @@ class TestFeedbackAnalyticsService:
     def test_get_feature_request_summary(self, service):
         """Test feature request summary."""
         now = datetime.now(timezone.utc)
-        service.add_feature_request({
-            "title": "Feature 1",
-            "category": "conversion",
-            "status": "planned",
-            "votes": 50,
-            "timestamp": now - timedelta(days=1),
-        })
-        service.add_feature_request({
-            "title": "Feature 2",
-            "category": "ui",
-            "status": "submitted",
-            "votes": 30,
-            "timestamp": now - timedelta(days=2),
-        })
+        service.add_feature_request(
+            {
+                "title": "Feature 1",
+                "category": "conversion",
+                "status": "planned",
+                "votes": 50,
+                "timestamp": now - timedelta(days=1),
+            }
+        )
+        service.add_feature_request(
+            {
+                "title": "Feature 2",
+                "category": "ui",
+                "status": "submitted",
+                "votes": 30,
+                "timestamp": now - timedelta(days=2),
+            }
+        )
 
         result = service.get_feature_request_summary(now - timedelta(days=7), now)
 
@@ -164,9 +166,7 @@ class TestFeedbackAnalyticsService:
             service.add_feedback(fb)
 
         now = datetime.now(timezone.utc)
-        result = service.get_conversion_feedback_correlation(
-            now - timedelta(days=7), now
-        )
+        result = service.get_conversion_feedback_correlation(now - timedelta(days=7), now)
 
         assert "by_model" in result
         assert "by_duration" in result

@@ -39,8 +39,8 @@ class TestMetricsTracker:
     def test_tracker_init(self, tracker):
         """Test MetricsTracker initializes correctly."""
         assert tracker is not None
-        assert hasattr(tracker, '_initialized')
-        assert hasattr(tracker, '_lock')
+        assert hasattr(tracker, "_initialized")
+        assert hasattr(tracker, "_lock")
 
     def test_tracker_is_singleton(self):
         """Test MetricsTracker is a singleton."""
@@ -51,9 +51,9 @@ class TestMetricsTracker:
 
     def test_tracker_has_conversion_tracking(self, tracker):
         """Test tracker has conversion tracking attributes."""
-        assert hasattr(tracker, '_conversion_times')
-        assert hasattr(tracker, '_success_count')
-        assert hasattr(tracker, '_failure_count')
+        assert hasattr(tracker, "_conversion_times")
+        assert hasattr(tracker, "_success_count")
+        assert hasattr(tracker, "_failure_count")
 
     def test_record_conversion_success(self, tracker):
         """Test recording a successful conversion."""
