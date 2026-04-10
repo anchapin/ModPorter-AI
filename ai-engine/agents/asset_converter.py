@@ -2,7 +2,7 @@
 Asset Converter Agent for handling texture, model, and audio asset conversion
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import logging
 import json
 import zipfile
@@ -100,6 +100,7 @@ class AssetConverterAgent:
 
     pass
 
+
 # ============================================================================
 # EXTRACTED MODULES - Delegation for backward compatibility
 # ============================================================================
@@ -116,10 +117,13 @@ except ImportError:
     model_converter = None
     audio_converter = None
     converter_utils = None
+
+
 def _is_power_of_2(self, n: int) -> bool:
     if _HAS_EXTRACTED_MODULES:
         return converter_utils.is_power_of_2(n)
     return n > 0 and (n & (n - 1)) == 0
+
 
 def _next_power_of_2(self, n: int) -> int:
     if _HAS_EXTRACTED_MODULES:
@@ -128,6 +132,7 @@ def _next_power_of_2(self, n: int) -> int:
     while power < n:
         power *= 2
     return power
+
 
 def _previous_power_of_2(self, n: int) -> int:
     if _HAS_EXTRACTED_MODULES:
@@ -139,9 +144,11 @@ def _previous_power_of_2(self, n: int) -> int:
         power *= 2
     return power
 
+
 # ========================================================================
 # Texture conversion methods - delegated to texture_converter
 # ========================================================================
+
 
 def _convert_single_texture(
     self, texture_path: str, metadata: Dict, usage: str, output_dir: Path = None
@@ -152,20 +159,24 @@ def _convert_single_texture(
         )
     raise NotImplementedError("texture_converter module not available")
 
+
 def _generate_texture_pack_structure(self, textures: List[Dict]) -> Dict:
     if _HAS_EXTRACTED_MODULES:
         return texture_converter._generate_texture_pack_structure(self, textures)
     raise NotImplementedError("texture_converter module not available")
+
 
 def convert_textures(self, texture_list: str, output_path: str) -> str:
     if _HAS_EXTRACTED_MODULES:
         return texture_converter.convert_textures(self, texture_list, output_path)
     raise NotImplementedError("texture_converter module not available")
 
+
 def detect_texture_atlas(self, texture_path: str) -> Dict:
     if _HAS_EXTRACTED_MODULES:
         return texture_converter.detect_texture_atlas(self, texture_path)
     raise NotImplementedError("texture_converter module not available")
+
 
 def extract_texture_atlas(
     self,
@@ -180,10 +191,12 @@ def extract_texture_atlas(
         )
     raise NotImplementedError("texture_converter module not available")
 
+
 def parse_atlas_metadata(self, mcmeta_path: str) -> Dict:
     if _HAS_EXTRACTED_MODULES:
         return texture_converter.parse_atlas_metadata(self, mcmeta_path)
     raise NotImplementedError("texture_converter module not available")
+
 
 def convert_atlas_to_bedrock(
     self, atlas_path: str, output_dir: str, texture_names: List[str] = None
@@ -194,15 +207,18 @@ def convert_atlas_to_bedrock(
         )
     raise NotImplementedError("texture_converter module not available")
 
+
 def convert_java_texture_path(self, java_path: str, bedrock_type: str = "blocks") -> str:
     if _HAS_EXTRACTED_MODULES:
         return texture_converter.convert_java_texture_path(self, java_path, bedrock_type)
     raise NotImplementedError("texture_converter module not available")
 
+
 def validate_texture(self, texture_path: str) -> Dict:
     if _HAS_EXTRACTED_MODULES:
         return texture_converter.validate_texture(self, texture_path)
     raise NotImplementedError("texture_converter module not available")
+
 
 def generate_fallback_for_jar(
     self, output_path: str, block_name: str, texture_type: str = "blocks"
@@ -213,20 +229,24 @@ def generate_fallback_for_jar(
         )
     raise NotImplementedError("texture_converter module not available")
 
+
 def _get_recommended_resolution(self, width: int, height: int) -> str:
     if _HAS_EXTRACTED_MODULES:
         return texture_converter._get_recommended_resolution(self, width, height)
     raise NotImplementedError("texture_converter module not available")
+
 
 def _generate_conversion_recommendations(self, analysis: Dict) -> List[str]:
     if _HAS_EXTRACTED_MODULES:
         return texture_converter._generate_conversion_recommendations(self, analysis)
     raise NotImplementedError("texture_converter module not available")
 
+
 def _assess_conversion_complexity(self, analysis: Dict) -> str:
     if _HAS_EXTRACTED_MODULES:
         return texture_converter._assess_conversion_complexity(self, analysis)
     raise NotImplementedError("texture_converter module not available")
+
 
 def extract_textures_from_jar(
     self, jar_path: str, output_dir: str, texture_types: Optional[List[str]] = None
@@ -237,39 +257,44 @@ def extract_textures_from_jar(
         )
     raise NotImplementedError("texture_converter module not available")
 
+
 def _map_java_texture_to_bedrock(self, java_path: str) -> str:
     if _HAS_EXTRACTED_MODULES:
         return texture_converter._map_java_texture_to_bedrock(self, java_path)
     raise NotImplementedError("texture_converter module not available")
+
 
 def _map_texture_type(self, java_type: str) -> str:
     if _HAS_EXTRACTED_MODULES:
         return texture_converter._map_texture_type(self, java_type)
     raise NotImplementedError("texture_converter module not available")
 
+
 def _map_bedrock_texture_to_java(self, bedrock_path: str, namespace: str) -> str:
     if _HAS_EXTRACTED_MODULES:
         return texture_converter._map_bedrock_texture_to_java(self, bedrock_path, namespace)
     raise NotImplementedError("texture_converter module not available")
+
 
 def _map_bedrock_type_to_java(self, bedrock_type: str) -> str:
     if _HAS_EXTRACTED_MODULES:
         return texture_converter._map_bedrock_type_to_java(self, bedrock_type)
     raise NotImplementedError("texture_converter module not available")
 
+
 def validate_textures_batch(self, texture_paths: List[str], metadata: Dict = None) -> Dict:
     if _HAS_EXTRACTED_MODULES:
         return texture_converter.validate_textures_batch(self, texture_paths, metadata)
     raise NotImplementedError("texture_converter module not available")
 
-def extract_texture_atlas_from_jar(
-    self, jar_path: str, atlas_type: str, output_dir: str
-) -> Dict:
+
+def extract_texture_atlas_from_jar(self, jar_path: str, atlas_type: str, output_dir: str) -> Dict:
     if _HAS_EXTRACTED_MODULES:
         return texture_converter.extract_texture_atlas_from_jar(
             self, jar_path, atlas_type, output_dir
         )
     raise NotImplementedError("texture_converter module not available")
+
 
 def convert_jar_textures_to_bedrock(
     self, jar_path: str, output_dir: str, namespace: str = None
@@ -280,62 +305,115 @@ def convert_jar_textures_to_bedrock(
         )
     raise NotImplementedError("texture_converter module not available")
 
+
 def _generate_fallback_texture(self, usage: str = "block", size: tuple = (16, 16)):
     if _HAS_EXTRACTED_MODULES:
         return texture_converter._generate_fallback_texture(self, usage, size)
     raise NotImplementedError("texture_converter module not available")
+
 
 def _get_mod_ids_from_jar(self, jar) -> List[str]:
     if _HAS_EXTRACTED_MODULES:
         return texture_converter._get_mod_ids_from_jar(self, jar)
     raise NotImplementedError("texture_converter module not available")
 
+
 def _extract_textures_from_alt_locations(self, jar, output_path: Path):
     if _HAS_EXTRACTED_MODULES:
         return texture_converter._extract_textures_from_alt_locations(self, jar, output_path)
     raise NotImplementedError("texture_converter module not available")
 
+
 # ========================================================================
 # Model conversion methods - delegated to model_converter
 # ========================================================================
+
 
 def _convert_single_model(self, model_path: str, metadata: Dict, entity_type: str) -> Dict:
     if _HAS_EXTRACTED_MODULES:
         return model_converter._convert_single_model(self, model_path, metadata, entity_type)
     raise NotImplementedError("model_converter module not available")
 
+
 def _analyze_model(self, model_path: str, metadata: Dict) -> Dict:
     if _HAS_EXTRACTED_MODULES:
         return model_converter._analyze_model(self, model_path, metadata)
     raise NotImplementedError("model_converter module not available")
+
 
 def _generate_model_structure(self, models: List[Dict]) -> Dict:
     if _HAS_EXTRACTED_MODULES:
         return model_converter._generate_model_structure(self, models)
     raise NotImplementedError("model_converter module not available")
 
+
+def _extract_models_from_jar(self, jar_path: str, output_dir: str, namespace: str = None) -> Dict:
+    if _HAS_EXTRACTED_MODULES:
+        return model_converter.extract_models_from_jar(jar_path, output_dir, namespace)
+    raise NotImplementedError("model_converter module not available")
+
+
+def _parse_blockstate(self, blockstate_data: Dict) -> Dict:
+    if _HAS_EXTRACTED_MODULES:
+        return model_converter.parse_blockstate(blockstate_data)
+    raise NotImplementedError("model_converter module not available")
+
+
+def _resolve_parent_model(
+    self, model_data: Dict, model_cache: Dict, namespace: str = None
+) -> Tuple[List[Dict], List[str]]:
+    if _HAS_EXTRACTED_MODULES:
+        return model_converter.resolve_parent_model(model_data, model_cache, namespace)
+    raise NotImplementedError("model_converter module not available")
+
+
+def _get_model_elements_with_inheritance(
+    self, model_json: Dict, all_models: Dict, namespace: str = None
+) -> Tuple[List[Dict], List[str]]:
+    if _HAS_EXTRACTED_MODULES:
+        return model_converter.get_model_elements_with_inheritance(
+            model_json, all_models, namespace
+        )
+    raise NotImplementedError("model_converter module not available")
+
+
+def _convert_blockstate(
+    self, blockstate_path: str, model_output_dir: str, all_models: Dict, namespace: str = None
+) -> Dict:
+    if _HAS_EXTRACTED_MODULES:
+        return model_converter.convert_blockstate(
+            self, blockstate_path, model_output_dir, all_models, namespace
+        )
+    raise NotImplementedError("model_converter module not available")
+
+
 # ========================================================================
 # Audio conversion methods - delegated to audio_converter
 # ========================================================================
+
 
 def _convert_single_audio(self, audio_path: str, metadata: Dict, audio_type: str) -> Dict:
     if _HAS_EXTRACTED_MODULES:
         return audio_converter._convert_single_audio(self, audio_path, metadata, audio_type)
     raise NotImplementedError("audio_converter module not available")
 
+
 def _analyze_audio(self, audio_path: str, metadata: Dict) -> Dict:
     if _HAS_EXTRACTED_MODULES:
         return audio_converter._analyze_audio(self, audio_path, metadata)
     raise NotImplementedError("audio_converter module not available")
+
 
 def _generate_sound_structure(self, sounds: List[Dict]) -> Dict:
     if _HAS_EXTRACTED_MODULES:
         return audio_converter._generate_sound_structure(self, sounds)
     raise NotImplementedError("audio_converter module not available")
 
+
 def _is_power_of_2(self, n: int) -> bool:
     """Check if a number is a power of 2"""
     return n > 0 and (n & (n - 1)) == 0
+
 
 def _next_power_of_2(self, n: int) -> int:
     """Get the next power of 2 greater than or equal to n"""
@@ -343,6 +421,7 @@ def _next_power_of_2(self, n: int) -> int:
     while power < n:
         power *= 2
     return power
+
 
 def _previous_power_of_2(self, n: int) -> int:
     """Get the previous power of 2 less than or equal to n"""
@@ -352,6 +431,7 @@ def _previous_power_of_2(self, n: int) -> int:
     while (power * 2) <= n:
         power *= 2
     return power
+
 
 def _convert_single_texture(
     self, texture_path: str, metadata: Dict, usage: str, output_dir: Path = None
@@ -371,9 +451,7 @@ def _convert_single_texture(
     try:
         # Handle missing or corrupted files with fallback generation
         if not Path(texture_path).exists():
-            logger.warning(
-                f"Texture file not found: {texture_path}. Generating fallback texture."
-            )
+            logger.warning(f"Texture file not found: {texture_path}. Generating fallback texture.")
             img = self._generate_fallback_texture(usage)
             original_dimensions = img.size
             is_valid_png = False
@@ -457,13 +535,9 @@ def _convert_single_texture(
                     animation_data = mcmeta_content["animation"]
                     optimizations_applied.append("Parsed .mcmeta animation data")
             except (json.JSONDecodeError, Exception) as e:
-                logger.warning(
-                    "Could not parse .mcmeta file for {}: {}".format(texture_path, e)
-                )
+                logger.warning("Could not parse .mcmeta file for {}: {}".format(texture_path, e))
 
-        base_name = (
-            Path(texture_path).stem if Path(texture_path).exists() else "fallback_texture"
-        )
+        base_name = Path(texture_path).stem if Path(texture_path).exists() else "fallback_texture"
         # Enhanced asset path mapping from Java mod structure to Bedrock structure
         # Handle common Java mod asset paths and map them to Bedrock equivalents
         texture_path_obj = (
@@ -582,6 +656,7 @@ def _convert_single_texture(
         self._conversion_cache[cache_key] = error_result
         return error_result
 
+
 def _generate_texture_pack_structure(self, textures: List[Dict]) -> Dict:
     """Generate texture pack structure files with enhanced atlas handling"""
     manifest = {
@@ -624,9 +699,7 @@ def _generate_texture_pack_structure(self, textures: List[Dict]) -> Dict:
             atlas_name = base_name.split("_")[0]  # Group by prefix
             if atlas_name not in texture_atlases:
                 texture_atlases[atlas_name] = []
-            texture_atlases[atlas_name].append(
-                {"reference": bedrock_ref, "path": converted_path}
-            )
+            texture_atlases[atlas_name].append({"reference": bedrock_ref, "path": converted_path})
 
         if bedrock_ref.startswith("item_") or "/items/" in converted_path:
             item_texture_data[bedrock_ref] = texture_entry
@@ -644,9 +717,7 @@ def _generate_texture_pack_structure(self, textures: List[Dict]) -> Dict:
             if frames_list and all(isinstance(f, dict) for f in frames_list):
                 try:
                     processed_frames = [
-                        int(f["index"])
-                        for f in frames_list
-                        if isinstance(f, dict) and "index" in f
+                        int(f["index"]) for f in frames_list if isinstance(f, dict) and "index" in f
                     ]
                     if not processed_frames:
                         processed_frames = []
@@ -691,6 +762,7 @@ def _generate_texture_pack_structure(self, textures: List[Dict]) -> Dict:
         result["texture_atlases.json"] = texture_atlases
 
     return result
+
 
 def convert_textures(self, texture_list: str, output_path: str) -> str:
     """
@@ -790,6 +862,7 @@ def convert_textures(self, texture_list: str, output_path: str) -> str:
             indent=2,
         )
 
+
 def _convert_single_audio(self, audio_path: str, metadata: Dict, audio_type: str) -> Dict:
     """Convert a single audio file to Bedrock format"""
     try:
@@ -869,6 +942,7 @@ def _convert_single_audio(self, audio_path: str, metadata: Dict, audio_type: str
         logger.error(f"Audio conversion error for {audio_path}: {e}")
         return {"success": False, "original_path": str(audio_path), "error": str(e)}
 
+
 def _generate_sound_structure(self, sounds: List[Dict]) -> Dict:
     """Generate sound structure files"""
     sound_definitions = {}
@@ -898,6 +972,7 @@ def _generate_sound_structure(self, sounds: List[Dict]) -> Dict:
         return {"sound_definitions.json": {"sound_definitions": sound_definitions}}
     return {}
 
+
 def _generate_model_structure(self, models: List[Dict]) -> Dict:
     """Generate model structure files"""
     valid_models = [m for m in models if m.get("success")]
@@ -907,6 +982,7 @@ def _generate_model_structure(self, models: List[Dict]) -> Dict:
             m["bedrock_identifier"] for m in valid_models if "bedrock_identifier" in m
         ],
     }
+
 
 def _convert_single_model(self, model_path: str, metadata: Dict, entity_type: str) -> Dict:
     """Convert a single model to Bedrock format"""
@@ -965,9 +1041,7 @@ def _convert_single_model(self, model_path: str, metadata: Dict, entity_type: st
                     f"Handling as '{java_parent}'. Display transformations not applied."
                 )
             elif java_parent == "item/handheld":
-                warnings.append(
-                    "Handling as 'item/handheld'. Display transformations not applied."
-                )
+                warnings.append("Handling as 'item/handheld'. Display transformations not applied.")
 
             texture_layers = java_model.get("textures", {})
             layer_count = 0
@@ -1105,9 +1179,7 @@ def _convert_single_model(self, model_path: str, metadata: Dict, entity_type: st
 
         elif not processed_as_item_specific_type and not java_elements:
             if java_parent:
-                warnings.append(
-                    f"Model has unhandled parent '{java_parent}' and no local elements"
-                )
+                warnings.append(f"Model has unhandled parent '{java_parent}' and no local elements")
             else:
                 warnings.append("Model has no elements and no parent")
             geo_description["visible_bounds_width"] = 0.1
@@ -1151,6 +1223,7 @@ def _convert_single_model(self, model_path: str, metadata: Dict, entity_type: st
             "error": str(e),
             "warnings": warnings,
         }
+
 
 @tool
 @staticmethod
@@ -1420,9 +1493,7 @@ def analyze_assets_tool(asset_data: str) -> str:
                 analysis_results["other"]["count"] += 1
                 analysis_results["other"]["files"].append(asset_path)
                 if file_ext not in [".txt", ".md", ".json"]:  # Skip known text files
-                    analysis_results["other"]["issues"].append(
-                        f"Unknown asset type: {asset_path}"
-                    )
+                    analysis_results["other"]["issues"].append(f"Unknown asset type: {asset_path}")
 
         # Generate conversion recommendations
         recommendations = _generate_conversion_recommendations(analysis_results)
@@ -1443,6 +1514,7 @@ def analyze_assets_tool(asset_data: str) -> str:
         return json.dumps(
             {"success": False, "error": f"Failed to analyze assets: {str(e)}"}, indent=2
         )
+
 
 @tool
 @staticmethod
@@ -1562,9 +1634,7 @@ def convert_textures_tool(texture_data: str) -> str:
             # MCMETA parsing logic
             animation_data = None
             texture_path_obj = (
-                Path(texture_path)
-                if Path(texture_path).exists()
-                else Path(f"fallback_{usage}.png")
+                Path(texture_path) if Path(texture_path).exists() else Path(f"fallback_{usage}.png")
             )
             mcmeta_path_str = str(texture_path_obj) + ".mcmeta"
             mcmeta_path = Path(mcmeta_path_str)
@@ -1615,9 +1685,7 @@ def convert_textures_tool(texture_data: str) -> str:
             return {
                 "success": True,
                 "original_path": str(texture_path),
-                "converted_path": str(actual_output_path)
-                if actual_output_path
-                else converted_path,
+                "converted_path": str(actual_output_path) if actual_output_path else converted_path,
                 "relative_path": converted_path,
                 "original_dimensions": original_dimensions,
                 "converted_dimensions": (new_width, new_height),
@@ -1759,9 +1827,7 @@ def convert_textures_tool(texture_data: str) -> str:
                 else:
                     # Structured data
                     textures = data.get("textures", [])
-                    output_dir = data.get(
-                        "output_dir"
-                    )  # Get output directory from structured data
+                    output_dir = data.get("output_dir")  # Get output directory from structured data
             else:
                 # Single path
                 textures = [{"path": texture_data}]
@@ -1843,6 +1909,7 @@ def convert_textures_tool(texture_data: str) -> str:
             },
             indent=2,
         )
+
 
 @tool
 @staticmethod
@@ -1999,9 +2066,7 @@ def convert_models_tool(model_data: str) -> str:
                         elif axis == "z":
                             bone_rotation[2] = angle
                         else:
-                            warnings.append(
-                                f"Unsupported rotation axis '{axis}' in element {i}"
-                            )
+                            warnings.append(f"Unsupported rotation axis '{axis}' in element {i}")
                         warnings.append(
                             f"Element {i} has rotation. Ensure pivot {bone_pivot} and rotation {bone_rotation} are correctly interpreted by Bedrock."
                         )
@@ -2063,9 +2128,7 @@ def convert_models_tool(model_data: str) -> str:
                     v_bounds_w = model_max_x - model_min_x
                     v_bounds_h = model_max_y - model_min_y
                     v_bounds_d = model_max_z - model_min_z
-                    geo_description["visible_bounds_width"] = round(
-                        max(v_bounds_w, v_bounds_d), 4
-                    )
+                    geo_description["visible_bounds_width"] = round(max(v_bounds_w, v_bounds_d), 4)
                     geo_description["visible_bounds_height"] = round(v_bounds_h, 4)
                     geo_description["visible_bounds_offset"] = [
                         round(model_min_x + v_bounds_w / 2.0, 4),
@@ -2141,9 +2204,7 @@ def convert_models_tool(model_data: str) -> str:
             # These keys are illustrative; the actual output is a list of file contents/paths
             # For this structure, we just return the list of paths and identifiers as before.
             # A higher-level packaging agent would create the actual files.
-            "geometry_files": [
-                m["converted_path"] for m in valid_models if "converted_path" in m
-            ],
+            "geometry_files": [m["converted_path"] for m in valid_models if "converted_path" in m],
             "identifiers_used": [
                 m["bedrock_identifier"] for m in valid_models if "bedrock_identifier" in m
             ],
@@ -2209,6 +2270,7 @@ def convert_models_tool(model_data: str) -> str:
             },
             indent=2,
         )
+
 
 @tool
 @staticmethod
@@ -2405,6 +2467,7 @@ def convert_audio_tool(audio_data: str) -> str:
             indent=2,
         )
 
+
 @tool
 @staticmethod
 def validate_bedrock_assets_tool(validation_data: str) -> str:
@@ -2501,6 +2564,7 @@ def validate_bedrock_assets_tool(validation_data: str) -> str:
             {"success": False, "error": f"Failed to validate assets: {str(e)}"}, indent=2
         )
 
+
 @tool
 @staticmethod
 def extract_jar_textures_tool(jar_data: str) -> str:
@@ -2565,9 +2629,7 @@ def extract_jar_textures_tool(jar_data: str) -> str:
 
     except json.JSONDecodeError as e:
         logger.error(f"Invalid JSON in jar_data: {e}")
-        return json.dumps(
-            {"success": False, "error": f"Invalid JSON input: {str(e)}"}, indent=2
-        )
+        return json.dumps({"success": False, "error": f"Invalid JSON input: {str(e)}"}, indent=2)
     except Exception as e:
         logger.error(f"Unhandled error in extract_jar_textures: {e}", exc_info=True)
         return json.dumps(
@@ -2575,7 +2637,9 @@ def extract_jar_textures_tool(jar_data: str) -> str:
             indent=2,
         )
 
+
 # Helper methods
+
 
 def _analyze_texture(self, texture_path: str, metadata: Dict) -> Dict:
     """Analyze a single texture for conversion needs"""
@@ -2622,6 +2686,7 @@ def _analyze_texture(self, texture_path: str, metadata: Dict) -> Dict:
         "recommended_resolution": self._get_recommended_resolution(width, height),
     }
 
+
 def _analyze_model(self, model_path: str, metadata: Dict) -> Dict:
     """Analyze a single model for conversion needs"""
     vertex_count = metadata.get("vertices", 100)
@@ -2667,6 +2732,7 @@ def _analyze_model(self, model_path: str, metadata: Dict) -> Dict:
             "bones": bone_count,
         },
     }
+
 
 def _analyze_audio(self, audio_path: str, metadata: Dict) -> Dict:
     """Analyze a single audio file for conversion needs"""
@@ -2716,6 +2782,7 @@ def _analyze_audio(self, audio_path: str, metadata: Dict) -> Dict:
         },
     }
 
+
 def _previous_power_of_2(self, n: int) -> int:
     if n <= 0:
         return 1  # Smallest power of 2, or raise error
@@ -2723,6 +2790,7 @@ def _previous_power_of_2(self, n: int) -> int:
     while (power * 2) <= n:
         power *= 2
     return power
+
 
 def _convert_single_model(self, model_path: str, metadata: Dict, entity_type: str) -> Dict:
     warnings = []
@@ -2779,9 +2847,7 @@ def _convert_single_model(self, model_path: str, metadata: Dict, entity_type: st
                     f"Handling as '{java_parent}'. Display transformations not applied."
                 )
             elif java_parent == "item/handheld":
-                warnings.append(
-                    "Handling as 'item/handheld'. Display transformations not applied."
-                )
+                warnings.append("Handling as 'item/handheld'. Display transformations not applied.")
 
             texture_layers = java_model.get("textures", {})
             layer_count = 0
@@ -2936,9 +3002,7 @@ def _convert_single_model(self, model_path: str, metadata: Dict, entity_type: st
             not processed_as_item_specific_type and not java_elements
         ):  # No item-specific handling, no elements
             if java_parent:
-                warnings.append(
-                    f"Model has unhandled parent '{java_parent}' and no local elements"
-                )
+                warnings.append(f"Model has unhandled parent '{java_parent}' and no local elements")
             else:
                 warnings.append("Model has no elements and no parent")
             # Set default small bounds for an empty or placeholder model
@@ -2985,6 +3049,7 @@ def _convert_single_model(self, model_path: str, metadata: Dict, entity_type: st
             "error": str(e),
             "warnings": warnings,
         }
+
 
 def _convert_single_audio(self, audio_path: str, metadata: Dict, audio_type: str) -> Dict:
     """Convert a single audio file to Bedrock-compatible format"""
@@ -3079,6 +3144,7 @@ def _convert_single_audio(self, audio_path: str, metadata: Dict, audio_type: str
         logger.error(f"Audio conversion error for {audio_path}: {e}", exc_info=True)
         return {"success": False, "original_path": str(audio_path), "error": str(e)}
 
+
 def _validate_single_asset(self, asset_path: str, asset_type: str, metadata: Dict) -> Dict:
     """Validate a single asset for Bedrock compatibility"""
     is_valid = True
@@ -3115,9 +3181,8 @@ def _validate_single_asset(self, asset_path: str, asset_type: str, metadata: Dic
         "optimizations": optimizations,
     }
 
-def _generate_fallback_texture(
-    self, usage: str = "block", size: tuple = (16, 16)
-) -> Image.Image:
+
+def _generate_fallback_texture(self, usage: str = "block", size: tuple = (16, 16)) -> Image.Image:
     """Generate a fallback texture for edge cases"""
     # Create a simple colored texture based on usage type
     colors = {
@@ -3147,6 +3212,7 @@ def _generate_fallback_texture(
                 )
 
     return img
+
 
 def detect_texture_atlas(self, texture_path: str) -> Dict:
     """
@@ -3210,6 +3276,7 @@ def detect_texture_atlas(self, texture_path: str) -> Dict:
     except Exception as e:
         logger.error(f"Error detecting texture atlas: {e}")
         return {"is_atlas": False, "error": str(e)}
+
 
 def extract_texture_atlas(
     self,
@@ -3298,6 +3365,7 @@ def extract_texture_atlas(
         logger.error(f"Error extracting texture atlas: {e}")
         return {"success": False, "error": str(e)}
 
+
 def parse_atlas_metadata(self, mcmeta_path: str) -> Dict:
     """
     Parse .mcmeta file for texture atlas animation or configuration data.
@@ -3352,6 +3420,7 @@ def parse_atlas_metadata(self, mcmeta_path: str) -> Dict:
     except Exception as e:
         logger.error(f"Error parsing mcmeta file: {e}")
         return {"success": False, "error": str(e)}
+
 
 def convert_atlas_to_bedrock(
     self, atlas_path: str, output_dir: str, texture_names: List[str] = None
@@ -3413,14 +3482,17 @@ def convert_atlas_to_bedrock(
         logger.error(f"Error converting texture atlas: {e}")
         return {"success": False, "error": str(e)}
 
+
 def clear_cache(self):
     """Clear the conversion cache"""
     self._conversion_cache.clear()
     logger.info("Cleared asset conversion cache")
 
+
 # =========================================================================
 # JAR Texture Extraction Methods (Issue #650)
 # =========================================================================
+
 
 def extract_textures_from_jar(
     self, jar_path: str, output_dir: str, texture_types: Optional[List[str]] = None
@@ -3496,10 +3568,7 @@ def extract_textures_from_jar(
 
                         # Save to output directory
                         output_subdir = (
-                            output_path
-                            / namespace
-                            / "textures"
-                            / relative_path.rsplit("/", 1)[0]
+                            output_path / namespace / "textures" / relative_path.rsplit("/", 1)[0]
                         )
                         output_subdir.mkdir(parents=True, exist_ok=True)
 
@@ -3544,6 +3613,7 @@ def extract_textures_from_jar(
         logger.error(f"Error extracting textures from JAR: {e}")
         return {"success": False, "error": str(e)}
 
+
 def _get_mod_ids_from_jar(self, jar: zipfile.ZipFile) -> List[str]:
     """Extract mod IDs/namespaces from JAR assets directory."""
     mod_ids = set()
@@ -3558,6 +3628,7 @@ def _get_mod_ids_from_jar(self, jar: zipfile.ZipFile) -> List[str]:
 
     # Always include 'minecraft' as fallback
     return list(mod_ids) if mod_ids else ["minecraft"]
+
 
 def _extract_textures_from_alt_locations(
     self, jar: zipfile.ZipFile, output_path: Path
@@ -3623,6 +3694,7 @@ def _extract_textures_from_alt_locations(
 
     return extracted
 
+
 def convert_java_texture_path(self, java_path: str, bedrock_type: str = "blocks") -> str:
     """
     Convert Java texture path to Bedrock texture path.
@@ -3669,6 +3741,7 @@ def convert_java_texture_path(self, java_path: str, bedrock_type: str = "blocks"
 
     logger.debug(f"Converted Java path '{java_path}' to Bedrock path '{bedrock_path}'")
     return bedrock_path
+
 
 def validate_texture(self, texture_path: str) -> Dict:
     """
@@ -3721,9 +3794,7 @@ def validate_texture(self, texture_path: str) -> Dict:
                     result["issues"].append(f"Height {height} is not a power of 2")
 
             # Check mode
-            if img.mode not in self.texture_constraints.get(
-                "supported_channels", ["RGB", "RGBA"]
-            ):
+            if img.mode not in self.texture_constraints.get("supported_channels", ["RGB", "RGBA"]):
                 result["issues"].append(
                     f"Unsupported color mode: {img.mode} (expected RGB or RGBA)"
                 )
@@ -3735,6 +3806,7 @@ def validate_texture(self, texture_path: str) -> Dict:
         result["issues"].append(f"Error validating texture: {str(e)}")
 
     return result
+
 
 def generate_fallback_for_jar(
     self, output_path: str, block_name: str, texture_type: str = "blocks"
@@ -3777,9 +3849,11 @@ def generate_fallback_for_jar(
         logger.error(f"Error generating fallback texture: {e}")
         return {"success": False, "error": str(e)}
 
+
 def _is_power_of_2(self, n: int) -> bool:
     """Check if a number is a power of 2"""
     return n > 0 and (n & (n - 1)) == 0
+
 
 def _get_recommended_resolution(self, width: int, height: int) -> str:
     """Get recommended resolution for texture"""
@@ -3791,12 +3865,14 @@ def _get_recommended_resolution(self, width: int, height: int) -> str:
 
     return f"{target_width}x{target_height}"
 
+
 def _next_power_of_2(self, n: int) -> int:
     """Get the next power of 2 greater than or equal to n"""
     power = 1
     while power < n:
         power *= 2
     return power
+
 
 def _generate_conversion_recommendations(self, analysis: Dict) -> List[str]:
     """Generate conversion recommendations based on analysis"""
@@ -3828,6 +3904,7 @@ def _generate_conversion_recommendations(self, analysis: Dict) -> List[str]:
 
     return recommendations
 
+
 def _assess_conversion_complexity(self, analysis: Dict) -> str:
     """Assess the complexity of the conversion task"""
     total_conversions = (
@@ -3848,6 +3925,7 @@ def _assess_conversion_complexity(self, analysis: Dict) -> str:
         return "moderate"
     else:
         return "complex"
+
 
 def _generate_texture_pack_structure(self, textures: List[Dict]) -> Dict:
     """Generate texture pack structure files with enhanced atlas handling"""
@@ -3891,9 +3969,7 @@ def _generate_texture_pack_structure(self, textures: List[Dict]) -> Dict:
             atlas_name = base_name.split("_")[0]  # Group by prefix
             if atlas_name not in texture_atlases:
                 texture_atlases[atlas_name] = []
-            texture_atlases[atlas_name].append(
-                {"reference": bedrock_ref, "path": converted_path}
-            )
+            texture_atlases[atlas_name].append({"reference": bedrock_ref, "path": converted_path})
 
         if bedrock_ref.startswith("item_") or "/items/" in converted_path:
             item_texture_data[bedrock_ref] = texture_entry
@@ -3911,9 +3987,7 @@ def _generate_texture_pack_structure(self, textures: List[Dict]) -> Dict:
             if frames_list and all(isinstance(f, dict) for f in frames_list):
                 try:
                     processed_frames = [
-                        int(f["index"])
-                        for f in frames_list
-                        if isinstance(f, dict) and "index" in f
+                        int(f["index"]) for f in frames_list if isinstance(f, dict) and "index" in f
                     ]
                     if not processed_frames:
                         processed_frames = []
@@ -3959,6 +4033,7 @@ def _generate_texture_pack_structure(self, textures: List[Dict]) -> Dict:
 
     return result
 
+
 def _generate_model_structure(self, models: List[Dict]) -> Dict:
     # Ensure only successful conversions are included
     valid_models = [m for m in models if m.get("success")]
@@ -3971,6 +4046,7 @@ def _generate_model_structure(self, models: List[Dict]) -> Dict:
             m["bedrock_identifier"] for m in valid_models if "bedrock_identifier" in m
         ],
     }
+
 
 def _generate_sound_structure(self, sounds: List[Dict]) -> Dict:
     sound_definitions = {}
@@ -4009,13 +4085,13 @@ def _generate_sound_structure(self, sounds: List[Dict]) -> Dict:
         return {"sound_definitions.json": {"sound_definitions": sound_definitions}}
     return {}
 
+
 # =========================================================================
 # TEXTURE EXTRACTION FROM JAR FILES
 # =========================================================================
 
-def extract_textures_from_jar(
-    self, jar_path: str, output_dir: str, namespace: str = None
-) -> Dict:
+
+def extract_textures_from_jar(self, jar_path: str, output_dir: str, namespace: str = None) -> Dict:
     """
     Extract all textures from a Java mod JAR file.
 
@@ -4056,9 +4132,7 @@ def extract_textures_from_jar(
 
             # Filter by namespace if provided
             if namespace:
-                texture_files = [
-                    f for f in texture_files if f.startswith(f"assets/{namespace}/")
-                ]
+                texture_files = [f for f in texture_files if f.startswith(f"assets/{namespace}/")]
 
             # Also look for mcmeta animation files
             mcmeta_files = [
@@ -4126,6 +4200,7 @@ def extract_textures_from_jar(
             "extracted_textures": [],
         }
 
+
 def _map_java_texture_to_bedrock(self, java_path: str) -> str:
     """
     Map a Java mod texture path to Bedrock resource pack texture path.
@@ -4154,6 +4229,7 @@ def _map_java_texture_to_bedrock(self, java_path: str) -> str:
     # Fallback: just use the filename in textures/
     return f"textures/{Path(java_path).name}"
 
+
 def _map_texture_type(self, java_type: str) -> str:
     """
     Map Java texture type to Bedrock texture type.
@@ -4178,6 +4254,7 @@ def _map_texture_type(self, java_type: str) -> str:
     }
 
     return type_mapping.get(java_type.lower(), "misc")
+
 
 def _map_bedrock_texture_to_java(self, bedrock_path: str, namespace: str) -> str:
     """
@@ -4206,6 +4283,7 @@ def _map_bedrock_texture_to_java(self, bedrock_path: str, namespace: str) -> str
 
     return f"assets/{namespace}/textures/misc/{bedrock_path}"
 
+
 def _map_bedrock_type_to_java(self, bedrock_type: str) -> str:
     """
     Map Bedrock texture type to Java texture type.
@@ -4229,9 +4307,11 @@ def _map_bedrock_type_to_java(self, bedrock_type: str) -> str:
 
     return type_mapping.get(bedrock_type.lower(), "misc")
 
+
 # =========================================================================
 # TEXTURE VALIDATION
 # =========================================================================
+
 
 def validate_texture(self, texture_path: str, metadata: Dict = None) -> Dict:
     """
@@ -4311,6 +4391,7 @@ def validate_texture(self, texture_path: str, metadata: Dict = None) -> Dict:
 
     return result
 
+
 def validate_textures_batch(self, texture_paths: List[str], metadata: Dict = None) -> Dict:
     """
     Validate multiple textures in batch.
@@ -4347,13 +4428,13 @@ def validate_textures_batch(self, texture_paths: List[str], metadata: Dict = Non
         "results": results,
     }
 
+
 # =========================================================================
 # TEXTURE ATLAS EXTRACTION FOR MODS
 # =========================================================================
 
-def extract_texture_atlas_from_jar(
-    self, jar_path: str, atlas_type: str, output_dir: str
-) -> Dict:
+
+def extract_texture_atlas_from_jar(self, jar_path: str, atlas_type: str, output_dir: str) -> Dict:
     """
     Extract and convert a texture atlas from a mod JAR.
 
@@ -4432,121 +4513,149 @@ def extract_texture_atlas_from_jar(
             "extracted_tiles": [],
         }
 
+
 def convert_jar_textures_to_bedrock(
-        self, jar_path: str, output_dir: str, namespace: str = None
-    ) -> Dict:
-        """
-        Complete pipeline to extract textures from JAR and convert to Bedrock format.
+    self, jar_path: str, output_dir: str, namespace: str = None
+) -> Dict:
+    """
+    Complete pipeline to extract textures from JAR and convert to Bedrock format.
 
-        Args:
-            jar_path: Path to the Java mod JAR file
-            output_dir: Directory to save converted textures
-            namespace: Optional namespace to filter textures
+    Args:
+        jar_path: Path to the Java mod JAR file
+        output_dir: Directory to save converted textures
+        namespace: Optional namespace to filter textures
 
-        Returns:
-            Dict with conversion results
-        """
-        results = {
-            "success": False,
-            "extracted": [],
-            "converted": [],
-            "failed": [],
-            "warnings": [],
-            "errors": [],
-        }
+    Returns:
+        Dict with conversion results
+    """
+    results = {
+        "success": False,
+        "extracted": [],
+        "converted": [],
+        "failed": [],
+        "warnings": [],
+        "errors": [],
+    }
 
-        try:
-            # Step 1: Extract textures from JAR
-            extract_result = self.extract_textures_from_jar(jar_path, output_dir, namespace)
+    try:
+        # Step 1: Extract textures from JAR
+        extract_result = self.extract_textures_from_jar(jar_path, output_dir, namespace)
 
-            if not extract_result["success"]:
-                results["errors"].append(
-                    f"Failed to extract textures: {extract_result.get('error', 'Unknown error')}"
+        if not extract_result["success"]:
+            results["errors"].append(
+                f"Failed to extract textures: {extract_result.get('error', 'Unknown error')}"
+            )
+            return results
+
+        results["extracted"] = extract_result["extracted_textures"]
+
+        # Step 2: Convert each texture to Bedrock format
+        for texture_info in extract_result["extracted_textures"]:
+            texture_path = texture_info["output_path"]
+
+            try:
+                # Validate texture
+                validation = self.validate_texture(texture_path)
+
+                if not validation["valid"]:
+                    results["failed"].append({"path": texture_path, "errors": validation["errors"]})
+                    results["warnings"].extend(validation["warnings"])
+                    continue
+
+                # Convert texture (resize to power of 2 if needed)
+                conversion_result = self._convert_single_texture(
+                    texture_path,
+                    {},
+                    "block",  # Default usage
+                    None,  # Don't save again, already saved
                 )
-                return results
 
-            results["extracted"] = extract_result["extracted_textures"]
-
-            # Step 2: Convert each texture to Bedrock format
-            for texture_info in extract_result["extracted_textures"]:
-                texture_path = texture_info["output_path"]
-
-                try:
-                    # Validate texture
-                    validation = self.validate_texture(texture_path)
-
-                    if not validation["valid"]:
-                        results["failed"].append(
-                            {"path": texture_path, "errors": validation["errors"]}
-                        )
-                        results["warnings"].extend(validation["warnings"])
-                        continue
-
-                    # Convert texture (resize to power of 2 if needed)
-                    conversion_result = self._convert_single_texture(
-                        texture_path,
-                        {},
-                        "block",  # Default usage
-                        None,  # Don't save again, already saved
+                if conversion_result.get("success"):
+                    results["converted"].append(
+                        {
+                            "original": texture_info["original_path"],
+                            "converted": texture_path,
+                            "bedrock_path": texture_info["bedrock_path"],
+                        }
                     )
+                else:
+                    # Generate fallback texture
+                    fallback = self._generate_fallback_texture("block")
+                    fallback_path = Path(texture_path)
+                    fallback.save(fallback_path, "PNG")
 
-                    if conversion_result.get("success"):
-                        results["converted"].append(
-                            {
-                                "original": texture_info["original_path"],
-                                "converted": texture_path,
-                                "bedrock_path": texture_info["bedrock_path"],
-                            }
-                        )
-                    else:
-                        # Generate fallback texture
-                        fallback = self._generate_fallback_texture("block")
-                        fallback_path = Path(texture_path)
-                        fallback.save(fallback_path, "PNG")
+                    results["converted"].append(
+                        {
+                            "original": texture_info["original_path"],
+                            "converted": texture_path,
+                            "bedrock_path": texture_info["bedrock_path"],
+                            "used_fallback": True,
+                        }
+                    )
+                    results["warnings"].append(f"Used fallback texture for {texture_path}")
 
-                        results["converted"].append(
-                            {
-                                "original": texture_info["original_path"],
-                                "converted": texture_path,
-                                "bedrock_path": texture_info["bedrock_path"],
-                                "used_fallback": True,
-                            }
-                        )
-                        results["warnings"].append(f"Used fallback texture for {texture_path}")
+            except Exception as e:
+                results["failed"].append({"path": texture_path, "errors": [str(e)]})
 
-                except Exception as e:
-                    results["failed"].append({"path": texture_path, "errors": [str(e)]})
+        results["success"] = len(results["converted"]) > 0
 
-            results["success"] = len(results["converted"]) > 0
+    except Exception as e:
+        results["errors"].append(f"Conversion pipeline failed: {str(e)}")
 
-        except Exception as e:
-            results["errors"].append(f"Conversion pipeline failed: {str(e)}")
+    return results
 
-        return results
+
 # Bind stub methods to AssetConverterAgent class for backward compatibility
 # These methods are defined in the except ImportError handler above but need to be
 # attached to the class so instances can access them as instance methods
 _stub_method_names = (
-    '_is_power_of_2', '_next_power_of_2', '_previous_power_of_2',
-    '_convert_single_texture', '_generate_texture_pack_structure', 'convert_textures',
-    'detect_texture_atlas', 'extract_texture_atlas', 'parse_atlas_metadata',
-    'convert_atlas_to_bedrock', 'convert_java_texture_path', 'validate_texture',
-    'generate_fallback_for_jar', '_get_recommended_resolution',
-    '_generate_conversion_recommendations', '_assess_conversion_complexity',
-    'extract_textures_from_jar', '_map_java_texture_to_bedrock', '_map_texture_type',
-    '_map_bedrock_texture_to_java', '_map_bedrock_type_to_java', 'validate_textures_batch',
-    'extract_texture_atlas_from_jar', 'convert_jar_textures_to_bedrock',
-    '_generate_fallback_texture', '_get_mod_ids_from_jar',
-    '_extract_textures_from_alt_locations', '_convert_single_model', '_analyze_model',
-    '_generate_model_structure', '_convert_single_audio', '_analyze_audio',
-    '_generate_sound_structure', 'analyze_assets_tool', 'convert_textures_tool',
-    'convert_models_tool', 'convert_audio_tool', 'validate_bedrock_assets_tool',
-    'extract_jar_textures_tool', '_analyze_texture', '_validate_single_asset', 'clear_cache',
+    "_is_power_of_2",
+    "_next_power_of_2",
+    "_previous_power_of_2",
+    "_convert_single_texture",
+    "_generate_texture_pack_structure",
+    "convert_textures",
+    "detect_texture_atlas",
+    "extract_texture_atlas",
+    "parse_atlas_metadata",
+    "convert_atlas_to_bedrock",
+    "convert_java_texture_path",
+    "validate_texture",
+    "generate_fallback_for_jar",
+    "_get_recommended_resolution",
+    "_generate_conversion_recommendations",
+    "_assess_conversion_complexity",
+    "extract_textures_from_jar",
+    "_map_java_texture_to_bedrock",
+    "_map_texture_type",
+    "_map_bedrock_texture_to_java",
+    "_map_bedrock_type_to_java",
+    "validate_textures_batch",
+    "extract_texture_atlas_from_jar",
+    "convert_jar_textures_to_bedrock",
+    "_generate_fallback_texture",
+    "_get_mod_ids_from_jar",
+    "_extract_textures_from_alt_locations",
+    "_convert_single_model",
+    "_analyze_model",
+    "_generate_model_structure",
+    "_convert_single_audio",
+    "_analyze_audio",
+    "_generate_sound_structure",
+    "analyze_assets_tool",
+    "convert_textures_tool",
+    "convert_models_tool",
+    "convert_audio_tool",
+    "validate_bedrock_assets_tool",
+    "extract_jar_textures_tool",
+    "_analyze_texture",
+    "_validate_single_asset",
+    "clear_cache",
 )
 import sys as _sys
+
 for _name in _stub_method_names:
     _mod = _sys.modules[__name__]
     _func = vars(_mod).get(_name)
     if _func is not None:
         setattr(AssetConverterAgent, _name, _func)
-

@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ConversionUploadEnhanced } from './ConversionUploadEnhanced';
+import { NotificationProvider } from '../NotificationSystem/NotificationSystem';
 import { describe, test, expect, vi } from 'vitest';
 import { convertMod } from '../../services/api';
 
@@ -25,8 +26,12 @@ vi.mock('../../services/websocket', () => ({
 }));
 
 describe('ConversionUploadEnhanced Accessibility', () => {
+  const renderWithProvider = (ui: React.ReactElement) => {
+    return render(<NotificationProvider>{ui}</NotificationProvider>);
+  };
+
   test('Smart Assumptions info button has correct accessibility attributes', () => {
-    render(<ConversionUploadEnhanced />);
+    renderWithProvider(<ConversionUploadEnhanced />);
 
     // Find the info button
     const infoButton = screen.getByText('?');
@@ -60,7 +65,7 @@ describe('ConversionUploadEnhanced Accessibility', () => {
 
   test('Remove file button has accessible name', async () => {
     const user = userEvent.setup();
-    render(<ConversionUploadEnhanced />);
+    renderWithProvider(<ConversionUploadEnhanced />);
 
     // Upload a file
     const file = new File(['dummy content'], 'test-mod.jar', {
@@ -84,7 +89,7 @@ describe('ConversionUploadEnhanced Accessibility', () => {
 
   test('Error message has role="alert"', async () => {
     const user = userEvent.setup();
-    render(<ConversionUploadEnhanced />);
+    renderWithProvider(<ConversionUploadEnhanced />);
 
     // Trigger an error via invalid URL
     const urlInput = screen.getByPlaceholderText(/curseforge/i);
@@ -101,14 +106,14 @@ describe('ConversionUploadEnhanced Accessibility', () => {
   });
 
   test('URL input has an accessible label', () => {
-    render(<ConversionUploadEnhanced />);
+    renderWithProvider(<ConversionUploadEnhanced />);
     const urlInput = screen.getByLabelText('Modpack URL');
     expect(urlInput).toBeInTheDocument();
   });
 
   test('Button shows spinner when processing', async () => {
     const user = userEvent.setup();
-    render(<ConversionUploadEnhanced />);
+    renderWithProvider(<ConversionUploadEnhanced />);
 
     // Check initial button text
     const submitButton = screen.getByText('Upload & Convert');

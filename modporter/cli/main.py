@@ -32,6 +32,7 @@ from agents.java_analyzer import JavaAnalyzerAgent
 from agents.bedrock_builder import BedrockBuilderAgent
 from agents.packaging_agent import PackagingAgent
 from agents.entity_converter import EntityConverter
+from agents.block_item_generator import BlockItemGenerator
 from .fix_ci import CIFixer
 
 # Configure logging
@@ -93,6 +94,7 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:
             features = {}
             entity_textures = []
             entity_models = []
+            assets = {}
         else:
             features = ast_analysis_result.get("features", {})
             entities = features.get("entities", [])
@@ -192,6 +194,36 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:
                         rp_path=rp_path,
                     )
 
+            # Step 2c: Extract and convert block/item models from JAR
+            block_models = [
+                m for m in assets.get("models", []) if "/models/block/" in m or "/models/item/" in m
+            ]
+            if block_models:
+                logger.info(f"Step 2c: Converting {len(block_models)} block/item models...")
+                _extract_and_convert_models(
+                    jar_path=str(jar_file),
+                    model_paths=block_models,
+                    entity_type="block",
+                    bp_path=Path(temp_dir) / "behavior_pack",
+                    rp_path=Path(temp_dir) / "resource_pack",
+                )
+
+            # Step 2d: Extract and convert recipes from JAR data pack
+            java_recipes = _extract_recipes_from_jar(str(jar_file))
+            if java_recipes:
+                logger.info(f"Step 2d: Generating {len(java_recipes)} Bedrock recipes...")
+                block_item_gen = BlockItemGenerator()
+                bedrock_recipes = block_item_gen.generate_recipes(java_recipes)
+                if bedrock_recipes:
+                    import json
+
+                    recipes_bp_path = Path(temp_dir) / "behavior_pack" / "recipes"
+                    recipes_bp_path.mkdir(parents=True, exist_ok=True)
+                    for recipe_id, recipe_data in bedrock_recipes.items():
+                        recipe_file = recipes_bp_path / f"{recipe_id}.json"
+                        recipe_file.write_text(json.dumps(recipe_data, indent=2))
+                    logger.info(f"Wrote {len(bedrock_recipes)} recipe files")
+
             # Step 3: Package as .mcaddon
             logger.info("Step 3: Creating .mcaddon package...")
             packaging_agent = PackagingAgent()
@@ -242,6 +274,185 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"❌ Conversion failed: {e}")
         return {"success": False, "error": str(e)}
+
+
+def _extract_and_convert_models(
+    jar_path: str,
+    model_paths: list,
+    entity_type: str,
+    bp_path: Path,
+    rp_path: Path,
+) -> None:
+    """
+    Extract models from JAR and convert them to Bedrock geo.json format.
+
+    Args:
+        jar_path: Path to the source JAR file
+        model_paths: List of model paths to extract and convert
+        entity_type: Type of model (block, item, etc.)
+        bp_path: Behavior pack path
+        rp_path: Resource pack path
+    """
+    import zipfile
+    import json
+
+    try:
+        models_dir = rp_path / "models" / entity_type
+        models_dir.mkdir(parents=True, exist_ok=True)
+
+        with zipfile.ZipFile(jar_path, "r") as jar:
+            for model_path in model_paths:
+                try:
+                    model_data = jar.read(model_path)
+                    java_model = json.loads(model_data.decode("utf-8"))
+
+                    bedrock_geo = _convert_java_model_to_bedrock(
+                        java_model, entity_type, Path(model_path).stem
+                    )
+                    output_file = models_dir / (Path(model_path).stem + ".geo.json")
+                    output_file.write_text(json.dumps(bedrock_geo, indent=2))
+                    logger.info(f"Converted model: {output_file.name}")
+                except Exception as e:
+                    logger.warning(f"Failed to convert model {model_path}: {e}")
+
+    except Exception as e:
+        logger.warning(f"Model extraction failed: {e}")
+
+
+def _convert_java_model_to_bedrock(java_model: dict, entity_type: str, model_stem: str) -> dict:
+    """
+    Convert a Java JSON model to Bedrock geo.json format.
+
+    Args:
+        java_model: Parsed Java model JSON
+        entity_type: Type of entity (block, item)
+        model_stem: Stem of the model filename
+
+    Returns:
+        Bedrock geo.json structure
+    """
+    bedrock_identifier = f"geometry.{entity_type}.{model_stem}"
+    java_parent = java_model.get("parent")
+    java_elements = java_model.get("elements", [])
+
+    bones = []
+    model_min_x, model_min_y, model_min_z = float("inf"), float("inf"), float("inf")
+    model_max_x, model_max_y, model_max_z = float("-inf"), float("-inf"), float("-inf")
+
+    for i, element in enumerate(java_elements):
+        bone_name = f"element_{i}"
+        bone_pivot = [0.0, 0.0, 0.0]
+        bone_rotation = [0.0, 0.0, 0.0]
+
+        if "rotation" in element:
+            rot = element["rotation"]
+            angle = rot.get("angle", 0.0)
+            axis = rot.get("axis", "y")
+            java_rot_origin = rot.get("origin", [8.0, 8.0, 8.0])
+            bone_pivot = [c - 8.0 for c in java_rot_origin]
+            if axis == "x":
+                bone_rotation[0] = angle
+            elif axis == "y":
+                bone_rotation[1] = -angle
+            elif axis == "z":
+                bone_rotation[2] = angle
+
+        from_coords = element.get("from", [0.0, 0.0, 0.0])
+        to_coords = element.get("to", [16.0, 16.0, 16.0])
+        cube_origin = [from_coords[0] - 8.0, from_coords[1] - 8.0, from_coords[2] - 8.0]
+        cube_size = [
+            to_coords[0] - from_coords[0],
+            to_coords[1] - from_coords[1],
+            to_coords[2] - from_coords[2],
+        ]
+
+        model_min_x = min(model_min_x, cube_origin[0])
+        model_min_y = min(model_min_y, cube_origin[1])
+        model_min_z = min(model_min_z, cube_origin[2])
+        model_max_x = max(model_max_x, cube_origin[0] + cube_size[0])
+        model_max_y = max(model_max_y, cube_origin[1] + cube_size[1])
+        model_max_z = max(model_max_z, cube_origin[2] + cube_size[2])
+
+        cube_uv = [0, 0]
+        element_faces = element.get("faces")
+        if element_faces:
+            face_data = next(iter(element_faces.values()), None)
+            if face_data and "uv" in face_data:
+                cube_uv = [face_data["uv"][0], face_data["uv"][1]]
+
+        bones.append(
+            {
+                "name": bone_name,
+                "pivot": bone_pivot,
+                "rotation": bone_rotation,
+                "cubes": [{"origin": cube_origin, "size": cube_size, "uv": cube_uv}],
+            }
+        )
+
+    if java_elements:
+        v_bounds_w = model_max_x - model_min_x
+        v_bounds_h = model_max_y - model_min_y
+        v_bounds_d = model_max_z - model_min_z
+        visible_bounds_width = round(max(v_bounds_w, v_bounds_d), 4)
+        visible_bounds_height = round(v_bounds_h, 4)
+        visible_bounds_offset = [
+            round(model_min_x + v_bounds_w / 2.0, 4),
+            round(model_min_y + v_bounds_h / 2.0, 4),
+            round(model_min_z + v_bounds_d / 2.0, 4),
+        ]
+    else:
+        visible_bounds_width = 0.1
+        visible_bounds_height = 0.1
+        visible_bounds_offset = [0, 0.0625, 0]
+
+    return {
+        "format_version": "1.12.0",
+        "minecraft:geometry": [
+            {
+                "description": {
+                    "identifier": bedrock_identifier,
+                    "texture_width": 16,
+                    "texture_height": 16,
+                    "visible_bounds_width": visible_bounds_width,
+                    "visible_bounds_height": visible_bounds_height,
+                    "visible_bounds_offset": visible_bounds_offset,
+                },
+                "bones": bones,
+            }
+        ],
+    }
+
+
+def _extract_recipes_from_jar(jar_path: str) -> list:
+    """
+    Extract recipes from JAR's data pack directory.
+
+    Args:
+        jar_path: Path to the source JAR file
+
+    Returns:
+        List of recipe dictionaries
+    """
+    import zipfile
+    import json
+
+    recipes = []
+    try:
+        with zipfile.ZipFile(jar_path, "r") as jar:
+            for file_name in jar.namelist():
+                if file_name.startswith("data/") and file_name.endswith(".json"):
+                    if "/recipes/" in file_name:
+                        try:
+                            recipe_data = json.loads(jar.read(file_name).decode("utf-8"))
+                            recipe_id = file_name.split("/")[-1].replace(".json", "")
+                            recipe_data["id"] = recipe_id
+                            recipes.append(recipe_data)
+                        except (json.JSONDecodeError, KeyError):
+                            continue
+    except Exception as e:
+        logger.warning(f"Recipe extraction failed: {e}")
+
+    return recipes
 
 
 def _extract_entity_assets(
