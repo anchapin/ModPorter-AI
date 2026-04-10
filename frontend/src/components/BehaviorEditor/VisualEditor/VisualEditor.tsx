@@ -123,17 +123,29 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({
     onValidationChange?.(errors);
   }, [formData, fields, validationRules, onValidationChange]);
 
+  // ⚡ Bolt optimization: Pre-compute fields by category to avoid O(N*M) array filtering
+  // with .includes() on every render
+  const categoryFieldsMap = useMemo(() => {
+    const map = new Map<string, FormField[]>();
+    categories.forEach((category) => {
+      const fieldSet = new Set(category.fields);
+      map.set(
+        category.id,
+        fields.filter((field) => fieldSet.has(field.name))
+      );
+    });
+    return map;
+  }, [fields, categories]);
+
   // Get fields for specific category or all fields
   const getFieldsForCategory = useCallback(
     (categoryId?: string): FormField[] => {
       if (!categoryId || categories.length === 0) {
         return fields;
       }
-      const category = categories.find((c) => c.id === categoryId);
-      if (!category) return [];
-      return fields.filter((field) => category.fields.includes(field.name));
+      return categoryFieldsMap.get(categoryId) || [];
     },
-    [fields, categories]
+    [fields, categories, categoryFieldsMap]
   );
 
   // ⚡ Bolt optimization: Group validation errors by field in a single O(M) pass
