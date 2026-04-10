@@ -261,6 +261,10 @@ class MemoryMonitor:
     def get_top_memory_consumers(self, limit: int = 10) -> List[Dict]:
         """Get top memory consumers using tracemalloc"""
         try:
+            import gc
+
+            if gc.is_tracing():
+                return []
             snapshot = tracemalloc.take_snapshot()
             top_stats = snapshot.statistics("lineno")
 
