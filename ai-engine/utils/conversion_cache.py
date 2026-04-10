@@ -391,7 +391,9 @@ class ConversionOptimizer:
                     progress_callback=lambda c, t: logger.info(f"Conversion progress: {c}/{t}"),
                 )
 
-                for (idx, (cache_key, item)), result in zip(zip(uncached_indices, uncached_items), converted):
+                for (idx, (cache_key, item)), result in zip(
+                    zip(uncached_indices, uncached_items), converted
+                ):
                     results[idx] = result
                     if use_cache:
                         self.cache.set(cache_key, result)

@@ -1,5 +1,41 @@
 # Current Tasks
 
+## In Progress
+- 🔄 Issue #971: E2E validation with 20+ real Java mods
+  - ✅ Audit v1 (Apr 8): 8 real mods tested, all produce valid .mcaddon, 1-19% content coverage
+  - ✅ Audit v2 (Apr 9): Bulk texture extraction (#999) → 54.8% texture coverage
+  - ✅ Audit v3 (Apr 10): Entity detection fix (#1027) → 15 entity defs, textures stable at 54.7%
+  - ⏳ Expand test library from 8 → 20+ mods
+
+## Week 3-4 Sprint (Due: May 4) — NOT STARTED
+- 🔴 Issue #1000: Model conversion — Java block/entity models → Bedrock geometry (0/4,806 models)
+- 🔴 Issue #998: Recipe conversion — Java data pack recipes → Bedrock format (0/3,852 recipes)
+- 🔴 Issue #1001: BlockEntity classification — tile entities misclassified as mobs
+- 🔴 Issue #1004: Conversion report — per-mod breakdown (depends on #1000, #998)
+- 🟡 Issue #1003: Full entity behaviors, spawn rules, loot tables, animation
+- 🟡 Issue #1002: Sound and localization extraction (0/187 sounds, 0/292 lang files)
+
+## Recently Completed
+- ✅ Issue #1027: Entity detection regression fix (use AST-first path in convert_mod)
+- ✅ Issue #1026: Flaky perf test fix (CI-deterministic thresholds)
+- ✅ Issue #1025: AI engine test configuration
+- ✅ Issue #1020: Security — fix token logging
+- ✅ Issue #1019: Production secrets management
+- ✅ Issue #999: Bulk texture extraction (54.7% coverage)
+- ✅ Issue #982/#983: Entity converter wired into CLI pipeline
+- ✅ Issue #981: Entity converter failure RCA + GitHub issue
+- ✅ Issue #969: Production secrets management and security hardening
+
+## Conversion Audit Summary (Apr 10, 2026)
+- Pipeline: `775e339` (latest main)
+- 8 real-world mods: Iron Chests, Waystones, Farmer's Delight, Supplementaries, Create, Xaero's Minimap, JourneyMap, JEI
+- Pass rate: 8/8 (100%) — zero crashes
+- Texture coverage: 54.7% (1,765/3,229)
+- Model coverage: 0% (0/4,806)
+- Recipe coverage: 0% (0/3,852)
+- Entity defs: 15 total (Create: 9)
+- B2B readiness: ~25-30% weighted
+
 ## Completed
 - ✅ Issue #974: User-facing error handling and conversion failure feedback (COMPLETED)
   - ✅ Created `frontend/src/utils/conversionErrors.ts` with:
@@ -111,7 +147,7 @@
 - ✅ Test Coverage Wave 2 - AI Engine & CLI Comprehensive Testing (COMPLETED)
   - ✅ Fix missing search_fixtures module (246 lines in /tests/fixtures/search_fixtures.py)
   - ✅ Add tests for search_tool.py (27 tests in test_search_tool_comprehensive.py - 562 lines)
-  - ✅ Add tests for embedding_generator.py (40+ tests in test_embedding_generator_comprehensive.py - 584 lines) 
+  - ✅ Add tests for embedding_generator.py (40+ tests in test_embedding_generator_comprehensive.py - 584 lines)
   - ✅ Add tests for vector_db_client.py (25+ tests in test_vector_db_client_comprehensive.py - 634 lines)
   - ✅ Improve CLI coverage (24 tests for main.py in test_cli_main_comprehensive.py - 479 lines)
   - ✅ Total: 116+ new tests, 2,505 lines of test code created
@@ -158,7 +194,7 @@
 - ✅ Phase 16-08: Iterative Refinement Loop
 - ✅ Phase 16-07: Parallel Agent Execution (5 tests passing)
   - ✅ Task 1: Add parallel execution configuration to QAOrchestrator
-  - ✅ Task 2: Implement parallel agent execution method  
+  - ✅ Task 2: Implement parallel agent execution method
   - ✅ Task 3: Add benchmark mode for performance comparison
 - ✅ Phase 16-06: [Skipped - incorporated into 16-07]
 - ✅ Phase 16-05: [Skipped - incorporated into 16-07]
@@ -308,160 +344,4 @@
   - ✅ All 2534 tests now collect without errors
   - ✅ Full suite: 2425 passed, 60 skipped, 49 xfailed (48.55s)
 
----
-
-## In Progress
-- 🔄 Deep clean completed — 51 stale files removed (2026-04-02)
-
-## Completed (2026-04-01)
-- ✅ Closed 3 stale Dependabot PRs: #932, #942, #927 (superseded by main@82125a35 Sentinel fix)
-- ✅ Closed 2 bloated PRs: #934 (~690 files, 100K deletions), #933 (same) — core improvements already on main via #945, #943, #923
-- ✅ Merged 3 clean PRs: #941 (AssumptionsReport single-pass filter), #945 (Bolt perf), #943 (Palette a11y)
-
-## Completed
-- ✅ SEC-01: markdown 3.7→3.8.1 — GHSA-5wmx-573v-2qwq (Medium, in-project, backend)
-- ✅ SEC-02: handlebars 4.7.8→4.7.9 — 1 Critical + 5 High vulns (dev only, eslint-plugin-boundaries)
-- ✅ SEC-03: picomatch@2.3.x — resolved by removing jscpd (not used in CI, only local)
-- ✅ SEC-04: dompurify@3.2.7 — already overridden to 3.3.2 in package.json overrides
-- ✅ All 15 codebase improvements (IMP-01 through IMP-15) — 2026-04-01
-- ✅ All 22 code review issues (C1-C5, H1-H6, M1-M5, T1-T6) — 2026-04-01
-- ✅ IMP-02: Fix jobs subsystem auth stub bypass — same fix, both jobs.py and upload.py now use real auth
-- ✅ IMP-03: SearchServiceError exception + propagation chain for search failures (High)
-- ✅ IMP-04: Added asyncio.CancelledError/TimeoutError re-raise guards in 3 critical async files (orchestrator, worker_pool, crew_integration) (High)
-- ✅ IMP-05: Replaced blocking .result(timeout=) with asyncio.wait_for() — orchestrator now fully async (High)
-- ✅ IMP-06: Fixed asyncio.run() in test reset utilities (batch_queuing.py, resource_allocator.py) — now safe in any async context
-- ✅ IMP-07: Stuck task detection now actually cancels stuck tasks instead of just logging (worker_pool.py)
-- ✅ IMP-08: Invalid default DB URL — replaced real Supabase placeholder with "postgresql://INVALID_CONFIG" in config.py
-- ✅ IMP-09: S3 storage now raises NotImplementedError instead of silent fallback to local storage (storage.py)
-- ✅ IMP-10: Used context manager for file open in file_processor.py (Medium)
-- ✅ IMP-11: Standardized DB transaction patterns — added rollback to 29 commit calls in crud.py (Medium)
-- ✅ IMP-12: Integrated centralized error_handler.py framework — ConversionError/categorize_error in comparison.py, conversion_service.py, batch_queuing.py (Medium)
-- ✅ IMP-13: Removed all 9 dead TODO placeholder links to github.com/anchapin/ModPorter-AI/issues/TODO
-- ✅ IMP-14: Split asset_converter.py (4290L) into texture_converter.py, model_converter.py, audio_converter.py, converter_utils.py — extracted modules have valid syntax and import correctly
-- ✅ IMP-15: Structured logging — converted f-string logger calls to keyword args, added exc_info=True to 8+ exception handlers across websocket/, main.py; fixed bug where logger.error fired on success path
-
-## Completed
-- ✅ T1-T6: All test quality issues fixed (2026-04-01)
-  - T1: String-matching tests → real behavioral tests
-  - T2: AST keyword tests → pytest.importorskip + behavioral tests
-  - T3: Mock-only skipif → removed, inline stubs added
-  - T4: Hardcoded paths → relative Path() construction
-  - T5: Autouse fixture no cleanup → yield fixture with env restore
-  - T6: assert True → actual timeout verification
-  - BONUS: Fixed sys.path ordering in conftest.py (13 more redis tests pass)
-  - BONUS: Replaced passlib with direct bcrypt (142 passed, 0 skipped)
-
-## Completed
-- ✅ Full codebase review completed (23 issues found, 13 critical)
-
----
-
-## AI Agent Automation Patterns
-
-### Quick Reference
-
-**MANDATORY for AI Agents:**
-1. Read `.factory/tasks.md` BEFORE any action
-2. Mark tasks `in_progress` BEFORE starting work
-3. Only ONE task `in_progress` at a time
-4. Write code to FILES, return path + description
-5. Use `patch` tool for edits, not sed/awk
-
-**Forbidden Phrases:**
-```
-❌ "Let me first understand..."
-❌ "I'll start by exploring..."
-❌ "Let me check what..."
-✅ CORRECT: Create task → Mark in_progress → Investigate → Implement → Complete
-```
-
-### Available Scripts
-
-```bash
-# Pre-commit quality gates
-./scripts/automation/run-pre-commit.sh
-
-# Test runner (modes: unit, unit-fast, integration, full, split)
-./scripts/automation/auto-test.sh unit
-
-# Setup git hooks
-./scripts/automation/setup-git-hooks.sh
-```
-
-### Available Skills
-
-| Skill | Use When |
-|-------|----------|
-| `.skills/implement-v2.5-gaps/` | Implementing GAP-2.5-01 through GAP-2.5-06 |
-| `.skills/auto-code-review/` | Reviewing PRs or code changes |
-| `.skills/tdd-workflow/` | Implementing with TDD cycle |
-
-### Patterns Reference
-
-**Pipeline Pattern:**
-```
-Input → Agent 1 → Agent 2 → Output
-              ↓
-         Supervisor (routes)
-```
-
-**Supervisor Pattern:**
-```
-Supervisor Agent
-├── Sub-Agent 1 (specialized)
-├── Sub-Agent 2 (specialized)
-└── Sub-Agent 3 (specialized)
-```
-
-**Fallback Pattern:**
-```
-Try → Catch → Classify → Recover → Fallback
-```
-
-### Test Naming Convention
-
-```
-test_<feature>_<scenario>_<expected>
-
-Examples:
-- test_user_create_success_returns_user
-- test_user_create_duplicate_email_raises_conflict
-- test_conversion_job_timeout_triggers_retry
-```
-
-### Commit Format
-
-```
-<type>(<scope>): <description>
-
-Types: feat|fix|docs|style|refactor|test|chore|ci
-
-Examples:
-- feat(ai-engine): add semantic checker agent
-- fix(validation): correct job status transition
-- test(batch): add batch conversion edge cases
-```
-
-### CI/CD Quality Gates
-
-```
-1. Pre-commit (local):
-   - ruff format check
-   - ruff lint check
-   - Bandit security scan
-   - Gitleaks secrets detection
-   - Quick unit tests
-
-2. PR Checks (CI):
-   - Unit tests (split batches)
-   - Coverage gate (80%)
-   - Integration tests
-   - Security scan (Trivy)
-
-3. Merge Gate:
-   - All green
-   - 1+ approval
-```
-
----
-*Last updated: 2026-03-31 (AI Agent Patterns Added)*
+(End of file - total 350 lines)

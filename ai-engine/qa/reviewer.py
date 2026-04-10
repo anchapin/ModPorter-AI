@@ -10,7 +10,7 @@ import subprocess
 import time
 import re
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Set
+from typing import Dict, Any, List, Optional
 
 import structlog
 

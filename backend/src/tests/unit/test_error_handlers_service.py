@@ -30,11 +30,11 @@ from services.error_handlers import (
 
 class TestIsDebugMode:
     def test_is_debug_mode_default(self):
-        with patch.dict('os.environ', {}, clear=True):
+        with patch.dict("os.environ", {}, clear=True):
             assert is_debug_mode() is False
 
     def test_is_debug_mode_true(self):
-        with patch.dict('os.environ', {'DEBUG': 'true'}):
+        with patch.dict("os.environ", {"DEBUG": "true"}):
             assert is_debug_mode() is True
 
 
@@ -46,7 +46,7 @@ class TestErrorResponse:
             error_category="test",
             message="Test message",
             user_message="User message",
-            timestamp="2024-01-01T00:00:00Z"
+            timestamp="2024-01-01T00:00:00Z",
         )
         assert response.error_id == "123"
         assert response.message == "Test message"
@@ -58,7 +58,7 @@ class TestErrorResponse:
             error_category="test",
             message="msg",
             user_message="user",
-            timestamp="now"
+            timestamp="now",
         )
         data = response.model_dump()
         assert "error_id" in data
@@ -118,7 +118,6 @@ class TestCategorizeError:
         error = ValueError("Some error")
         category = _categorize_error(error)
         assert category is not None
-
 
     @pytest.mark.serial
     def test_create_error_response_from_exception(self):

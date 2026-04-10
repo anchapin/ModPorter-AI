@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from agents.java_analyzer import JavaAnalyzerAgent
 from agents.bedrock_builder import BedrockBuilderAgent
 from agents.packaging_agent import PackagingAgent
+from agents.entity_converter import EntityConverter
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -53,22 +54,50 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:
 
         logger.info(f"Converting {jar_file.name} to Bedrock add-on...")
 
-        # Step 1: Analyze the JAR file
-        logger.info("Step 1: Analyzing Java mod...")
+        # Step 1: Analyze the JAR file using AST-first approach (detects ALL entities)
+        logger.info("Step 1: Analyzing Java mod (AST-first)...")
         java_analyzer = JavaAnalyzerAgent()
-        analysis_result = java_analyzer.analyze_jar_for_mvp(str(jar_file))
 
-        if not analysis_result.get("success", False):
-            raise RuntimeError(f"Analysis failed: {analysis_result.get('error', 'Unknown error')}")
+        # Try AST analysis first - this detects all entities, blocks, items, etc.
+        ast_analysis_result = java_analyzer.analyze_jar_with_ast(str(jar_file))
 
-        registry_name = analysis_result.get("registry_name", "unknown_block")
-        texture_path = analysis_result.get("texture_path")
+        if not ast_analysis_result.get("success", False):
+            # Fall back to MVP analysis if AST fails
+            logger.warning("AST analysis failed, falling back to MVP analysis...")
+            analysis_result = java_analyzer.analyze_jar_for_mvp(str(jar_file))
+            if not analysis_result.get("success", False):
+                raise RuntimeError(
+                    f"Analysis failed: {analysis_result.get('error', 'Unknown error')}"
+                )
+            registry_name = analysis_result.get("registry_name", "unknown_block")
+            texture_path = analysis_result.get("texture_path")
+            entities = []
+            features = {}
+        else:
+            # AST analysis succeeded - extract comprehensive features
+            features = ast_analysis_result.get("features", {})
+            entities = features.get("entities", [])
+            blocks = features.get("blocks", [])
 
-        logger.info(f"Found block: {registry_name}")
+            logger.info(f"AST analysis found: {len(blocks)} blocks, {len(entities)} entities")
+
+            # Use first block for MVP-style addon name if we have blocks
+            if blocks:
+                registry_name = blocks[0].get("registry_name", "unknown:block")
+            else:
+                registry_name = "unknown:block"
+
+            # Get texture path from assets if available
+            assets = ast_analysis_result.get("assets", {})
+            texture_path = None
+            if "block_textures" in assets and assets["block_textures"]:
+                texture_path = assets["block_textures"][0]
+
+        logger.info(f"Primary entity: {registry_name}")
         if texture_path:
             logger.info(f"Found texture: {texture_path}")
 
-        # Step 2: Build Bedrock add-on
+        # Step 2: Build Bedrock add-on with entity support
         logger.info("Step 2: Building Bedrock add-on...")
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -84,6 +113,29 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:
                 raise RuntimeError(
                     f"Bedrock build failed: {build_result.get('error', 'Unknown error')}"
                 )
+
+            # If we detected entities, convert them and add to the addon
+            if entities:
+                logger.info(f"Step 2b: Converting {len(entities)} entities...")
+                entity_converter = EntityConverter()
+                bedrock_entities = entity_converter.convert_entities(entities)
+
+                if bedrock_entities:
+                    bp_path = (
+                        Path(build_result.get("behavior_pack_dir", temp_dir)) / "behavior_pack"
+                    )
+                    rp_path = (
+                        Path(build_result.get("resource_pack_dir", temp_dir)) / "resource_pack"
+                    )
+
+                    written = entity_converter.write_entities_to_disk(
+                        bedrock_entities, bp_path, rp_path
+                    )
+                    logger.info(
+                        f"Wrote {len(written['entities'])} entities, "
+                        f"{len(written['behaviors'])} behaviors, "
+                        f"{len(written['animations'])} animations"
+                    )
 
             # Step 3: Package as .mcaddon
             logger.info("Step 3: Creating .mcaddon package...")
@@ -109,12 +161,17 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:
             "output_file": package_result["output_path"],
             "file_size": package_result["file_size"],
             "registry_name": registry_name,
+            "entities_detected": len(entities),
+            "blocks_detected": len(features.get("blocks", [])),
             "validation": package_result["validation"],
         }
 
         logger.info("✅ Conversion complete!")
         logger.info(f"📦 Output: {result['output_file']}")
         logger.info(f"📏 Size: {result['file_size']:,} bytes")
+        logger.info(
+            f"🔍 Detected: {result['blocks_detected']} blocks, {result['entities_detected']} entities"
+        )
 
         return result
 

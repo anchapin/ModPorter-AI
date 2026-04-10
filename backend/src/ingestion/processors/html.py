@@ -208,11 +208,13 @@ class HTMLProcessor:
                         language = cls.replace("language-", "")
                         break
 
-            code_blocks.append({
-                "language": language,
-                "line_count": len(code_text.split("\n")),
-                "preview": code_text[:200],
-            })
+            code_blocks.append(
+                {
+                    "language": language,
+                    "line_count": len(code_text.split("\n")),
+                    "preview": code_text[:200],
+                }
+            )
 
         return code_blocks
 
@@ -229,10 +231,12 @@ class HTMLProcessor:
             href = a["href"]
             text = a.get_text().strip()[:100]  # Limit text length
             if href and text:
-                links.append({
-                    "href": href,
-                    "text": text,
-                })
+                links.append(
+                    {
+                        "href": href,
+                        "text": text,
+                    }
+                )
 
         return links
 
@@ -249,9 +253,11 @@ class HTMLProcessor:
             for heading in soup.find_all(f"h{level}"):
                 text = heading.get_text().strip()
                 if text:
-                    headings.append({
-                        "level": level,
-                        "text": text,
-                    })
+                    headings.append(
+                        {
+                            "level": level,
+                            "text": text,
+                        }
+                    )
 
         return headings

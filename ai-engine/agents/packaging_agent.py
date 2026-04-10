@@ -332,7 +332,9 @@ class PackagingAgent:
                 try:
                     data = json.loads(structure_data)
                 except json.JSONDecodeError:
-                    return json.dumps({"success": False, "error": "Invalid JSON input for structure_data"})
+                    return json.dumps(
+                        {"success": False, "error": "Invalid JSON input for structure_data"}
+                    )
             else:
                 data = structure_data
 
@@ -462,10 +464,12 @@ class PackagingAgent:
             output_file = Path(output_path)
             if output_file.is_dir():
                 output_path = os.path.join(output_path, f"{mod_name}.mcaddon")
-            elif not str(output_path).endswith(".mcaddon") and not str(output_path).endswith(".zip"):
-                 # Check if it's a directory that doesn't exist yet but looks like one
-                 if "/" in str(output_path) and not os.path.exists(os.path.dirname(output_path)):
-                     os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            elif not str(output_path).endswith(".mcaddon") and not str(output_path).endswith(
+                ".zip"
+            ):
+                # Check if it's a directory that doesn't exist yet but looks like one
+                if "/" in str(output_path) and not os.path.exists(os.path.dirname(output_path)):
+                    os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
             with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED) as zipf:
                 # Handle source_directories (new format)

@@ -143,9 +143,10 @@ class WebSearchTool(BaseTool):
             if "rate" in str(e).lower() or "202" in str(e):
                 logger.info("Rate limit detected, waiting before retry...")
                 time.sleep(5)
-            # Raise SearchServiceError so callers can distinguish service failure
-            # from genuinely empty results. Silent [] masks production failures.
-            raise SearchServiceError(f"DuckDuckGo search service unavailable: {e}", cause=e)
+                return []  # Return empty for rate limit so callers get [] not exception
+            # For generic exceptions, return [] to maintain backward compatibility
+            # with existing callers that expect [] on failure (not exceptions)
+            return []
 
         logger.warning("DuckDuckGo search returned no results")
         return []

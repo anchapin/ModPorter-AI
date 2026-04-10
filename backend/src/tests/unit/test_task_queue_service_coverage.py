@@ -2,6 +2,7 @@
 Tests for task_queue module.
 Covers: services/task_queue.py
 """
+
 import pytest
 from unittest.mock import AsyncMock, Mock, patch, MagicMock
 from datetime import datetime, timezone
@@ -268,11 +269,11 @@ class TestAsyncTaskQueue:
     @pytest.mark.asyncio
     async def test_list_tasks(self, queue, mock_redis):
         task_data = {"id": "task-1", "status": "queued"}
-        
+
         # Create an async iterator for scan_iter
         async def async_iter():
             yield "task:task-1"
-        
+
         mock_redis.scan_iter = MagicMock(return_value=async_iter())
         mock_redis.get.return_value = json.dumps(task_data)
 
@@ -283,10 +284,10 @@ class TestAsyncTaskQueue:
     @pytest.mark.asyncio
     async def test_list_tasks_filtered_by_status(self, queue, mock_redis):
         task_data = {"id": "task-1", "status": "completed"}
-        
+
         async def async_iter():
             yield "task:task-1"
-        
+
         mock_redis.scan_iter = MagicMock(return_value=async_iter())
         mock_redis.get.return_value = json.dumps(task_data)
 
@@ -299,12 +300,12 @@ class TestAsyncTaskQueue:
     @pytest.mark.asyncio
     async def test_get_queue_stats(self, queue, mock_redis):
         mock_redis.zcard.return_value = 5
-        
+
         # Use a simple async generator that yields nothing
         async def empty_async_iter():
             return
             yield
-        
+
         mock_redis.scan_iter = MagicMock(return_value=empty_async_iter())
 
         stats = await queue.get_queue_stats()

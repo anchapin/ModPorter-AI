@@ -32,9 +32,7 @@ from main import app
 @pytest_asyncio.fixture
 async def async_client() -> AsyncGenerator[AsyncClient, None]:
     """Async HTTP client for testing."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
 
 
@@ -208,9 +206,7 @@ async def test_progress_handler_broadcast():
     await manager.connect(mock_ws, conversion_id)
 
     # Broadcast agent start
-    await ProgressHandler.broadcast_agent_start(
-        conversion_id, "TestAgent", "Starting test task"
-    )
+    await ProgressHandler.broadcast_agent_start(conversion_id, "TestAgent", "Starting test task")
 
     # Verify message sent
     assert mock_ws.send_json.call_count == 1
@@ -220,9 +216,7 @@ async def test_progress_handler_broadcast():
     assert sent_data["data"]["progress"] == 0
 
     # Broadcast agent update
-    await ProgressHandler.broadcast_agent_update(
-        conversion_id, "TestAgent", 50, "Halfway through"
-    )
+    await ProgressHandler.broadcast_agent_update(conversion_id, "TestAgent", 50, "Halfway through")
 
     assert mock_ws.send_json.call_count == 2
     sent_data = mock_ws.send_json.call_args[0][0]
@@ -255,10 +249,9 @@ async def test_conversion_complete_broadcast():
 
     await manager.connect(mock_ws, conversion_id)
     # WebSocket endpoint sends connection_established after manager.connect
-    await mock_ws.send_json({
-        "type": "connection_established",
-        "data": {"conversion_id": conversion_id}
-    })
+    await mock_ws.send_json(
+        {"type": "connection_established", "data": {"conversion_id": conversion_id}}
+    )
 
     await ProgressHandler.broadcast_conversion_complete(conversion_id, download_url)
 
@@ -311,9 +304,7 @@ async def test_create_conversion_with_file(async_client, mock_upload_file):
         response = await async_client.post(
             "/api/v1/conversions",
             files={"file": ("test_mod.jar", f, "application/java-archive")},
-            data={
-                "options": '{"assumptions": "conservative", "target_version": "1.20.0"}'
-            },
+            data={"options": '{"assumptions": "conservative", "target_version": "1.20.0"}'},
         )
 
     assert response.status_code == 202
@@ -400,9 +391,7 @@ async def test_delete_conversion(async_client):
 @pytest.mark.integration
 async def test_download_conversion_not_found(async_client):
     """Test downloading a non-existent conversion."""
-    response = await async_client.get(
-        "/api/v1/conversions/nonexistent-id-12345/download"
-    )
+    response = await async_client.get("/api/v1/conversions/nonexistent-id-12345/download")
 
     assert response.status_code == 404
 
@@ -419,25 +408,20 @@ async def test_websocket_with_conversion_progress():
     mock_ws = MagicMock()
     mock_ws.accept = AsyncMock()
     mock_ws.send_json = AsyncMock()
-    mock_ws.receive_text = AsyncMock(
-        side_effect=["ping", "ping", Exception("Disconnect")]
-    )
+    mock_ws.receive_text = AsyncMock(side_effect=["ping", "ping", Exception("Disconnect")])
 
     conversion_id = "test-integration-123"
 
     # Simulate connection
     await manager.connect(mock_ws, conversion_id)
     # WebSocket endpoint sends connection_established after manager.connect
-    await mock_ws.send_json({
-        "type": "connection_established",
-        "data": {"conversion_id": conversion_id}
-    })
+    await mock_ws.send_json(
+        {"type": "connection_established", "data": {"conversion_id": conversion_id}}
+    )
 
     # Simulate progress updates
     await ProgressHandler.broadcast_agent_start(conversion_id, "JavaAnalyzerAgent")
-    await ProgressHandler.broadcast_agent_update(
-        conversion_id, "JavaAnalyzerAgent", 50, "Halfway"
-    )
+    await ProgressHandler.broadcast_agent_update(conversion_id, "JavaAnalyzerAgent", 50, "Halfway")
     await ProgressHandler.broadcast_agent_complete(conversion_id, "JavaAnalyzerAgent")
 
     # Verify messages

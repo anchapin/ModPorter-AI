@@ -6,7 +6,7 @@ This module provides:
 - ContextManager: Manages multi-turn conversation context
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Optional, Dict, Any
 from enum import Enum
 

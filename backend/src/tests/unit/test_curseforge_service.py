@@ -174,9 +174,7 @@ class TestCurseForgeService:
         """Test getting file download URL."""
         service = CurseForgeService(api_key="test_key")
 
-        mock_response = {
-            "data": "https://edge.forgecdn.net/files/1234/567/test-mod.jar"
-        }
+        mock_response = {"data": "https://edge.forgecdn.net/files/1234/567/test-mod.jar"}
 
         with patch("httpx.AsyncClient") as mock_client:
             mock_instance = AsyncMock()
@@ -244,9 +242,7 @@ class TestCurseForgeURLParsing:
         """Test parsing standard CurseForge URL."""
         service = CurseForgeService()
 
-        result = service.parse_curseforge_url(
-            "https://www.curseforge.com/minecraft/mods/test-mod"
-        )
+        result = service.parse_curseforge_url("https://www.curseforge.com/minecraft/mods/test-mod")
 
         assert result is not None
         assert result["platform"] == "curseforge"
@@ -256,9 +252,7 @@ class TestCurseForgeURLParsing:
         """Test parsing URL without www."""
         service = CurseForgeService()
 
-        result = service.parse_curseforge_url(
-            "https://curseforge.com/minecraft/mods/another-mod"
-        )
+        result = service.parse_curseforge_url("https://curseforge.com/minecraft/mods/another-mod")
 
         assert result is not None
         assert result["slug"] == "another-mod"
@@ -294,9 +288,7 @@ class TestCurseForgeURLParsing:
         """Test parsing URL with trailing slash."""
         service = CurseForgeService()
 
-        result = service.parse_curseforge_url(
-            "https://www.curseforge.com/minecraft/mods/test-mod/"
-        )
+        result = service.parse_curseforge_url("https://www.curseforge.com/minecraft/mods/test-mod/")
 
         assert result is not None
         assert result["slug"] == "test-mod"

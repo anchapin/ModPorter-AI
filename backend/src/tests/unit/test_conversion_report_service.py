@@ -22,12 +22,12 @@ class TestConversionReport:
     def test_conversion_report_has_attributes(self):
         """Test ConversionReport has expected attributes."""
         report = ConversionReport(job_id="test", java_code="code")
-        assert hasattr(report, 'bedrock_code')
-        assert hasattr(report, 'start_time')
-        assert hasattr(report, 'stages')
-        assert hasattr(report, 'assumptions')
-        assert hasattr(report, 'issues')
-        assert hasattr(report, 'metrics')
+        assert hasattr(report, "bedrock_code")
+        assert hasattr(report, "start_time")
+        assert hasattr(report, "stages")
+        assert hasattr(report, "assumptions")
+        assert hasattr(report, "issues")
+        assert hasattr(report, "metrics")
 
     def test_conversion_report_add_stage(self):
         """Test ConversionReport can add stages."""
@@ -38,19 +38,19 @@ class TestConversionReport:
 
 
 class TestConversionReportGenerator:
-    @patch('services.conversion_report.Path.mkdir')
+    @patch("services.conversion_report.Path.mkdir")
     def test_conversion_report_generator_init(self, mock_mkdir):
         """Test ConversionReportGenerator can be initialized."""
-        with patch('pathlib.Path.mkdir'):
+        with patch("pathlib.Path.mkdir"):
             generator = ConversionReportGenerator()
             assert generator is not None
 
 
 class TestModuleFunctions:
-    @patch('services.conversion_report.Path.mkdir')
+    @patch("services.conversion_report.Path.mkdir")
     def test_get_report_generator(self, mock_mkdir):
         """Test get_report_generator function."""
-        with patch('pathlib.Path.mkdir'):
+        with patch("pathlib.Path.mkdir"):
             generator = get_report_generator()
             assert generator is not None
             assert isinstance(generator, ConversionReportGenerator)

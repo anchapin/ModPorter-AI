@@ -9,7 +9,7 @@ import json
 import re
 import time
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Set, Tuple
+from typing import Dict, Any, List, Optional, Tuple
 
 import structlog
 

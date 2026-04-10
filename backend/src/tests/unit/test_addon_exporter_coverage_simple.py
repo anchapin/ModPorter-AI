@@ -394,7 +394,7 @@ class TestCreateMcaddonZip:
     @patch("services.addon_exporter.os.path.exists")
     @patch("services.addon_exporter.os.path.join")
     @patch("services.addon_exporter.zipfile.ZipFile")
-    @pytest.mark.xfail(reason='known fixture issue - passes in isolation', strict=False)
+    @pytest.mark.xfail(reason="known fixture issue - passes in isolation", strict=False)
     def test_create_mcaddon_zip_with_blocks(self, mock_zipfile, mock_join, mock_exists):
         """Test mcaddon ZIP with blocks."""
         pass

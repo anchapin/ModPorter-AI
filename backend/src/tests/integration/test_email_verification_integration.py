@@ -2,6 +2,7 @@
 Integration tests for email verification API endpoints.
 Tests src/api/email_verification.py with real code execution.
 """
+
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 from datetime import datetime, timedelta, timezone
@@ -49,10 +50,13 @@ class TestEmailVerificationIntegration:
         # Verify password hashing with mock (bcrypt has length limits)
         with patch("security.auth.hash_password", return_value="hashed_pw"):
             from security.auth import hash_password
+
             hashed = hash_password("shortpw")
             assert hashed == "hashed_pw"
 
-    def test_register_with_verification_existing_unverified_user(self, mock_db_session, mock_email_service):
+    def test_register_with_verification_existing_unverified_user(
+        self, mock_db_session, mock_email_service
+    ):
         """Test registration handles existing unverified user correctly."""
         # Mock existing unverified user
         mock_user = MagicMock()
