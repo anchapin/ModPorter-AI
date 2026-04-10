@@ -2,12 +2,25 @@
 
 ## In Progress
 - 🔄 Issue #971: E2E validation with 20+ real Java mods
+
+## Completed
+- ✅ Issue #1004 - B2B Conversion Report Implementation:
+  - ✅ Task 1: Added `CategoryConversionStatus` TypedDict + `ASSET_CATEGORIES` list (textures, models, recipes, entities, sounds, localization, blockstates, loot_tables, advancements, tags)
+  - ✅ Task 2: Added `category_breakdown`, `manual_work_estimate_hours`, `priority_order` to `SummaryReport` dataclass
+  - ✅ Task 3: Implemented `_generate_category_breakdown()`, `_estimate_manual_work_hours()`, `_generate_priority_order()` in comprehensive_report_generator.py
+  - ✅ Task 4: Added `category_breakdown_data` to MOCK_CONVERSION_RESULT_SUCCESS with realistic sample data
+  - ✅ Task 5: Enhanced HTML exporter template with category breakdown section, manual work estimate, and priority order display
+  - ✅ Task 6: Added 4 tests in `TestIssue1004CategoryBreakdown` (25 tests passing)
+  - ✅ All 25 tests pass in test_comprehensive_report_generator.py
+  - ✅ Issue #971: E2E validation with 20+ real Java mods
   - ✅ Audit v1 (Apr 8): 8 real mods tested, all produce valid .mcaddon, 1-19% content coverage
   - ✅ Audit v2 (Apr 9): Bulk texture extraction (#999) → 54.8% texture coverage
   - ✅ Audit v3 (Apr 10): Entity detection fix (#1027) → 15 entity defs, textures stable at 54.7%
-  - ⏳ Expand test library from 8 → 20+ mods
 
-## Week 3-4 Sprint (Due: May 4) — NOT STARTED
+## Pending
+- ⏳ Expand test library from 8 → 20+ mods
+
+## Week 3-4 Sprint
 - 🔴 Issue #1000: Model conversion — Java block/entity models → Bedrock geometry (0/4,806 models)
 - 🔴 Issue #998: Recipe conversion — Java data pack recipes → Bedrock format (0/3,852 recipes)
 - 🔴 Issue #1001: BlockEntity classification — tile entities misclassified as mobs
