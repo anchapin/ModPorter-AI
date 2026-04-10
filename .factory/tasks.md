@@ -1,6 +1,14 @@
 # Current Tasks
 
 ## In Progress
+- 🔄 Issue #1034: Wire model + recipe converters into main convert_mod() pipeline
+  - ✅ Add BlockItemGenerator import
+  - ✅ Add model extraction via _extract_and_convert_models() 
+  - ✅ Add recipe extraction via _extract_recipes_from_jar()
+  - ✅ Add _convert_java_model_to_bedrock() conversion function
+  - ⏳ Test end-to-end with real mod JAR
+
+## Pending
 - 🔄 Issue #971: E2E validation with 20+ real Java mods
   - ✅ Audit v1 (Apr 8): 8 real mods tested, all produce valid .mcaddon, 1-19% content coverage
   - ✅ Audit v2 (Apr 9): Bulk texture extraction (#999) → 54.8% texture coverage
