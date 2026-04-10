@@ -635,7 +635,10 @@ class LogicTranslatorAgent:
     def __init__(self):
         self.logger = logger
         self.smart_assumption_engine = SmartAssumptionEngine()
-        self.java_analyzer_agent = JavaAnalyzerAgent()  # Added JavaAnalyzerAgent initialization
+        self.java_analyzer_agent = JavaAnalyzerAgent()
+
+        self._conversion_rag_pipeline = None
+        self._rag_context_enabled = False
 
         # Java to JavaScript conversion mappings
         self.type_mappings = {
@@ -922,7 +925,110 @@ class LogicTranslatorAgent:
             LogicTranslatorAgent.generate_bedrock_block_tool,
             LogicTranslatorAgent.validate_block_json_tool,
             LogicTranslatorAgent.map_block_properties_tool,
+            # RAG context tools (Issue #992)
+            LogicTranslatorAgent.get_rag_context_tool,
+            LogicTranslatorAgent.set_rag_context_tool,
         ]
+
+    def set_rag_pipeline(self, pipeline) -> None:
+        """
+        Set the ConversionRAGPipeline for context-augmented translation.
+
+        Args:
+            pipeline: ConversionRAGPipeline instance
+        """
+        self._conversion_rag_pipeline = pipeline
+        self._rag_context_enabled = pipeline is not None
+        logger.info(f"RAG context {'enabled' if self._rag_context_enabled else 'disabled'}")
+
+    def enable_rag_context(self, enabled: bool = True) -> None:
+        """Enable or disable RAG context retrieval."""
+        self._rag_context_enabled = enabled and self._conversion_rag_pipeline is not None
+
+    def _get_rag_context(self, java_feature: str, feature_type: str) -> str:
+        """
+        Get RAG context for a Java feature.
+
+        Args:
+            java_feature: Description of the Java feature
+            feature_type: Type of feature (block, item, entity, etc.)
+
+        Returns:
+            Formatted context string for LLM, or empty string if unavailable
+        """
+        if not self._rag_context_enabled or not self._conversion_rag_pipeline:
+            return ""
+
+        try:
+            result = self._conversion_rag_pipeline.retrieve_conversion_context_sync(
+                java_feature=java_feature,
+                feature_type=feature_type,
+                top_k=5,
+            )
+            return self._conversion_rag_pipeline.format_context_for_llm(result)
+        except Exception as e:
+            logger.warning(f"RAG context retrieval failed: {e}")
+            return ""
+
+    @tool
+    @staticmethod
+    def get_rag_context_tool(java_feature: str, feature_type: str) -> str:
+        """
+        Get RAG context for context-augmented translation.
+
+        This tool retrieves relevant pattern mappings, Bedrock code examples,
+        and prior translations from the knowledge base to assist with accurate conversion.
+
+        Args:
+            java_feature: Description of the Java feature to convert
+            feature_type: Type of feature (block, item, entity, recipe, event)
+
+        Returns:
+            JSON string with context including pattern mappings and code examples
+        """
+        agent = LogicTranslatorAgent.get_instance()
+        context_str = agent._get_rag_context(java_feature, feature_type)
+
+        if not context_str:
+            return json.dumps(
+                {
+                    "success": True,
+                    "context": "",
+                    "message": "RAG context not available",
+                    "rag_enabled": agent._rag_context_enabled,
+                }
+            )
+
+        return json.dumps(
+            {
+                "success": True,
+                "context": context_str,
+                "rag_enabled": agent._rag_context_enabled,
+            }
+        )
+
+    @tool
+    @staticmethod
+    def set_rag_context_tool(enabled: bool) -> str:
+        """
+        Enable or disable RAG context for translation.
+
+        Args:
+            enabled: True to enable RAG context, False to disable
+
+        Returns:
+            JSON string with confirmation
+        """
+        agent = LogicTranslatorAgent.get_instance()
+        agent.enable_rag_context(enabled)
+
+        return json.dumps(
+            {
+                "success": True,
+                "rag_enabled": agent._rag_context_enabled,
+                "message": f"RAG context {'enabled' if agent._rag_context_enabled else 'disabled'}",
+            }
+        )
 
     def translate_java_code(self, java_code: str, code_type: str) -> str:
         """
@@ -1044,30 +1150,39 @@ class LogicTranslatorAgent:
             return ""
 
     def translate_java_method(self, method_data, feature_context=None) -> str:
-        """Translate Java method to JavaScript"""
+        """Translate Java method to JavaScript with optional RAG context augmentation."""
         try:
-            # Handle both string and AST node inputs
+            rag_context = ""
+            feature_type = "unknown"
+
             if isinstance(method_data, str):
                 data = json.loads(method_data)
                 method_name = data.get("method_name", "unknown")
                 method_body = data.get("method_body", "")
+                feature_type = data.get("feature_type", "unknown")
 
-                # Mock translation
+                if self._rag_context_enabled and feature_type != "unknown":
+                    rag_context = self._get_rag_context(
+                        f"{method_name} {method_body}", feature_type
+                    )
+
                 translated_js = f"// Translated {method_name}\nfunction {method_name}() {{\n  // {method_body}\n}}"
 
-                return json.dumps(
-                    {
-                        "success": True,
-                        "original_method": method_name,
-                        "translated_javascript": translated_js,
-                        "warnings": [],
-                    }
-                )
+                result = {
+                    "success": True,
+                    "original_method": method_name,
+                    "translated_javascript": translated_js,
+                    "warnings": [],
+                }
+
+                if rag_context:
+                    result["rag_context_applied"] = True
+                    result["conversion_context"] = rag_context
+
+                return json.dumps(result)
             else:
-                # Handle AST node
                 method_name = getattr(method_data, "name", "unknown")
 
-                # Get method parameters
                 params = []
                 if hasattr(method_data, "parameters") and method_data.parameters:
                     for param in method_data.parameters:
@@ -1075,26 +1190,28 @@ class LogicTranslatorAgent:
                         param_type = self._get_javascript_type(param.type)
                         params.append(f"{param_name}: {param_type}")
 
-                # Get return type
                 return_type = "void"
                 if hasattr(method_data, "return_type") and method_data.return_type:
                     return_type = self._get_javascript_type(method_data.return_type)
 
-                # Generate JavaScript function
                 param_str = ", ".join(params)
                 if return_type != "void":
                     translated_js = f"// Translated {method_name}\nfunction {method_name}({param_str}): {return_type} {{\n  // Method body\n}}"
                 else:
                     translated_js = f"// Translated {method_name}\nfunction {method_name}({param_str}) {{\n  // Method body\n}}"
 
-                return json.dumps(
-                    {
-                        "success": True,
-                        "original_method": method_name,
-                        "javascript_method": translated_js,
-                        "warnings": [],
-                    }
-                )
+                result = {
+                    "success": True,
+                    "original_method": method_name,
+                    "javascript_method": translated_js,
+                    "warnings": [],
+                }
+
+                if rag_context:
+                    result["rag_context_applied"] = True
+                    result["conversion_context"] = rag_context
+
+                return json.dumps(result)
         except Exception as e:
             logger.error(f"Error translating method: {e}")
             if isinstance(method_data, str):
@@ -1103,13 +1220,17 @@ class LogicTranslatorAgent:
                 return json.dumps({"success": False, "error": str(e), "warnings": []})
 
     def convert_java_class(self, class_data: str) -> str:
-        """Convert Java class to JavaScript"""
+        """Convert Java class to JavaScript with optional RAG context."""
         try:
             data = json.loads(class_data)
             class_name = data.get("class_name", "UnknownClass")
             methods = data.get("methods", [])
+            feature_type = data.get("feature_type", "unknown")
 
-            # Mock conversion
+            rag_context = ""
+            if self._rag_context_enabled and feature_type != "unknown":
+                rag_context = self._get_rag_context(f"{class_name} class", feature_type)
+
             js_code = f"// Converted {class_name}\nclass {class_name} {{\n"
             event_handlers = []
             event_handler_methods = 0
@@ -1117,13 +1238,11 @@ class LogicTranslatorAgent:
             for method in methods:
                 method_name = method.get("name", "unknown")
 
-                # Check if method is an event handler
                 if "onItemRightClick" in method_name or "onItemUse" in method_name:
                     event_handlers.append(
                         {"event": "item_use", "handler": f"// {method_name} handler"}
                     )
                     event_handler_methods += 1
-                    # Add event subscription code
                     js_code += f"""  // Event handler for {method_name}
   world.afterEvents.itemUse.subscribe((event) => {{
     if (event.itemStack.typeId === 'custom:{class_name.lower()}') {{
@@ -1136,19 +1255,23 @@ class LogicTranslatorAgent:
 
             js_code += "}"
 
-            return json.dumps(
-                {
-                    "success": True,
-                    "original_class": class_name,
-                    "javascript_class": js_code,
-                    "event_handlers": event_handlers,
-                    "conversion_summary": {
-                        "event_handlers_generated": event_handler_methods,
-                        "methods_converted": len(methods) - event_handler_methods,
-                    },
-                    "warnings": [],
-                }
-            )
+            result = {
+                "success": True,
+                "original_class": class_name,
+                "javascript_class": js_code,
+                "event_handlers": event_handlers,
+                "conversion_summary": {
+                    "event_handlers_generated": event_handler_methods,
+                    "methods_converted": len(methods) - event_handler_methods,
+                },
+                "warnings": [],
+            }
+
+            if rag_context:
+                result["rag_context_applied"] = True
+                result["conversion_context"] = rag_context
+
+            return json.dumps(result)
         except Exception as e:
             logger.error(f"Error converting class: {e}")
             return json.dumps({"success": False, "error": str(e), "warnings": []})
