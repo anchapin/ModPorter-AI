@@ -26,15 +26,6 @@ except ImportError:
     javassist = None
     JAVASSIST_AVAILABLE = False
 
-# Make javassist optional - will be used for bytecode analysis if available
-try:
-    import javassist
-
-    JAVASSIST_AVAILABLE = True
-except ImportError:
-    javassist = None
-    JAVASSIST_AVAILABLE = False
-
 
 # Constants for file analysis limits
 FEATURE_ANALYSIS_FILE_LIMIT = 10

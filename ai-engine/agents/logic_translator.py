@@ -1325,28 +1325,6 @@ class LogicTranslatorAgent:
             logger.error(f"Error converting Java body: {e}")
             return java_body
 
-    def _convert_java_body_to_javascript(self, java_body: str, context: dict = None) -> str:
-        """Convert Java body to JavaScript"""
-        try:
-            # Store original body for context
-            self._original_java_body_for_context = java_body
-
-            # Mock conversion
-            js_body = java_body.replace("System.out.println", "console.log")
-
-            # Context-aware replacements
-            if "event.block" in java_body:
-                js_body = js_body.replace(
-                    "world.setBlockState", "event.block.dimension.setBlockPermutation"
-                )
-            else:
-                js_body = js_body.replace("world.setBlockState", "setBlockPermutation")
-
-            return js_body
-        except Exception as e:
-            logger.error(f"Error converting Java body: {e}")
-            return java_body
-
     def _translate_item_use_method(self, method_node, class_context):
         """Translate item use method"""
         try:
@@ -1464,138 +1442,119 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {{
 
     # ========== Enhanced Event Handler Generation (Issue #332) ==========
 
+    EVENT_HANDLER_TEMPLATES = {
+        "block_break": {
+            "subscribe": "world.afterEvents.playerBreakBlock.subscribe",
+            "vars": "const block = event.brokenBlockPermutation.type;\n  const player = event.player;\n  const dimension = event.player.dimension;",
+            "comment": "event.brokenBlockPermutation - The block that was broken\n  // event.player - The player who broke the block",
+        },
+        "block_place": {
+            "subscribe": "world.afterEvents.blockPlace.subscribe",
+            "vars": "const block = event.block;\n  const player = event.player;\n  const permutation = event.permutation;",
+            "comment": "event.block - The block that was placed\n  // event.player - The player who placed the block",
+        },
+        "entity_spawn": {
+            "subscribe": "world.afterEvents.entitySpawn.subscribe",
+            "vars": "const entity = event.entity;\n  const entityType = entity.typeId;",
+            "comment": "event.entity - The entity that spawned\n  // event.entity.typeId - Type of entity (e.g., 'minecraft:zombie')",
+        },
+        "entity_death": {
+            "subscribe": "world.afterEvents.entityDie.subscribe",
+            "vars": "const entity = event.entity;\n  const damageSource = event.damageSource;",
+            "comment": "event.entity - The entity that died\n  // event.damageSource - What caused the death",
+        },
+        "player_join": {
+            "subscribe": "world.afterEvents.playerJoin.subscribe",
+            "vars": "const player = event.player;\n  const playerName = player.nameTag;",
+            "comment": "event.player - The player who joined\n  // event.player.nameTag - Player's display name",
+        },
+        "player_leave": {
+            "subscribe": "world.afterEvents.playerLeave.subscribe",
+            "vars": "const playerName = event.playerName;",
+            "comment": "event.playerName - Name of player who left",
+        },
+        "chat": {
+            "subscribe": "world.afterEvents.chatSend.subscribe",
+            "vars": "const message = event.message;\n  const sender = event.sender;",
+            "comment": "event.message - The chat message\n  // event.sender - The player who sent it\n  // To cancel: event.cancel = true;",
+        },
+        "command": {
+            "subscribe": "world.afterEvents.commandExecute.subscribe",
+            "vars": "const command = event.command;\n  const source = event.source;",
+            "comment": "event.command - The command that was run\n  // event.source - Who ran the command\n  // To cancel: event.cancel = true;",
+        },
+        "tick": {
+            "subscribe": "world.beforeEvents.tick.subscribe",
+            "vars": "",
+            "comment": "Runs every game tick (~20 times per second)\n  // Use sparingly for performance",
+        },
+        "item_use": {
+            "subscribe": "world.afterEvents.itemUse.subscribe",
+            "vars": "const itemStack = event.itemStack;\n  const player = event.source;",
+            "comment": "event.itemStack - The item that was used\n  // event.source - The player who used it",
+        },
+        "item_use_on": {
+            "subscribe": "world.afterEvents.itemUseOn.subscribe",
+            "vars": "const itemStack = event.itemStack;\n  const block = event.block;\n  const player = event.player;",
+            "comment": "event.itemStack - The item that was used\n  // event.block - The block it was used on\n  // event.player - The player who used it",
+        },
+    }
+
+    def generate_event_handler(self, event_type: str, class_name: str = "") -> str:
+        """Generate an event handler from templates"""
+        template = self.EVENT_HANDLER_TEMPLATES.get(event_type)
+        if not template:
+            return f"// Unknown event type: {event_type}"
+        event_name = event_type.replace("_", " ")
+        vars_block = f"\n  {template['vars']}\n" if template["vars"] else "\n"
+        return f"""// {event_name} event handler
+{template["subscribe"]}.subscribe((event) => {{{vars_block}  // Custom {event_name} logic here
+  // {template["comment"]}
+}});"""
+
     def generate_block_break_event_handler(self, class_name: str) -> str:
         """Generate block break event handler"""
-        return f"""// Block break event handler
-world.afterEvents.playerBreakBlock.subscribe((event) => {{
-  const block = event.brokenBlockPermutation.type;
-  const player = event.player;
-  const dimension = event.player.dimension;
-  
-  // Custom block break logic here
-  // event.brokenBlockPermutation - The block that was broken
-  // event.player - The player who broke the block
-}});"""
+        return self.generate_event_handler("block_break", class_name)
 
     def generate_block_place_event_handler(self, class_name: str) -> str:
         """Generate block place event handler"""
-        return f"""// Block place event handler
-world.afterEvents.blockPlace.subscribe((event) => {{
-  const block = event.block;
-  const player = event.player;
-  const permutation = event.permutation;
-  
-  // Custom block place logic here
-  // event.block - The block that was placed
-  // event.player - The player who placed the block
-}});"""
+        return self.generate_event_handler("block_place", class_name)
 
     def generate_entity_spawn_event_handler(self, class_name: str) -> str:
         """Generate entity spawn event handler"""
-        return f"""// Entity spawn event handler
-world.afterEvents.entitySpawn.subscribe((event) => {{
-  const entity = event.entity;
-  const entityType = entity.typeId;
-  
-  // Custom entity spawn logic here
-  // event.entity - The entity that spawned
-  // event.entity.typeId - Type of entity (e.g., 'minecraft:zombie')
-}});"""
+        return self.generate_event_handler("entity_spawn", class_name)
 
     def generate_entity_death_event_handler(self, class_name: str) -> str:
         """Generate entity death event handler"""
-        return f"""// Entity death event handler
-world.afterEvents.entityDie.subscribe((event) => {{
-  const entity = event.entity;
-  const damageSource = event.damageSource;
-  
-  // Custom entity death logic here
-  // event.entity - The entity that died
-  // event.damageSource - What caused the death
-}});"""
+        return self.generate_event_handler("entity_death", class_name)
 
     def generate_player_join_event_handler(self, class_name: str) -> str:
         """Generate player join event handler"""
-        return f"""// Player join event handler
-world.afterEvents.playerJoin.subscribe((event) => {{
-  const player = event.player;
-  const playerName = player.nameTag;
-  
-  // Custom player join logic here
-  // event.player - The player who joined
-  // event.player.nameTag - Player's display name
-}});"""
+        return self.generate_event_handler("player_join", class_name)
 
     def generate_player_leave_event_handler(self, class_name: str) -> str:
         """Generate player leave event handler"""
-        return f"""// Player leave event handler
-world.afterEvents.playerLeave.subscribe((event) => {{
-  const playerName = event.playerName;
-  
-  // Custom player leave logic here
-  // event.playerName - Name of player who left
-}});"""
+        return self.generate_event_handler("player_leave", class_name)
 
     def generate_chat_event_handler(self, class_name: str) -> str:
         """Generate chat/command event handler"""
-        return f"""// Chat event handler
-world.afterEvents.chatSend.subscribe((event) => {{
-  const message = event.message;
-  const sender = event.sender;
-  
-  // Custom chat logic here
-  // event.message - The chat message
-  // event.sender - The player who sent it
-  // To cancel: event.cancel = true;
-}});"""
+        return self.generate_event_handler("chat", class_name)
 
     def generate_command_event_handler(self, class_name: str) -> str:
         """Generate command execute event handler"""
-        return f"""// Command execute event handler
-world.afterEvents.commandExecute.subscribe((event) => {{
-  const command = event.command;
-  const source = event.source;
-  
-  // Custom command logic here
-  // event.command - The command that was run
-  // event.source - Who ran the command
-  // To cancel: event.cancel = true;
-}});"""
+        return self.generate_event_handler("command", class_name)
 
     def generate_tick_event_handler(self, class_name: str) -> str:
         """Generate tick/update event handler"""
-        return f"""// Tick event handler (runs every tick)
-world.beforeEvents.tick.subscribe((event) => {{
-  // Custom tick logic here
-  // Runs every game tick (~20 times per second)
-  // Use sparingly for performance
-}});"""
+        return self.generate_event_handler("tick", class_name)
 
     def generate_item_use_event_handler(self, class_name: str) -> str:
         """Generate item use event handler"""
-        return f"""// Item use event handler
-world.afterEvents.itemUse.subscribe((event) => {{
-  const itemStack = event.itemStack;
-  const player = event.source;
-  
-  // Custom item use logic here
-  // event.itemStack - The item that was used
-  // event.source - The player who used it
-}});"""
+        return self.generate_event_handler("item_use", class_name)
 
     def generate_item_use_on_event_handler(self, class_name: str) -> str:
         """Generate item use on block event handler"""
-        return f"""// Item use on block event handler
-world.afterEvents.itemUseOn.subscribe((event) => {{
-  const itemStack = event.itemStack;
-  const block = event.block;
-  const player = event.player;
-  
-  // Custom item use on block logic here
-  // event.itemStack - The item that was used
-  // event.block - The block it was used on
-  // event.player - The player who used it
-}});"""
+        return self.generate_event_handler("item_use_on", class_name)
 
     def generate_all_event_handlers(self, class_name: str) -> dict:
         """Generate all event handler templates for a class"""
