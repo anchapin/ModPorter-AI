@@ -5,18 +5,22 @@ This module is extracted from asset_converter.py for better organization.
 
 import logging
 import json
+import zipfile
 from pathlib import Path
-from typing import Dict, List
-
-# Import utilities
-try:
-    from . import converter_utils
-except ImportError:
-    import converter_utils
+from typing import Dict, List, Optional, Tuple, Any
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["convert_single_model", "analyze_model", "generate_model_structure"]
+__all__ = [
+    "convert_single_model",
+    "analyze_model",
+    "generate_model_structure",
+    "extract_models_from_jar",
+    "parse_blockstate",
+    "resolve_parent_model",
+    "convert_blockstate",
+    "get_model_elements_with_inheritance",
+]
 
 
 # ============================================================================
@@ -24,15 +28,40 @@ __all__ = ["convert_single_model", "analyze_model", "generate_model_structure"]
 # ============================================================================
 
 
-def _convert_single_model(agent, model_path: str, metadata: Dict, entity_type: str) -> Dict:
+def _convert_single_model(
+    agent,
+    model_path: str,
+    metadata: Dict,
+    entity_type: str,
+    model_cache: Optional[Dict[str, Dict]] = None,
+    namespace: Optional[str] = None,
+) -> Dict:
+    """
+    Convert a Java block/item/entity model JSON to Bedrock geometry format.
+
+    Args:
+        agent: AssetConverterAgent instance
+        model_path: Path to the model JSON file
+        metadata: Optional metadata (texture_width, texture_height)
+        entity_type: Type of model ("block", "item", "entity")
+        model_cache: Optional cache of model path -> JSON data for parent resolution
+        namespace: Optional namespace for resolving parent model paths
+
+    Returns:
+        Dict with conversion result
+    """
     warnings = []
     try:
         model_p = Path(model_path)
-        if not model_p.exists():
-            raise FileNotFoundError(f"Model file not found: {model_path}")
+        model_cache = model_cache or {}
 
-        with open(model_p, "r") as f:
-            java_model = json.load(f)
+        if model_p.exists():
+            with open(model_p, "r") as f:
+                java_model = json.load(f)
+        elif model_path in model_cache:
+            java_model = model_cache[model_path]
+        else:
+            raise FileNotFoundError(f"Model file not found: {model_path}")
 
         # Basic Bedrock geo.json structure
         bedrock_identifier = f"geometry.{entity_type}.{model_p.stem}"
@@ -341,14 +370,463 @@ def _analyze_model(agent, model_path: str, metadata: Dict) -> Dict:
 
 
 def _generate_model_structure(agent, models: List[Dict]) -> Dict:
-    # Ensure only successful conversions are included
     valid_models = [m for m in models if m.get("success")]
     return {
-        # These keys are illustrative; the actual output is a list of file contents/paths
-        # For this structure, we just return the list of paths and identifiers as before.
-        # A higher-level packaging agent would create the actual files.
         "geometry_files": [m["converted_path"] for m in valid_models if "converted_path" in m],
         "identifiers_used": [
             m["bedrock_identifier"] for m in valid_models if "bedrock_identifier" in m
         ],
     }
+
+
+# ============================================================================
+# extract_models_from_jar
+# ============================================================================
+
+
+def extract_models_from_jar(
+    jar_path: str, output_dir: str, namespace: Optional[str] = None
+) -> Dict:
+    """
+    Extract all block/item/entity models from a Java mod JAR file.
+
+    Java models are at: assets/<namespace>/models/block/<name>.json
+                       assets/<namespace>/models/item/<name>.json
+                       assets/<namespace>/models/entity/<name>.json
+
+    Args:
+        jar_path: Path to the JAR file
+        output_dir: Directory to extract models to
+        namespace: Optional namespace to filter models
+
+    Returns:
+        Dict with extraction results including list of extracted models
+    """
+    extracted_models = []
+    errors = []
+    warnings = []
+
+    try:
+        jar_path_obj = Path(jar_path)
+        if not jar_path_obj.exists():
+            return {
+                "success": False,
+                "error": f"JAR file not found: {jar_path}",
+                "extracted_models": [],
+            }
+
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+
+        with zipfile.ZipFile(jar_path, "r") as jar:
+            file_list = jar.namelist()
+
+            model_files = [
+                f
+                for f in file_list
+                if f.startswith("assets/") and "/models/" in f and f.endswith(".json")
+            ]
+
+            if namespace:
+                model_files = [f for f in model_files if f.startswith(f"assets/{namespace}/")]
+
+            for model_file in model_files:
+                try:
+                    model_data = jar.read(model_file)
+                    model_json = json.loads(model_data.decode("utf-8"))
+
+                    parts = model_file.split("/")
+                    if len(parts) >= 5:
+                        model_namespace = parts[1]
+                        model_type = parts[3]
+                        model_name = Path(parts[-1]).stem
+                    else:
+                        continue
+
+                    bedrock_type = "block" if model_type == "block" else model_type
+                    bedrock_path = f"models/{bedrock_type}/{model_name}.json"
+
+                    full_output_dir = output_path / Path(bedrock_path).parent
+                    full_output_dir.mkdir(parents=True, exist_ok=True)
+
+                    output_file = output_path / bedrock_path
+                    with open(output_file, "w") as f:
+                        json.dump(model_json, f, indent=2)
+
+                    extracted_models.append(
+                        {
+                            "original_path": model_file,
+                            "bedrock_path": bedrock_path,
+                            "output_path": str(output_file),
+                            "namespace": model_namespace,
+                            "model_type": model_type,
+                            "model_name": model_name,
+                            "has_elements": "elements" in model_json,
+                            "parent": model_json.get("parent"),
+                            "success": True,
+                        }
+                    )
+
+                except Exception as e:
+                    errors.append(f"Failed to extract {model_file}: {str(e)}")
+
+        blockstate_files = [
+            f
+            for f in file_list
+            if f.startswith("assets/") and "/blockstates/" in f and f.endswith(".json")
+        ]
+
+        if namespace:
+            blockstate_files = [f for f in blockstate_files if f.startswith(f"assets/{namespace}/")]
+
+        blockstates_parsed = 0
+        for blockstate_file in blockstate_files:
+            try:
+                blockstate_data = jar.read(blockstate_file)
+                blockstate_json = json.loads(blockstate_data.decode("utf-8"))
+                parts = blockstate_file.split("/")
+                if len(parts) >= 4:
+                    block_name = Path(parts[-1]).stem
+                    namespace = parts[1]
+                    blockstate_output_dir = output_path / "blockstates" / namespace
+                    blockstate_output_dir.mkdir(parents=True, exist_ok=True)
+                    output_file = blockstate_output_dir / f"{block_name}.json"
+                    with open(output_file, "w") as f:
+                        json.dump(blockstate_json, f, indent=2)
+                    blockstates_parsed += 1
+            except Exception as e:
+                warnings.append(f"Failed to extract blockstate {blockstate_file}: {str(e)}")
+
+        return {
+            "success": len(extracted_models) > 0,
+            "extracted_models": extracted_models,
+            "blockstates_extracted": blockstates_parsed,
+            "errors": errors,
+            "warnings": warnings,
+            "count": len(extracted_models),
+        }
+
+    except zipfile.BadZipFile:
+        return {
+            "success": False,
+            "error": f"Invalid JAR file: {jar_path}",
+            "extracted_models": [],
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Failed to extract models: {str(e)}",
+            "extracted_models": [],
+        }
+
+
+# ============================================================================
+# parse_blockstate
+# ============================================================================
+
+
+def parse_blockstate(blockstate_data: Dict) -> Dict:
+    """
+    Parse a Java blockstate JSON and extract all model variants.
+
+    Blockstates come in two formats:
+    1. variants: { "variant_name": { "model": "modid:path/to/model", "y": 90, ... }, ... }
+    2. multipart: [ { "when": { "condition": value }, "apply": { "model": "..." } }, ... ]
+
+    Args:
+        blockstate_data: Parsed blockstate JSON
+
+    Returns:
+        Dict with model variants and their properties
+    """
+    variants = blockstate_data.get("variants", {})
+    multipart = blockstate_data.get("multipart", [])
+
+    parsed_variants = []
+
+    for variant_name, variant_props in variants.items():
+        if isinstance(variant_props, dict):
+            model_path = variant_props.get("model", "")
+            y_rotation = variant_props.get("y", 0)
+            x_rotation = variant_props.get("x", 0)
+            uvlock = variant_props.get("uvlock", False)
+
+            parsed_variants.append(
+                {
+                    "variant_key": variant_name,
+                    "model": model_path,
+                    "y_rotation": y_rotation,
+                    "x_rotation": x_rotation,
+                    "uvlock": uvlock,
+                    "type": "variant",
+                }
+            )
+
+    for part in multipart:
+        when = part.get("when", {})
+        apply_props = part.get("apply", {})
+
+        model_path = apply_props.get("model", "")
+        y_rotation = apply_props.get("y", 0)
+        x_rotation = apply_props.get("x", 0)
+        uvlock = apply_props.get("uvlock", False)
+
+        parsed_variants.append(
+            {
+                "variant_key": json.dumps(when),
+                "model": model_path,
+                "y_rotation": y_rotation,
+                "x_rotation": x_rotation,
+                "uvlock": uvlock,
+                "when_conditions": when,
+                "type": "multipart",
+            }
+        )
+
+    return {
+        "has_variants": len(variants) > 0,
+        "has_multipart": len(multipart) > 0,
+        "variant_count": len(parsed_variants),
+        "variants": parsed_variants,
+    }
+
+
+# ============================================================================
+# resolve_parent_model
+# ============================================================================
+
+
+def resolve_parent_model(
+    model_data: Dict,
+    model_cache: Dict[str, Dict],
+    namespace: Optional[str] = None,
+    _visited: Optional[set] = None,
+) -> Tuple[List[Dict], List[str]]:
+    """
+    Recursively resolve parent model inheritance to get final elements.
+
+    Java block models can have a "parent" that references another model.
+    The parent model defines the base geometry (elements) that the child
+    inherits and can override.
+
+    Common parents:
+    - block/cube (full block with 6 faces)
+    - block/cube_all (block using single texture for all faces)
+    - block/cube_column (log-like block with end and side textures)
+    - block/cube_bottom_top (block with bottom, top, and side textures)
+    - block/cube_directional (block with front/back/left/right/top/bottom)
+    - item/generated (flat item sprite)
+    - item/handheld (held item with depth)
+
+    For Bedrock conversion, we need the resolved elements to convert.
+
+    Args:
+        model_data: The Java model JSON data
+        model_cache: Cache of already-loaded models {model_path: model_data}
+        namespace: Optional namespace for resolving model paths
+        _visited: Internal set to track visited models (for cycle detection)
+
+    Returns:
+        Tuple of (resolved_elements, resolution_warnings)
+    """
+    if _visited is None:
+        _visited = set()
+
+    warnings: List[str] = []
+
+    if "elements" in model_data:
+        return model_data["elements"], warnings
+
+    parent = model_data.get("parent")
+    if not parent:
+        warnings.append("Model has no elements and no parent - cannot resolve geometry")
+        return [], warnings
+
+    resolved_parent = _resolve_parent_path(parent, namespace)
+
+    if resolved_parent in _visited:
+        warnings.append(f"Circular parent reference detected: '{parent}' -> '{resolved_parent}'")
+        return [], warnings
+
+    _visited.add(resolved_parent)
+
+    if resolved_parent in model_cache:
+        parent_data = model_cache[resolved_parent]
+        parent_elements, parent_warnings = resolve_parent_model(
+            parent_data, model_cache, namespace, _visited
+        )
+        warnings.extend(parent_warnings)
+
+        if parent_elements:
+            return parent_elements, warnings
+
+    warnings.append(
+        f"Could not resolve elements from parent '{parent}' (resolved: '{resolved_parent}')"
+    )
+    return [], warnings
+
+
+def _resolve_parent_path(parent: str, namespace: Optional[str] = None) -> str:
+    """
+    Resolve a parent model path to a full model path.
+
+    Java parent paths can be:
+    - "minecraft:block/cube_all" (fully qualified)
+    - "block/cube_all" (assumes minecraft namespace)
+    - "modid:block/custom_model" (custom mod model)
+
+    Args:
+        parent: Parent path string
+        namespace: Current model namespace
+
+    Returns:
+        Resolved parent path
+    """
+    if ":" in parent:
+        parts = parent.split(":", 1)
+        return f"assets/{parts[0]}/models/{parts[1]}"
+    else:
+        if namespace:
+            return f"assets/{namespace}/models/{parent}"
+        return f"assets/minecraft/models/{parent}"
+
+
+# ============================================================================
+# get_model_elements_with_inheritance
+# ============================================================================
+
+
+def get_model_elements_with_inheritance(
+    model_json: Dict, all_models: Dict[str, Dict], namespace: Optional[str] = None
+) -> Tuple[List[Dict], List[str]]:
+    """
+    Get elements from a model, resolving parent inheritance.
+
+    This is the main entry point for getting a model's elements
+    after resolving any parent inheritance chain.
+
+    Args:
+        model_json: The Java model JSON (direct from file)
+        all_models: Dict mapping model paths to their JSON data
+        namespace: Optional namespace
+
+    Returns:
+        Tuple of (elements_list, warnings_list)
+    """
+    return resolve_parent_model(model_json, all_models, namespace)
+
+
+# ============================================================================
+# convert_blockstate
+# ============================================================================
+
+
+def convert_blockstate(
+    agent,
+    blockstate_path: str,
+    model_output_dir: str,
+    all_models: Dict[str, Dict],
+    namespace: Optional[str] = None,
+) -> Dict:
+    """
+    Convert a Java blockstate and all its referenced models to Bedrock geometry.
+
+    This is the high-level function that:
+    1. Parses the blockstate to find model variants
+    2. For each variant, resolves the model (including parent inheritance)
+    3. Converts each resolved model to Bedrock geometry format
+
+    Args:
+        agent: AssetConverterAgent instance
+        blockstate_path: Path to blockstate JSON file
+        model_output_dir: Directory to output converted models
+        all_models: Dict mapping model paths to their JSON data
+        namespace: Optional namespace
+
+    Returns:
+        Dict with conversion results for all variants
+    """
+    results = {
+        "blockstate_path": blockstate_path,
+        "variants_converted": [],
+        "variants_failed": [],
+        "total_models_attempted": 0,
+        "total_models_succeeded": 0,
+        "warnings": [],
+    }
+
+    try:
+        with open(blockstate_path, "r") as f:
+            blockstate_data = json.load(f)
+
+        parsed = parse_blockstate(blockstate_data)
+        results["warnings"].append(f"Parsed blockstate with {parsed['variant_count']} variants")
+
+        for variant in parsed["variants"]:
+            results["total_models_attempted"] += 1
+            model_path = variant["model"]
+
+            if not model_path:
+                results["variants_failed"].append(
+                    {"variant": variant["variant_key"], "error": "No model specified"}
+                )
+                continue
+
+            resolved_path = _resolve_parent_path(model_path, namespace)
+
+            if resolved_path not in all_models:
+                results["warnings"].append(f"Model not in cache: {model_path} -> {resolved_path}")
+                results["variants_failed"].append(
+                    {"variant": variant["variant_key"], "error": f"Model not found: {model_path}"}
+                )
+                continue
+
+            model_json = all_models[resolved_path]
+            elements, elem_warnings = get_model_elements_with_inheritance(
+                model_json, all_models, namespace
+            )
+            results["warnings"].extend(elem_warnings)
+
+            if not elements:
+                results["warnings"].append(f"No elements resolved for model: {model_path}")
+                results["variants_failed"].append(
+                    {"variant": variant["variant_key"], "error": "No elements in resolved model"}
+                )
+                continue
+
+            model_name = Path(blockstate_path).stem
+            variant_suffix = variant["variant_key"].replace("=", "_").replace(",", "_")
+            variant_model_name = f"{model_name}_{variant_suffix}"
+
+            metadata = {
+                "texture_width": model_json.get("textures", {}).get("width", 16),
+                "texture_height": model_json.get("textures", {}).get("height", 16),
+            }
+
+            conversion_result = _convert_single_model(
+                agent,
+                resolved_path,
+                metadata,
+                "block",
+            )
+
+            if conversion_result.get("success"):
+                conversion_result["variant_key"] = variant["variant_key"]
+                conversion_result["variant_model_name"] = variant_model_name
+                conversion_result["y_rotation"] = variant.get("y_rotation", 0)
+                conversion_result["x_rotation"] = variant.get("x_rotation", 0)
+                results["variants_converted"].append(conversion_result)
+                results["total_models_succeeded"] += 1
+            else:
+                results["variants_failed"].append(
+                    {
+                        "variant": variant["variant_key"],
+                        "error": conversion_result.get("error", "Unknown error"),
+                    }
+                )
+
+    except Exception as e:
+        results["error"] = str(e)
+        logger.error(f"Error converting blockstate {blockstate_path}: {e}")
+
+    return results
