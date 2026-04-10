@@ -18,10 +18,7 @@ import {
   ConversionStatus,
   ConversionStatusEnum,
 } from '../../types/api';
-import {
-  useSuccessNotification,
-  useErrorNotification,
-} from '../NotificationSystem';
+import { useErrorNotification } from '../NotificationSystem';
 import ConversionProgress from '../ConversionProgress/ConversionProgress';
 import ConversionOptions from './ConversionOptions';
 import './ConversionUpload.css';
@@ -85,7 +82,6 @@ export const ConversionUploadEnhanced: React.FC<ConversionUploadProps> = ({
   );
   const isMountedRef = useRef(true);
 
-  const successNotification = useSuccessNotification();
   const errorNotification = useErrorNotification();
 
   // File validation

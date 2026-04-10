@@ -13,11 +13,7 @@ import {
   useSuccessNotification,
   useErrorNotification,
 } from '../NotificationSystem';
-import {
-  processError,
-  UserFriendlyError,
-  ConversionErrorType,
-} from '../../utils/conversionErrors';
+import { processError, UserFriendlyError } from '../../utils/conversionErrors';
 import { triggerDownload } from '../../services/api';
 import { useConversionTracking } from '../../hooks/useAnalytics';
 import './ConversionFlowManager.css';
