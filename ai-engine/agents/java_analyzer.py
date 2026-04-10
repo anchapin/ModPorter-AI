@@ -888,15 +888,16 @@ class JavaAnalyzerAgent:
             interfaces = class_info.get("interfaces", [])
 
             # Determine type based on class name and superclass
-            if "Block" in name or "Block" in superclass:
+            # IMPORTANT: Check BlockEntity BEFORE Block to avoid misclassifying BlockEntity subclasses
+            if "TileEntity" in name or "BlockEntity" in superclass:
+                features["type"] = "tile_entity"
+            elif "Block" in name or "Block" in superclass:
                 features["type"] = "block"
                 features["properties"] = self._extract_block_properties_from_bytecode(class_info)
             elif "Item" in name or "Item" in superclass:
                 features["type"] = "item"
             elif "Entity" in name or "Entity" in superclass or "Entity" in interfaces:
                 features["type"] = "entity"
-            elif "TileEntity" in name or "BlockEntity" in superclass:
-                features["type"] = "tile_entity"
 
             # Extract method names
             methods = class_info.get("methods", [])
@@ -1074,14 +1075,35 @@ class JavaAnalyzerAgent:
             "machinery": [],
             "commands": [],
             "events": [],
+            "tile_entities": [],
         }
 
         try:
             # Extract class declarations
             for path, node in tree:
                 if isinstance(node, javalang.tree.ClassDeclaration):
+                    # Check for BlockEntity subclasses BEFORE Block (issue #1001)
+                    # BlockEntity subclasses should be classified as tile_entities, not blocks
+                    is_block_entity = False
+                    if node.extends:
+                        superclass_name = (
+                            node.extends.name
+                            if hasattr(node.extends, "name")
+                            else str(node.extends)
+                        )
+                        if "BlockEntity" in superclass_name:
+                            is_block_entity = True
+
+                    if is_block_entity:
+                        tile_info = {
+                            "name": node.name,
+                            "registry_name": self._class_name_to_registry_name(node.name),
+                            "methods": [method.name for method in node.methods],
+                        }
+                        features["tile_entities"].append(tile_info)
+                        logger.debug(f"Extracted tile_entity: {node.name}")
                     # Check if it's a block class
-                    if "Block" in node.name and not node.name.startswith("Abstract"):
+                    elif "Block" in node.name and not node.name.startswith("Abstract"):
                         block_info = {
                             "name": node.name,
                             "registry_name": self._class_name_to_registry_name(node.name),
