@@ -328,10 +328,9 @@ class TestLogicTranslatorCoverage:
             "target_type": "block",
             "context": {"class_name": "Test", "namespace": "test"},
         }
-        res_json = LogicTranslatorAgent.translate_java_code_llm_tool.run(
-            java_code_data=json.dumps(data)
+        res = agent.translate_java_code_with_llm(
+            java_code=data["java_code"], target_type=data["target_type"], context=data["context"]
         )
-        res = json.loads(res_json)
         assert res["success"] is True
         assert res["translation_pipeline"] == "AST→NL→Bedrock"
 
