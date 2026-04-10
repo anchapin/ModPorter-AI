@@ -55,6 +55,7 @@ bcrypt>=4.1.0
 psutil>=5.9.0
 email-validator>=2.0.0
 Pillow>=10.0.0
+setuptools>=65.0.0  # Required by opentelemetry-instrumentation packages for pkg_resources
 
 # Distributed Tracing - OpenTelemetry
 # Note: opentelemetry-exporter-jaeger 1.21.0 is the latest version compatible with Python 3.11
