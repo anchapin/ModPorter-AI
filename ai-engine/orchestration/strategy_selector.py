@@ -8,6 +8,8 @@ from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 import logging
 import time
+import math
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +21,14 @@ class OrchestrationStrategy(Enum):
     PARALLEL_BASIC = "parallel_basic"  # Basic parallel execution
     PARALLEL_ADAPTIVE = "parallel_adaptive"  # Adaptive parallel with dynamic spawning
     HYBRID = "hybrid"  # Mix of sequential and parallel based on dependencies
+
+
+class BanditAlgorithm(Enum):
+    """Bandit algorithms for strategy selection"""
+
+    EPSILON_GREEDY = "epsilon_greedy"  # Epsilon-greedy: explore with prob epsilon
+    UCB1 = "ucb1"  # Upper Confidence Bound 1
+    SIMPLE_AVERAGE = "simple_average"  # Simple average (legacy behavior)
 
 
 @dataclass
@@ -60,10 +70,17 @@ class StrategySelector:
     """
 
     def __init__(
-        self, default_strategy: OrchestrationStrategy = OrchestrationStrategy.PARALLEL_ADAPTIVE
+        self,
+        default_strategy: OrchestrationStrategy = OrchestrationStrategy.PARALLEL_ADAPTIVE,
+        bandit_algorithm: BanditAlgorithm = BanditAlgorithm.UCB1,
+        epsilon: float = 0.1,
     ):
         self.default_strategy = default_strategy
+        self.bandit_algorithm = bandit_algorithm
+        self.epsilon = epsilon
         self.performance_history: Dict[str, List[Dict[str, Any]]] = {}
+        self.total_selections: int = 0
+        self.strategy_selections: Dict[str, int] = {}
         self.strategy_configs: Dict[OrchestrationStrategy, StrategyConfig] = {
             OrchestrationStrategy.SEQUENTIAL: StrategyConfig(
                 max_parallel_tasks=1, enable_dynamic_spawning=False, use_process_pool=False
@@ -128,10 +145,14 @@ class StrategySelector:
                 return strategy, config
 
         # 4. Use historical performance data
-        best_strategy = self._get_best_performing_strategy()
+        best_strategy = self._get_best_performing_strategy(task_complexity)
         if best_strategy:
             config = self.strategy_configs[best_strategy]
             logger.info(f"Selected strategy {best_strategy.value} based on historical performance")
+            self.strategy_selections[best_strategy.value] = (
+                self.strategy_selections.get(best_strategy.value, 0) + 1
+            )
+            self.total_selections += 1
             return best_strategy, config
 
         # 5. Fall back to default
@@ -226,35 +247,141 @@ class StrategySelector:
         else:
             return OrchestrationStrategy.PARALLEL_BASIC
 
-    def _get_best_performing_strategy(self) -> Optional[OrchestrationStrategy]:
-        """Get the best performing strategy based on historical data"""
+    def _get_best_performing_strategy(
+        self, task_complexity: Optional[Dict[str, Any]] = None
+    ) -> Optional[OrchestrationStrategy]:
+        """Get the best performing strategy using bandit algorithm"""
 
         if not self.performance_history:
             return None
 
-        strategy_scores = {}
+        strategies = list(OrchestrationStrategy)
+        strategy_data = self._calculate_strategy_metrics(task_complexity)
 
-        for strategy_name, runs in self.performance_history.items():
+        if self.bandit_algorithm == BanditAlgorithm.EPSILON_GREEDY:
+            return self._epsilon_greedy_selection(strategy_data, strategies)
+        elif self.bandit_algorithm == BanditAlgorithm.UCB1:
+            return self._ucb1_selection(strategy_data, strategies)
+        else:
+            return self._simple_average_selection(strategy_data, strategies)
+
+    def _calculate_strategy_metrics(
+        self, task_complexity: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Dict[str, float]]:
+        """Calculate reward and count metrics for each strategy"""
+        strategy_data = {}
+
+        for strategy in OrchestrationStrategy:
+            strategy_name = strategy.value
+            runs = self.performance_history.get(strategy_name, [])
+
             if not runs:
                 continue
 
-            # Calculate average performance metrics
             avg_success_rate = sum(run.get("success_rate", 0) for run in runs) / len(runs)
             avg_duration = sum(run.get("total_duration", float("inf")) for run in runs) / len(runs)
+            total_tasks = sum(run.get("task_count", 0) for run in runs)
 
-            # Composite score (higher is better)
-            # Weight success rate more heavily than speed
-            score = (avg_success_rate * 0.7) + ((1 / avg_duration) * 0.3 if avg_duration > 0 else 0)
-            strategy_scores[strategy_name] = score
+            base_reward = avg_success_rate * 0.7 + (
+                (1 / avg_duration) * 0.3 if avg_duration > 0 else 0
+            )
 
-        if strategy_scores:
-            best_strategy_name = max(strategy_scores.keys(), key=lambda k: strategy_scores[k])
-            try:
-                return OrchestrationStrategy(best_strategy_name)
-            except ValueError:
-                logger.warning(f"Unknown strategy in performance history: {best_strategy_name}")
+            complexity_multiplier = self._get_complexity_multiplier(strategy, task_complexity)
+            reward = base_reward * complexity_multiplier
 
-        return None
+            strategy_data[strategy_name] = {
+                "reward": reward,
+                "avg_success_rate": avg_success_rate,
+                "avg_duration": avg_duration,
+                "count": len(runs),
+                "total_tasks": total_tasks,
+            }
+
+        return strategy_data
+
+    def _get_complexity_multiplier(
+        self, strategy: OrchestrationStrategy, task_complexity: Optional[Dict[str, Any]]
+    ) -> float:
+        """Get complexity-based multiplier for strategy reward"""
+        if not task_complexity:
+            return 1.0
+
+        num_features = task_complexity.get("num_features", 0)
+        num_dependencies = task_complexity.get("num_dependencies", 0)
+        has_complex_assets = task_complexity.get("has_complex_assets", False)
+
+        complexity_score = (
+            num_features * 0.3 + num_dependencies * 0.2 + (10 if has_complex_assets else 0)
+        )
+
+        if strategy == OrchestrationStrategy.SEQUENTIAL and complexity_score < 5:
+            return 1.2
+        elif strategy == OrchestrationStrategy.PARALLEL_BASIC and 5 <= complexity_score < 15:
+            return 1.2
+        elif strategy == OrchestrationStrategy.HYBRID and num_dependencies > 5:
+            return 1.2
+        elif strategy == OrchestrationStrategy.PARALLEL_ADAPTIVE and complexity_score >= 15:
+            return 1.2
+
+        return 1.0
+
+    def _epsilon_greedy_selection(
+        self, strategy_data: Dict[str, Dict[str, float]], strategies: List[OrchestrationStrategy]
+    ) -> Optional[OrchestrationStrategy]:
+        """Epsilon-greedy bandit selection"""
+        if random.random() < self.epsilon:
+            unexplored = [s for s in strategies if s.value not in strategy_data]
+            if unexplored:
+                return random.choice(unexplored)
+            return random.choice(strategies)
+
+        if not strategy_data:
+            return None
+
+        best_strategy_name = max(strategy_data.keys(), key=lambda k: strategy_data[k]["reward"])
+        try:
+            return OrchestrationStrategy(best_strategy_name)
+        except ValueError:
+            return None
+
+    def _ucb1_selection(
+        self, strategy_data: Dict[str, Dict[str, float]], strategies: List[OrchestrationStrategy]
+    ) -> Optional[OrchestrationStrategy]:
+        """UCB1 bandit selection"""
+        total_counts = sum(data["count"] for data in strategy_data.values())
+
+        if total_counts == 0:
+            return None
+
+        ucb_scores = {}
+        for strategy_name, data in strategy_data.items():
+            avg_reward = data["reward"]
+            n = data["count"]
+
+            if n == 0:
+                ucb_scores[strategy_name] = float("inf")
+            else:
+                confidence_bound = math.sqrt((2 * math.log(total_counts)) / n)
+                ucb_scores[strategy_name] = avg_reward + confidence_bound
+
+        best_strategy_name = max(ucb_scores.keys(), key=lambda k: ucb_scores[k])
+        try:
+            return OrchestrationStrategy(best_strategy_name)
+        except ValueError:
+            return None
+
+    def _simple_average_selection(
+        self, strategy_data: Dict[str, Dict[str, float]], strategies: List[OrchestrationStrategy]
+    ) -> Optional[OrchestrationStrategy]:
+        """Simple average selection (legacy behavior)"""
+        if not strategy_data:
+            return None
+
+        best_strategy_name = max(strategy_data.keys(), key=lambda k: strategy_data[k]["reward"])
+        try:
+            return OrchestrationStrategy(best_strategy_name)
+        except ValueError:
+            return None
 
     def record_performance(
         self,
