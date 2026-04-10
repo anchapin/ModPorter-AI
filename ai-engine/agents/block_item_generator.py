@@ -217,25 +217,70 @@ class BlockItemGenerator:
         logger.info(f"Successfully generated {len(bedrock_items)} Bedrock items")
         return bedrock_items
 
-    def generate_recipes(self, java_recipes: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def generate_recipes(
+        self, java_recipes: List[Dict[str, Any]], namespace: str = "mod"
+    ) -> Dict[str, Any]:
         """
-        Convert Java recipes to Bedrock format.
+        Convert Java recipes to Bedrock format using RecipeConverterAgent.
 
         Args:
             java_recipes: List of Java recipe definitions
+            namespace: Namespace for the recipes (default: "mod")
 
         Returns:
             Dictionary of Bedrock recipes
         """
+        from agents.recipe_converter import RecipeConverterAgent
+
         logger.info(f"Converting {len(java_recipes)} Java recipes to Bedrock format")
         bedrock_recipes = {}
 
+        recipe_converter = RecipeConverterAgent.get_instance()
+
         for java_recipe in java_recipes:
             try:
-                bedrock_recipe = self._convert_java_recipe(java_recipe)
-                if bedrock_recipe:
-                    recipe_id = bedrock_recipe.get("identifier", f"recipe_{len(bedrock_recipes)}")
-                    bedrock_recipes[recipe_id] = bedrock_recipe
+                recipe_type = java_recipe.get("type", "")
+                result_item = java_recipe.get("result", {})
+                if isinstance(result_item, dict):
+                    result_item_id = result_item.get("item", "unknown")
+                elif isinstance(result_item, str):
+                    result_item_id = result_item
+                else:
+                    result_item_id = "unknown"
+
+                if ":" in result_item_id:
+                    _, recipe_name = result_item_id.split(":", 1)
+                else:
+                    recipe_name = result_item_id
+
+                bedrock_recipe = recipe_converter.convert_recipe(
+                    java_recipe, namespace, recipe_name
+                )
+
+                if (
+                    bedrock_recipe
+                    and not isinstance(bedrock_recipe, dict)
+                    or (
+                        isinstance(bedrock_recipe, dict) and not bedrock_recipe.get("success", True)
+                    )
+                ):
+                    if isinstance(bedrock_recipe, dict) and bedrock_recipe.get("success") is False:
+                        logger.warning(
+                            f"Recipe conversion failed: {bedrock_recipe.get('error', 'Unknown error')}"
+                        )
+                        continue
+
+                if isinstance(bedrock_recipe, dict):
+                    for recipe_key, recipe_content in bedrock_recipe.items():
+                        if recipe_key.startswith("minecraft:recipe_"):
+                            recipe_id = recipe_content.get("description", {}).get(
+                                "identifier", f"recipe_{len(bedrock_recipes)}"
+                            )
+                            bedrock_recipes[recipe_id] = bedrock_recipe
+                            break
+                    else:
+                        if "identifier" in bedrock_recipe:
+                            bedrock_recipes[bedrock_recipe["identifier"]] = bedrock_recipe
             except Exception as e:
                 logger.error(f"Failed to convert recipe {java_recipe.get('id', 'unknown')}: {e}")
                 continue
