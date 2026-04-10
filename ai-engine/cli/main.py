@@ -78,12 +78,19 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:
             features = ast_analysis_result.get("features", {})
             entities = features.get("entities", [])
             blocks = features.get("blocks", [])
+            mod_info = ast_analysis_result.get("mod_info", {})
+            mod_id = mod_info.get("name", "unknown")
 
             logger.info(f"AST analysis found: {len(blocks)} blocks, {len(entities)} entities")
 
             # Use first block for MVP-style addon name if we have blocks
             if blocks:
-                registry_name = blocks[0].get("registry_name", "unknown:block")
+                block_registry_name = blocks[0].get("registry_name", "unknown:block")
+                # Prefix with mod_id if not already namespaced
+                if ":" not in block_registry_name or block_registry_name.startswith("unknown:"):
+                    registry_name = f"{mod_id}:{block_registry_name}"
+                else:
+                    registry_name = block_registry_name
             else:
                 registry_name = "unknown:block"
 
