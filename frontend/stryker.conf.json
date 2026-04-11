@@ -24,9 +24,7 @@
     "**/build/**",
     "**/.next/**"
   ],
-  "concurrency": 2,
+  "concurrency": 4,
   "coverageAnalysis": "perTest",
-  "timeout": 5000,
-  "maxConcurrentTestRunners": 2,
-  "mutantGroups": ["sequential"]
+  "timeoutMS": 30000
 }
