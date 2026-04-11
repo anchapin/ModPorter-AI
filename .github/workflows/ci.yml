@@ -1012,44 +1012,48 @@ jobs:
           MUTATION_EXIT=$?
           set -e
 
-          # Exit codes: 0=success, 1=mutations survived (normal), 124=timeout
+          # Exit codes: 0=success, 1=mutations survived (threshold not met — normal), 124=timeout (fail)
           if [ $MUTATION_EXIT -eq 124 ]; then
-            echo "⚠️ Mutation testing timed out after 70 minutes"
-          else
-            echo "Mutation testing exited with code: $MUTATION_EXIT"
+            echo "❌ Mutation testing timed out after 70 minutes"
+            exit 1
+          elif [ $MUTATION_EXIT -ne 0 ]; then
+            echo "❌ Mutation testing failed with exit code: $MUTATION_EXIT"
+            exit 1
           fi
 
-          # Check results (regardless of mutation testing outcome)
+          # Verify report was actually produced
           if [ -f "reports/mutation/json/mutation.json" ]; then
             echo "✅ Mutation report generated"
             cat reports/mutation/json/mutation.json | head -50
           else
-            echo "⚠️ No mutation report found"
+            echo "❌ No mutation report found — stryker may have crashed silently"
+            exit 1
           fi
-
-          # Exit 0 unless it was a timeout (124) - timeout should fail
-          [ $MUTATION_EXIT -eq 124 ] && exit 1 || exit 0
 
       - name: Check mutation testing threshold
         run: |
           cd frontend
 
-          # Threshold: 70% mutation score (30% allowed to survive)
+          if [ ! -f "reports/mutation/json/mutation.json" ]; then
+            echo "❌ No mutation report found — cannot verify threshold"
+            exit 1
+          fi
+
           THRESHOLD=70
 
-          if [ -f "reports/mutation/json/mutation.json" ]; then
-            # Extract mutation score from JSON report
-            MUTATION_SCORE=$(cat reports/mutation/json/mutation.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('metrics', {}).get('mutationScore', 0))" 2>/dev/null || echo "0")
-            echo "Mutation Score: ${MUTATION_SCORE}%"
-            
-            if (( $(echo "$MUTATION_SCORE >= $THRESHOLD" | bc -l) )); then
-              echo "✅ Mutation score above threshold"
-            else
-              echo "⚠️ Mutation testing: Mutation score ${MUTATION_SCORE}% is below threshold ${THRESHOLD}%"
-              echo "   This is informational only - mutation testing is non-blocking"
-            fi
+          MUTATION_SCORE=$(cat reports/mutation/json/mutation.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('metrics', {}).get('mutationScore', 0))" 2>/dev/null || echo "0")
+          if [ "$MUTATION_SCORE" = "0" ] || [ -z "$MUTATION_SCORE" ]; then
+            echo "❌ Could not extract mutation score from report (got: '$MUTATION_SCORE')"
+            exit 1
+          fi
+
+          echo "Mutation Score: ${MUTATION_SCORE}%"
+
+          if (( $(echo "$MUTATION_SCORE >= $THRESHOLD" | bc -l) )); then
+            echo "✅ Mutation score above threshold"
           else
-            echo "⚠️ No mutation report found - skipping threshold check"
+            echo "❌ Mutation testing FAILED: score ${MUTATION_SCORE}% is below threshold ${THRESHOLD}%"
+            exit 1
           fi
           STEP_END=$(date +%s)
           ../scripts/ci-performance-tracker.sh record "Mutation Testing Frontend" $STEP_START $STEP_END
@@ -1096,8 +1100,10 @@ jobs:
             echo "✅ Frontend mutation testing passed"
           elif [ "${{ needs.mutation-testing-frontend.result }}" = "skipped" ]; then
             echo "⏭️ Frontend mutation testing skipped (no changes)"
+          elif [ "${{ needs.mutation-testing-frontend.result }}" = "failure" ]; then
+            echo "❌ Frontend mutation testing FAILED"
           else
-            echo "⚠️ Frontend mutation testing completed with warnings"
+            echo "⚠️ Frontend mutation testing completed with warnings (result: ${{ needs.mutation-testing-frontend.result }})"
           fi
 
           echo ""
