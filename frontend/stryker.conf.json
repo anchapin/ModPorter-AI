@@ -24,7 +24,9 @@
     "**/build/**",
     "**/.next/**"
   ],
-  "concurrency": 2,
-  "coverageAnalysis": "perTest",
-  "timeoutMS": 60000
+  "concurrency": 4,
+  "coverageAnalysis": "off",
+  "timeoutMS": 30000,
+  "bail": false,
+  "dryRun": false
 }
