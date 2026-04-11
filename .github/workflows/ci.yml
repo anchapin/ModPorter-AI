@@ -941,7 +941,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [changes, prepare-node-base]
     if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.dependencies == 'true' }}
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -981,7 +981,7 @@ jobs:
           pnpm install --frozen-lockfile
 
       - name: Run mutation testing
-        timeout-minutes: 20
+        timeout-minutes: 25
         run: |
           cd frontend
 

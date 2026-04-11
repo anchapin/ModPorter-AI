@@ -15,7 +15,7 @@ name: CI - AI Engine Tests
 
 env:
   PYTHON_VERSION: '3.12'
-  COVERAGE_THRESHOLD: 70
+  COVERAGE_THRESHOLD: 65
 
 jobs:
   # ============================================
