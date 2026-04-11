@@ -250,6 +250,24 @@ jobs:
           find .github -type f -name "*.md" -exec chmod +w {} \; 2>/dev/null || true
         continue-on-error: true
 
+      - name: Install git and git-lfs (container)
+        run: |
+          # Install git and git-lfs if not present (needed for actions/checkout)
+          if ! command -v git &> /dev/null; then
+            echo "Installing git..."
+            apt-get update -qq && apt-get install -y -qq git git-lfs
+          fi
+          if ! command -v git-lfs &> /dev/null; then
+            echo "Installing git-lfs..."
+            apt-get update -qq && apt-get install -y -qq git-lfs
+          fi
+          # Configure git-lfs
+          git lfs install --force || true
+          git lfs version || true
+          echo "✅ git and git-lfs installed successfully"
+          which git && git --version
+          which git-lfs && git-lfs version
+
       - name: Checkout code
         uses: actions/checkout@v6
         with:
