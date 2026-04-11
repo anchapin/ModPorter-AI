@@ -1006,17 +1006,24 @@ jobs:
           cd frontend
 
           # Run stryker mutation testing
-          # Note: stryker with vitest-runner may have plugin loading issues
-          # so we run with || true to not block the workflow
-          pnpm mutation || true
+          # Note: stryker may exit with non-zero when mutations survive
+          # so we explicitly ignore the exit code to not block the workflow
+          set +e
+          pnpm mutation
+          MUTATION_EXIT=$?
+          set -e
+          echo "Mutation testing exited with code: $MUTATION_EXIT"
 
-          # Check results
+          # Check results (regardless of mutation testing outcome)
           if [ -f "reports/mutation/json/mutation.json" ]; then
             echo "✅ Mutation report generated"
             cat reports/mutation/json/mutation.json | head -50
           else
             echo "⚠️ No mutation report found"
           fi
+
+          # Always exit 0 to not block the workflow
+          exit 0
 
       - name: Check mutation testing threshold
         run: |
