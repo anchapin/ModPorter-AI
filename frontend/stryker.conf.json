@@ -26,6 +26,7 @@
   ],
   "concurrency": 2,
   "coverageAnalysis": "perTest",
-  "timeout": 3000,
-  "maxConcurrentTestRunners": 2
+  "timeout": 5000,
+  "maxConcurrentTestRunners": 2,
+  "mutantGroups": ["sequential"]
 }
