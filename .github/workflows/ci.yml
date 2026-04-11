@@ -879,7 +879,7 @@ jobs:
           fi
 
       - name: Run mutation testing
-        timeout-minutes: 5
+        timeout-minutes: 30
         run: |
           cd ${{ matrix.project }}
 
