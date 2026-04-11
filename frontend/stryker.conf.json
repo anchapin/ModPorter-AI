@@ -26,7 +26,5 @@
   ],
   "concurrency": 4,
   "coverageAnalysis": "off",
-  "timeoutMS": 30000,
-  "bail": false,
-  "dryRun": false
+  "timeoutMS": 30000
 }
