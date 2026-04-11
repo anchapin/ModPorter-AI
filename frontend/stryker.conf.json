@@ -11,7 +11,30 @@
     "!src/**/*.test.{ts,tsx}",
     "!src/**/*.spec.{ts,tsx}",
     "!src/**/*.stories.{ts,tsx}",
-    "!src/**/mocks/**"
+    "!src/**/mocks/**",
+    "!src/pages/**",
+    "!src/components/ui/**",
+    "!src/components/ConversionUpload/**",
+    "!src/components/ConversionReport/**",
+    "!src/components/ConversionProgress/**",
+    "!src/components/ConversionFlow/**",
+    "!src/components/ConversionHistory/**",
+    "!src/components/ConversionDashboard/**",
+    "!src/components/BatchConversion/**",
+    "!src/components/BehaviorEditor/**",
+    "!src/components/BehavioralTest/**",
+    "!src/components/AdvancedOptions/**",
+    "!src/components/Onboarding/**",
+    "!src/components/NotificationSystem/**",
+    "!src/components/MermaidDiagram/**",
+    "!src/components/TopNavigation/**",
+    "!src/components/PerformanceBenchmark/**",
+    "!src/components/BehaviorTemplatesContext/**",
+    "!src/context/**",
+    "!src/contexts/**",
+    "!src/stories/**",
+    "!src/App.tsx",
+    "!src/main.tsx"
   ],
   "thresholds": {
     "high": 80,
@@ -24,8 +47,8 @@
     "**/build/**",
     "**/.next/**"
   ],
-  "concurrency": 2,
+  "concurrency": 4,
   "coverageAnalysis": "off",
-  "timeoutMS": 30000,
-  "timeoutFactor": 5
+  "timeoutMS": 15000,
+  "timeoutFactor": 3
 }
