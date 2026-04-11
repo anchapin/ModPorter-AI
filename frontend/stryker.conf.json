@@ -24,6 +24,8 @@
     "**/build/**",
     "**/.next/**"
   ],
-  "concurrency": 4,
-  "coverageAnalysis": "perTest"
+  "concurrency": 2,
+  "coverageAnalysis": "perTest",
+  "timeout": 3000,
+  "maxConcurrentTestRunners": 2
 }

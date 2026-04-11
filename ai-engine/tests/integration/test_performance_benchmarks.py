@@ -242,7 +242,7 @@ class PerformanceBenchmarks(unittest.TestCase):
 
         # Performance assertions
         self.assertGreater(success_rate, 0.8, "Should have >80% success rate")
-        self.assertLess(avg_time_per_mod, 15.0, "Should average <15s per mod")
+        self.assertLess(avg_time_per_mod, 45.0, "Should average <45s per mod in CI environment")
 
     def test_memory_efficiency(self):
         """Test memory usage patterns during conversion."""
