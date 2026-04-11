@@ -151,13 +151,16 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({
   // ⚡ Bolt optimization: Group validation errors by field in a single O(M) pass
   // instead of filtering the array inside a callback for every single field O(N*M).
   const fieldErrorsMap = useMemo(() => {
-    return validationErrors.reduce((acc, error) => {
-      if (!acc[error.field]) {
-        acc[error.field] = [];
-      }
-      acc[error.field].push(error);
-      return acc;
-    }, {} as Record<string, ValidationRule[]>);
+    return validationErrors.reduce(
+      (acc, error) => {
+        if (!acc[error.field]) {
+          acc[error.field] = [];
+        }
+        acc[error.field].push(error);
+        return acc;
+      },
+      {} as Record<string, ValidationRule[]>
+    );
   }, [validationErrors]);
 
   // Get field errors
