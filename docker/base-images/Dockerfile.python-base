@@ -16,6 +16,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl-dev \
     libmagic-dev \
     libpq-dev \
+    git \
+    git-lfs \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
@@ -52,10 +54,13 @@ FROM python:3.11-slim
 
 # Install only runtime dependencies - minimal footprint
 # Updated 2025-07-12: Added libmagic-dev for python-magic compatibility
+# Updated 2026-04-11: Added git and git-lfs for GitHub Actions checkout in CI
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     netcat-openbsd \
     libmagic1 \
+    git \
+    git-lfs \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
