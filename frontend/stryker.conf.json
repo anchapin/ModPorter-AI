@@ -25,8 +25,8 @@
     "**/build/**",
     "**/.next/**"
   ],
-  "concurrency": 4,
+  "concurrency": 6,
   "coverageAnalysis": "off",
-  "timeoutMS": 15000,
-  "timeoutFactor": 3
+  "timeoutMS": 20000,
+  "timeoutFactor": 2.5
 }
