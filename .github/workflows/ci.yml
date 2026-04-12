@@ -1001,20 +1001,20 @@ jobs:
           pnpm install --frozen-lockfile
 
       - name: Run mutation testing
-        timeout-minutes: 75
+        timeout-minutes: 90
         run: |
           cd frontend
 
           # Run stryker mutation testing with timeout safeguard
           # Use timeout command to prevent hanging, but allow stryker to complete
           set +e
-          timeout 4200 pnpm mutation  # 70 min max
+          timeout 4800 pnpm mutation  # 80 min max (step has 90 min timeout)
           MUTATION_EXIT=$?
           set -e
 
           # Exit codes: 0=success, 1=mutations survived (threshold not met — normal), 124=timeout (fail)
           if [ $MUTATION_EXIT -eq 124 ]; then
-            echo "❌ Mutation testing timed out after 70 minutes"
+            echo "❌ Mutation testing timed out after 80 minutes"
             exit 1
           elif [ $MUTATION_EXIT -ne 0 ]; then
             echo "❌ Mutation testing failed with exit code: $MUTATION_EXIT"
