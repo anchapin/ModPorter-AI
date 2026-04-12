@@ -101,8 +101,12 @@ const LogSection: React.FC<LogSectionProps> = ({
 
   const filteredLogs = useMemo(() => {
     if (levelFilter === 'all') return logs;
+
+    // ⚡ Bolt optimization: Hoist toLowerCase() outside the loop to avoid redundant O(N) string allocations
+    const targetLevel = levelFilter.toLowerCase();
+
     return logs.filter(
-      (log) => log.level.toLowerCase() === levelFilter.toLowerCase()
+      (log) => log.level.toLowerCase() === targetLevel
     );
   }, [logs, levelFilter]);
 

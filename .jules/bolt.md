@@ -17,3 +17,6 @@
 ## 2024-05-14 - Optimize array filtering with Set and Map
 **Learning:** Found an `O(N*M)` performance bottleneck in `VisualEditor.tsx` where array filtering inside a callback (`fields.filter((field) => category.fields.includes(field.name))`) was occurring on every render.
 **Action:** Replaced it with a pre-computed `Map` using `useMemo` and an inner `Set` to provide `O(1)` lookups, significantly improving rendering performance for forms with many fields and categories.
+## 2024-04-12 - Hoist string operations out of filter callbacks
+**Learning:** Found an O(N) performance bottleneck in `DeveloperLog.tsx` where `.toLowerCase()` was being called on a static filter string `levelFilter` for every single element in a large array during `.filter()`. This caused unnecessary and redundant string allocations and calculations in JavaScript, which scale poorly for large developer logs.
+**Action:** Always hoist static transformations (like string casing conversions) outside of array iteration callbacks (like `.filter()` or `.map()`) to avoid O(N) redundant allocations.
