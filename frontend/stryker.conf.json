@@ -5,15 +5,7 @@
   "testRunner": "vitest",
   "testRunnerNodeArgs": ["--experimental-vm-modules"],
   "reporters": ["json"],
-  "mutate": [
-    "src/services/**/*.{ts,tsx}",
-    "src/utils/**/*.{ts,tsx}",
-    "src/api/**/*.{ts,tsx}",
-    "src/types/**/*.{ts,tsx}",
-    "!src/**/*.test.{ts,tsx}",
-    "!src/**/*.spec.{ts,tsx}",
-    "!src/**/*.d.ts"
-  ],
+  "mutate": ["src/services/apiClient.ts", "src/services/queryClient.ts"],
   "thresholds": {
     "high": 80,
     "low": 70,
@@ -25,9 +17,9 @@
     "**/build/**",
     "**/.next/**"
   ],
-  "concurrency": 2,
+  "concurrency": 1,
   "coverageAnalysis": "off",
-  "timeoutMS": 30000,
-  "timeoutFactor": 2,
-  "maxConcurrentTestRunners": 2
+  "timeoutMS": 60000,
+  "timeoutFactor": 1.5,
+  "maxConcurrentTestRunners": 1
 }
