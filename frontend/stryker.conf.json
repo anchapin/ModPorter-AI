@@ -4,7 +4,7 @@
   "plugins": ["@stryker-mutator/vitest-runner"],
   "testRunner": "vitest",
   "testRunnerNodeArgs": ["--experimental-vm-modules"],
-  "reporters": ["html", "json", "clear-text"],
+  "reporters": ["json"],
   "mutate": [
     "src/services/**/*.{ts,tsx}",
     "src/utils/**/*.{ts,tsx}",
@@ -25,8 +25,9 @@
     "**/build/**",
     "**/.next/**"
   ],
-  "concurrency": 6,
+  "concurrency": 2,
   "coverageAnalysis": "off",
-  "timeoutMS": 20000,
-  "timeoutFactor": 2.5
+  "timeoutMS": 30000,
+  "timeoutFactor": 2,
+  "maxConcurrentTestRunners": 2
 }
