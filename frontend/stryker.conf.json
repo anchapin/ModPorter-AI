@@ -4,8 +4,11 @@
   "plugins": ["@stryker-mutator/vitest-runner"],
   "testRunner": "vitest",
   "testRunnerNodeArgs": ["--experimental-vm-modules"],
+  "vitest": {
+    "relatedRatio": 0
+  },
   "reporters": ["json"],
-  "mutate": ["src/utils/objectUtils.ts"],
+  "mutate": ["src/services/api.ts"],
   "thresholds": {
     "high": 80,
     "low": 70,
