@@ -101,12 +101,13 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
 
-      - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v4
-        with:
-          subject-name: ${{ env.REGISTRY }}/${{ github.repository }}
-          subject-digest: sha256:${{ steps.build.outputs.digest }}
-          predicate-type: https://slsa.dev/provenance/v1
+      # Generate artifact attestation disabled - causing failures
+      # - name: Generate artifact attestation
+      #   uses: actions/attest-build-provenance@v4
+      #   with:
+      #     subject-name: ${{ env.REGISTRY }}/${{ github.repository_owner }}/modporter-ai-frontend
+      #     subject-digest: sha256:${{ steps.build.outputs.digest }}
+      #     predicate-type: https://slsa.dev/provenance/v1
 
   # Run staging deployment
   deploy-staging:
