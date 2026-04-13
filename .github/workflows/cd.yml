@@ -116,6 +116,7 @@ jobs:
     needs: build
     environment: staging
     timeout-minutes: 15
+    if: github.event_name != 'pull_request' # Skip deployment for PRs
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
