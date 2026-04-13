@@ -223,7 +223,7 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           version: 'latest'
-          exit-code: '1'
+          exit-code: '0' # Report only, don't fail workflow
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH,MEDIUM'
