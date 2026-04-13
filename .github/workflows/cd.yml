@@ -78,7 +78,7 @@ jobs:
       - name: Build and push ai-engine
         uses: docker/build-push-action@v7
         with:
-          context: .
+          context: ./ai-engine
           file: ./ai-engine/Dockerfile
           push: true
           tags: |
