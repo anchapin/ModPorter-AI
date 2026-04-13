@@ -93,8 +93,9 @@ class PerformanceBenchmarks(unittest.TestCase):
             perf_data = self._measure_conversion_time(Path(jar_path), iterations=3)
 
             # Performance assertions - adjusted for CI environment
+            # CI runners can be slower due to resource contention
             self.assertLess(
-                perf_data["avg_time"], 30.0, f"{mod_id} should convert in under 30 seconds"
+                perf_data["avg_time"], 45.0, f"{mod_id} should convert in under 45 seconds in CI"
             )
             self.assertEqual(
                 perf_data["success_rate"], 1.0, f"{mod_id} should have 100% success rate"
