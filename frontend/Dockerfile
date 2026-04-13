@@ -3,8 +3,8 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json pnpm-lock.yaml ./
+# Copy package files - use package-lock.json for npm
+COPY package*.json package-lock.json ./
 RUN npm install -g pnpm && pnpm install --frozen-lockfile
 
 # Copy source code
