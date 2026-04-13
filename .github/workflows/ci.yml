@@ -271,7 +271,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          lfs: true
+          lfs: false
 
       - name: Initialize performance tracking
         run: |

@@ -50,7 +50,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          lfs: true
+          lfs: false
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -112,7 +112,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          lfs: true
+          lfs: false
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -163,7 +163,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          lfs: true
+          lfs: false
 
       - name: Install pnpm
         uses: pnpm/action-setup@v5
