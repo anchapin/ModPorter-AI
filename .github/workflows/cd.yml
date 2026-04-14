@@ -122,7 +122,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Configure Kubernetes
-        uses: azure/k8s-set-context@v4
+        uses: azure/k8s-set-context@v5
         with:
           kubeconfig: ${{ secrets.STAGING_KUBECONFIG }}
 
@@ -176,7 +176,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Configure Kubernetes
-        uses: azure/k8s-set-context@v4
+        uses: azure/k8s-set-context@v5
         with:
           kubeconfig: ${{ secrets.PRODUCTION_KUBECONFIG }}
 
