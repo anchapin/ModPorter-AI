@@ -180,6 +180,7 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd frontend
+          pnpm approve-builds esbuild msw node-pty sharp unrs-resolver
           pnpm install --no-frozen-lockfile
 
       - name: Run frontend tests

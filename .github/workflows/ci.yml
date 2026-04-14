@@ -754,6 +754,9 @@ jobs:
         run: |
           echo "⚡ Installing frontend dependencies with pnpm..."
 
+          # Approve build scripts for packages that need them
+          pnpm approve-builds esbuild msw node-pty sharp unrs-resolver
+
           # Use pnpm install --no-frozen-lockfile (not frozen) to resolve any lockfile mismatches
           pnpm install --no-frozen-lockfile
 
@@ -781,6 +784,7 @@ jobs:
               # Force reinstall of potentially corrupted packages from stale cache
               cd ..
               rm -rf node_modules
+              pnpm approve-builds esbuild msw node-pty sharp unrs-resolver
               pnpm install --no-frozen-lockfile
               cd frontend
               # Run linting
@@ -1001,6 +1005,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          pnpm approve-builds esbuild msw node-pty sharp unrs-resolver
           pnpm install --no-frozen-lockfile
 
       - name: Run mutation testing
@@ -1155,7 +1160,9 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: |
+          pnpm approve-builds esbuild msw node-pty sharp unrs-resolver
+          pnpm install --no-frozen-lockfile
 
       - name: Check frontend format
         run: cd frontend && pnpm prettier --check .
@@ -1259,7 +1266,9 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: |
+          pnpm approve-builds esbuild msw node-pty sharp unrs-resolver
+          pnpm install --no-frozen-lockfile
 
       - name: Scan pnpm dependencies (Frontend)
         if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.dependencies == 'true'
