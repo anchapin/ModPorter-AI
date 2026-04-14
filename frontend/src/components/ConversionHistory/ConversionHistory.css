@@ -164,7 +164,8 @@
 
 /* Accessibility: Focus-visible for header action buttons */
 .delete-selected-btn:focus-visible,
-.clear-all-btn:focus-visible {
+.clear-all-btn:focus-visible,
+.cancel-btn:focus-visible {
   outline: 2px solid #0066cc;
   outline-offset: 2px;
 }
