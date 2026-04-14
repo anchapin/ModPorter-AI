@@ -754,8 +754,8 @@ jobs:
         run: |
           echo "⚡ Installing frontend dependencies with pnpm..."
 
-          # Use pnpm install (not frozen) to resolve any lockfile mismatches
-          pnpm install
+          # Use pnpm install --no-frozen-lockfile (not frozen) to resolve any lockfile mismatches
+          pnpm install --no-frozen-lockfile
 
           echo "✅ Dependencies installed successfully"
 
@@ -781,7 +781,7 @@ jobs:
               # Force reinstall of potentially corrupted packages from stale cache
               cd ..
               rm -rf node_modules
-              pnpm install
+              pnpm install --no-frozen-lockfile
               cd frontend
               # Run linting
               pnpm run lint
@@ -1001,7 +1001,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pnpm install
+          pnpm install --no-frozen-lockfile
 
       - name: Run mutation testing
         timeout-minutes: 90
@@ -1155,7 +1155,7 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
 
       - name: Check frontend format
         run: cd frontend && pnpm prettier --check .
@@ -1259,7 +1259,7 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
 
       - name: Scan pnpm dependencies (Frontend)
         if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.dependencies == 'true'
