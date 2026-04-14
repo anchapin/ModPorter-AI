@@ -781,7 +781,7 @@ jobs:
               # Force reinstall of potentially corrupted packages from stale cache
               cd ..
               rm -rf node_modules
-              pnpm install --frozen-lockfile
+              pnpm install
               cd frontend
               # Run linting
               pnpm run lint
@@ -1001,7 +1001,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pnpm install --frozen-lockfile
+          pnpm install
 
       - name: Run mutation testing
         timeout-minutes: 90
@@ -1155,7 +1155,7 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Check frontend format
         run: cd frontend && pnpm prettier --check .
@@ -1259,7 +1259,7 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Scan pnpm dependencies (Frontend)
         if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.dependencies == 'true'

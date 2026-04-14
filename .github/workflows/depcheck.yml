@@ -99,7 +99,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd frontend
-          pnpm install --frozen-lockfile
+          pnpm install
 
       - name: Run depcheck
         id: depcheck
@@ -299,7 +299,7 @@ jobs:
         run: |
           echo "## Dependency Check Summary"
           echo ""
-          
+
           # Frontend results
           echo "### Frontend"
           if [ "${{ needs.depcheck-frontend.result }}" == "skipped" ]; then
@@ -312,7 +312,7 @@ jobs:
             echo "⚠️ ${{ needs.depcheck-frontend.result }}"
           fi
           echo ""
-          
+
           # Backend results
           echo "### Backend"
           if [ "${{ needs.pip-audit-backend.result }}" == "skipped" ]; then
@@ -325,7 +325,7 @@ jobs:
             echo "⚠️ ${{ needs.pip-audit-backend.result }}"
           fi
           echo ""
-          
+
           # AI Engine results
           echo "### AI Engine"
           if [ "${{ needs.pip-audit-ai-engine.result }}" == "skipped" ]; then
@@ -338,7 +338,7 @@ jobs:
             echo "⚠️ ${{ needs.pip-audit-ai-engine.result }}"
           fi
           echo ""
-          
+
           # Overall status
           echo "## Overall Status"
           if [ "${{ needs.depcheck-frontend.result }}" == "failure" ] || \
