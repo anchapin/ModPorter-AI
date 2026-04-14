@@ -15,7 +15,7 @@ sentence-transformers>=2.2.0,<6.0.0
 
 # Vector Database (pin version for embedchain compatibility)
 # Note: chromadb may require Python <3.13
-chromadb<1.6.0
+chromadb==1.1.1
 
 # Data Processing - align with backend version
 numpy
@@ -51,11 +51,12 @@ prometheus_client>=0.17.0
 structlog>=24.0.0
 
 # Distributed Tracing - OpenTelemetry
-# Note: opentelemetry-exporter-jaeger 1.21.0 is the latest version compatible with Python 3.11
+# Note: chromadb provides opentelemetry-exporter-otlp-proto-grpc which conflicts
+# with opentelemetry-exporter-jaeger-proto-grpc on protobuf versions.
+# Using flexible versions and letting pip/legacy-resolver find a solution.
 opentelemetry-api>=1.24.0
 opentelemetry-sdk>=1.24.0
 opentelemetry-exporter-otlp>=1.24.0
-opentelemetry-exporter-jaeger==1.21.0
 opentelemetry-instrumentation-fastapi>=0.45b0
 opentelemetry-instrumentation-httpx>=0.45b0
 opentelemetry-instrumentation-redis>=0.45b0
