@@ -1,6 +1,6 @@
 name: OpenAPI Contract Testing
 
-on:
+'on':
   workflow_dispatch:
     inputs:
       base_url:

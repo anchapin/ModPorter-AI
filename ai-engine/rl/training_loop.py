@@ -13,6 +13,7 @@ from pathlib import Path
 
 from .quality_scorer import ConversionQualityScorer
 from .reward_system import RewardSignalGenerator, RewardSignal
+from .prompt_optimizer import get_rl_feedback_loop
 # Note: This will be imported dynamically to avoid circular imports
 # from ..training_manager import fetch_training_data_from_backend
 
@@ -375,14 +376,51 @@ class RLTrainingLoop:
     async def _update_agent_model(
         self, agent_type: str, episodes: List[TrainingEpisode], avg_reward: float
     ) -> None:
-        """Update the agent's model based on episodes."""
+        """Update the agent's model based on episodes.
 
-        # This is a placeholder for actual model training
-        # In practice, this would:
-        # 1. Prepare training data from episodes
-        # 2. Update neural network weights
-        # 3. Save updated model checkpoint
+        This method now integrates with the Prompt-Based RL system to:
+        1. Store high-quality conversion examples for few-shot learning
+        2. Record strategy outcomes for optimization
+        3. Update prompt templates based on learned patterns
+        """
 
+        rl_feedback = get_rl_feedback_loop()
+
+        # Process each episode for the RL feedback loop
+        for episode in episodes:
+            try:
+                if episode.reward_signal.total_reward > 0.3:
+                    # Only record successful conversions
+                    mod_info = {
+                        "mod_name": episode.state_before.get("file_type", "unknown"),
+                        "mod_type": self._infer_mod_type(episode),
+                        "framework": episode.state_before.get("file_type", "unknown"),
+                        "version": episode.state_before.get("file_type", "unknown"),
+                        "complexity": episode.state_before.get("complexity_score", 0.5),
+                    }
+
+                    conversion_result = {
+                        "agent_type": episode.agent_type,
+                        "strategy": episode.action_taken,
+                        "input_summary": str(episode.state_before)[:500],
+                        "output_summary": str(episode.state_after)[:500],
+                        "successful_output": str(episode.state_after)[:1000],
+                    }
+
+                    quality_metrics = episode.reward_signal.quality_metrics or {}
+
+                    await rl_feedback.record_conversion(
+                        job_id=episode.job_id,
+                        mod_info=mod_info,
+                        conversion_result=conversion_result,
+                        quality_metrics=quality_metrics,
+                        prompt_used="training_loop_default",
+                        conversion_success=episode.reward_signal.total_reward > 0,
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to record episode {episode.episode_id}: {e}")
+
+        # Save training metadata (model checkpoint)
         model_path = self.model_dir / f"{agent_type}_model.json"
 
         # Save training metadata
@@ -393,6 +431,7 @@ class RLTrainingLoop:
             "average_reward": avg_reward,
             "training_episodes": len(self.episodes),
             "performance_trend": self._calculate_performance_trend(agent_type),
+            "prompt_optimization": "enabled",
         }
 
         try:
@@ -400,10 +439,24 @@ class RLTrainingLoop:
                 json.dump(model_data, f, indent=2)
 
             self.model_checkpoints[agent_type] = str(model_path)
-            logger.info(f"Saved {agent_type} model checkpoint to {model_path}")
+            logger.info(
+                f"Saved {agent_type} model checkpoint to {model_path} (with RL feedback integration)"
+            )
 
         except Exception as e:
             logger.error(f"Failed to save model for {agent_type}: {e}")
+
+    def _infer_mod_type(self, episode: TrainingEpisode) -> str:
+        """Infer mod type from episode state."""
+        state = episode.state_before
+        if isinstance(state, dict):
+            # Try to determine mod type from state
+            if "complexity_indicators" in state:
+                indicators = state.get("complexity_indicators", [])
+                if "large_file" in indicators:
+                    return "complex_mod"
+            return state.get("file_type", "unknown")
+        return "unknown"
 
     def _calculate_performance_trend(self, agent_type: str) -> str:
         """Calculate performance trend for an agent."""

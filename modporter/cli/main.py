@@ -40,7 +40,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 
-def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:
+def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:  # noqa: C901
     """
     Convert a Java mod JAR to Bedrock .mcaddon format.
 

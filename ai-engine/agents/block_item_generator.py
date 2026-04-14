@@ -239,7 +239,6 @@ class BlockItemGenerator:
 
         for java_recipe in java_recipes:
             try:
-                recipe_type = java_recipe.get("type", "")
                 result_item = java_recipe.get("result", {})
                 if isinstance(result_item, dict):
                     result_item_id = result_item.get("item", "unknown")

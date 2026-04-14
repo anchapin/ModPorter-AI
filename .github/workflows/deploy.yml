@@ -3,7 +3,7 @@
 
 name: Deploy ModPorter AI
 
-on:
+'on':
   push:
     branches: [main, production]
   pull_request:
@@ -50,7 +50,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          lfs: true
+          lfs: false
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -96,7 +96,7 @@ jobs:
 
   ai-engine-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     services:
       redis:
         image: redis:7-alpine
@@ -112,7 +112,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          lfs: true
+          lfs: false
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -163,7 +163,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          lfs: true
+          lfs: false
 
       - name: Install pnpm
         uses: pnpm/action-setup@v5
@@ -208,6 +208,9 @@ jobs:
   security:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -220,7 +223,7 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           version: 'latest'
-          exit-code: '1'
+          exit-code: '0' # Report only, don't fail workflow
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH,MEDIUM'

@@ -28,6 +28,16 @@
 - 🟡 Issue #1002: Sound and localization extraction (0/187 sounds, 0/292 lang files)
 
 ## Recently Completed
+- ✅ Issue #989: Implement Prompt-Based Reinforcement Learning with Conversion Examples
+  - ✅ Created `rl/prompt_optimizer.py` with:
+    - `PromptExampleStore`: Stores high-quality examples in vector DB (SQLite + embeddings)
+    - `PromptStrategyTracker`: Tracks strategy effectiveness per mod type/framework
+    - `FewShotPromptBuilder`: Builds prompts with retrieved examples
+    - `RLFeedbackLoop`: Main integration point for conversion pipeline
+  - ✅ Updated `RLTrainingLoop._update_agent_model()` to integrate prompt optimization
+  - ✅ Added `integrate_conversion_result()` convenience function for pipeline integration
+  - ✅ Created 20 tests in `test_prompt_optimizer.py` (all passing)
+  - ✅ All 21 existing RL tests still pass
 - ✅ Issue #1034: Wire model + recipe converters into convert_mod() pipeline
 - ✅ Issue #1027: Entity detection regression fix (use AST-first path in convert_mod)
 - ✅ Issue #1026: Flaky perf test fix (CI-deterministic thresholds)

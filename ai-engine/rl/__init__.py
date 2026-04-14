@@ -41,6 +41,15 @@ from .data_collection import (
     AUTO_LABEL_THRESHOLD_ACCEPTABLE,
     TRAINING_DATA_TARGET,
 )
+from .prompt_optimizer import (
+    PromptExampleStore,
+    PromptExample,
+    PromptStrategyTracker,
+    FewShotPromptBuilder,
+    RLFeedbackLoop,
+    ExampleQuality,
+    get_rl_feedback_loop,
+)
 
 __version__ = "1.0.0"
 __author__ = "ModPorter AI Team"
@@ -90,6 +99,13 @@ __all__ = [
     "AgentPerformanceOptimizer",
     "DataCollectionStore",
     "DataCollectionPipeline",
+    # Prompt-based RL classes (NEW)
+    "PromptExampleStore",
+    "PromptExample",
+    "PromptStrategyTracker",
+    "FewShotPromptBuilder",
+    "RLFeedbackLoop",
+    "ExampleQuality",
     # Data classes
     "QualityMetrics",
     "RewardSignal",
@@ -118,5 +134,6 @@ __all__ = [
     "create_rl_system",
     "create_async_rl_system",
     "get_data_collection_pipeline",
+    "get_rl_feedback_loop",
     "collect_conversion",
 ]

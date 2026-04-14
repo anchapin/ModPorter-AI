@@ -8,7 +8,7 @@ This module implements issue #992: Wire RAG Pipeline into Conversion Loop.
 """
 
 import logging
-from typing import List, Dict, Any, Optional, TYPE_CHECKING
+from typing import Dict, Any, Optional, TYPE_CHECKING
 import json
 
 if TYPE_CHECKING:
@@ -105,7 +105,6 @@ class PatternMappingIndexer:
         Returns:
             Dictionary with indexing results
         """
-        import os
         from pathlib import Path
 
         if not self.vector_db_client:

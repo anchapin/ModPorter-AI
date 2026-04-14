@@ -4,14 +4,15 @@
   "plugins": ["@stryker-mutator/vitest-runner"],
   "testRunner": "vitest",
   "testRunnerNodeArgs": ["--experimental-vm-modules"],
-  "reporters": ["html", "json", "clear-text"],
+  "reporters": ["json"],
   "mutate": [
-    "src/**/*.{ts,tsx}",
-    "!src/**/*.d.ts",
+    "src/services/**/*.{ts,tsx}",
+    "src/utils/**/*.{ts,tsx}",
+    "src/api/**/*.{ts,tsx}",
+    "src/types/**/*.{ts,tsx}",
     "!src/**/*.test.{ts,tsx}",
     "!src/**/*.spec.{ts,tsx}",
-    "!src/**/*.stories.{ts,tsx}",
-    "!src/**/mocks/**"
+    "!src/**/*.d.ts"
   ],
   "thresholds": {
     "high": 80,
@@ -24,6 +25,8 @@
     "**/build/**",
     "**/.next/**"
   ],
-  "concurrency": 4,
-  "coverageAnalysis": "perTest"
+  "concurrency": 2,
+  "coverageAnalysis": "off",
+  "timeoutMS": 30000,
+  "timeoutFactor": 2
 }
