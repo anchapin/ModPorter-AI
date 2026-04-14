@@ -1,5 +1,8 @@
 # Current Tasks
 
+## In Progress
+- 🔄 CI pnpm caching investigation (pnpm version 9 → 9.12.2, added .npmrc)
+
 ## Pending
 - 🔄 Issue #971: E2E validation with 20+ real Java mods
 

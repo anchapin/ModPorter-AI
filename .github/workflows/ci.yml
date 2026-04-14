@@ -741,7 +741,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v6
         with:
-          version: 9
+          version: 9.12.2
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -982,7 +982,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v6
         with:
-          version: 9
+          version: 9.12.2
 
       - name: Get pnpm store directory
         id: pnpm-store
@@ -1137,7 +1137,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v6
         with:
-          version: 9
+          version: 9.12.2
 
       - name: Get pnpm store directory
         id: pnpm-store
@@ -1241,7 +1241,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v6
         with:
-          version: 9
+          version: 9.12.2
 
       - name: Get pnpm store directory
         id: pnpm-store
