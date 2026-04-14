@@ -9,7 +9,7 @@ This module adds real LLM capabilities to agents for:
 
 import json
 import logging
-from typing import Dict, Any, List, Optional, Callable
+from typing import Dict, Any, Optional
 from dataclasses import dataclass
 from utils.rate_limiter import get_llm_backend, get_fallback_llm
 

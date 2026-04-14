@@ -75,6 +75,10 @@ temp_uploads/
 conversion_outputs/
 */conversion_outputs/
 
+# RL training data (SQLite databases - generated at runtime)
+ai-engine/training_data/*.db
+*/training_data/*.db
+
 # API Keys
 opencode.json
 

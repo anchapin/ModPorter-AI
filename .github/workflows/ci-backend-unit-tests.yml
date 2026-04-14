@@ -1,6 +1,6 @@
 name: CI - Backend Unit Tests (Parallel)
 
-on:
+'on':
   pull_request:
     branches: [main, develop]
     paths:
@@ -80,7 +80,7 @@ jobs:
             --ignore=src/tests/unit/test_performance_api.py
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: backend/coverage.json
@@ -119,7 +119,7 @@ jobs:
             --no-cov
 
       - name: Upload serial test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: serial-test-results
           path: backend/pytest-results.xml
@@ -127,7 +127,7 @@ jobs:
 
       - name: Comment coverage on PR
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');

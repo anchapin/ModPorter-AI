@@ -3,12 +3,16 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy root package files and pnpm lockfile
 COPY package*.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+RUN npm install -g pnpm && pnpm install --no-frozen-lockfile
 
-# Copy source code
-COPY . .
+# Copy frontend source
+COPY frontend/ ./frontend/
+
+# Set up frontend with its own dependencies
+WORKDIR /app/frontend
+RUN pnpm install --no-frozen-lockfile
 
 # Build arguments for environment variables
 ARG VITE_API_URL
@@ -25,10 +29,10 @@ RUN pnpm run build
 FROM nginx:alpine
 
 # Copy built assets from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/frontend/dist /usr/share/nginx/html
 
 # Copy nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY frontend/nginx.conf /etc/nginx/nginx.conf
 
 # Expose port 80
 EXPOSE 80
