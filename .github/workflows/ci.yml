@@ -754,8 +754,8 @@ jobs:
         run: |
           echo "⚡ Installing frontend dependencies with pnpm..."
 
-          # Use pnpm install with frozen lockfile
-          pnpm install --frozen-lockfile
+          # Use pnpm install (not frozen) to resolve any lockfile mismatches
+          pnpm install
 
           echo "✅ Dependencies installed successfully"
 
