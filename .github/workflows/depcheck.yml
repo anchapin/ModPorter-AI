@@ -99,8 +99,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd frontend
-          pnpm approve-builds esbuild msw node-pty sharp unrs-resolver
-          pnpm install --no-frozen-lockfile
+          pnpm install --no-frozen-lockfile --ignore-scripts
 
       - name: Run depcheck
         id: depcheck
