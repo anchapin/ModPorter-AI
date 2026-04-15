@@ -222,8 +222,13 @@ class RecipeConverterAgent:
         # Build Bedrock key mapping
         bedrock_key = {}
         for key_char, ingredient in key.items():
-            # Handle both string (item ID or tag) and dict formats
-            if isinstance(ingredient, str):
+            # Handle both string (item ID or tag), list (alternatives), and dict formats
+            if isinstance(ingredient, list):
+                # List of alternatives - use the first item
+                item_data = ingredient[0] if ingredient else "minecraft:air"
+                item_count = 1
+                item_data_val = 0
+            elif isinstance(ingredient, str):
                 item_data = ingredient
                 item_count = 1
                 item_data_val = 0

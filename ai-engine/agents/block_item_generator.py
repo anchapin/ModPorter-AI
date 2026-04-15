@@ -241,7 +241,8 @@ class BlockItemGenerator:
             try:
                 result_item = java_recipe.get("result", {})
                 if isinstance(result_item, dict):
-                    result_item_id = result_item.get("item", "unknown")
+                    # NeoForge 1.21+ uses 'id' instead of 'item'
+                    result_item_id = result_item.get("item", result_item.get("id", "unknown"))
                 elif isinstance(result_item, str):
                     result_item_id = result_item
                 else:

@@ -292,7 +292,9 @@ class V5AuditRunner:
                     [
                         f
                         for f in jar_file_list
-                        if "/data/" in f and "/recipes/" in f and f.endswith(".json")
+                        if "/advancement/" not in f
+                        and ("/recipe/" in f or "/recipes/" in f)
+                        and f.endswith(".json")
                     ]
                 )
 
