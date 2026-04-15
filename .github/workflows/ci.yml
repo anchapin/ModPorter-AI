@@ -769,7 +769,7 @@ jobs:
         run: |
           echo "⚡ Installing frontend dependencies with pnpm..."
 
-          # Retry logic for transient network/storage issues
+# Retry logic for transient network/storage issues
           MAX_RETRIES=3
           RETRY_COUNT=0
           until pnpm install --frozen-lockfile; do
@@ -807,7 +807,18 @@ jobs:
               # Force reinstall of potentially corrupted packages from stale cache
               cd ..
               rm -rf node_modules
-              pnpm install --no-frozen-lockfile --ignore-scripts
+              MAX_RETRIES=3
+              RETRY_COUNT=0
+              until pnpm install --frozen-lockfile; do
+                RETRY_COUNT=$((RETRY_COUNT + 1))
+                echo "⚠️ pnpm install failed (attempt $RETRY_COUNT of $MAX_RETRIES)"
+                if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+                  echo "❌ pnpm install failed after $MAX_RETRIES attempts"
+                  exit 1
+                fi
+                echo "⏳ Waiting 10 seconds before retry..."
+                sleep 10
+              done
               cd frontend
               # Run linting
               pnpm run lint
