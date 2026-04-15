@@ -132,11 +132,14 @@ def validate_secrets(environment: str = "production") -> None:
 
     prefix = "[startup-validation] "
     secret_warning_count = 0
+    cors_warning_present = False
     for msg in warnings:
         if "CORS_ORIGINS" in msg:
-            logger.warning("%s", prefix + msg)
+            cors_warning_present = True
         else:
             secret_warning_count += 1
+    if cors_warning_present:
+        logger.warning("%sCORS configuration warning present.", prefix)
     if secret_warning_count > 0:
         logger.warning(
             "%s%d secret(s) have validation warnings in %s environment.",
