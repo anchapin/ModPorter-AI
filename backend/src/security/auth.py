@@ -26,11 +26,10 @@ if not SECRET_KEY:
     raise ValueError("SECRET_KEY must be set in the environment or secrets manager")
 ALGORITHM = "HS256"
 
-# JWT expiry times - configurable via environment for production hardening
-# Production: 5 minutes access, 1 day refresh (more secure)
-# Development: 15 minutes access, 7 days refresh (more convenient)
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "5"))
-REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "1"))
+# JWT expiry times - configurable via environment
+# Defaults: 15 minutes access, 7 days refresh
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
 
 def hash_password(password: str) -> str:

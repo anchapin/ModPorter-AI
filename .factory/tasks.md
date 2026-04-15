@@ -3,6 +3,18 @@
 ## In Progress
 - 🔄 CI pnpm caching investigation (pnpm version 9 → 9.12.2, added .npmrc)
 
+## Completed (Issue #1066 — Production Secrets & Security Hardening)
+- ✅ Audited all .env.example and .env.* files for placeholder secrets
+- ✅ Removed .env.prod from git tracking (git rm --cached; it matches .env* gitignore rule)
+- ✅ Created backend/src/core/startup_validation.py — validates all required secrets on startup; raises ValueError in production if any are missing/placeholder; warns in dev
+- ✅ Wired startup_validation.validate_secrets() into main.py lifespan (skipped in TESTING mode)
+- ✅ Fixed CORS env var: main.py now checks CORS_ORIGINS first, falls back to ALLOWED_ORIGINS
+- ✅ Updated JWT expiry defaults: 15min access / 7 days refresh (security/auth.py + core/auth.py)
+- ✅ Updated core/auth.py to use JWT_SECRET_KEY with SECRET_KEY fallback
+- ✅ HSTS header already present in security_headers.py (max-age=63072000; includeSubDomains; preload)
+- ✅ Created scripts/setup-fly-secrets.sh — interactive script to set all secrets via fly secrets set
+- ✅ 20 new tests in test_startup_validation.py — all passing
+
 ## Pending
 - 🔄 Issue #971: E2E validation - Recipe converter regression (0% coverage, "Unknown recipe category: unknown")
 - ⏳ Investigate why model coverage dropped (68% vs v5's 82%)
