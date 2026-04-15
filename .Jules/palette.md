@@ -8,3 +8,6 @@
 ## 2024-04-12 - Ensure secondary actions have focus states
 **Learning:** Secondary UI elements like cancel buttons in confirmation dialogues often get missed when styling keyboard focus states, breaking keyboard accessibility for secondary paths.
 **Action:** Whenever styling focus states for primary action buttons, always verify that adjacent secondary or cancel buttons also have explicit `:focus-visible` styles applied.
+## 2024-04-15 - [Accessibility] Improve screen reader experience on decorative icons
+**Learning:** Screen readers often misinterpret standalone emojis (e.g., 📥) and non-informational icons inside interactive elements or purely decorative blocks, reading them literally which can be redundant or confusing. Furthermore, if a button only contains an icon/emoji without descriptive text, it must have an `aria-label`.
+**Action:** When adding icons/emojis, explicitly wrap them in `<span aria-hidden="true">` when they are decorative or when the parent element has a descriptive label or `aria-label`. Ensure interactive elements without text labels have clear `aria-label` attributes.

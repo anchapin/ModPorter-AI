@@ -75,7 +75,7 @@ const StatCard: React.FC<{
   color?: string;
 }> = ({ title, value, icon = '', color = '#007bff' }) => (
   <div className={styles.statCard}>
-    <div className={styles.statIcon} style={{ color }}>
+    <div className={styles.statIcon} style={{ color }} aria-hidden="true">
       {icon}
     </div>
     <div className={styles.statContent}>
@@ -93,8 +93,9 @@ const DownloadButton: React.FC<{ url: string }> = ({ url }) => (
     download
     className={styles.downloadButton}
     title="Download converted add-on"
+    aria-label="Download converted add-on"
   >
-    📥 Download .mcaddon
+    <span aria-hidden="true">📥</span> Download .mcaddon
   </a>
 );
 
