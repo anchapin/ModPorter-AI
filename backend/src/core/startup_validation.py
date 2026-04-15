@@ -130,14 +130,11 @@ def validate_secrets(environment: str = "production") -> None:
                 "CORS_ORIGINS includes 'localhost' — ensure this is intentional for production."
             )
 
-    def _log_warn(msg_text: str) -> None:
-        logger.warning("%s", msg_text)
-
     prefix = "[startup-validation] "
     secret_warning_count = 0
     for msg in warnings:
         if "CORS_ORIGINS" in msg:
-            _log_warn(prefix + msg)
+            logger.warning("%s", prefix + msg)
         else:
             secret_warning_count += 1
     if secret_warning_count > 0:
