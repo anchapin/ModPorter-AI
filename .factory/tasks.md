@@ -4,9 +4,15 @@
 - 🔄 CI pnpm caching investigation (pnpm version 9 → 9.12.2, added .npmrc)
 
 ## Pending
-- 🔄 Issue #971: E2E validation with 20+ real Java mods
+- 🔄 Issue #971: E2E validation - Run v5 audit with 30 mods (wired #1034, need actual runs)
 
 ## Completed
+- ✅ Issue #971 E2E test infrastructure fixes (Apr 15):
+  - ✅ Fixed `test_mod_conversion` to actually run `convert_mod()` pipeline
+  - ✅ Added `model_count_bp` counting in `_analyze_coverage()` 
+  - ✅ Fixed bug where JAR was passed as both mcaddon and source
+  - ✅ Expanded POPULAR_MODS from 20 to 30 mods with categories
+  - ✅ All 16 non-integration tests pass
 - ✅ Issue #1004 - B2B Conversion Report Implementation:
   - ✅ Task 1: Added `CategoryConversionStatus` TypedDict + `ASSET_CATEGORIES` list (textures, models, recipes, entities, sounds, localization, blockstates, loot_tables, advancements, tags)
   - ✅ Task 2: Added `category_breakdown`, `manual_work_estimate_hours`, `priority_order` to `SummaryReport` dataclass
