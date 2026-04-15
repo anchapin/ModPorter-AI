@@ -153,7 +153,8 @@ class RecipeConverterAgent:
         # Parse result
         result = recipe_data.get("result", {})
         if isinstance(result, dict):
-            normalized["result_item"] = result.get("item", "")
+            # NeoForge 1.21+ uses 'id' instead of 'item'
+            normalized["result_item"] = result.get("item", result.get("id", ""))
             normalized["result_count"] = result.get("count", 1)
             normalized["result_data"] = result.get("data", 0)
         elif isinstance(result, str):
@@ -221,9 +222,20 @@ class RecipeConverterAgent:
         # Build Bedrock key mapping
         bedrock_key = {}
         for key_char, ingredient in key.items():
-            item_data = ingredient.get("item", "")
-            item_count = ingredient.get("count", 1)
-            item_data_val = ingredient.get("data", 0)
+            # Handle both string (item ID or tag), list (alternatives), and dict formats
+            if isinstance(ingredient, list):
+                # List of alternatives - use the first item
+                item_data = ingredient[0] if ingredient else "minecraft:air"
+                item_count = 1
+                item_data_val = 0
+            elif isinstance(ingredient, str):
+                item_data = ingredient
+                item_count = 1
+                item_data_val = 0
+            else:
+                item_data = ingredient.get("item", "")
+                item_count = ingredient.get("count", 1)
+                item_data_val = ingredient.get("data", 0)
 
             bedrock_item = self._map_java_item_to_bedrock(item_data)
 

@@ -4,9 +4,19 @@
 - 🔄 CI pnpm caching investigation (pnpm version 9 → 9.12.2, added .npmrc)
 
 ## Pending
-- 🔄 Issue #971: E2E validation - Run v5 audit with 30 mods (wired #1034, need actual runs)
+- 🔄 Issue #971: E2E validation - Recipe converter regression (0% coverage, "Unknown recipe category: unknown")
+- ⏳ Investigate why model coverage dropped (68% vs v5's 82%)
 
 ## Completed
+- ✅ Issue #971: E2E validation - Run v6 audit with 30 mods (Apr 15):
+  - ✅ Created `scripts/run_v5_audit.py` for reproducible audits
+  - ✅ Generated `docs/audit-reports/real-world-scan-v6-20260415.md`
+  - ✅ 22/29 successful conversions, 8 failed  
+  - ✅ Texture coverage: 68.7% (+14% from v5's 54.7%)
+  - ✅ Model coverage: 68.3% (v5 had 82.3%)
+  - ⚠️ Recipe coverage: 0% (regression - all recipes fail with "Unknown recipe category")
+  - ✅ B2B readiness: ~39%
+  - ✅ Committed: c9d3d033
 - ✅ Issue #971 E2E test infrastructure fixes (Apr 15):
   - ✅ Fixed `test_mod_conversion` to actually run `convert_mod()` pipeline
   - ✅ Added `model_count_bp` counting in `_analyze_coverage()` 
