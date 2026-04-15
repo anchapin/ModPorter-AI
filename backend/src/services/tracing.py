@@ -22,16 +22,9 @@ try:
 except ImportError:
     JaegerExporter = None
     logger.warning("Jaeger exporter not available (missing dependencies)")
-
-try:
-    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-    from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
-    from opentelemetry.instrumentation.redis import RedisInstrumentor
-except ImportError:
-    FastAPIInstrumentor = None
-    HTTPXClientInstrumentor = None
-    RedisInstrumentor = None
-    logger.warning("OpenTelemetry instrumentation packages not available (missing dependencies)")
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+from opentelemetry.instrumentation.redis import RedisInstrumentor
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from opentelemetry.trace import Status, StatusCode
 from opentelemetry.context import Context
@@ -128,8 +121,6 @@ def _create_resource() -> Resource:
 
 def _setup_jaeger_exporter() -> Optional[BatchSpanProcessor]:
     """Setup Jaeger exporter."""
-    if JaegerExporter is None:
-        return None
     try:
         jaeger_exporter = JaegerExporter(
             agent_host_name=get_jaeger_host(),
@@ -221,9 +212,6 @@ def init_tracing(app=None) -> None:
 
 def _instrument_fastapi(app) -> None:
     """Instrument FastAPI application."""
-    if FastAPIInstrumentor is None:
-        logger.warning("FastAPI instrumentor not available")
-        return
     try:
         FastAPIInstrumentor.instrument_app(app)
         logger.info("FastAPI instrumentation enabled")
@@ -233,9 +221,6 @@ def _instrument_fastapi(app) -> None:
 
 def _instrument_httpx() -> None:
     """Instrument HTTPX client."""
-    if HTTPXClientInstrumentor is None:
-        logger.warning("HTTPX instrumentor not available")
-        return
     try:
         HTTPXClientInstrumentor().instrument()
         logger.info("HTTPX client instrumentation enabled")
@@ -245,9 +230,6 @@ def _instrument_httpx() -> None:
 
 def _instrument_redis() -> None:
     """Instrument Redis client."""
-    if RedisInstrumentor is None:
-        logger.warning("Redis instrumentor not available")
-        return
     try:
         RedisInstrumentor().instrument()
         logger.info("Redis instrumentation enabled")

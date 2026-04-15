@@ -334,7 +334,7 @@ class TestSearchIntegration:
 
         # Performance target: < 500ms for full pipeline
         # Note: This may be slow on first run (model loading), but should be fast on subsequent runs
-        assert total_time_ms < 6000  # Allow 6s for cold start (model loading) in CI
+        assert total_time_ms < 5000  # Allow 5s for cold start (model loading)
 
         # On warm start (model cached), should be < 500ms
         # We'll validate this in performance benchmarks, not in unit tests

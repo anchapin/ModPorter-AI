@@ -321,7 +321,6 @@ export const FeatureAnalysis: React.FC<FeatureAnalysisProps> = ({
         </h3>
         <button
           className={styles.toggleButton}
-          aria-expanded={isExpanded}
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
         >
           {isExpanded ? '▼' : '▶'}

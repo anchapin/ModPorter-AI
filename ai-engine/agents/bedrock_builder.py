@@ -222,9 +222,9 @@ class BedrockBuilderAgent:
                 "modules": [
                     {
                         "type": "data",
-                        "uuid": str(uuid.uuid4())
-                        if not (os.getenv("TESTING") or os.getenv("PYTEST_CURRENT_TEST"))
-                        else "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                        "uuid": str(uuid.uuid4()) if not (
+                            os.getenv("TESTING") or os.getenv("PYTEST_CURRENT_TEST")
+                        ) else "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
                         "version": [1, 0, 0],
                     }
                 ],
@@ -247,9 +247,9 @@ class BedrockBuilderAgent:
                 "modules": [
                     {
                         "type": "resources",
-                        "uuid": str(uuid.uuid4())
-                        if not (os.getenv("TESTING") or os.getenv("PYTEST_CURRENT_TEST"))
-                        else "ffffffff-gggg-hhhh-iiii-jjjjjjjjjjjj",
+                        "uuid": str(uuid.uuid4()) if not (
+                            os.getenv("TESTING") or os.getenv("PYTEST_CURRENT_TEST")
+                        ) else "ffffffff-gggg-hhhh-iiii-jjjjjjjjjjjj",
                         "version": [1, 0, 0],
                     }
                 ],

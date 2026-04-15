@@ -150,7 +150,6 @@ const LogSection: React.FC<LogSectionProps> = ({
         </div>
         <button
           className={styles.toggleButton}
-          aria-expanded={isExpanded}
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
         >
           {isExpanded ? '▼' : '▶'}
@@ -386,7 +385,6 @@ export const DeveloperLog: React.FC<DeveloperLogProps> = ({
         <div className={styles.logSummary}>{totalLogEntries} entries</div>
         <button
           className={styles.toggleButton}
-          aria-expanded={isExpanded}
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
         >
           {isExpanded ? '▼' : '▶'}

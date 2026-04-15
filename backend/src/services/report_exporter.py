@@ -194,31 +194,6 @@ class ReportExporter:
         .status-success {{ color: #28a745; }}
         .status-partial {{ color: #ffc107; }}
         .status-failed {{ color: #dc3545; }}
-        .status-converted {{ color: #28a745; }}
-        .status-not_converted {{ color: #dc3545; }}
-        .category-table {{
-            width: 100%;
-            border-collapse: collapse;
-            margin: 15px 0;
-        }}
-        .category-table th, .category-table td {{
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
-        }}
-        .category-table th {{
-            background: #f8f9fa;
-            font-weight: 600;
-        }}
-        .category-badge {{
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 0.85em;
-        }}
-        .badge-converted {{ background: #d4edda; color: #155724; }}
-        .badge-partial {{ background: #fff3cd; color: #856404; }}
-        .badge-not_converted {{ background: #f8d7da; color: #721c24; }}
         .technical-log {{
             background: #f8f9fa;
             padding: 15px;
@@ -266,34 +241,7 @@ class ReportExporter:
                 <div class="summary-value">{report[summary][conversion_quality_score]}</div>
                 <div>Quality Score</div>
             </div>
-            <div class="summary-item">
-                <div class="summary-value">{report[summary][manual_work_estimate_hours]}h</div>
-                <div>Manual Work Est.</div>
-            </div>
         </div>
-    </div>
-
-    <div class="section">
-        <h2 class="section-title">Category Breakdown (Issue #1004)</h2>
-        <p><strong>Manual Work Estimate:</strong> ~{report[summary][manual_work_estimate_hours]} hours</p>
-        <p><strong>Priority Order for Manual Fixes:</strong> {report[summary][priority_order]}</p>
-        <table class="category-table">
-            <thead>
-                <tr>
-                    <th>Category</th>
-                    <th>Total</th>
-                    <th>Converted</th>
-                    <th>Partial</th>
-                    <th>Failed</th>
-                    <th>Coverage</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Category rows would be dynamically populated -->
-                <tr><td colspan="7" style="text-align:center;color:#666;">See full report for category details</td></tr>
-            </tbody>
-        </table>
     </div>
 
     <div class="section">

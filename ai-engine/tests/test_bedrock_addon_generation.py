@@ -192,7 +192,7 @@ class TestBlockItemGenerator:
         assert item_def["minecraft:item"]["description"]["identifier"] == item_id
 
     def test_generate_recipes(self):
-        """Test recipe generation using RecipeConverterAgent."""
+        """Test recipe generation."""
         sample_recipes = [
             {
                 "id": "test_recipe",
@@ -203,19 +203,16 @@ class TestBlockItemGenerator:
             }
         ]
 
-        bedrock_recipes = self.generator.generate_recipes(sample_recipes, namespace="testmod")
+        bedrock_recipes = self.generator.generate_recipes(sample_recipes)
 
         assert len(bedrock_recipes) == 1
 
+        # Get the first (and only) recipe key
         recipe_key = list(bedrock_recipes.keys())[0]
         recipe_def = bedrock_recipes[recipe_key]
 
         assert "minecraft:recipe_shaped" in recipe_def
-        assert (
-            recipe_def["minecraft:recipe_shaped"]["description"]["identifier"]
-            == "testmod:test_block"
-        )
-        assert recipe_def["minecraft:recipe_shaped"]["pattern"] == ["XXX", "X X", "XXX"]
+        assert recipe_def["minecraft:recipe_shaped"]["description"]["identifier"] == "test_recipe"
 
     def test_block_properties_parsing(self):
         """Test parsing of Java block properties."""

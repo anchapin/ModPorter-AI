@@ -61,8 +61,6 @@ def mock_report():
                 "assumptions_applied_count": 5,
                 "processing_time_seconds": 12.5,
                 "conversion_quality_score": 0.9,
-                "manual_work_estimate_hours": 2.5,
-                "priority_order": "fabric,forge",
             },
             "feature_analysis": {
                 "compatibility_mapping_summary": "Good",
@@ -100,7 +98,6 @@ def test_export_to_html(exporter, mock_report):
     assert "<html" in result.lower()
     assert "job-123" in result
     assert "85.0%" in result
-    assert "2.5h" in result
 
 
 def test_export_to_csv(exporter, mock_report):

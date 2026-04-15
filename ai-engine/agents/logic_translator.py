@@ -3,7 +3,7 @@ Logic Translator Agent for Java to JavaScript code conversion
 Enhanced for Issue #546: Block Generation from Java block analysis
 """
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 import json
 from crewai.tools import tool
@@ -16,9 +16,6 @@ from utils.logging_config import get_agent_logger, log_performance
 
 # Use enhanced agent logger
 logger = get_agent_logger("logic_translator")
-
-# LLM Translation temperature for code generation (per research: 0.2 is optimal)
-LLM_CODE_TEMPERATURE = 0.2
 
 
 # ========== Bedrock Block Templates (Issue #546) ==========
@@ -638,10 +635,7 @@ class LogicTranslatorAgent:
     def __init__(self):
         self.logger = logger
         self.smart_assumption_engine = SmartAssumptionEngine()
-        self.java_analyzer_agent = JavaAnalyzerAgent()
-
-        self._conversion_rag_pipeline = None
-        self._rag_context_enabled = False
+        self.java_analyzer_agent = JavaAnalyzerAgent()  # Added JavaAnalyzerAgent initialization
 
         # Java to JavaScript conversion mappings
         self.type_mappings = {
@@ -928,110 +922,7 @@ class LogicTranslatorAgent:
             LogicTranslatorAgent.generate_bedrock_block_tool,
             LogicTranslatorAgent.validate_block_json_tool,
             LogicTranslatorAgent.map_block_properties_tool,
-            # RAG context tools (Issue #992)
-            LogicTranslatorAgent.get_rag_context_tool,
-            LogicTranslatorAgent.set_rag_context_tool,
         ]
-
-    def set_rag_pipeline(self, pipeline) -> None:
-        """
-        Set the ConversionRAGPipeline for context-augmented translation.
-
-        Args:
-            pipeline: ConversionRAGPipeline instance
-        """
-        self._conversion_rag_pipeline = pipeline
-        self._rag_context_enabled = pipeline is not None
-        logger.info(f"RAG context {'enabled' if self._rag_context_enabled else 'disabled'}")
-
-    def enable_rag_context(self, enabled: bool = True) -> None:
-        """Enable or disable RAG context retrieval."""
-        self._rag_context_enabled = enabled and self._conversion_rag_pipeline is not None
-
-    def _get_rag_context(self, java_feature: str, feature_type: str) -> str:
-        """
-        Get RAG context for a Java feature.
-
-        Args:
-            java_feature: Description of the Java feature
-            feature_type: Type of feature (block, item, entity, etc.)
-
-        Returns:
-            Formatted context string for LLM, or empty string if unavailable
-        """
-        if not self._rag_context_enabled or not self._conversion_rag_pipeline:
-            return ""
-
-        try:
-            result = self._conversion_rag_pipeline.retrieve_conversion_context_sync(
-                java_feature=java_feature,
-                feature_type=feature_type,
-                top_k=5,
-            )
-            return self._conversion_rag_pipeline.format_context_for_llm(result)
-        except Exception as e:
-            logger.warning(f"RAG context retrieval failed: {e}")
-            return ""
-
-    @tool
-    @staticmethod
-    def get_rag_context_tool(java_feature: str, feature_type: str) -> str:
-        """
-        Get RAG context for context-augmented translation.
-
-        This tool retrieves relevant pattern mappings, Bedrock code examples,
-        and prior translations from the knowledge base to assist with accurate conversion.
-
-        Args:
-            java_feature: Description of the Java feature to convert
-            feature_type: Type of feature (block, item, entity, recipe, event)
-
-        Returns:
-            JSON string with context including pattern mappings and code examples
-        """
-        agent = LogicTranslatorAgent.get_instance()
-        context_str = agent._get_rag_context(java_feature, feature_type)
-
-        if not context_str:
-            return json.dumps(
-                {
-                    "success": True,
-                    "context": "",
-                    "message": "RAG context not available",
-                    "rag_enabled": agent._rag_context_enabled,
-                }
-            )
-
-        return json.dumps(
-            {
-                "success": True,
-                "context": context_str,
-                "rag_enabled": agent._rag_context_enabled,
-            }
-        )
-
-    @tool
-    @staticmethod
-    def set_rag_context_tool(enabled: bool) -> str:
-        """
-        Enable or disable RAG context for translation.
-
-        Args:
-            enabled: True to enable RAG context, False to disable
-
-        Returns:
-            JSON string with confirmation
-        """
-        agent = LogicTranslatorAgent.get_instance()
-        agent.enable_rag_context(enabled)
-
-        return json.dumps(
-            {
-                "success": True,
-                "rag_enabled": agent._rag_context_enabled,
-                "message": f"RAG context {'enabled' if agent._rag_context_enabled else 'disabled'}",
-            }
-        )
 
     def translate_java_code(self, java_code: str, code_type: str) -> str:
         """
@@ -1153,39 +1044,30 @@ class LogicTranslatorAgent:
             return ""
 
     def translate_java_method(self, method_data, feature_context=None) -> str:
-        """Translate Java method to JavaScript with optional RAG context augmentation."""
+        """Translate Java method to JavaScript"""
         try:
-            rag_context = ""
-            feature_type = "unknown"
-
+            # Handle both string and AST node inputs
             if isinstance(method_data, str):
                 data = json.loads(method_data)
                 method_name = data.get("method_name", "unknown")
                 method_body = data.get("method_body", "")
-                feature_type = data.get("feature_type", "unknown")
 
-                if self._rag_context_enabled and feature_type != "unknown":
-                    rag_context = self._get_rag_context(
-                        f"{method_name} {method_body}", feature_type
-                    )
-
+                # Mock translation
                 translated_js = f"// Translated {method_name}\nfunction {method_name}() {{\n  // {method_body}\n}}"
 
-                result = {
-                    "success": True,
-                    "original_method": method_name,
-                    "translated_javascript": translated_js,
-                    "warnings": [],
-                }
-
-                if rag_context:
-                    result["rag_context_applied"] = True
-                    result["conversion_context"] = rag_context
-
-                return json.dumps(result)
+                return json.dumps(
+                    {
+                        "success": True,
+                        "original_method": method_name,
+                        "translated_javascript": translated_js,
+                        "warnings": [],
+                    }
+                )
             else:
+                # Handle AST node
                 method_name = getattr(method_data, "name", "unknown")
 
+                # Get method parameters
                 params = []
                 if hasattr(method_data, "parameters") and method_data.parameters:
                     for param in method_data.parameters:
@@ -1193,28 +1075,26 @@ class LogicTranslatorAgent:
                         param_type = self._get_javascript_type(param.type)
                         params.append(f"{param_name}: {param_type}")
 
+                # Get return type
                 return_type = "void"
                 if hasattr(method_data, "return_type") and method_data.return_type:
                     return_type = self._get_javascript_type(method_data.return_type)
 
+                # Generate JavaScript function
                 param_str = ", ".join(params)
                 if return_type != "void":
                     translated_js = f"// Translated {method_name}\nfunction {method_name}({param_str}): {return_type} {{\n  // Method body\n}}"
                 else:
                     translated_js = f"// Translated {method_name}\nfunction {method_name}({param_str}) {{\n  // Method body\n}}"
 
-                result = {
-                    "success": True,
-                    "original_method": method_name,
-                    "javascript_method": translated_js,
-                    "warnings": [],
-                }
-
-                if rag_context:
-                    result["rag_context_applied"] = True
-                    result["conversion_context"] = rag_context
-
-                return json.dumps(result)
+                return json.dumps(
+                    {
+                        "success": True,
+                        "original_method": method_name,
+                        "javascript_method": translated_js,
+                        "warnings": [],
+                    }
+                )
         except Exception as e:
             logger.error(f"Error translating method: {e}")
             if isinstance(method_data, str):
@@ -1223,17 +1103,13 @@ class LogicTranslatorAgent:
                 return json.dumps({"success": False, "error": str(e), "warnings": []})
 
     def convert_java_class(self, class_data: str) -> str:
-        """Convert Java class to JavaScript with optional RAG context."""
+        """Convert Java class to JavaScript"""
         try:
             data = json.loads(class_data)
             class_name = data.get("class_name", "UnknownClass")
             methods = data.get("methods", [])
-            feature_type = data.get("feature_type", "unknown")
 
-            rag_context = ""
-            if self._rag_context_enabled and feature_type != "unknown":
-                rag_context = self._get_rag_context(f"{class_name} class", feature_type)
-
+            # Mock conversion
             js_code = f"// Converted {class_name}\nclass {class_name} {{\n"
             event_handlers = []
             event_handler_methods = 0
@@ -1241,11 +1117,13 @@ class LogicTranslatorAgent:
             for method in methods:
                 method_name = method.get("name", "unknown")
 
+                # Check if method is an event handler
                 if "onItemRightClick" in method_name or "onItemUse" in method_name:
                     event_handlers.append(
                         {"event": "item_use", "handler": f"// {method_name} handler"}
                     )
                     event_handler_methods += 1
+                    # Add event subscription code
                     js_code += f"""  // Event handler for {method_name}
   world.afterEvents.itemUse.subscribe((event) => {{
     if (event.itemStack.typeId === 'custom:{class_name.lower()}') {{
@@ -1258,23 +1136,19 @@ class LogicTranslatorAgent:
 
             js_code += "}"
 
-            result = {
-                "success": True,
-                "original_class": class_name,
-                "javascript_class": js_code,
-                "event_handlers": event_handlers,
-                "conversion_summary": {
-                    "event_handlers_generated": event_handler_methods,
-                    "methods_converted": len(methods) - event_handler_methods,
-                },
-                "warnings": [],
-            }
-
-            if rag_context:
-                result["rag_context_applied"] = True
-                result["conversion_context"] = rag_context
-
-            return json.dumps(result)
+            return json.dumps(
+                {
+                    "success": True,
+                    "original_class": class_name,
+                    "javascript_class": js_code,
+                    "event_handlers": event_handlers,
+                    "conversion_summary": {
+                        "event_handlers_generated": event_handler_methods,
+                        "methods_converted": len(methods) - event_handler_methods,
+                    },
+                    "warnings": [],
+                }
+            )
         except Exception as e:
             logger.error(f"Error converting class: {e}")
             return json.dumps({"success": False, "error": str(e), "warnings": []})
@@ -1429,9 +1303,29 @@ class LogicTranslatorAgent:
             logger.error(f"Error translating method with AST: {e}")
             return {"success": False, "error": str(e), "warnings": []}
 
-    def convert_java_body_to_javascript(
-        self, java_body: str, context: Optional[Dict[str, Any]] = None
-    ) -> str:
+    def convert_java_body_to_javascript(self, java_body: str, context: dict = None) -> str:
+        """Convert Java body to JavaScript"""
+        try:
+            # Store original body for context
+            self._original_java_body_for_context = java_body
+
+            # Mock conversion
+            js_body = java_body.replace("System.out.println", "console.log")
+
+            # Context-aware replacements
+            if "event.block" in java_body:
+                js_body = js_body.replace(
+                    "world.setBlockState", "event.block.dimension.setBlockPermutation"
+                )
+            else:
+                js_body = js_body.replace("world.setBlockState", "setBlockPermutation")
+
+            return js_body
+        except Exception as e:
+            logger.error(f"Error converting Java body: {e}")
+            return java_body
+
+    def _convert_java_body_to_javascript(self, java_body: str, context: dict = None) -> str:
         """Convert Java body to JavaScript"""
         try:
             # Store original body for context
@@ -1570,119 +1464,138 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {{
 
     # ========== Enhanced Event Handler Generation (Issue #332) ==========
 
-    EVENT_HANDLER_TEMPLATES = {
-        "block_break": {
-            "subscribe": "world.afterEvents.playerBreakBlock.subscribe",
-            "vars": "const block = event.brokenBlockPermutation.type;\n  const player = event.player;\n  const dimension = event.player.dimension;",
-            "comment": "event.brokenBlockPermutation - The block that was broken\n  // event.player - The player who broke the block",
-        },
-        "block_place": {
-            "subscribe": "world.afterEvents.blockPlace.subscribe",
-            "vars": "const block = event.block;\n  const player = event.player;\n  const permutation = event.permutation;",
-            "comment": "event.block - The block that was placed\n  // event.player - The player who placed the block",
-        },
-        "entity_spawn": {
-            "subscribe": "world.afterEvents.entitySpawn.subscribe",
-            "vars": "const entity = event.entity;\n  const entityType = entity.typeId;",
-            "comment": "event.entity - The entity that spawned\n  // event.entity.typeId - Type of entity (e.g., 'minecraft:zombie')",
-        },
-        "entity_death": {
-            "subscribe": "world.afterEvents.entityDie.subscribe",
-            "vars": "const entity = event.entity;\n  const damageSource = event.damageSource;",
-            "comment": "event.entity - The entity that died\n  // event.damageSource - What caused the death",
-        },
-        "player_join": {
-            "subscribe": "world.afterEvents.playerJoin.subscribe",
-            "vars": "const player = event.player;\n  const playerName = player.nameTag;",
-            "comment": "event.player - The player who joined\n  // event.player.nameTag - Player's display name",
-        },
-        "player_leave": {
-            "subscribe": "world.afterEvents.playerLeave.subscribe",
-            "vars": "const playerName = event.playerName;",
-            "comment": "event.playerName - Name of player who left",
-        },
-        "chat": {
-            "subscribe": "world.afterEvents.chatSend.subscribe",
-            "vars": "const message = event.message;\n  const sender = event.sender;",
-            "comment": "event.message - The chat message\n  // event.sender - The player who sent it\n  // To cancel: event.cancel = true;",
-        },
-        "command": {
-            "subscribe": "world.afterEvents.commandExecute.subscribe",
-            "vars": "const command = event.command;\n  const source = event.source;",
-            "comment": "event.command - The command that was run\n  // event.source - Who ran the command\n  // To cancel: event.cancel = true;",
-        },
-        "tick": {
-            "subscribe": "world.beforeEvents.tick.subscribe",
-            "vars": "",
-            "comment": "Runs every game tick (~20 times per second)\n  // Use sparingly for performance",
-        },
-        "item_use": {
-            "subscribe": "world.afterEvents.itemUse.subscribe",
-            "vars": "const itemStack = event.itemStack;\n  const player = event.source;",
-            "comment": "event.itemStack - The item that was used\n  // event.source - The player who used it",
-        },
-        "item_use_on": {
-            "subscribe": "world.afterEvents.itemUseOn.subscribe",
-            "vars": "const itemStack = event.itemStack;\n  const block = event.block;\n  const player = event.player;",
-            "comment": "event.itemStack - The item that was used\n  // event.block - The block it was used on\n  // event.player - The player who used it",
-        },
-    }
-
-    def generate_event_handler(self, event_type: str, class_name: str = "") -> str:
-        """Generate an event handler from templates"""
-        template = self.EVENT_HANDLER_TEMPLATES.get(event_type)
-        if not template:
-            return f"// Unknown event type: {event_type}"
-        event_name = event_type.replace("_", " ")
-        vars_block = f"\n  {template['vars']}\n" if template["vars"] else "\n"
-        return f"""// {event_name} event handler
-{template["subscribe"]}.subscribe((event) => {{{vars_block}  // Custom {event_name} logic here
-  // {template["comment"]}
-}});"""
-
     def generate_block_break_event_handler(self, class_name: str) -> str:
         """Generate block break event handler"""
-        return self.generate_event_handler("block_break", class_name)
+        return f"""// Block break event handler
+world.afterEvents.playerBreakBlock.subscribe((event) => {{
+  const block = event.brokenBlockPermutation.type;
+  const player = event.player;
+  const dimension = event.player.dimension;
+  
+  // Custom block break logic here
+  // event.brokenBlockPermutation - The block that was broken
+  // event.player - The player who broke the block
+}});"""
 
     def generate_block_place_event_handler(self, class_name: str) -> str:
         """Generate block place event handler"""
-        return self.generate_event_handler("block_place", class_name)
+        return f"""// Block place event handler
+world.afterEvents.blockPlace.subscribe((event) => {{
+  const block = event.block;
+  const player = event.player;
+  const permutation = event.permutation;
+  
+  // Custom block place logic here
+  // event.block - The block that was placed
+  // event.player - The player who placed the block
+}});"""
 
     def generate_entity_spawn_event_handler(self, class_name: str) -> str:
         """Generate entity spawn event handler"""
-        return self.generate_event_handler("entity_spawn", class_name)
+        return f"""// Entity spawn event handler
+world.afterEvents.entitySpawn.subscribe((event) => {{
+  const entity = event.entity;
+  const entityType = entity.typeId;
+  
+  // Custom entity spawn logic here
+  // event.entity - The entity that spawned
+  // event.entity.typeId - Type of entity (e.g., 'minecraft:zombie')
+}});"""
 
     def generate_entity_death_event_handler(self, class_name: str) -> str:
         """Generate entity death event handler"""
-        return self.generate_event_handler("entity_death", class_name)
+        return f"""// Entity death event handler
+world.afterEvents.entityDie.subscribe((event) => {{
+  const entity = event.entity;
+  const damageSource = event.damageSource;
+  
+  // Custom entity death logic here
+  // event.entity - The entity that died
+  // event.damageSource - What caused the death
+}});"""
 
     def generate_player_join_event_handler(self, class_name: str) -> str:
         """Generate player join event handler"""
-        return self.generate_event_handler("player_join", class_name)
+        return f"""// Player join event handler
+world.afterEvents.playerJoin.subscribe((event) => {{
+  const player = event.player;
+  const playerName = player.nameTag;
+  
+  // Custom player join logic here
+  // event.player - The player who joined
+  // event.player.nameTag - Player's display name
+}});"""
 
     def generate_player_leave_event_handler(self, class_name: str) -> str:
         """Generate player leave event handler"""
-        return self.generate_event_handler("player_leave", class_name)
+        return f"""// Player leave event handler
+world.afterEvents.playerLeave.subscribe((event) => {{
+  const playerName = event.playerName;
+  
+  // Custom player leave logic here
+  // event.playerName - Name of player who left
+}});"""
 
     def generate_chat_event_handler(self, class_name: str) -> str:
         """Generate chat/command event handler"""
-        return self.generate_event_handler("chat", class_name)
+        return f"""// Chat event handler
+world.afterEvents.chatSend.subscribe((event) => {{
+  const message = event.message;
+  const sender = event.sender;
+  
+  // Custom chat logic here
+  // event.message - The chat message
+  // event.sender - The player who sent it
+  // To cancel: event.cancel = true;
+}});"""
 
     def generate_command_event_handler(self, class_name: str) -> str:
         """Generate command execute event handler"""
-        return self.generate_event_handler("command", class_name)
+        return f"""// Command execute event handler
+world.afterEvents.commandExecute.subscribe((event) => {{
+  const command = event.command;
+  const source = event.source;
+  
+  // Custom command logic here
+  // event.command - The command that was run
+  // event.source - Who ran the command
+  // To cancel: event.cancel = true;
+}});"""
 
     def generate_tick_event_handler(self, class_name: str) -> str:
         """Generate tick/update event handler"""
-        return self.generate_event_handler("tick", class_name)
+        return f"""// Tick event handler (runs every tick)
+world.beforeEvents.tick.subscribe((event) => {{
+  // Custom tick logic here
+  // Runs every game tick (~20 times per second)
+  // Use sparingly for performance
+}});"""
 
     def generate_item_use_event_handler(self, class_name: str) -> str:
         """Generate item use event handler"""
-        return self.generate_event_handler("item_use", class_name)
+        return f"""// Item use event handler
+world.afterEvents.itemUse.subscribe((event) => {{
+  const itemStack = event.itemStack;
+  const player = event.source;
+  
+  // Custom item use logic here
+  // event.itemStack - The item that was used
+  // event.source - The player who used it
+}});"""
 
     def generate_item_use_on_event_handler(self, class_name: str) -> str:
         """Generate item use on block event handler"""
-        return self.generate_event_handler("item_use_on", class_name)
+        return f"""// Item use on block event handler
+world.afterEvents.itemUseOn.subscribe((event) => {{
+  const itemStack = event.itemStack;
+  const block = event.block;
+  const player = event.player;
+  
+  // Custom item use on block logic here
+  // event.itemStack - The item that was used
+  // event.block - The block it was used on
+  // event.player - The player who used it
+}});"""
 
     def generate_all_event_handlers(self, class_name: str) -> dict:
         """Generate all event handler templates for a class"""
@@ -3129,440 +3042,3 @@ world.beforeEvents.tick.subscribe((event) => {
             LogicTranslatorAgent.translate_code_to_js_tool,
             LogicTranslatorAgent.get_smart_assumptions_tool,
         ]
-
-    # ========== LLM-Powered Translation Pipeline (Issue #990) ==========
-    # Implements AST → NL → Bedrock translation based on research:
-    # - Chain-of-Thought with NL intermediates: 13.8% improvement on CodeNet
-    # - K³Trans (triple knowledge augmentation): 135.9% relative improvement on Pass@1
-    # - Recommended temperature: 0.2 for code generation
-
-    def _get_llm_client(self):
-        """
-        Get LLM client for code translation.
-        Uses Ollama with LiteLLM if available, falls back to environment-configured LLM.
-        """
-        try:
-            from utils.rate_limiter import create_ollama_llm
-
-            return create_ollama_llm(model_name="codellama", temperature=LLM_CODE_TEMPERATURE)
-        except Exception as e:
-            logger.warning(f"Could not create Ollama LLM: {e}, using fallback")
-            try:
-                from utils.rate_limiter import get_fallback_llm
-
-                return get_fallback_llm()
-            except Exception:
-                return None
-
-    def _serialize_ast_for_llm(self, tree) -> str:
-        """
-        Serialize Java AST to a text representation for LLM consumption.
-        Extracts methods, fields, and structure information.
-        """
-        if tree is None:
-            return ""
-
-        lines = []
-        lines.append("Java Class Structure:")
-        lines.append("=" * 50)
-
-        for path, node in tree.filter(javalang.tree.CompilationUnit):
-            for import_decl in node.imports:
-                lines.append(f"Import: {import_decl.path}")
-
-            for type_decl in node.types:
-                if hasattr(type_decl, "name"):
-                    lines.append(f"\nClass: {type_decl.name}")
-                    lines.append(f"Modifiers: {getattr(type_decl, 'modifiers', set())}")
-
-                if hasattr(type_decl, "body"):
-                    for member in type_decl.body:
-                        if isinstance(member, javalang.tree.MethodDeclaration):
-                            params = []
-                            if member.parameters:
-                                for p in member.parameters:
-                                    ptype = getattr(p, "type", None)
-                                    pname = getattr(p, "name", "unknown")
-                                    params.append(f"{getattr(ptype, 'name', str(ptype))} {pname}")
-                            rtype = (
-                                getattr(member.return_type, "name", str(member.return_type))
-                                if member.return_type
-                                else "void"
-                            )
-                            lines.append(f"  Method: {rtype} {member.name}({', '.join(params)})")
-                        elif isinstance(member, javalang.tree.FieldDeclaration):
-                            ftype = (
-                                getattr(member.type, "name", str(member.type))
-                                if member.type
-                                else "unknown"
-                            )
-                            decls = [getattr(d, "name", str(d)) for d in member.declarators]
-                            lines.append(f"  Field: {ftype} {', '.join(decls)}")
-
-        return "\n".join(lines)
-
-    def generate_nl_summary_from_ast(
-        self, java_code: str, context: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        """
-        Step 1 of AST → NL → Bedrock pipeline.
-        Generate a natural language description of what the Java code does.
-
-        Args:
-            java_code: Java source code to analyze
-            context: Optional context (class_name, registry_name, etc.)
-
-        Returns:
-            Dictionary with NL summary and metadata
-        """
-        try:
-            # Parse Java to AST
-            tree = javalang.parse.parse(java_code)
-
-            # Serialize AST structure
-            ast_repr = self._serialize_ast_for_llm(tree)
-
-            # Get class name from context or AST
-            class_name = context.get("class_name", "UnknownClass") if context else "UnknownClass"
-            code_type = context.get("code_type", "generic") if context else "generic"
-
-            # Build prompt for NL summary generation
-            prompt = f"""You are a Minecraft mod migration expert. Analyze the following Java code for a {code_type}
-and describe what it does in natural language. Focus on:
-1. What the component does (block, item, entity, recipe, etc.)
-2. Key properties (hardness, damage, health, behavior)
-3. Event handlers and interactions
-4. Any notable features that need careful translation
-
-Class: {class_name}
-Code Type: {code_type}
-
-AST Structure:
-{ast_repr}
-
-Original Java Code:
-{java_code[:2000]}
-
-Provide a concise natural language description of this Java mod component."""
-
-            # Call LLM
-            llm = self._get_llm_client()
-            if llm is None:
-                logger.warning("No LLM client available, using mock NL summary")
-                return {
-                    "success": True,
-                    "nl_summary": f"Java {code_type} class {class_name} with standard behavior",
-                    "ast_structure": ast_repr,
-                    "llm_used": False,
-                }
-
-            response = llm.invoke(prompt)
-            nl_summary = response.content if hasattr(response, "content") else str(response)
-
-            logger.info(f"Generated NL summary for {class_name} ({len(nl_summary)} chars)")
-
-            return {
-                "success": True,
-                "nl_summary": nl_summary,
-                "ast_structure": ast_repr,
-                "llm_used": True,
-            }
-
-        except javalang.parser.JavaSyntaxError as e:
-            logger.error(f"Java syntax error: {e}")
-            return {
-                "success": False,
-                "error": f"Java syntax error: {str(e)}",
-                "nl_summary": None,
-                "llm_used": False,
-            }
-        except Exception as e:
-            logger.error(f"Error generating NL summary: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "nl_summary": None,
-                "llm_used": False,
-            }
-
-    def generate_bedrock_from_nl(
-        self,
-        nl_summary: str,
-        target_type: str,
-        context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
-        """
-        Step 2 of AST → NL → Bedrock pipeline.
-        Generate Bedrock-compatible output from NL summary using templates as few-shot examples.
-
-        Args:
-            nl_summary: Natural language description from Step 1
-            target_type: Type of output (block, item, entity, recipe)
-            context: Optional context (namespace, class_name, etc.)
-
-        Returns:
-            Dictionary with generated Bedrock JSON and metadata
-        """
-        try:
-            namespace = context.get("namespace", "modporter") if context else "modporter"
-            class_name = context.get("class_name", "unknown") if context else "unknown"
-            registry_name = (
-                context.get(
-                    "registry_name", class_name.lower().replace("Block", "").replace("Item", "")
-                )
-                if context
-                else "unknown"
-            )
-
-            # Few-shot examples from existing templates
-            examples = {
-                "block": """Example Bedrock block JSON for a metal block:
-{{
-  "format_version": "1.20.10",
-  "minecraft:block": {{
-    "description": {{
-      "identifier": "{namespace}:copper_block",
-      "menu_category": {{"category": "construction"}}
-    }},
-    "components": {{
-      "minecraft:destroy_time": 5.0,
-      "minecraft:explosion_resistance": 6.0,
-      "minecraft:unit_cube": {{}},
-      "minecraft:material_instances": {{
-        "*": {{"texture": "copper_block", "render_method": "opaque"}}
-      }}
-    }}
-  }}
-}}""",
-                "item": """Example Bedrock item JSON for a tool:
-{{
-  "format_version": "1.20.10",
-  "minecraft:item": {{
-    "description": {{
-      "identifier": "{namespace}:iron_pickaxe",
-      "menu_category": {{"category": "tools"}}
-    }},
-    "components": {{
-      "minecraft:icon": {{"texture": "iron_pickaxe"}},
-      "minecraft:display_name": {{"value": "Iron Pickaxe"}},
-      "minecraft:max_stack_size": 1,
-      "minecraft:durability": {{"max_durability": 251}},
-      "minecraft:mining_speed": 6.0,
-      "minecraft:damage": 2
-    }}
-  }}
-}}""",
-            }
-
-            example = examples.get(target_type, examples["block"]).format(namespace=namespace)
-
-            prompt = f"""You are a Minecraft Bedrock edition expert. Convert the following natural language description
-into a valid Bedrock {target_type} JSON. Use the example format as a guide.
-
-Namespace: {namespace}
-Registry Name: {registry_name}
-Component Class: {class_name}
-
-Natural Language Description:
-{nl_summary}
-
-Example Bedrock {target_type} JSON format:
-{example}
-
-Generate ONLY the JSON, no explanations. The JSON must be valid and complete."""
-
-            # Call LLM
-            llm = self._get_llm_client()
-            if llm is None:
-                logger.warning("No LLM client available, using template fallback")
-                return self._generate_fallback_bedrock(target_type, context)
-
-            response = llm.invoke(prompt)
-            bedrock_json_str = str(response.content if hasattr(response, "content") else response)
-
-            # Parse and validate the JSON
-            try:
-                # Try to extract JSON from response (handle potential markdown code blocks)
-                json_str = bedrock_json_str.strip()
-                if json_str.startswith("```"):
-                    lines = json_str.split("\n")
-                    json_str = "\n".join(lines[1:-1])
-                elif json_str.startswith("```json"):
-                    json_str = json_str[7:]
-
-                bedrock_json = json.loads(json_str)
-
-                return {
-                    "success": True,
-                    "bedrock_json": bedrock_json,
-                    "target_type": target_type,
-                    "llm_used": True,
-                }
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse LLM JSON response: {e}")
-                return self._generate_fallback_bedrock(target_type, context)
-
-        except Exception as e:
-            logger.error(f"Error generating Bedrock from NL: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "bedrock_json": None,
-                "llm_used": False,
-            }
-
-    def _generate_fallback_bedrock(
-        self, target_type: str, context: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        """Generate fallback Bedrock JSON using templates when LLM is unavailable."""
-        try:
-            namespace = context.get("namespace", "modporter") if context else "modporter"
-            registry_name = context.get("registry_name", "unknown") if context else "unknown"
-
-            if target_type == "block":
-                template = BEDROCK_BLOCK_TEMPLATES.get("basic", BEDROCK_BLOCK_TEMPLATES["basic"])
-                import copy
-
-                result = copy.deepcopy(template)
-                result["minecraft:block"]["description"]["identifier"] = (
-                    f"{namespace}:{registry_name}"
-                )
-                return {
-                    "success": True,
-                    "bedrock_json": result,
-                    "llm_used": False,
-                    "fallback": True,
-                }
-            elif target_type == "item":
-                template = BEDROCK_ITEM_TEMPLATES.get("basic", BEDROCK_ITEM_TEMPLATES["basic"])
-                import copy
-
-                result = copy.deepcopy(template)
-                result["minecraft:item"]["description"]["identifier"] = (
-                    f"{namespace}:{registry_name}"
-                )
-                return {
-                    "success": True,
-                    "bedrock_json": result,
-                    "llm_used": False,
-                    "fallback": True,
-                }
-            elif target_type == "entity":
-                template = BEDROCK_ENTITY_TEMPLATES.get(
-                    "passive_mob", BEDROCK_ENTITY_TEMPLATES["passive_mob"]
-                )
-                import copy
-
-                result = copy.deepcopy(template)
-                result["minecraft:entity"]["description"]["identifier"] = (
-                    f"{namespace}:{registry_name}"
-                )
-                return {
-                    "success": True,
-                    "bedrock_json": result,
-                    "llm_used": False,
-                    "fallback": True,
-                }
-            else:
-                return {
-                    "success": False,
-                    "error": f"Unknown target type: {target_type}",
-                    "bedrock_json": None,
-                    "llm_used": False,
-                }
-        except Exception as e:
-            return {"success": False, "error": str(e), "bedrock_json": None, "llm_used": False}
-
-    def translate_java_code_with_llm(
-        self,
-        java_code: str,
-        target_type: str = "block",
-        context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
-        """
-        Main LLM-powered translation pipeline: AST → NL → Bedrock.
-
-        Based on research showing that chain-of-thought with NL intermediates
-        achieves 13.8% improvement on CodeNet benchmarks vs zero-shot translation.
-
-        Args:
-            java_code: Java source code to translate
-            target_type: Type of component (block, item, entity, recipe)
-            context: Optional context (class_name, namespace, registry_name, etc.)
-
-        Returns:
-            Dictionary with translation results and metadata
-        """
-        try:
-            logger.info(f"Starting LLM translation pipeline for {target_type}")
-
-            # Step 1: Generate NL summary from AST
-            nl_result = self.generate_nl_summary_from_ast(java_code, context)
-            if not nl_result.get("success"):
-                return nl_result
-
-            nl_summary = nl_result.get("nl_summary", "")
-            logger.info(f"Step 1 complete: Generated NL summary ({len(nl_summary)} chars)")
-
-            # Step 2: Generate Bedrock from NL
-            bedrock_result = self.generate_bedrock_from_nl(nl_summary, target_type, context)
-            if not bedrock_result.get("success"):
-                return bedrock_result
-
-            logger.info(f"Step 2 complete: Generated Bedrock {target_type} JSON")
-
-            # Combine results
-            return {
-                "success": True,
-                "target_type": target_type,
-                "nl_summary": nl_summary,
-                "bedrock_json": bedrock_result.get("bedrock_json"),
-                "llm_used": bedrock_result.get("llm_used", False),
-                "fallback": bedrock_result.get("fallback", False),
-                "ast_structure": nl_result.get("ast_structure"),
-                "translation_pipeline": "AST→NL→Bedrock",
-                "research_backing": {
-                    "chain_of_thought": "13.8% improvement on CodeNet benchmarks",
-                    "k3trans": "135.9% relative improvement on Pass@1",
-                    "temperature": LLM_CODE_TEMPERATURE,
-                },
-            }
-
-        except Exception as e:
-            logger.error(f"Error in LLM translation pipeline: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "bedrock_json": None,
-                "translation_pipeline": "AST→NL→Bedrock",
-            }
-
-    @tool
-    @staticmethod
-    def translate_java_code_llm_tool(java_code_data: str) -> str:
-        """
-        LLM-powered Java to Bedrock translation tool.
-
-        Args:
-            java_code_data: JSON string containing:
-                - java_code: Java source code to translate
-                - target_type: Type of component (block, item, entity, recipe)
-                - context: Optional context dict
-
-        Returns:
-            JSON string with translation results
-        """
-        agent = LogicTranslatorAgent.get_instance()
-        try:
-            data = json.loads(java_code_data)
-            java_code = data.get("java_code", "")
-            target_type = data.get("target_type", "block")
-            context = data.get("context", {})
-
-            result = agent.translate_java_code_with_llm(
-                java_code=java_code, target_type=target_type, context=context
-            )
-
-            return json.dumps(result, indent=2)
-        except Exception as e:
-            return json.dumps({"success": False, "error": str(e)})

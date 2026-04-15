@@ -26,6 +26,15 @@ except ImportError:
     javassist = None
     JAVASSIST_AVAILABLE = False
 
+# Make javassist optional - will be used for bytecode analysis if available
+try:
+    import javassist
+
+    JAVASSIST_AVAILABLE = True
+except ImportError:
+    javassist = None
+    JAVASSIST_AVAILABLE = False
+
 
 # Constants for file analysis limits
 FEATURE_ANALYSIS_FILE_LIMIT = 10
@@ -92,13 +101,13 @@ class JavaAnalyzerAgent:
 
     def get_tools(self) -> List:
         """Get tools available to this agent"""
+        # Return the actual decorated tool instances created by @tool decorator
         return [
             JavaAnalyzerAgent.analyze_mod_structure_tool,
             JavaAnalyzerAgent.extract_mod_metadata_tool,
             JavaAnalyzerAgent.identify_features_tool,
             JavaAnalyzerAgent.analyze_dependencies_tool,
             JavaAnalyzerAgent.extract_assets_tool,
-            JavaAnalyzerAgent.analyze_complexity_with_llm_tool,
         ]
 
     @log_performance("mod_file_analysis")
@@ -879,16 +888,15 @@ class JavaAnalyzerAgent:
             interfaces = class_info.get("interfaces", [])
 
             # Determine type based on class name and superclass
-            # IMPORTANT: Check BlockEntity BEFORE Block to avoid misclassifying BlockEntity subclasses
-            if "TileEntity" in name or "BlockEntity" in superclass:
-                features["type"] = "tile_entity"
-            elif "Block" in name or "Block" in superclass:
+            if "Block" in name or "Block" in superclass:
                 features["type"] = "block"
                 features["properties"] = self._extract_block_properties_from_bytecode(class_info)
             elif "Item" in name or "Item" in superclass:
                 features["type"] = "item"
             elif "Entity" in name or "Entity" in superclass or "Entity" in interfaces:
                 features["type"] = "entity"
+            elif "TileEntity" in name or "BlockEntity" in superclass:
+                features["type"] = "tile_entity"
 
             # Extract method names
             methods = class_info.get("methods", [])
@@ -1066,35 +1074,14 @@ class JavaAnalyzerAgent:
             "machinery": [],
             "commands": [],
             "events": [],
-            "tile_entities": [],
         }
 
         try:
             # Extract class declarations
             for path, node in tree:
                 if isinstance(node, javalang.tree.ClassDeclaration):
-                    # Check for BlockEntity subclasses BEFORE Block (issue #1001)
-                    # BlockEntity subclasses should be classified as tile_entities, not blocks
-                    is_block_entity = False
-                    if node.extends:
-                        superclass_name = (
-                            node.extends.name
-                            if hasattr(node.extends, "name")
-                            else str(node.extends)
-                        )
-                        if "BlockEntity" in superclass_name:
-                            is_block_entity = True
-
-                    if is_block_entity:
-                        tile_info = {
-                            "name": node.name,
-                            "registry_name": self._class_name_to_registry_name(node.name),
-                            "methods": [method.name for method in node.methods],
-                        }
-                        features["tile_entities"].append(tile_info)
-                        logger.debug(f"Extracted tile_entity: {node.name}")
                     # Check if it's a block class
-                    elif "Block" in node.name and not node.name.startswith("Abstract"):
+                    if "Block" in node.name and not node.name.startswith("Abstract"):
                         block_info = {
                             "name": node.name,
                             "registry_name": self._class_name_to_registry_name(node.name),
@@ -2964,73 +2951,6 @@ class JavaAnalyzerAgent:
         except Exception as e:
             error_response = {"success": False, "error": f"Failed to extract assets: {str(e)}"}
             logger.error(f"Asset extraction error: {e}")
-            return json.dumps(error_response)
-
-    @tool
-    @staticmethod
-    def analyze_complexity_with_llm_tool(analysis_data: str) -> str:
-        """
-        Use LLM to analyze Java mod complexity and identify Bedrock-incompatible patterns.
-
-        This tool augments the regex-based feature detection with LLM-powered analysis
-        to provide deeper insights into mod complexity and conversion feasibility.
-
-        Args:
-            analysis_data: JSON string containing:
-                - source_code: Java source code to analyze
-                - class_name: Name of the class being analyzed
-                - feature_data: Existing feature data from regex analysis
-
-        Returns:
-            JSON string with LLM-powered complexity analysis, incompatible patterns,
-            and conversion strategies
-        """
-        try:
-            data = json.loads(analysis_data)
-            source_code = data.get("source_code", "")
-            class_name = data.get("class_name", "UnknownClass")
-            feature_data = data.get("feature_data", {})
-
-            from utils.llm_agent_tools import get_llm_agent_tools
-
-            llm_tools = get_llm_agent_tools()
-            llm_tools.initialize()
-
-            result = llm_tools.analyze_java_mod_complexity(
-                source_code=source_code, class_name=class_name, feature_data=feature_data
-            )
-
-            if result.get("success"):
-                response = {
-                    "success": True,
-                    "llm_analysis": {
-                        "complexity_level": result.get("complexity_level", "unknown"),
-                        "bedrock_incompatible_patterns": result.get(
-                            "bedrock_incompatible_patterns", []
-                        ),
-                        "conversion_strategies": result.get("conversion_strategies", []),
-                        "summary": result.get("summary", ""),
-                    },
-                    "model_used": result.get("model_used", "unknown"),
-                }
-                logger.info(
-                    f"LLM complexity analysis completed for {class_name}: {result.get('complexity_level', 'unknown')}"
-                )
-            else:
-                response = {
-                    "success": False,
-                    "error": result.get("error", "LLM analysis failed"),
-                    "llm_analysis": None,
-                }
-                logger.warning(
-                    f"LLM complexity analysis failed for {class_name}: {result.get('error')}"
-                )
-
-            return json.dumps(response)
-
-        except Exception as e:
-            error_response = {"success": False, "error": f"LLM analysis failed: {str(e)}"}
-            logger.error(f"LLM complexity analysis error: {e}")
             return json.dumps(error_response)
 
     def _generate_embeddings(self, result: dict) -> None:

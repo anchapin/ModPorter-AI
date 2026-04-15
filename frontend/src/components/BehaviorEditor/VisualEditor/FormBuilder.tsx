@@ -78,16 +78,12 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
   const getFieldErrorState = useCallback(
     (field: FormField) => {
       const errors = getFieldErrors(field.name);
-      let hasError = false;
-      let helperText = field.description;
-      for (const e of errors) {
-        if (e.severity === 'error') {
-          hasError = true;
-          helperText = e.message;
-          break;
-        }
-      }
-      return { hasError, helperText };
+      return {
+        hasError: errors.some((e) => e.severity === 'error'),
+        helperText:
+          errors.find((e) => e.severity === 'error')?.message ||
+          field.description,
+      };
     },
     [getFieldErrors]
   );
@@ -98,7 +94,11 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
       type: 'text' | 'number' | 'textarea',
       extraProps: Record<string, any> = {}
     ) => {
-      const { hasError, helperText } = getFieldErrorState(field);
+      const errors = getFieldErrors(field.name);
+      const hasError = errors.some((e) => e.severity === 'error');
+      const helperText =
+        errors.find((e) => e.severity === 'error')?.message ||
+        field.description;
 
       const handleChangeValue = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (type === 'number') {
@@ -126,7 +126,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
         />
       );
     },
-    [data, getFieldErrorState, handleChange, readOnly]
+    [data, getFieldErrors, handleChange, readOnly]
   );
 
   const renderField = useCallback(

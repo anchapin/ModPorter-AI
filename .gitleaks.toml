@@ -10,77 +10,83 @@
 [allowlist]
 description = "Paths to skip scanning"
 paths = [
-  '''\.git/''',
-  '''\.venv/''',
+  '''^\\.git/''',
+  '''^\\.venv/''',
   '''node_modules/''',
   '''frontend/node_modules/''',
-  '''ai-engine/src/''',
-  '''\.pytest_cache/''',
-  '''\.ruff_cache/''',
-  '''tests/''',
-  '''docs/''',
-  '''docker/''',
-  '''\.github/''',
-  '''\.worktrees/''',
-  '''\.claude/worktrees/''',
-  '''coverage\.json$''',
-  '''\.log$''',
-  '''\.tmp$''',
-  '''\.mypy_cache/''',
-  '''\.tox/''',
-  '''\.eggs/''',
-  '''\.coverage$''',
-  '''\.coverage\..*''',
-  '''\.hypothesis/''',
-  '''\.pytype/''',
-  '''\.direnv/''',
-  '''\.envrc''',
-  '''\.env$''',
-  '''\.secrets''',
-  '''\.egg-info/''',
+  '''^ai-engine/src/''',
+  '''^\\.pytest_cache/''',
+  '''^\\.ruff_cache/''',
+  '''^tests/''',
+  '''^docs/''',
+  '''^docker/''',
+  '''^\\.github/''',
+  '''^\\.worktrees/''',
+  '''^\\.claude/worktrees/''',
+  '''coverage\\.json$''',
+  '''\\.log$''',
+  '''\\.tmp$''',
+  '''\\.mypy_cache/''',
+  '''\\.tox/''',
+  '''\\.eggs/''',
+  '''\\.pytest_cache/''',
+  '''\\.ruff_cache/''',
+  '''\\.coverage''',
+  '''\\.coverage\\.*''',
+  '''\\.hypothesis/''',
+  '''\\.pytype/''',
+  '''\\.direnv/''',
+  '''\\.envrc''',
+  '''\\.env''',
+  '''\\.secrets''',
+  '''\\.egg-info/''',
+  '''\\.eggs/''',
   '''build/''',
   '''dist/''',
-  '''\.next/''',
-  '''\.nuxt/''',
-  '''\.output/''',
+  '''\\.next/''',
+  '''\\.nuxt/''',
+  '''\\.output/''',
   '''coverage/''',
-  '''\.devcontainer/''',
-  '''\.idea/''',
-  '''\.vscode/''',
-  '''\.vs/''',
-  '''\.settings/''',
-  '''\.classpath''',
-  '''\.project''',
-  '''\.sts4/''',
-  '''\.gradle/''',
-  '''\.auto/''',
-  '''\.openapi-generator/''',
-  '''\.swagger-editor/''',
-  '''frontend/pnpm-lock\.yaml$''',
-  '''frontend/yarn\.lock$''',
-  '''frontend/package-lock\.json$''',
-  '''backend/requirements\.txt$''',
-  '''ai-engine/requirements\.txt$''',
+  '''\\.tldrc''',
+  '''\\.devcontainer/''',
+  '''\\.idea/''',
+  '''\\.vscode/''',
+  '''\\.vs/''',
+  '''\\.settings/''',
+  '''\\.classpath''',
+  '''\\.project''',
+  '''\\.sts4/''',
+  '''\\.settings/''',
+  '''\\.gradle/''',
+  '''\\.auto/''',
+  '''\\.openapi-generator/''',
+  '''\\.swagger-editor/''',
+  '''\\.B翻了的话我不同意''',
+  '''frontend/pnpm-lock\\.yaml$''',
+  '''frontend/yarn\\.lock$''',
+  '''frontend/package-lock\\.json$''',
+  '''backend/requirements\\.txt$''',
+  '''ai-engine/requirements\\.txt$''',
 ]
 
 # ----------------------------------------------------------------
-# Regex Allowlist (false positives) - use [[allowlist.regex]] array tables
+# Regex Allowlist (false positives)
 # ----------------------------------------------------------------
-[[allowlist.regex]]
+[allowlist.regex]
 description = "Test/example placeholders"
 regex = '''test[_-]?secret[_-]?key[_-]?for[_-]?testing'''
 
 [[allowlist.regex]]
 description = "Example passwords in documentation"
-regex = '''password\s*=\s*['"]?example'''
+regex = '''password\\s*=\\s*['\"]?example'''
 
 [[allowlist.regex]]
 description = "Placeholder values"
-regex = '''['"]?changeme['"]?'''
+regex = '''['\"]?changeme['\"]?'''
 
 [[allowlist.regex]]
 description = "Dummy values"
-regex = '''['"]?dummy[_-]?value['"]?'''
+regex = '''['\"]?dummy[_-]?value['\"]?'''
 
 [[allowlist.regex]]
 description = "Common test patterns"
@@ -88,7 +94,7 @@ regex = '''fake[_-]?(secret|token|key|api[_-]?key)'''
 
 [[allowlist.regex]]
 description = "Placeholder secrets"
-regex = '''['"]?your[_-]?(secret|token|key)['"]?'''
+regex = '''['\"]?your[_-]?(secret|token|key)['\"]?'''
 
 [[allowlist.regex]]
 description = "Example AWS keys in docs"
@@ -96,4 +102,20 @@ regex = '''AKIA[0-9A-Z]{16}'''
 
 [[allowlist.regex]]
 description = "Generic API key patterns in test files"
-regex = '''api[_-]?key['"]?\s*[:=]\s*['"]?test'''
+regex = '''api[_-]?key['\"]?\\s*[:=]\\s*['\"]?test'''
+
+# ----------------------------------------------------------------
+# Files to always skip
+# ----------------------------------------------------------------
+[allowlist.files]
+description = "Files to always skip"
+files = [
+  '''\\.gitleaks\\.toml$''',
+  '''passwords\\.txt$''',
+  '''secrets\\.txt$''',
+  '''\\.log$''',
+  '''\\.tmp$''',
+  '''coverage\\.json$''',
+  '''\\.ruff_cache/''',
+  '''\\.pytest_cache/''',
+]

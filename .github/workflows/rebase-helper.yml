@@ -4,7 +4,7 @@
 
 name: Rebase Helper
 
-'on':
+on:
   workflow_dispatch:
     inputs:
       action:

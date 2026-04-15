@@ -371,11 +371,7 @@ export const AssumptionsReport: React.FC<AssumptionsReportProps> = ({
           <h3 className={styles.sectionTitle}>
             🧠 Smart Assumptions (0 applied)
           </h3>
-          <button
-            className={styles.toggleButton}
-            aria-expanded={isExpanded}
-            aria-label={isExpanded ? 'Collapse' : 'Expand'}
-          >
+          <button className={styles.toggleButton}>
             {isExpanded ? '▼' : '▶'}
           </button>
         </div>
@@ -399,7 +395,6 @@ export const AssumptionsReport: React.FC<AssumptionsReportProps> = ({
         </h3>
         <button
           className={styles.toggleButton}
-          aria-expanded={isExpanded}
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
         >
           {isExpanded ? '▼' : '▶'}

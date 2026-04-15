@@ -1,6 +1,6 @@
 name: Docker Publish
 
-'on':
+on:
   release:
     types: [published]
 

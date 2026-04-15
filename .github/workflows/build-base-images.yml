@@ -1,6 +1,6 @@
 name: Build Base Images
 
-'on':
+on:
   schedule:
     # Rebuild base images weekly on Sundays at 2 AM UTC
     - cron: '0 2 * * 0'

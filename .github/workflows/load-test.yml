@@ -1,6 +1,6 @@
 name: Load Testing
 
-'on':
+on:
   workflow_dispatch:
     inputs:
       test_type:
@@ -33,7 +33,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup k6
         run: |
@@ -90,7 +90,7 @@ jobs:
 
       - name: Upload results
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: k6-results-${{ inputs.test_type || 'smoke' }}-${{ github.run_id }}
           path: results/

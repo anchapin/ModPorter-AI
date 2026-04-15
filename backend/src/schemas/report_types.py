@@ -5,7 +5,7 @@ Implements Issue #10 - Conversion Report Generation System
 
 from typing import List, Dict, Any, Optional
 from typing_extensions import TypedDict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 import json
 
@@ -16,33 +16,6 @@ class ConversionStatus:
     PARTIAL = "partial"
     FAILED = "failed"
     PROCESSING = "processing"
-
-
-# Asset category types for per-mod breakdown
-ASSET_CATEGORIES = [
-    "textures",
-    "models",
-    "recipes",
-    "entities",
-    "sounds",
-    "localization",
-    "blockstates",
-    "loot_tables",
-    "advancements",
-    "tags",
-]
-
-
-class CategoryConversionStatus(TypedDict):
-    category: str
-    total: int
-    converted: int
-    partial: int
-    failed: int
-    percentage: float
-    status: str  # "converted", "partial", "not_converted"
-    notes: Optional[str]
-    manual_work_hours: Optional[float]
 
 
 class ImpactLevel:
@@ -84,20 +57,11 @@ class SummaryReport:
     conversion_quality_score: float = 0.0
     recommended_actions: List[str] = None
 
-    # Per-category breakdown (Issue #1004 - B2B Conversion Report)
-    category_breakdown: List[Dict[str, Any]] = field(default_factory=list)
-    manual_work_estimate_hours: Optional[float] = None
-    priority_order: List[str] = field(default_factory=list)  # Categories to fix first
-
     def __post_init__(self):
         if self.quick_statistics is None:
             self.quick_statistics = {}
         if self.recommended_actions is None:
             self.recommended_actions = []
-        if self.category_breakdown is None:
-            self.category_breakdown = []
-        if self.priority_order is None:
-            self.priority_order = []
 
 
 @dataclass
@@ -289,10 +253,6 @@ class InteractiveReport:
                 "output_size_mb": self.summary.output_size_mb,
                 "conversion_quality_score": self.summary.conversion_quality_score,
                 "recommended_actions": self.summary.recommended_actions,
-                # Issue #1004 - B2B Conversion Report fields
-                "category_breakdown": self.summary.category_breakdown,
-                "manual_work_estimate_hours": self.summary.manual_work_estimate_hours,
-                "priority_order": self.summary.priority_order,
             },
             "feature_analysis": {
                 "features": [f.to_dict() for f in self.feature_analysis.features],

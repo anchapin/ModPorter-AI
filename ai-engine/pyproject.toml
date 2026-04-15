@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=82.0.1", "wheel"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.ruff]
@@ -233,10 +233,10 @@ dependencies = [
 
     # AI Framework
     "crewai>=0.11.0",  # Latest available is 0.11.2
-    "langchain>=0.3.28",
-    "langchain-openai>=0.3.35",
-    "langchain-ollama>=0.3.10",
-    "openai>=2.31.0",
+    "langchain>=0.3.0",
+    "langchain-openai>=0.2.0",
+    "langchain-ollama>=0.1.0",
+    "openai>=1.0.0",
     "sentence-transformers",
 
     # Vector Database (pin version for embedchain compatibility)
@@ -251,7 +251,7 @@ dependencies = [
     "javalang>=0.13.0",
 
     # File processing
-    "Pillow>=11.3.0",  # For texture conversion
+    "Pillow>=10.0.0",  # For texture conversion
     "pydub",
     
     # HTTP Client
@@ -267,39 +267,39 @@ dependencies = [
     # Monitoring
     "prometheus-client",
     "psutil",
-    "structlog>=25.5.0",
+    "structlog>=24.0.0",
 ]
 
 [project.optional-dependencies]
 # NVIDIA GPU acceleration (CUDA)
 gpu-nvidia = [
-    "torch>=2.8.0",
-    "torchvision>=0.23.0",
-    "torchaudio>=2.11.0", 
-    "onnxruntime-gpu>=1.20.2",
-    "accelerate>=1.10.1",
+    "torch>=2.5.0",
+    "torchvision>=0.20.0",
+    "torchaudio>=2.5.0", 
+    "onnxruntime-gpu>=1.19.0",
+    "accelerate>=0.24.0",
 ]
 
 # AMD GPU acceleration (ROCm for Linux, DirectML for Windows)
 # Note: Install with specific index URL when needed:
 # pip install .[gpu-amd] -f https://download.pytorch.org/whl/rocm6.0 
 gpu-amd = [
-    "torch>=2.8.0",
-    "torchvision>=0.23.0", 
-    "torchaudio>=2.11.0",
+    "torch>=2.5.0",
+    "torchvision>=0.20.0", 
+    "torchaudio>=2.5.0",
     "onnxruntime-rocm>=1.19.0; sys_platform == 'linux'",
-    "onnxruntime-directml>=1.20.1; sys_platform == 'win32'",
-    "accelerate>=1.10.1",
+    "onnxruntime-directml>=1.19.0; sys_platform == 'win32'",
+    "accelerate>=0.24.0",
 ]
 
 # CPU-only (explicit CPU versions)  
 # Note: Install with specific index URL when needed:
 # pip install .[cpu-only] -f https://download.pytorch.org/whl/cpu
 cpu-only = [
-    "torch>=2.8.0",
-    "torchvision>=0.23.0", 
-    "torchaudio>=2.11.0",
-    "onnxruntime>=1.20.1",
+    "torch>=2.5.0",
+    "torchvision>=0.20.0", 
+    "torchaudio>=2.5.0",
+    "onnxruntime>=1.19.0",
 ]
 
 # Development dependencies

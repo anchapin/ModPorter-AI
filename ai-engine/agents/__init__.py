@@ -62,13 +62,6 @@ except ImportError:
     QAValidator = None
 
 try:
-    from .recipe_converter import RecipeConverterAgent as RecipeConverter
-
-    __all__.append("RecipeConverter")
-except ImportError:
-    RecipeConverter = None
-
-try:
     from .validation_agent import (
         ValidationAgent,
         LLMSemanticAnalyzer,

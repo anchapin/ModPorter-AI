@@ -52,6 +52,7 @@
 *.so filter=lfs diff=lfs merge=lfs -text
 *.dylib filter=lfs diff=lfs merge=lfs -text
 *.msi filter=lfs diff=lfs merge=lfs -text
+*.jar filter=lfs diff=lfs merge=lfs -text
 
 # Documents (can be large)
 *.pdf filter=lfs diff=lfs merge=lfs -text

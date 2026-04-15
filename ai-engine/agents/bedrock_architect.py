@@ -61,7 +61,6 @@ class BedrockArchitectAgent:
             self.generate_item_definitions_tool,
             self.generate_recipe_definitions_tool,
             self.generate_entity_definitions_tool,
-            self.create_llm_conversion_plan_tool,
         ]
 
     @tool
@@ -530,67 +529,3 @@ class BedrockArchitectAgent:
                 },
                 indent=2,
             )
-
-    @tool
-    @staticmethod
-    def create_llm_conversion_plan_tool(plan_data: str) -> str:
-        """
-        Use LLM + RAG to generate conversion plans with Bedrock API context.
-
-        This tool augments the smart assumption engine with LLM reasoning
-        and retrieves relevant Bedrock documentation for feasibility assessment.
-
-        Args:
-            plan_data: JSON string containing:
-                - feature_context: Feature data to convert
-                - bedrock_docs_query: Query to retrieve relevant Bedrock API docs
-
-        Returns:
-            JSON string with LLM-generated conversion plan and feasibility assessment
-        """
-        try:
-            data = json.loads(plan_data)
-            feature_context = data.get("feature_context", {})
-            bedrock_docs_query = data.get("bedrock_docs_query", "")
-
-            from utils.llm_agent_tools import get_llm_agent_tools
-
-            llm_tools = get_llm_agent_tools()
-            llm_tools.initialize()
-
-            result = llm_tools.generate_conversion_plan_with_rag(
-                feature_context=feature_context, bedrock_docs_query=bedrock_docs_query
-            )
-
-            if result.get("success"):
-                response = {
-                    "success": True,
-                    "llm_conversion_plan": {
-                        "components": result.get("conversion_plan", {}).get("components", []),
-                        "overall_feasibility": result.get("overall_feasibility", "unknown"),
-                        "critical_issues": result.get("critical_issues", []),
-                        "recommendations": result.get("recommendations", []),
-                    },
-                    "rag_context_used": result.get("rag_context_used", False),
-                    "model_used": result.get("model_used", "unknown"),
-                }
-                logger.info(
-                    f"LLM conversion plan generated with feasibility: {result.get('overall_feasibility', 'unknown')}"
-                )
-            else:
-                response = {
-                    "success": False,
-                    "error": result.get("error", "LLM conversion planning failed"),
-                    "llm_conversion_plan": None,
-                }
-                logger.warning(f"LLM conversion planning failed: {result.get('error')}")
-
-            return json.dumps(response)
-
-        except Exception as e:
-            error_response = {
-                "success": False,
-                "error": f"LLM conversion planning failed: {str(e)}",
-            }
-            logger.error(f"LLM conversion planning error: {e}")
-            return json.dumps(error_response)

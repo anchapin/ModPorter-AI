@@ -5,15 +5,9 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import * as Sentry from '@sentry/react';
 import { ConversionUploadEnhanced } from '../ConversionUpload/ConversionUploadEnhanced';
 import ConversionProgress from '../ConversionProgress/ConversionProgress';
 import { ConversionReportContainer } from '../ConversionReport/ConversionReportContainer';
-import {
-  useSuccessNotification,
-  useErrorNotification,
-} from '../NotificationSystem';
-import { processError, UserFriendlyError } from '../../utils/conversionErrors';
 import { triggerDownload } from '../../services/api';
 import { useConversionTracking } from '../../hooks/useAnalytics';
 import './ConversionFlowManager.css';
@@ -31,7 +25,6 @@ export interface ConversionFlowState {
   progress: number;
   error: string | null;
   resultUrl: string | null;
-  friendlyError?: UserFriendlyError;
 }
 
 interface ConversionFlowManagerProps {
@@ -60,9 +53,6 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
 
   const [currentStatus, setCurrentStatus] = useState<any>(null);
   const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const successNotification = useSuccessNotification();
-  const errorNotification = useErrorNotification();
 
   // Analytics tracking
   const { trackStart, trackComplete, trackFail, trackDownload } =
@@ -130,12 +120,6 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
         resultUrl: `/api/v1/conversions/${jobId}/download`,
       }));
 
-      // Show success toast
-      successNotification(
-        'Conversion Complete!',
-        `${flowState.filename} is ready for download.`
-      );
-
       if (onComplete) {
         onComplete(jobId, flowState.filename);
       }
@@ -154,7 +138,6 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
       resetDelay,
       resetFlow,
       trackComplete,
-      successNotification,
     ]
   );
 
@@ -163,21 +146,6 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
     (jobId: string, error: string) => {
       console.error('[ConversionFlow] Failed:', jobId, error);
 
-      // Process error for user-friendly message
-      const friendlyError = processError(error);
-
-      // Report to Sentry if needed
-      if (friendlyError.reportToSentry) {
-        Sentry.captureException(new Error(error), {
-          tags: { errorType: friendlyError.type },
-          extra: {
-            jobId,
-            filename: flowState.filename,
-            originalError: error,
-          },
-        });
-      }
-
       // Track conversion fail
       trackFail(jobId, { error: error.substring(0, 200) });
 
@@ -185,17 +153,13 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
         ...prev,
         status: 'failed',
         error,
-        friendlyError,
       }));
-
-      // Show error toast
-      errorNotification(friendlyError.title, friendlyError.message);
 
       if (onError) {
         onError(error);
       }
     },
-    [flowState.filename, onError, trackFail, errorNotification]
+    [onError, trackFail]
   );
 
   // Handle manual download
@@ -350,14 +314,6 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
 
   // Render error screen
   if (flowState.status === 'failed') {
-    const friendlyError = flowState.friendlyError;
-    const errorTips = friendlyError?.userTips || [
-      'Check that the file is a valid .jar or .zip archive',
-      'Ensure the file is not corrupted',
-      'Try enabling "Smart Assumptions" for better compatibility',
-      'For large modpacks, try converting with fewer mods first',
-    ];
-
     return (
       <div className="conversion-flow-manager">
         <div className="conversion-flow-error">
@@ -365,16 +321,10 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
             <div className="error-icon">✕</div>
           </div>
 
-          <h2>{friendlyError?.title || 'Conversion Failed'}</h2>
+          <h2>Conversion Failed</h2>
           <p className="filename">{flowState.filename}</p>
 
-          {friendlyError && (
-            <div className="error-message">
-              <p>{friendlyError.message}</p>
-            </div>
-          )}
-
-          {!friendlyError && flowState.error && (
+          {flowState.error && (
             <div className="error-message">
               <strong>Error:</strong>
               <p>{flowState.error}</p>
@@ -384,30 +334,20 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
           <div className="error-tips">
             <h4>What you can try:</h4>
             <ul>
-              {errorTips.map((tip, index) => (
-                <li key={index}>{tip}</li>
-              ))}
+              <li>Check that the file is a valid .jar or .zip archive</li>
+              <li>Ensure the file is not corrupted</li>
+              <li>Try enabling "Smart Assumptions" for better compatibility</li>
+              <li>For large modpacks, try converting with fewer mods first</li>
             </ul>
           </div>
 
           <div className="action-buttons">
-            {friendlyError?.retryable && (
-              <button className="retry-button primary" onClick={resetFlow}>
-                <span className="icon" aria-hidden="true">
-                  🔄
-                </span>
-                Try Again
-              </button>
-            )}
-
-            {!friendlyError?.retryable && (
-              <button className="retry-button primary" onClick={resetFlow}>
-                <span className="icon" aria-hidden="true">
-                  🔄
-                </span>
-                Try Again
-              </button>
-            )}
+            <button className="retry-button primary" onClick={resetFlow}>
+              <span className="icon" aria-hidden="true">
+                🔄
+              </span>
+              Try Again
+            </button>
 
             {flowState.jobId && (
               <button

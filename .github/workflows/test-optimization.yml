@@ -3,7 +3,7 @@
 
 name: Test CI Optimization
 
-'on':
+on:
   workflow_dispatch:
     inputs:
       test_mode:

@@ -93,9 +93,8 @@ class PerformanceBenchmarks(unittest.TestCase):
             perf_data = self._measure_conversion_time(Path(jar_path), iterations=3)
 
             # Performance assertions - adjusted for CI environment
-            # CI runners can be slower due to resource contention
             self.assertLess(
-                perf_data["avg_time"], 45.0, f"{mod_id} should convert in under 45 seconds in CI"
+                perf_data["avg_time"], 30.0, f"{mod_id} should convert in under 30 seconds"
             )
             self.assertEqual(
                 perf_data["success_rate"], 1.0, f"{mod_id} should have 100% success rate"
@@ -243,7 +242,7 @@ class PerformanceBenchmarks(unittest.TestCase):
 
         # Performance assertions
         self.assertGreater(success_rate, 0.8, "Should have >80% success rate")
-        self.assertLess(avg_time_per_mod, 45.0, "Should average <45s per mod in CI environment")
+        self.assertLess(avg_time_per_mod, 15.0, "Should average <15s per mod")
 
     def test_memory_efficiency(self):
         """Test memory usage patterns during conversion."""

@@ -123,44 +123,29 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({
     onValidationChange?.(errors);
   }, [formData, fields, validationRules, onValidationChange]);
 
-  // ⚡ Bolt optimization: Pre-compute fields by category to avoid O(N*M) array filtering
-  // with .includes() on every render
-  const categoryFieldsMap = useMemo(() => {
-    const map = new Map<string, FormField[]>();
-    categories.forEach((category) => {
-      const fieldSet = new Set(category.fields);
-      map.set(
-        category.id,
-        fields.filter((field) => fieldSet.has(field.name))
-      );
-    });
-    return map;
-  }, [fields, categories]);
-
   // Get fields for specific category or all fields
   const getFieldsForCategory = useCallback(
     (categoryId?: string): FormField[] => {
       if (!categoryId || categories.length === 0) {
         return fields;
       }
-      return categoryFieldsMap.get(categoryId) || [];
+      const category = categories.find((c) => c.id === categoryId);
+      if (!category) return [];
+      return fields.filter((field) => category.fields.includes(field.name));
     },
-    [fields, categories, categoryFieldsMap]
+    [fields, categories]
   );
 
   // ⚡ Bolt optimization: Group validation errors by field in a single O(M) pass
   // instead of filtering the array inside a callback for every single field O(N*M).
   const fieldErrorsMap = useMemo(() => {
-    return validationErrors.reduce(
-      (acc, error) => {
-        if (!acc[error.field]) {
-          acc[error.field] = [];
-        }
-        acc[error.field].push(error);
-        return acc;
-      },
-      {} as Record<string, ValidationRule[]>
-    );
+    return validationErrors.reduce((acc, error) => {
+      if (!acc[error.field]) {
+        acc[error.field] = [];
+      }
+      acc[error.field].push(error);
+      return acc;
+    }, {} as Record<string, ValidationRule[]>);
   }, [validationErrors]);
 
   // Get field errors
