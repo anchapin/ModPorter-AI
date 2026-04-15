@@ -130,6 +130,10 @@ def validate_secrets(environment: str = "production") -> None:
             )
 
     for msg in warnings:
+        # CodeQLalert: logging-secret-names-not-values
+        # This logs secret KEY NAMES only (e.g., "SECRET_KEY is not set"), never secret VALUES.
+        # This is intentional - these warnings are the core security validation mechanism.
+        # suppression reason=Intentional security validation - logs key names, not values
         logger.warning(f"[startup-validation] {msg}")
 
     if errors:
