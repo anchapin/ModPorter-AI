@@ -132,6 +132,8 @@ def validate_secrets(environment: str = "production") -> None:
     def _sanitize_for_log(msg: str) -> str:
         for key in REQUIRED_SECRETS + OPTIONAL_BUT_CHECKED_SECRETS:
             msg = msg.replace(f"'{key}'", "'[REDACTED]'")
+            msg = msg.replace(f" {key} ", f" [REDACTED] ")
+            msg = msg.replace(f" {key}\n", f" [REDACTED]\n")
         return msg
 
     def _log_warn(msg_text: str) -> None:
