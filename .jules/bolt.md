@@ -17,3 +17,6 @@
 ## 2024-05-14 - Optimize array filtering with Set and Map
 **Learning:** Found an `O(N*M)` performance bottleneck in `VisualEditor.tsx` where array filtering inside a callback (`fields.filter((field) => category.fields.includes(field.name))`) was occurring on every render.
 **Action:** Replaced it with a pre-computed `Map` using `useMemo` and an inner `Set` to provide `O(1)` lookups, significantly improving rendering performance for forms with many fields and categories.
+## 2024-04-14 - Array Filter Loop Hoisting
+**Learning:** React `useMemo` hooks often contain `.filter()` or `.map()` loops over large arrays. If operations inside the callback (like `.toLowerCase()` or creating standard regex patterns) are purely dependent on external closure variables and not the current array item, they will be wastefully recalculated $O(N)$ times, causing redundant allocations and performance overhead.
+**Action:** Always identify loop-invariant variables and operations within array iterations and manually hoist them outside the `.filter()` or `.map()` block, strictly before the loop begins.
