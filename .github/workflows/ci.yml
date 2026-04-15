@@ -769,6 +769,7 @@ jobs:
         run: |
           echo "⚡ Installing frontend dependencies with pnpm..."
 
+          # Retry logic for transient network/storage issues
           MAX_RETRIES=3
           RETRY_COUNT=0
           until pnpm install --frozen-lockfile; do
