@@ -129,12 +129,17 @@ def validate_secrets(environment: str = "production") -> None:
                 "CORS_ORIGINS includes 'localhost' — ensure this is intentional for production."
             )
 
+    def _sanitize_for_log(msg: str) -> str:
+        for key in REQUIRED_SECRETS + OPTIONAL_BUT_CHECKED_SECRETS:
+            msg = msg.replace(f"'{key}'", "'[REDACTED]'")
+        return msg
+
     def _log_warn(msg_text: str) -> None:
         logger.warning(msg_text)
 
     prefix = "[startup-validation] "
     for msg in warnings:
-        _log_warn(prefix + msg)
+        _log_warn(prefix + _sanitize_for_log(msg))
 
     if errors:
         error_block = "\n".join(f"  - {e}" for e in errors)
