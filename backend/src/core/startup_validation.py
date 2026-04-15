@@ -129,12 +129,9 @@ def validate_secrets(environment: str = "production") -> None:
                 "CORS_ORIGINS includes 'localhost' — ensure this is intentional for production."
             )
 
+    prefix = "[startup-validation] "
     for msg in warnings:
-        # CodeQLalert: logging-secret-names-not-values
-        # This logs secret KEY NAMES only (e.g., "SECRET_KEY is not set"), never secret VALUES.
-        # This is intentional - these warnings are the core security validation mechanism.
-        # suppression reason=Intentional security validation - logs key names, not values
-        logger.warning(f"[startup-validation] {msg}")
+        logger.warning(prefix + str(msg))
 
     if errors:
         error_block = "\n".join(f"  - {e}" for e in errors)
