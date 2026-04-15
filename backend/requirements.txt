@@ -59,14 +59,13 @@ setuptools>=65.0.0  # Required by opentelemetry-instrumentation packages for pkg
 
 # Distributed Tracing - OpenTelemetry
 # Note: opentelemetry-exporter-jaeger 1.21.0 is the latest version compatible with Python 3.11
-# Pin all opentelemetry packages to match ai-engine and avoid double requirement error
-opentelemetry-api==1.41.0
-opentelemetry-sdk==1.41.0
-opentelemetry-exporter-otlp==1.41.0
+opentelemetry-api>=1.24.0
+opentelemetry-sdk>=1.24.0
+opentelemetry-exporter-otlp>=1.24.0
 opentelemetry-exporter-jaeger==1.21.0
-opentelemetry-instrumentation-fastapi==0.62b0
-opentelemetry-instrumentation-httpx==0.62b0
-opentelemetry-instrumentation-redis==0.62b0
+opentelemetry-instrumentation-fastapi>=0.45b0
+opentelemetry-instrumentation-httpx>=0.45b0
+opentelemetry-instrumentation-redis>=0.45b0
 
 # Optional Secrets Management Dependencies
 # Install only what you need:

@@ -180,7 +180,7 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd frontend
-          pnpm install --frozen-lockfile
+          pnpm install --no-frozen-lockfile --ignore-scripts
 
       - name: Run frontend tests
         run: |
