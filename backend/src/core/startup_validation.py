@@ -6,6 +6,7 @@ before the application starts. Fails fast in production to prevent insecure depl
 """
 
 import os
+import re
 import logging
 from typing import List
 
@@ -132,12 +133,20 @@ def validate_secrets(environment: str = "production") -> None:
     def _sanitize_for_log(msg: str) -> str:
         for key in REQUIRED_SECRETS + OPTIONAL_BUT_CHECKED_SECRETS:
             msg = msg.replace(f"'{key}'", "'[REDACTED]'")
+            msg = msg.replace(f'"{key}"', '"[REDACTED]"')
             msg = msg.replace(f" {key} ", f" [REDACTED] ")
             msg = msg.replace(f" {key}\n", f" [REDACTED]\n")
+            msg = msg.replace(f"\n{key} ", f"\n[REDACTED] ")
+            msg = msg.replace(f"({key},", "([REDACTED],")
+            msg = msg.replace(f" {key}=", f" [REDACTED]=")
+            msg = msg.replace(f"({key}=", f"([REDACTED]=")
+            msg = msg.replace(f"={key} ", f"=[REDACTED] ")
+            msg = msg.replace(f"={key}&", f"=[REDACTED]&")
+            msg = re.sub(rf"\b{re.escape(key)}\b", "[REDACTED]", msg)
         return msg
 
     def _log_warn(msg_text: str) -> None:
-        logger.warning(msg_text)
+        logger.warning("%s", msg_text)
 
     prefix = "[startup-validation] "
     for msg in warnings:
