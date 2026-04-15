@@ -130,27 +130,23 @@ def validate_secrets(environment: str = "production") -> None:
                 "CORS_ORIGINS includes 'localhost' — ensure this is intentional for production."
             )
 
-    def _sanitize_for_log(msg: str) -> str:
-        for key in REQUIRED_SECRETS + OPTIONAL_BUT_CHECKED_SECRETS:
-            msg = msg.replace(f"'{key}'", "'[REDACTED]'")
-            msg = msg.replace(f'"{key}"', '"[REDACTED]"')
-            msg = msg.replace(f" {key} ", f" [REDACTED] ")
-            msg = msg.replace(f" {key}\n", f" [REDACTED]\n")
-            msg = msg.replace(f"\n{key} ", f"\n[REDACTED] ")
-            msg = msg.replace(f"({key},", "([REDACTED],")
-            msg = msg.replace(f" {key}=", f" [REDACTED]=")
-            msg = msg.replace(f"({key}=", f"([REDACTED]=")
-            msg = msg.replace(f"={key} ", f"=[REDACTED] ")
-            msg = msg.replace(f"={key}&", f"=[REDACTED]&")
-            msg = re.sub(rf"\b{re.escape(key)}\b", "[REDACTED]", msg)
-        return msg
-
     def _log_warn(msg_text: str) -> None:
         logger.warning("%s", msg_text)
 
     prefix = "[startup-validation] "
+    secret_warning_count = 0
     for msg in warnings:
-        _log_warn(prefix + _sanitize_for_log(msg))
+        if "CORS_ORIGINS" in msg:
+            _log_warn(prefix + msg)
+        else:
+            secret_warning_count += 1
+    if secret_warning_count > 0:
+        logger.warning(
+            "%s%d secret(s) have validation warnings in %s environment.",
+            prefix,
+            secret_warning_count,
+            environment,
+        )
 
     if errors:
         error_block = "\n".join(f"  - {e}" for e in errors)
