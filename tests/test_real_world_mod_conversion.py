@@ -27,6 +27,13 @@ logger = logging.getLogger(__name__)
 
 MODRINTH_API_BASE = "https://api.modrinth.com/v2"
 
+CONVERT_MOD_IMPORT_ERROR = None
+try:
+    from modporter.cli.main import convert_mod
+except ImportError as e:
+    convert_mod = None
+    CONVERT_MOD_IMPORT_ERROR = str(e)
+
 
 @dataclass
 class ModCoverageResult:
@@ -70,26 +77,111 @@ class RealWorldModTester:
     """
 
     POPULAR_MODS = [
-        {"slug": "iron-chests", "name": "Iron Chests", "source": "modrinth"},
-        {"slug": "waystones", "name": "Waystones", "source": "modrinth"},
-        {"slug": "farmers-delight", "name": "Farmer's Delight", "source": "modrinth"},
-        {"slug": "supplementaries", "name": "Supplementaries", "source": "modrinth"},
-        {"slug": "create", "name": "Create", "source": "modrinth"},
-        {"slug": "xaeros-minimap", "name": "Xaero's Minimap", "source": "modrinth"},
-        {"slug": "journeymap", "name": "JourneyMap", "source": "modrinth"},
-        {"slug": "jei", "name": "JEI", "source": "modrinth"},
-        {"slug": "roughlyenoughitems", "name": "Roughly Enough Items", "source": "modrinth"},
-        {"slug": "storage-drawers", "name": "Storage Drawers", "source": "modrinth"},
-        {"slug": "ars-nouveau", "name": "Ars Nouveau", "source": "modrinth"},
-        {"slug": "blood-magic", "name": "Blood Magic", "source": "modrinth"},
-        {"slug": "thermal-foundation", "name": "Thermal Foundation", "source": "modrinth"},
-        {"slug": "industrial-foregoing", "name": "Industrial Foregoing", "source": "modrinth"},
-        {"slug": "refined-storage", "name": "Refined Storage", "source": "modrinth"},
-        {"slug": "mekanism", "name": "Mekanism", "source": "modrinth"},
-        {"slug": "botania", "name": "Botania", "source": "modrinth"},
-        {"slug": "astralsorcery", "name": "Astral Sorcery", "source": "modrinth"},
-        {"slug": "silentgear", "name": "Silent Gear", "source": "modrinth"},
-        {"slug": "tconstruct", "name": "Tinkers Construct", "source": "modrinth"},
+        {"slug": "iron-chests", "name": "Iron Chests", "source": "modrinth", "category": "storage"},
+        {"slug": "waystones", "name": "Waystones", "source": "modrinth", "category": "utility"},
+        {
+            "slug": "farmers-delight",
+            "name": "Farmer's Delight",
+            "source": "modrinth",
+            "category": "food",
+        },
+        {
+            "slug": "supplementaries",
+            "name": "Supplementaries",
+            "source": "modrinth",
+            "category": "decoration",
+        },
+        {"slug": "create", "name": "Create", "source": "modrinth", "category": "machinery"},
+        {
+            "slug": "xaeros-minimap",
+            "name": "Xaero's Minimap",
+            "source": "modrinth",
+            "category": "ui",
+        },
+        {"slug": "journeymap", "name": "JourneyMap", "source": "modrinth", "category": "ui"},
+        {"slug": "jei", "name": "JEI", "source": "modrinth", "category": "utility"},
+        {
+            "slug": "roughlyenoughitems",
+            "name": "Roughly Enough Items",
+            "source": "modrinth",
+            "category": "utility",
+        },
+        {
+            "slug": "storage-drawers",
+            "name": "Storage Drawers",
+            "source": "modrinth",
+            "category": "storage",
+        },
+        {"slug": "ars-nouveau", "name": "Ars Nouveau", "source": "modrinth", "category": "magic"},
+        {"slug": "blood-magic", "name": "Blood Magic", "source": "modrinth", "category": "magic"},
+        {
+            "slug": "thermal-foundation",
+            "name": "Thermal Foundation",
+            "source": "modrinth",
+            "category": "technology",
+        },
+        {
+            "slug": "industrial-foregoing",
+            "name": "Industrial Foregoing",
+            "source": "modrinth",
+            "category": "technology",
+        },
+        {
+            "slug": "refined-storage",
+            "name": "Refined Storage",
+            "source": "modrinth",
+            "category": "technology",
+        },
+        {"slug": "mekanism", "name": "Mekanism", "source": "modrinth", "category": "technology"},
+        {"slug": "botania", "name": "Botania", "source": "modrinth", "category": "magic"},
+        {
+            "slug": "astralsorcery",
+            "name": "Astral Sorcery",
+            "source": "modrinth",
+            "category": "magic",
+        },
+        {"slug": "silentgear", "name": "Silent Gear", "source": "modrinth", "category": "tools"},
+        {
+            "slug": "tconstruct",
+            "name": "Tinkers Construct",
+            "source": "modrinth",
+            "category": "tools",
+        },
+        {"slug": "quark", "name": "Quark", "source": "modrinth", "category": "content"},
+        {
+            "slug": "natures-compass",
+            "name": "Nature's Compass",
+            "source": "modrinth",
+            "category": "utility",
+        },
+        {"slug": "mantle", "name": "Mantle", "source": "modrinth", "category": "core"},
+        {"slug": "cyclic", "name": "Cyclic", "source": "modrinth", "category": "magic"},
+        {
+            "slug": "actually-additions",
+            "name": "Actually Additions",
+            "source": "modrinth",
+            "category": "technology",
+        },
+        {"slug": "projecte", "name": "ProjectE", "source": "modrinth", "category": "magic"},
+        {
+            "slug": "abyssalcraft",
+            "name": "AbyssalCraft",
+            "source": "modrinth",
+            "category": "dimension",
+        },
+        {
+            "slug": "draconic-evolution",
+            "name": "Draconic Evolution",
+            "source": "modrinth",
+            "category": "magic",
+        },
+        {"slug": "evilcraft", "name": "EvilCraft", "source": "modrinth", "category": "magic"},
+        {
+            "slug": "compact-machines",
+            "name": "Compact Machines",
+            "source": "modrinth",
+            "category": "world",
+        },
     ]
 
     def __init__(self, output_dir: Optional[Path] = None):
@@ -214,6 +306,14 @@ class RealWorldModTester:
                     [f for f in file_list if "entities/" in f and f.endswith(".json")]
                 )
 
+                model_count_bp = len(
+                    [
+                        f
+                        for f in file_list
+                        if ("models/" in f or "geometry/" in f) and f.endswith(".json")
+                    ]
+                )
+
                 recipe_count = len(
                     [f for f in file_list if "recipes/" in f and f.endswith(".json")]
                 )
@@ -314,6 +414,9 @@ class RealWorldModTester:
         """
         Test conversion of a single mod JAR.
 
+        Runs the full convert_mod() pipeline and analyzes coverage
+        of the resulting .mcaddon file.
+
         Returns ModCoverageResult with coverage metrics.
         """
         result = ModCoverageResult(
@@ -329,8 +432,39 @@ class RealWorldModTester:
 
         start_time = time.time()
 
+        mcaddon_path = None
         try:
-            coverage = self._analyze_coverage(jar_path, jar_path)
+            if convert_mod is None:
+                result.errors.append(f"convert_mod not available: {CONVERT_MOD_IMPORT_ERROR}")
+                result.conversion_time_seconds = time.time() - start_time
+                return result
+
+            logger.info(f"Running conversion on {jar_path.name}...")
+
+            conversion_result = convert_mod(str(jar_path), str(self.output_dir))
+
+            if not conversion_result.get("success", False):
+                error = conversion_result.get("error", "Unknown conversion error")
+                result.errors.append(f"Conversion failed: {error}")
+                result.conversion_time_seconds = time.time() - start_time
+                return result
+
+            output_file = conversion_result.get("output_file")
+            if not output_file:
+                result.errors.append("Conversion did not produce an output file")
+                result.conversion_time_seconds = time.time() - start_time
+                return result
+
+            mcaddon_path = Path(output_file)
+            if not mcaddon_path.exists():
+                result.errors.append(f"Conversion output file not found: {mcaddon_path}")
+                result.conversion_time_seconds = time.time() - start_time
+                return result
+
+            logger.info(f"Conversion output: {mcaddon_path.name}")
+            result.output_size_bytes = mcaddon_path.stat().st_size
+
+            coverage = self._analyze_coverage(mcaddon_path, jar_path)
             result.texture_coverage = coverage["texture_coverage"]
             result.model_coverage = coverage["model_coverage"]
             result.recipe_coverage = coverage["recipe_coverage"]
@@ -338,13 +472,18 @@ class RealWorldModTester:
             result.sound_coverage = coverage["sound_coverage"]
             result.success = True
 
+            logger.info(
+                f"Coverage: textures={result.texture_coverage:.1f}%, "
+                f"models={result.model_coverage:.1f}%, "
+                f"recipes={result.recipe_coverage:.1f}%, "
+                f"entities={result.entity_defs}"
+            )
+
         except Exception as e:
+            logger.error(f"Coverage analysis failed: {e}")
             result.errors.append(f"Coverage analysis failed: {e}")
 
         result.conversion_time_seconds = time.time() - start_time
-
-        if jar_path.exists():
-            result.output_size_bytes = jar_path.stat().st_size
 
         return result
 
