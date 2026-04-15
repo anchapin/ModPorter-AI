@@ -437,20 +437,46 @@ def _extract_recipes_from_jar(jar_path: str) -> list:
     import json
 
     recipes = []
+    recipe_types_found = {}
     try:
         with zipfile.ZipFile(jar_path, "r") as jar:
             for file_name in jar.namelist():
+                # Skip advancement files - they are not actual recipes
+                # Advancement files are in data/<mod>/advancement/recipes/
+                # Actual recipes are in data/<mod>/recipe/ (singular) or data/<mod>/recipes/ (plural)
+                if "/advancement/" in file_name:
+                    continue
+
                 if file_name.startswith("data/") and file_name.endswith(".json"):
-                    if "/recipes/" in file_name:
+                    # Match both /recipe/ (NeoForge 1.21+ singular) and /recipes/ (vanilla plural)
+                    if "/recipe/" in file_name or "/recipes/" in file_name:
                         try:
                             recipe_data = json.loads(jar.read(file_name).decode("utf-8"))
                             recipe_id = file_name.split("/")[-1].replace(".json", "")
+
+                            # Track recipe types for debugging
+                            recipe_type = recipe_data.get("type", "MISSING_TYPE")
+                            recipe_types_found.setdefault(recipe_type, []).append(recipe_id)
+
+                            if recipe_type == "MISSING_TYPE":
+                                logger.warning(
+                                    f"Recipe {recipe_id} in {file_name} has no 'type' field. Keys: {list(recipe_data.keys())}"
+                                )
+
                             recipe_data["id"] = recipe_id
                             recipes.append(recipe_data)
-                        except (json.JSONDecodeError, KeyError):
+                        except (json.JSONDecodeError, KeyError) as e:
+                            logger.debug(f"Skipping recipe file {file_name}: {e}")
                             continue
     except Exception as e:
         logger.warning(f"Recipe extraction failed: {e}")
+
+    if recipes:
+        logger.info(
+            f"Extracted {len(recipes)} recipes from JAR. Types found: {list(recipe_types_found.keys())}"
+        )
+        for rt, ids in recipe_types_found.items():
+            logger.debug(f"  Type '{rt}': {len(ids)} recipes, e.g., {ids[:3]}")
 
     return recipes
 
