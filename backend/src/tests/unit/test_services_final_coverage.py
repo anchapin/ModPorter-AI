@@ -382,13 +382,16 @@ class TestErrorHandlersExtraCoverage:
 
         response = ErrorResponse(
             error_id="abc123",
+            error_code="TEST_ERROR",
             error_type="test_error",
             error_category="logic_error",
             message="Test message",
             user_message="User message",
+            is_retryable=False,
             timestamp="2024-01-01T00:00:00Z",
         )
         assert response.error_id == "abc123"
+        assert response.error_code == "TEST_ERROR"
         assert response.error_type == "test_error"
 
     def test_mod_porter_exception_defaults(self):

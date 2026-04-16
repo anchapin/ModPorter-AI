@@ -42,22 +42,27 @@ class TestErrorResponse:
     def test_error_response_init(self):
         response = ErrorResponse(
             error_id="123",
+            error_code="TEST_ERROR",
             error_type="test_error",
             error_category="test",
             message="Test message",
             user_message="User message",
+            is_retryable=False,
             timestamp="2024-01-01T00:00:00Z",
         )
         assert response.error_id == "123"
+        assert response.error_code == "TEST_ERROR"
         assert response.message == "Test message"
 
     def test_error_response_to_dict(self):
         response = ErrorResponse(
             error_id="123",
+            error_code="TEST_ERROR",
             error_type="test",
             error_category="test",
             message="msg",
             user_message="user",
+            is_retryable=True,
             timestamp="now",
         )
         data = response.model_dump()
