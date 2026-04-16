@@ -166,6 +166,7 @@ export const ReportSummary: React.FC<ReportSummaryProps> = ({ summary }) => {
     output_size_mb,
     conversion_quality_score,
     recommended_actions,
+    time_saved_hours,
   } = summary;
 
   return (
@@ -233,6 +234,14 @@ export const ReportSummary: React.FC<ReportSummaryProps> = ({ summary }) => {
           icon="⏱️"
           color="#17a2b8"
         />
+        {time_saved_hours !== undefined && time_saved_hours > 0 && (
+          <StatCard
+            title="Time Saved"
+            value={`~${time_saved_hours.toFixed(1)} hrs`}
+            icon="⚡"
+            color="#28a745"
+          />
+        )}
       </div>
 
       {/* Additional Metrics */}

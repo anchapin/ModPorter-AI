@@ -79,6 +79,9 @@ class ConversionReportGenerator:
         summary.manual_work_estimate_hours = self._estimate_manual_work_hours(summary)
         summary.priority_order = self._generate_priority_order(summary.category_breakdown)
 
+        # Issue #1067 - Time saved estimate vs manual porting
+        summary.time_saved_hours = self._estimate_time_saved(summary)
+
         return summary
 
     def _generate_category_breakdown(
@@ -150,6 +153,21 @@ class ConversionReportGenerator:
             + summary.partially_converted_features * hours_per_partial
         )
         return round(estimated, 1)
+
+    def _estimate_time_saved(self, summary) -> float:
+        """Estimate time saved vs manual porting (Issue #1067).
+
+        Manual porting typically takes ~2-4 hours per feature for an experienced developer.
+        We estimate ~3 hours average per feature, and credit time saved for successfully
+        converted features.
+        """
+        hours_per_feature = 3.0  # Average manual porting time per feature
+        converted = summary.converted_features
+        partial = summary.partially_converted_features
+
+        # Full conversions save full time, partial conversions save half
+        saved = (converted * hours_per_feature) + (partial * hours_per_feature * 0.5)
+        return round(saved, 1)
 
     def _generate_priority_order(self, category_breakdown: List[Dict[str, Any]]) -> List[str]:
         """Generate priority order for manual work (Issue #1004)."""

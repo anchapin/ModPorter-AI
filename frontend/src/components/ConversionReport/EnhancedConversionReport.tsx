@@ -90,7 +90,7 @@ const ExportControls: React.FC<{ reportData: InteractiveReport }> = ({
           className={styles.exportButton}
           aria-label="Print Report"
         >
-          <span aria-hidden="true">🖨️</span> Print Report
+          <span aria-hidden="true">🖨️</span> Print / Save as PDF
         </button>
         <button
           onClick={handleShareableLink}
@@ -98,6 +98,17 @@ const ExportControls: React.FC<{ reportData: InteractiveReport }> = ({
           aria-label="Share Link"
         >
           <span aria-hidden="true">🔗</span> Share Link
+        </button>
+        {/* Issue #1067 - Open in bridge. button (future integration hook) */}
+        <button
+          onClick={() => {
+            alert('Open in bridge. feature coming soon!');
+          }}
+          className={styles.exportButton}
+          aria-label="Open in bridge"
+          title="Open in bridge. (Coming soon)"
+        >
+          <span aria-hidden="true">🔧</span> Open in bridge.
         </button>
       </div>
     </div>

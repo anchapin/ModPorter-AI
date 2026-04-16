@@ -89,6 +89,9 @@ class SummaryReport:
     manual_work_estimate_hours: Optional[float] = None
     priority_order: List[str] = field(default_factory=list)  # Categories to fix first
 
+    # Issue #1067 - Time saved estimate vs manual porting
+    time_saved_hours: Optional[float] = None
+
     def __post_init__(self):
         if self.quick_statistics is None:
             self.quick_statistics = {}
@@ -293,6 +296,8 @@ class InteractiveReport:
                 "category_breakdown": self.summary.category_breakdown,
                 "manual_work_estimate_hours": self.summary.manual_work_estimate_hours,
                 "priority_order": self.summary.priority_order,
+                # Issue #1067 - Time saved estimate
+                "time_saved_hours": self.summary.time_saved_hours,
             },
             "feature_analysis": {
                 "features": [f.to_dict() for f in self.feature_analysis.features],

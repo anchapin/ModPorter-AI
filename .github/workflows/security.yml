@@ -81,13 +81,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Clean up Docker disk space
+        run: |
+          docker system df
+          docker system prune -af --volumes || true
+          docker builder prune -af || true
+          rm -rf /tmp/trivy-* 2>/dev/null || true
+          df -h /
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
       - name: Build Docker images for scanning
         run: |
-          docker build -t modporter-backend:latest -f Dockerfile .
-          docker build -t modporter-ai-engine:latest -f ai-engine/Dockerfile ai-engine/
+          docker build --no-cache -t modporter-backend:latest -f Dockerfile .
+          docker build --no-cache -t modporter-ai-engine:latest -f ai-engine/Dockerfile ai-engine/
 
       - name: Run Trivy vulnerability scanner (image)
         uses: aquasecurity/trivy-action@master
@@ -128,6 +136,12 @@ jobs:
           name: trivy-results
           path: |
             trivy-*-results.json
+
+      - name: Clean up Docker images
+        if: always()
+        run: |
+          docker rmi modporter-backend:latest modporter-ai-engine:latest 2>/dev/null || true
+          docker system prune -af --volumes 2>/dev/null || true
 
   # =============================================================================
   # Secret Scanning (Gitleaks)
