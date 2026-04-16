@@ -101,6 +101,22 @@ export interface SummaryReport {
   output_size_mb?: number;
   conversion_quality_score?: number;
   recommended_actions?: string[];
+  // Issue #1004 - B2B Conversion Report fields
+  category_breakdown?: Array<{
+    category: string;
+    total: number;
+    converted: number;
+    partial: number;
+    failed: number;
+    percentage: number;
+    status: string;
+    notes?: string;
+    manual_work_hours?: number;
+  }>;
+  manual_work_estimate_hours?: number;
+  priority_order?: string[];
+  // Issue #1067 - Time saved estimate
+  time_saved_hours?: number;
 }
 
 export interface FeatureConversionDetail {
