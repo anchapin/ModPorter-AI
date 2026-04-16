@@ -916,7 +916,7 @@ class EntityConverter:
         # Create directories for spawn rules and loot tables
         bp_spawn_rules_dir = bp_path / "spawn_rules"
         bp_spawn_rules_dir.mkdir(parents=True, exist_ok=True)
-        bp_loot_tables_dir = bp_path / "loot_tables"
+        bp_loot_tables_dir = bp_path / "loot_tables" / "entities"
         bp_loot_tables_dir.mkdir(parents=True, exist_ok=True)
 
         for entity_key, entity_data in entities.items():
