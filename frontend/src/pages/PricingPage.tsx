@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './PricingPage.css';
+import { createCheckoutSession, isAuthenticated } from '../services/billing';
 
 interface PricingTier {
   name: string;
@@ -10,6 +11,7 @@ interface PricingTier {
   cta: string;
   popular?: boolean;
   pricePerMonth?: number;
+  tierKey?: 'free' | 'pro' | 'studio' | 'enterprise';
 }
 
 const pricingTiers: PricingTier[] = [
@@ -26,6 +28,7 @@ const pricingTiers: PricingTier[] = [
       'Standard processing speed',
     ],
     cta: 'Get Started',
+    tierKey: 'free',
   },
   {
     name: 'Pro',
@@ -45,6 +48,7 @@ const pricingTiers: PricingTier[] = [
       'No ModPorter branding',
     ],
     cta: 'Start Free Trial',
+    tierKey: 'pro',
   },
   {
     name: 'Studio',
@@ -62,7 +66,8 @@ const pricingTiers: PricingTier[] = [
       'Conversion history (1 year)',
       'Advanced analytics',
     ],
-    cta: 'Contact Sales',
+    cta: 'Start Free Trial',
+    tierKey: 'studio',
   },
   {
     name: 'Enterprise',
@@ -80,6 +85,7 @@ const pricingTiers: PricingTier[] = [
       'Training and onboarding',
     ],
     cta: 'Contact Sales',
+    tierKey: 'enterprise',
   },
 ];
 
@@ -185,16 +191,34 @@ const comparison = [
 export const PricingPage: React.FC = () => {
   const [annualBilling, setAnnualBilling] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+  const [loadingTier, setLoadingTier] = useState<string | null>(null);
 
-  const handleGetStarted = (tier: string) => {
-    if (tier === 'Free') {
+  const handleGetStarted = async (tier: PricingTier) => {
+    if (tier.name === 'Free') {
       window.location.assign('/signup');
-    } else if (tier === 'Pro') {
-      window.location.assign('/signup?plan=pro&trial=14');
-    } else {
+    } else if (tier.name === 'Enterprise') {
       window.location.assign(
         'mailto:sales@modporter.ai?subject=Enterprise%20or%20Studio%20Plan%20Inquiry'
       );
+    } else if (!isAuthenticated()) {
+      window.location.assign(`/signup?plan=${tier.tierKey}&trial=14`);
+    } else {
+      setLoadingTier(tier.name);
+      try {
+        const tierKey = tier.tierKey === 'studio' ? 'studio' : 'pro';
+        const response = await createCheckoutSession({
+          tier: tierKey,
+          trial: true,
+        });
+        window.location.href = response.checkout_url;
+      } catch (error) {
+        console.error('Failed to create checkout session:', error);
+        window.location.assign(
+          'mailto:sales@modporter.ai?subject=Billing%20Error'
+        );
+      } finally {
+        setLoadingTier(null);
+      }
     }
   };
 
@@ -285,9 +309,10 @@ export const PricingPage: React.FC = () => {
                 </ul>
                 <button
                   className={`cta-button ${tier.popular ? 'primary' : 'secondary'}`}
-                  onClick={() => handleGetStarted(tier.name)}
+                  onClick={() => handleGetStarted(tier)}
+                  disabled={loadingTier === tier.name}
                 >
-                  {tier.cta}
+                  {loadingTier === tier.name ? 'Redirecting...' : tier.cta}
                 </button>
               </div>
             ))}

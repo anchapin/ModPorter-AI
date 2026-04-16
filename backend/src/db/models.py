@@ -787,6 +787,22 @@ class User(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+    # Subscription / Billing fields (Issue #970)
+    subscription_tier: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        server_default=text("'free'"),
+    )
+    stripe_customer_id: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True, unique=True
+    )
+    stripe_subscription_id: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True, unique=True
+    )
+    subscription_status: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    trial_ends_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
