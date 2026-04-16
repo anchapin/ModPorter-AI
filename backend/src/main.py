@@ -46,6 +46,7 @@ from services.rate_limiter import (
     create_global_limiter,
 )
 from services.security_headers import SecurityHeadersMiddleware
+from services.https_enforcement import HTTPSRedirectMiddleware, HSTSStrictMiddleware
 from services.logging_middleware import LoggingMiddleware, RequestContextMiddleware
 
 # Import API routers
@@ -183,6 +184,11 @@ if os.getenv("TESTING", "false").lower() != "true":
 
 # Security Headers Middleware
 app.add_middleware(SecurityHeadersMiddleware)
+
+# HTTPS Redirect Middleware (should be first in chain)
+if os.getenv("ENVIRONMENT", "development") in ("production", "staging"):
+    app.add_middleware(HTTPSRedirectMiddleware)
+    app.add_middleware(HSTSStrictMiddleware)
 
 # Request/Response Logging Middleware
 app.add_middleware(LoggingMiddleware)

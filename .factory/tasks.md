@@ -14,6 +14,14 @@
 - ✅ HSTS header already present in security_headers.py (max-age=63072000; includeSubDomains; preload)
 - ✅ Created scripts/setup-fly-secrets.sh — interactive script to set all secrets via fly secrets set
 - ✅ 20 new tests in test_startup_validation.py — all passing
+- ✅ Remaining security items addressed:
+  - ✅ HTTPS redirect middleware (services/https_enforcement.py) — redirects HTTP→HTTPS in production
+  - ✅ HSTS strict middleware — enforces HSTS in production with FORCE_HSTS flag
+  - ✅ Stricter rate limiting on auth endpoints (login: 5/min, register: 3/min, forgot-password: 3/min, reset-password: 5/min)
+  - ✅ JWT token blacklist for logout invalidation (services/token_blacklist.py)
+  - ✅ Token invalidation on password reset (blacklist_all_user_tokens called on reset_password endpoint)
+  - ✅ Secret rotation framework (core/secret_rotation.py) — supports key rotation with grace period
+  - ✅ 18 new tests for security features (test_https_enforcement.py, test_token_blacklist.py, test_secret_rotation.py)
 
 ## Pending
 - 🔄 Issue #971: E2E validation - Recipe converter regression (0% coverage, "Unknown recipe category: unknown")
