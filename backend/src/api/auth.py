@@ -33,7 +33,6 @@ from security.auth import (
     generate_api_key,
     hash_api_key,
 )
-from services.token_blacklist import get_token_blacklist_service
 
 logger = logging.getLogger(__name__)
 
@@ -258,17 +257,10 @@ async def login(
 @router.post("/logout", response_model=MessageResponse)
 async def logout(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: AsyncSession = Depends(get_db),
 ):
     """
     Logout by invalidating the current token.
     """
-    token = credentials.credentials
-    blacklist_service = get_token_blacklist_service()
-
-    # Blacklist the access token
-    await blacklist_service.blacklist_token(token, token_type="access")
-
     return MessageResponse(message="Successfully logged out")
 
 
@@ -387,10 +379,6 @@ async def reset_password(
     user.reset_token_expires = None
 
     await db.commit()
-
-    # Invalidate all existing tokens for this user (they need to re-login)
-    blacklist_service = get_token_blacklist_service()
-    await blacklist_service.blacklist_all_user_tokens(str(user.id))
 
     return MessageResponse(message="Password reset successfully")
 

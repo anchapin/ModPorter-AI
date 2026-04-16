@@ -208,7 +208,7 @@ describe('ReportSummary Component', () => {
     expect(screen.getByText('Overall Success Rate')).toBeInTheDocument();
     expect(screen.getByText('20')).toBeInTheDocument(); // Total Features
     expect(screen.getByText('17')).toBeInTheDocument(); // Converted
-    expect(screen.getByText('📥 Download .mcaddon')).toBeInTheDocument();
+    expect(screen.getByText('Download .mcaddon')).toBeInTheDocument();
   });
 
   it('displays quality indicator correctly', () => {
