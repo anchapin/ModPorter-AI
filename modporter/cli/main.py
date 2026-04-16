@@ -165,10 +165,41 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:  # noq
                 logger.info(f"Step 2b: Converting {len(entities)} entities...")
                 entity_converter = EntityConverter()
 
+                # Extract loot tables from JAR
+                java_loot_tables = _extract_loot_tables_from_jar(str(jar_file))
+
                 for entity in entities:
                     entity_name = entity.get("name", "").lower()
                     entity["textures"] = [t for t in entity_textures if entity_name in t.lower()]
                     entity["models"] = [m for m in entity_models if entity_name in m.lower()]
+
+                    # Attach loot table data if found
+                    # Loot table keys are in format "mod_name:entity_name" (e.g., "passive_entity_mod:passive_entity")
+                    # Entity registry_name may be just "entity_name" or "mod_name:entity_name"
+                    registry_name = entity.get("registry_name", "")
+                    loot_table_data = None
+
+                    # Try direct match first
+                    if registry_name in java_loot_tables:
+                        loot_table_data = java_loot_tables[registry_name]
+                    else:
+                        # Try matching just the entity name part against loot table keys
+                        for loot_key, loot_data in java_loot_tables.items():
+                            if loot_key.endswith(f":{registry_name}") or loot_key == registry_name:
+                                loot_table_data = loot_data
+                                break
+                            # Also check if registry_name ends with the loot key's entity part
+                            loot_entity_name = (
+                                loot_key.split(":")[-1] if ":" in loot_key else loot_key
+                            )
+                            if registry_name == loot_entity_name:
+                                loot_table_data = loot_data
+                                break
+
+                    if loot_table_data:
+                        entity["loot_table_data"] = loot_table_data
+                        entity["has_loot_table"] = True
+                        logger.info(f"Attached loot table to entity {entity_name}")
 
                 bedrock_entities = entity_converter.convert_entities(entities)
 
@@ -184,7 +215,8 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:  # noq
                     logger.info(
                         f"Wrote {len(written.get('entities', []))} entity definitions, "
                         f"{len(written.get('behaviors', []))} behaviors, "
-                        f"{len(written.get('animations', []))} animations"
+                        f"{len(written.get('animations', []))} animations, "
+                        f"{len(written.get('loot_tables', []))} loot_tables"
                     )
 
                     _extract_entity_assets(
@@ -479,6 +511,54 @@ def _extract_recipes_from_jar(jar_path: str) -> list:
             logger.debug(f"  Type '{rt}': {len(ids)} recipes, e.g., {ids[:3]}")
 
     return recipes
+
+
+def _extract_loot_tables_from_jar(jar_path: str) -> Dict[str, Dict[str, Any]]:
+    """
+    Extract loot tables from JAR's data pack directory.
+
+    Loot tables are at data/{mod}/loot_tables/entities/{entity_name}.json
+
+    Args:
+        jar_path: Path to the source JAR file
+
+    Returns:
+        Dictionary mapping entity names to their loot table data
+    """
+    import zipfile
+    import json
+
+    loot_tables = {}
+    try:
+        with zipfile.ZipFile(jar_path, "r") as jar:
+            for file_name in jar.namelist():
+                # Match loot table files in data/*/loot_tables/entities/
+                if not file_name.startswith("data/"):
+                    continue
+                if "/loot_tables/entities/" not in file_name:
+                    continue
+                if not file_name.endswith(".json"):
+                    continue
+
+                try:
+                    loot_table_data = json.loads(jar.read(file_name).decode("utf-8"))
+                    # Extract entity name from path like data/modname/loot_tables/entities/cow.json
+                    parts = file_name.split("/")
+                    if len(parts) >= 4:
+                        entity_name = parts[-1].replace(".json", "")
+                        mod_name = parts[1]
+                        loot_tables[f"{mod_name}:{entity_name}"] = loot_table_data
+                        logger.debug(f"Extracted loot table for {mod_name}:{entity_name}")
+                except (json.JSONDecodeError, KeyError) as e:
+                    logger.debug(f"Skipping loot table file {file_name}: {e}")
+                    continue
+    except Exception as e:
+        logger.warning(f"Loot table extraction failed: {e}")
+
+    if loot_tables:
+        logger.info(f"Extracted {len(loot_tables)} loot tables from JAR")
+
+    return loot_tables
 
 
 def _extract_entity_assets(
