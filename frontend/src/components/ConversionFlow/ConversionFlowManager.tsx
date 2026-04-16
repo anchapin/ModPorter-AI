@@ -205,7 +205,6 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
     } catch (error: any) {
       const downloadErrorMsg =
         error.message || 'Download failed. Please try again.';
-      console.error('[ConversionFlow] Download failed:', error);
       errorNotification('Download Failed', downloadErrorMsg);
       setFlowState((prev) => ({
         ...prev,
