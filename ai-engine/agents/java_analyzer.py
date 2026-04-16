@@ -1859,7 +1859,14 @@ class JavaAnalyzerAgent:
 
     def _analyze_assets_from_jar(self, file_list: list) -> dict:
         """Analyze assets in the JAR file"""
-        assets = {"textures": [], "models": [], "sounds": [], "other": []}
+        assets = {
+            "textures": [],
+            "models": [],
+            "sounds": [],
+            "lang": [],
+            "sounds_json": [],
+            "other": [],
+        }
 
         for file_name in file_list:
             if "/textures/" in file_name and file_name.endswith((".png", ".jpg", ".jpeg")):
@@ -1868,6 +1875,10 @@ class JavaAnalyzerAgent:
                 assets["models"].append(file_name)
             elif "/sounds/" in file_name and file_name.endswith((".ogg", ".wav")):
                 assets["sounds"].append(file_name)
+            elif "/lang/" in file_name and file_name.endswith(".json"):
+                assets["lang"].append(file_name)
+            elif file_name.endswith("sounds.json") and "/sounds" in file_name:
+                assets["sounds_json"].append(file_name)
             elif any(
                 file_name.endswith(ext) for ext in [".png", ".jpg", ".ogg", ".wav", ".obj", ".mtl"]
             ):
@@ -2827,6 +2838,24 @@ class JavaAnalyzerAgent:
                             assets.append(
                                 {
                                     "type": "sound",
+                                    "path": file_path,
+                                    "name": Path(file_path).name,
+                                    "size": jar.getinfo(file_path).file_size,
+                                }
+                            )
+                        elif "/lang/" in file_path and file_path.endswith(".json"):
+                            assets.append(
+                                {
+                                    "type": "lang",
+                                    "path": file_path,
+                                    "name": Path(file_path).name,
+                                    "size": jar.getinfo(file_path).file_size,
+                                }
+                            )
+                        elif file_path.endswith("sounds.json") and "/sounds" in file_path:
+                            assets.append(
+                                {
+                                    "type": "sounds_json",
                                     "path": file_path,
                                     "name": Path(file_path).name,
                                     "size": jar.getinfo(file_path).file_size,

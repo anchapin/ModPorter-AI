@@ -95,6 +95,7 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:  # noq
             entity_textures = []
             entity_models = []
             assets = {}
+            mod_id = "unknown"
         else:
             features = ast_analysis_result.get("features", {})
             entities = features.get("entities", [])
@@ -255,6 +256,26 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:  # noq
                         recipe_file = recipes_bp_path / f"{recipe_id}.json"
                         recipe_file.write_text(json.dumps(recipe_data, indent=2))
                     logger.info(f"Wrote {len(bedrock_recipes)} recipe files")
+
+            # Step 2e: Extract and convert sounds
+            sounds_data = _extract_sounds_from_jar(str(jar_file))
+            if sounds_data["sound_files"] or sounds_data["sounds_json"]:
+                logger.info(f"Step 2e: Processing {len(sounds_data['sound_files'])} sounds...")
+                _convert_java_sounds_to_bedrock(
+                    jar_path=str(jar_file),
+                    sounds_data=sounds_data,
+                    rp_path=Path(temp_dir) / "resource_pack",
+                )
+
+            # Step 2f: Extract and convert localization files
+            lang_files = _extract_localization_from_jar(str(jar_file))
+            if lang_files:
+                logger.info(f"Step 2f: Converting {len(lang_files)} localization files...")
+                _convert_java_lang_to_bedrock(
+                    lang_files=lang_files,
+                    mod_id=mod_id,
+                    rp_path=Path(temp_dir) / "resource_pack",
+                )
 
             # Step 3: Package as .mcaddon
             logger.info("Step 3: Creating .mcaddon package...")
@@ -610,6 +631,198 @@ def _extract_entity_assets(
 
     except Exception as e:
         logger.warning(f"Failed to extract entity assets: {e}")
+
+
+def _extract_sounds_from_jar(jar_path: str) -> Dict[str, Any]:
+    """
+    Extract sound files and sounds.json from JAR.
+
+    Args:
+        jar_path: Path to the source JAR file
+
+    Returns:
+        Dictionary with sound_files list and sounds_json dict
+    """
+    import zipfile
+    import json
+
+    result = {"sound_files": [], "sounds_json": {}}
+    try:
+        with zipfile.ZipFile(jar_path, "r") as jar:
+            for file_name in jar.namelist():
+                if "/sounds/" in file_name and file_name.endswith((".ogg", ".wav", ".mp3")):
+                    result["sound_files"].append(file_name)
+                elif file_name.endswith("sounds.json") and "/sounds" in file_name:
+                    try:
+                        sounds_data = json.loads(jar.read(file_name).decode("utf-8"))
+                        result["sounds_json"][file_name] = sounds_data
+                    except (json.JSONDecodeError, KeyError) as e:
+                        logger.debug(f"Skipping sounds.json {file_name}: {e}")
+    except Exception as e:
+        logger.warning(f"Failed to extract sounds from JAR: {e}")
+
+    if result["sound_files"]:
+        logger.info(f"Extracted {len(result['sound_files'])} sound files from JAR")
+    if result["sounds_json"]:
+        logger.info(f"Found {len(result['sounds_json'])} sounds.json definitions")
+
+    return result
+
+
+def _convert_java_sounds_to_bedrock(
+    jar_path: str,
+    sounds_data: Dict[str, Any],
+    rp_path: Path,
+) -> None:
+    """
+    Convert Java sounds.json to Bedrock sound_definitions.json and extract sound files.
+
+    Args:
+        jar_path: Path to the source JAR file
+        sounds_data: Dictionary with sound_files list and sounds_json dict
+        rp_path: Resource pack output directory
+    """
+    import zipfile
+    import json
+
+    sound_files = sounds_data.get("sound_files", [])
+    sounds_json = sounds_data.get("sounds_json", {})
+
+    if not sound_files and not sounds_json:
+        return
+
+    sounds_dir = rp_path / "sounds"
+    sounds_dir.mkdir(parents=True, exist_ok=True)
+
+    with zipfile.ZipFile(jar_path, "r") as jar:
+        for sound_path in sound_files:
+            try:
+                sound_data = jar.read(sound_path)
+                path_parts = sound_path.split("/")
+                mod_sounds_idx = None
+                for i, part in enumerate(path_parts):
+                    if part == "sounds" and i + 1 < len(path_parts):
+                        mod_sounds_idx = i
+                        break
+
+                if mod_sounds_idx is not None:
+                    rel_path = "/".join(path_parts[mod_sounds_idx + 1 :])
+                    output_path = sounds_dir / rel_path
+                else:
+                    output_path = sounds_dir / Path(sound_path).name
+
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                output_path.write_bytes(sound_data)
+            except KeyError:
+                logger.warning(f"Sound file not found in JAR: {sound_path}")
+
+    if sounds_json:
+        for sounds_json_path, sounds_def in sounds_json.items():
+            bedrock_definitions = {}
+            for event_name, event_data in sounds_def.items():
+                if isinstance(event_data, dict) and "sounds" in event_data:
+                    bedrock_definitions[event_name] = {
+                        "sounds": [
+                            s.get("name", s) if isinstance(s, dict) else s
+                            for s in event_data["sounds"]
+                        ],
+                        "category": event_data.get("category", "master").lower(),
+                    }
+                elif isinstance(event_data, list):
+                    bedrock_definitions[event_name] = {
+                        "sounds": event_data,
+                        "category": "master",
+                    }
+
+            if bedrock_definitions:
+                manifest = {
+                    "format_version": [1, 20, 0],
+                    "sound_definitions": bedrock_definitions,
+                }
+                sound_def_path = sounds_dir / "sound_definitions.json"
+                sound_def_path.write_text(json.dumps(manifest, indent=2))
+                logger.info(f"Converted sounds.json to sound_definitions.json")
+
+
+def _extract_localization_from_jar(jar_path: str) -> Dict[str, Dict]:
+    """
+    Extract localization JSON files from JAR.
+
+    Args:
+        jar_path: Path to the source JAR file
+
+    Returns:
+        Dictionary mapping lang file paths to their parsed JSON content
+    """
+    import zipfile
+    import json
+
+    lang_files: Dict[str, Dict] = {}
+    try:
+        with zipfile.ZipFile(jar_path, "r") as jar:
+            for file_name in jar.namelist():
+                if "/lang/" in file_name and file_name.endswith(".json"):
+                    try:
+                        lang_data = json.loads(jar.read(file_name).decode("utf-8"))
+                        if isinstance(lang_data, dict):
+                            lang_files[file_name] = lang_data
+                    except (json.JSONDecodeError, KeyError) as e:
+                        logger.debug(f"Skipping lang file {file_name}: {e}")
+    except Exception as e:
+        logger.warning(f"Failed to extract localization from JAR: {e}")
+
+    if lang_files:
+        logger.info(f"Extracted {len(lang_files)} localization files from JAR")
+
+    return lang_files
+
+
+def _convert_java_lang_to_bedrock(
+    lang_files: Dict[str, Dict],
+    mod_id: str,
+    rp_path: Path,
+) -> None:
+    """
+    Convert Java JSON lang files to Bedrock .lang plaintext format.
+
+    Args:
+        lang_files: Dictionary mapping file paths to parsed JSON content
+        mod_id: The mod's namespace/ID for namespacing lang keys
+        rp_path: Resource pack output directory
+    """
+    texts_dir = rp_path / "texts"
+    texts_dir.mkdir(parents=True, exist_ok=True)
+
+    def _convert_java_locale_to_bedrock(java_locale: str) -> str:
+        """Convert Java locale format (en_us) to Bedrock format (en_US)."""
+        parts = java_locale.split("_")
+        if len(parts) == 2:
+            return f"{parts[0].lower()}_{parts[1].upper()}"
+        return java_locale.upper()
+
+    lang_count = 0
+    for lang_path, lang_data in lang_files.items():
+        path_parts = lang_path.split("/")
+        lang_filename = path_parts[-1] if path_parts else "en_US.lang"
+
+        bedrock_lang_lines = []
+        for key, value in lang_data.items():
+            if isinstance(value, str):
+                ns_key = key
+                if ":" not in key and mod_id:
+                    ns_key = f"{mod_id}.{key}"
+                bedrock_lang_lines.append(f"{ns_key}={value}")
+
+        if bedrock_lang_lines:
+            base_name = lang_filename.replace(".json", "")
+            bedrock_locale = _convert_java_locale_to_bedrock(base_name)
+            output_path = texts_dir / f"{bedrock_locale}.lang"
+            output_path.write_text("\n".join(bedrock_lang_lines))
+            lang_count += 1
+            logger.info(f"Converted {lang_filename} to {output_path.name}")
+
+    if lang_count > 0:
+        logger.info(f"Converted {lang_count} localization files to Bedrock format")
 
 
 def main():
