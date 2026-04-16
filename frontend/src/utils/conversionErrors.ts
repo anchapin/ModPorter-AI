@@ -14,6 +14,7 @@ export enum ConversionErrorType {
   FILE_UPLOAD_FAILED = 'FILE_UPLOAD_FAILED',
   JOB_NOT_FOUND = 'JOB_NOT_FOUND',
   PERMISSION_DENIED = 'PERMISSION_DENIED',
+  QUOTA_EXCEEDED = 'QUOTA_EXCEEDED',
   INTERNAL_ERROR = 'INTERNAL_ERROR',
   UNKNOWN = 'UNKNOWN',
 }
@@ -110,6 +111,17 @@ export function categorizeError(error: unknown): ConversionErrorType {
     errorString.includes('unauthorized')
   ) {
     return ConversionErrorType.PERMISSION_DENIED;
+  }
+
+  if (
+    errorString.includes('quota') ||
+    errorString.includes('limit') ||
+    errorString.includes('exceeded') ||
+    errorString.includes('monthly') ||
+    errorString.includes('conversions') ||
+    errorString.includes('used all')
+  ) {
+    return ConversionErrorType.QUOTA_EXCEEDED;
   }
 
   if (
@@ -275,6 +287,20 @@ export function getUserFriendlyError(
       ],
       retryable: false,
       reportToSentry: false,
+    },
+
+    [ConversionErrorType.QUOTA_EXCEEDED]: {
+      type: ConversionErrorType.QUOTA_EXCEEDED,
+      title: 'Conversion Limit Reached',
+      message:
+        "You've used all your conversions this month. Upgrade to continue converting mods.",
+      userTips: [
+        'Check your current plan limits',
+        'Upgrade to a higher tier for more conversions',
+        'Contact support if you need more conversions',
+      ],
+      retryable: false,
+      reportToSentry: true,
     },
 
     [ConversionErrorType.INTERNAL_ERROR]: {

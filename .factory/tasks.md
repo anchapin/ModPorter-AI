@@ -1,11 +1,23 @@
 # Current Tasks
 
 ## In Progress
-- 🔄 CI pnpm caching investigation (pnpm version 9 → 9.12.2, added .npmrc)
-
-## Pending
 - 🔄 Issue #971: E2E validation - Recipe converter regression (0% coverage, "Unknown recipe category: unknown")
 - ⏳ Investigate why model coverage dropped (68% vs v5's 82%)
+
+## Completed
+- ✅ Issue #1068: Error handling for ConvertPage.tsx
+  - ✅ Fix uncaught console.error calls (ConversionUploadReal.tsx:345, ConversionFlowManager.tsx:206)
+  - ✅ Add retry button to ErrorBoundary for retryable errors
+  - ✅ Add QUOTA_EXCEEDED error type to conversionErrors.ts
+  - ✅ Improve partial success display with per-file status
+
+## Completed
+- ✅ Issue #1068: Error handling for ConvertPage.tsx
+  - ✅ Fix uncaught console.error calls (ConversionUploadReal.tsx:345, ConversionFlowManager.tsx:206)
+  - ✅ Add retry button to ErrorBoundary for retryable errors
+  - ✅ Add QUOTA_EXCEEDED error type to conversionErrors.ts
+  - ✅ Improve partial success display with per-file status
+- ✅ CI pnpm caching investigation (pnpm version 9 → 9.12.2, added .npmrc)
 
 ## Completed
 - ✅ Issue #971: E2E validation - Run v6 audit with 30 mods (Apr 15):

@@ -6,6 +6,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { triggerDownload } from '../../services/api';
+import { useErrorNotification } from '../NotificationSystem';
 import './ConversionUpload.css';
 
 interface ConversionUploadProps {
@@ -51,6 +52,8 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [showSmartAssumptionsInfo, setShowSmartAssumptionsInfo] =
     useState(false);
+
+  const errorNotification = useErrorNotification();
 
   // API Base URL - Use proxy path for development, environment variable for production
   const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
@@ -342,8 +345,11 @@ export const ConversionUploadReal: React.FC<ConversionUploadProps> = ({
         onConversionStart(conversionResponse.job_id);
       }
     } catch (err: any) {
-      console.error('Conversion error:', err);
-      setError(err.message || 'Conversion failed. Please try again.');
+      const errorMessage =
+        err.message || 'Conversion failed. Please try again.';
+      errorNotification('Conversion Failed', errorMessage);
+      console.error('[ConversionUpload] Conversion error:', err);
+      setError(errorMessage);
       setIsConverting(false);
     }
   };

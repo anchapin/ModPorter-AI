@@ -16,7 +16,7 @@ import shutil
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from uuid import UUID
 
 from fastapi import (
@@ -115,6 +115,29 @@ class ConversionCreateResponse(BaseModel):
     )
 
 
+class AssetCategoryStatus(BaseModel):
+    """Per-asset category conversion status (Issue #1087)."""
+
+    category: str = Field(..., description="Category name: textures, models, recipes, etc.")
+    status: str = Field(..., description="converted, partial, failed, or pending")
+    total: int = Field(default=0, description="Total items in this category")
+    converted: int = Field(default=0, description="Successfully converted items")
+    partial: int = Field(default=0, description="Partially converted items")
+    failed: int = Field(default=0, description="Failed items")
+    percentage: float = Field(default=0.0, description="Conversion percentage")
+    error_message: Optional[str] = Field(None, description="Error message if failed")
+
+
+class StructuredError(BaseModel):
+    """Structured error with code and retry info (Issue #1087)."""
+
+    error_code: str = Field(..., description="Short error code: INVALID_FILE, PARSE_ERROR, etc.")
+    error_type: str = Field(..., description="Error type: conversion_error, validation_error, etc.")
+    message: str = Field(..., description="Error message")
+    is_retryable: bool = Field(..., description="Whether client can retry this operation")
+    details: Optional[Dict[str, Any]] = Field(None, description="Additional error details")
+
+
 class ConversionStatusResponse(BaseModel):
     """Response model for conversion status."""
 
@@ -127,6 +150,16 @@ class ConversionStatusResponse(BaseModel):
     result_url: Optional[str] = Field(None, description="Download URL if completed")
     error: Optional[str] = Field(None, description="Error message if failed")
     original_filename: Optional[str] = Field(None, description="Original uploaded filename")
+    # Issue #1087: Enhanced error and partial result handling
+    structured_error: Optional[StructuredError] = Field(
+        None, description="Structured error with code and retryability"
+    )
+    asset_results: Optional[List[AssetCategoryStatus]] = Field(
+        None, description="Per-asset category breakdown for partial results"
+    )
+    overall_percentage: Optional[float] = Field(
+        None, description="Overall conversion percentage across all assets"
+    )
 
 
 class ConversionListResponse(BaseModel):
@@ -694,6 +727,9 @@ async def get_conversion(
         result_url=result_url,
         error=None,
         original_filename=job.input_data.get("original_filename"),
+        structured_error=None,
+        asset_results=None,
+        overall_percentage=None,
     )
 
     # Update cache
@@ -766,6 +802,9 @@ async def list_conversions(
                 result_url=result_url,
                 error=None,
                 original_filename=job.input_data.get("original_filename"),
+                structured_error=None,
+                asset_results=None,
+                overall_percentage=None,
             )
         )
 

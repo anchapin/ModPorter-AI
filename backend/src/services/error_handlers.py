@@ -46,15 +46,17 @@ class ErrorResponse(BaseModel):
     """Structured error response model"""
 
     error_id: str
+    error_code: str  # Short uppercase error code: INVALID_FILE, PARSE_ERROR, etc.
     error_type: str
-    error_category: str  # New: parse_error, asset_error, logic_error, etc.
+    error_category: str  # parse_error, asset_error, logic_error, etc.
     message: str
     user_message: str
+    is_retryable: bool  # Whether the client can retry this operation
     timestamp: str
     path: Optional[str] = None
     method: Optional[str] = None
     details: Optional[Dict[str, Any]] = None
-    correlation_id: Optional[str] = None  # New: correlation ID for tracing
+    correlation_id: Optional[str] = None  # correlation ID for tracing
 
 
 class ModPorterException(Exception):
@@ -157,6 +159,44 @@ ERROR_CATEGORIES = {
     # Additional error types
     "conversion_error": "Conversion failed. Please check your mod file.",
     "http_error": "An error occurred while processing your request.",
+}
+
+# Error codes - short uppercase identifiers for client handling
+ERROR_CODES = {
+    "parse_error": "PARSE_ERROR",
+    "asset_error": "ASSET_ERROR",
+    "logic_error": "LOGIC_ERROR",
+    "package_error": "PACKAGE_ERROR",
+    "validation_error": "VALIDATION_ERROR",
+    "network_error": "NETWORK_ERROR",
+    "rate_limit_error": "RATE_LIMIT_ERROR",
+    "timeout_error": "TIMEOUT_ERROR",
+    "unknown_error": "UNKNOWN_ERROR",
+    "conversion_error": "CONVERSION_ERROR",
+    "http_error": "HTTP_ERROR",
+    "file_processing_error": "FILE_PROCESSING_ERROR",
+    "internal_error": "INTERNAL_ERROR",
+}
+
+# Retryable error categories - can be safely retried by client
+RETRYABLE_ERROR_CATEGORIES = {
+    "parse_error",
+    "asset_error",
+    "package_error",
+    "network_error",
+    "rate_limit_error",
+    "timeout_error",
+}
+
+# Non-retryable error categories - should not be retried
+NON_RETRYABLE_ERROR_CATEGORIES = {
+    "logic_error",
+    "validation_error",
+    "unknown_error",
+    "conversion_error",
+    "http_error",
+    "file_processing_error",
+    "internal_error",
 }
 
 
@@ -357,12 +397,18 @@ def create_error_response(
     if include_traceback and is_debug_mode():
         details["traceback"] = traceback.format_exc()
 
+    # Determine error code and retryability from category
+    error_code = ERROR_CODES.get(error_category, "UNKNOWN_ERROR")
+    is_retryable = error_category in RETRYABLE_ERROR_CATEGORIES
+
     return ErrorResponse(
         error_id=error_id,
+        error_code=error_code,
         error_type=error_type,
         error_category=error_category,
         message=message,
         user_message=user_message,
+        is_retryable=is_retryable,
         timestamp=timestamp,
         path=str(request.url.path),
         method=request.method,

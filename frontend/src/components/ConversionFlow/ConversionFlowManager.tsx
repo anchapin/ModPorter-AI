@@ -98,8 +98,6 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
   // Handle conversion start
   const handleConversionStart = useCallback(
     (jobId: string, filename: string) => {
-      console.log('[ConversionFlow] Started:', jobId, filename);
-
       // Track conversion start
       trackStart(jobId, { filename });
 
@@ -118,8 +116,6 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
   // Handle conversion complete
   const handleConversionComplete = useCallback(
     (jobId: string) => {
-      console.log('[ConversionFlow] Completed:', jobId);
-
       // Track conversion complete
       trackComplete(jobId, { filename: flowState.filename });
 
@@ -161,8 +157,6 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
   // Handle conversion failed
   const handleConversionFailed = useCallback(
     (jobId: string, error: string) => {
-      console.error('[ConversionFlow] Failed:', jobId, error);
-
       // Process error for user-friendly message
       const friendlyError = processError(error);
 
@@ -209,13 +203,15 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
       // Track download
       trackDownload(flowState.jobId, { filename: flowState.filename });
     } catch (error: any) {
-      console.error('[ConversionFlow] Download failed:', error);
+      const downloadErrorMsg =
+        error.message || 'Download failed. Please try again.';
+      errorNotification('Download Failed', downloadErrorMsg);
       setFlowState((prev) => ({
         ...prev,
-        error: `Download failed: ${error.message || 'Unknown error'}`,
+        error: downloadErrorMsg,
       }));
     }
-  }, [flowState.jobId, flowState.filename, trackDownload]);
+  }, [flowState.jobId, flowState.filename, trackDownload, errorNotification]);
 
   // Render upload component when idle
   if (flowState.status === 'idle') {
