@@ -16,22 +16,22 @@ print(f"[ROOT CONFTEST] Current sys.path: {sys.path[:3]}")
 # Add ai-engine to path for module imports
 project_root = Path(__file__).parent.resolve()
 
-# Add backend to path FIRST (higher priority for config resolution)
+# Add ai-engine to path FIRST (must be before backend/src to avoid models/ shadowing)
+ai_engine_path = project_root / "ai-engine"
+if ai_engine_path.exists():
+    if str(ai_engine_path) in sys.path:
+        sys.path.remove(str(ai_engine_path))
+    sys.path.insert(0, str(ai_engine_path))
+    print(f"[ROOT CONFTEST] Added ai-engine to sys.path (priority): {ai_engine_path}")
+
+# Add backend to path AFTER ai-engine (for config resolution)
 backend_path = project_root / "backend" / "src"
 if backend_path.exists():
     # Remove if already present (avoid duplicates)
     if str(backend_path) in sys.path:
         sys.path.remove(str(backend_path))
-    sys.path.insert(0, str(backend_path))
-    print(f"[ROOT CONFTEST] Added backend/src to sys.path (priority): {backend_path}")
-
-# Add ai-engine to path AFTER backend (lower priority to avoid config conflicts)
-ai_engine_path = project_root / "ai-engine"
-if ai_engine_path.exists():
-    if str(ai_engine_path) in sys.path:
-        sys.path.remove(str(ai_engine_path))
-    sys.path.insert(1, str(ai_engine_path))
-    print(f"[ROOT CONFTEST] Added ai-engine to sys.path (secondary): {ai_engine_path}")
+    sys.path.insert(1, str(backend_path))
+    print(f"[ROOT CONFTEST] Added backend/src to sys.path (secondary): {backend_path}")
 
 # Add project root
 if str(project_root) not in sys.path:
