@@ -8,6 +8,7 @@ Provides high-level authentication functionality including:
 - AuthManager class for easy integration
 """
 
+import os
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -17,13 +18,15 @@ import jwt
 
 from core.secrets import get_secret
 
-# JWT settings
-SECRET_KEY = get_secret("SECRET_KEY")
+# JWT settings — prefer JWT_SECRET_KEY; fall back to SECRET_KEY
+SECRET_KEY = get_secret("JWT_SECRET_KEY") or get_secret("SECRET_KEY")
 if not SECRET_KEY:
-    raise ValueError("SECRET_KEY must be set in the environment or secrets manager")
+    raise ValueError(
+        "JWT_SECRET_KEY (or SECRET_KEY) must be set in the environment or secrets manager"
+    )
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 15
-REFRESH_TOKEN_EXPIRE_DAYS = 7
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
 
 class AuthManager:

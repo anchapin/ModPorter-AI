@@ -46,6 +46,7 @@ from services.rate_limiter import (
     create_global_limiter,
 )
 from services.security_headers import SecurityHeadersMiddleware
+from services.https_enforcement import HTTPSRedirectMiddleware, HSTSStrictMiddleware
 from services.logging_middleware import LoggingMiddleware, RequestContextMiddleware
 
 # Import API routers
@@ -76,6 +77,7 @@ from services.report_generator import (
 )
 from services.metrics import get_metrics
 from services.structured_logging import configure_structlog
+from core.startup_validation import validate_secrets
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -98,7 +100,9 @@ conversion_jobs_db: Dict[str, "ConversionJob"] = {}
 async def lifespan(app: FastAPI):
     # Startup
     testing_env = os.getenv("TESTING", "false").lower()
+    environment = os.getenv("ENVIRONMENT", "development")
     if testing_env != "true":
+        validate_secrets(environment=environment)
         await init_db()
         logger.info("Database initialized")
     yield
@@ -157,10 +161,14 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# CORS middleware
+# CORS middleware — CORS_ORIGINS takes precedence over legacy ALLOWED_ORIGINS
+_cors_origins_raw = (
+    os.getenv("CORS_ORIGINS") or os.getenv("ALLOWED_ORIGINS") or "http://localhost:3000"
+)
+_cors_origins = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(","),
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -176,6 +184,11 @@ if os.getenv("TESTING", "false").lower() != "true":
 
 # Security Headers Middleware
 app.add_middleware(SecurityHeadersMiddleware)
+
+# HTTPS Redirect Middleware (should be first in chain)
+if os.getenv("ENVIRONMENT", "development") in ("production", "staging"):
+    app.add_middleware(HTTPSRedirectMiddleware)
+    app.add_middleware(HSTSStrictMiddleware)
 
 # Request/Response Logging Middleware
 app.add_middleware(LoggingMiddleware)
