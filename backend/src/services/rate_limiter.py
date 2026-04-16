@@ -288,44 +288,18 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             "/api/v1/upload": RateLimitConfig(requests_per_minute=20, requests_per_hour=200),
         }
 
-        # Auth endpoints with stricter limits to prevent brute force
-        self.auth_endpoint_limits = {
-            "/api/v1/auth/login": RateLimitConfig(
-                requests_per_minute=5, requests_per_hour=20, burst_size=2
-            ),
-            "/api/v1/auth/register": RateLimitConfig(
-                requests_per_minute=3, requests_per_hour=10, burst_size=1
-            ),
-            "/api/v1/auth/forgot-password": RateLimitConfig(
-                requests_per_minute=3, requests_per_hour=10, burst_size=1
-            ),
-            "/api/v1/auth/reset-password": RateLimitConfig(
-                requests_per_minute=5, requests_per_hour=20, burst_size=2
-            ),
-            "/api/v1/auth/refresh": RateLimitConfig(
-                requests_per_minute=10, requests_per_hour=60, burst_size=3
-            ),
-        }
-
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Process request with rate limiting"""
         # Skip rate limiting for excluded paths
         if request.url.path in self.exclude_paths:
             return await call_next(request)
 
-        # Check if endpoint has specific limits - auth endpoints first (stricter limits)
+        # Check if endpoint has specific limits
         limiter_config = None
-        for path, config in self.auth_endpoint_limits.items():
+        for path, config in self.endpoint_limits.items():
             if request.url.path.startswith(path):
                 limiter_config = config
                 break
-
-        # If no auth endpoint match, check general endpoint limits
-        if limiter_config is None:
-            for path, config in self.endpoint_limits.items():
-                if request.url.path.startswith(path):
-                    limiter_config = config
-                    break
 
         # Determine client type for metrics
         client_type = (
