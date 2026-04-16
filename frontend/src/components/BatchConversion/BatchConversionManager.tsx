@@ -27,7 +27,11 @@ export interface BatchConversionItem {
 }
 
 interface BatchConversionManagerProps {
-  onComplete?: (jobIds: string[]) => void;
+  onComplete?: (
+    jobIds: string[],
+    results?: { succeeded: number; failed: number }
+  ) => void;
+  onError?: (error: string) => void;
 }
 
 export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
@@ -160,10 +164,15 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
     setIsConverting(false);
 
     if (completedJobIds.length > 0) {
+      const results = {
+        succeeded: completedJobIds.length,
+        failed: failedIds.length,
+      };
       successNotification(
-        `Batch conversion completed: ${completedJobIds.length} succeeded`
+        'Batch Conversion Complete!',
+        `${results.succeeded} mods converted${results.failed > 0 ? `, ${results.failed} failed` : ''}.`
       );
-      onComplete?.(completedJobIds);
+      onComplete?.(completedJobIds, results);
     }
 
     if (failedIds.length > 0) {

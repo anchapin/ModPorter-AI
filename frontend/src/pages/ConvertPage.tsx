@@ -14,6 +14,8 @@ import {
   AdvancedOptionsPanel,
   AdvancedOptions,
 } from '../components/AdvancedOptions';
+import { ErrorBoundary } from '../components/ErrorBoundary/ErrorBoundary';
+import { processError } from '../utils/conversionErrors';
 import './ConvertPage.css';
 
 const DEFAULT_ADVANCED_OPTIONS: AdvancedOptions = {
@@ -26,6 +28,16 @@ const DEFAULT_ADVANCED_OPTIONS: AdvancedOptions = {
   generateReport: true,
 };
 
+export interface ConversionSummary {
+  jobId: string;
+  filename: string;
+  status: 'completed' | 'failed' | 'partial';
+  filesProcessed?: number;
+  assetsConverted?: number;
+  assetsTotal?: number;
+  manualReviewFeatures?: string[];
+}
+
 export const ConvertPage: React.FC = () => {
   const [conversionMode, setConversionMode] = useState<'single' | 'batch'>(
     'single'
@@ -33,34 +45,48 @@ export const ConvertPage: React.FC = () => {
   const [advancedOptions, setAdvancedOptions] = useState<AdvancedOptions>(
     DEFAULT_ADVANCED_OPTIONS
   );
+  const [lastConversionSummary, setLastConversionSummary] =
+    useState<ConversionSummary | null>(null);
 
   const successNotification = useSuccessNotification();
   const errorNotification = useErrorNotification();
 
   const handleComplete = (jobId: string, filename: string) => {
-    console.log('Conversion completed:', jobId, filename);
     successNotification(
       'Conversion Complete!',
       `${filename} is ready for download.`
     );
+    setLastConversionSummary({
+      jobId,
+      filename,
+      status: 'completed',
+    });
   };
 
   const handleError = (error: string) => {
-    console.error('Conversion failed:', error);
-    errorNotification('Conversion Failed', error);
+    const friendlyError = processError(error);
+    errorNotification(friendlyError.title, friendlyError.message);
   };
 
-  const handleBatchComplete = (jobIds: string[]) => {
-    console.log('Batch conversion completed:', jobIds);
+  const handleBatchComplete = (
+    jobIds: string[],
+    results?: { succeeded: number; failed: number }
+  ) => {
     successNotification(
       'Batch Conversion Complete!',
-      `${jobIds.length} mods converted successfully.`
+      results
+        ? `${results.succeeded} mods converted${results.failed > 0 ? `, ${results.failed} failed` : ''}.`
+        : `${jobIds.length} mods converted successfully.`
     );
   };
 
   const handleBatchError = (error: string) => {
-    console.error('Batch conversion failed:', error);
-    errorNotification('Batch Conversion Failed', error);
+    const friendlyError = processError(error);
+    errorNotification(friendlyError.title, friendlyError.message);
+  };
+
+  const clearConversionSummary = () => {
+    setLastConversionSummary(null);
   };
 
   return (
@@ -96,17 +122,101 @@ export const ConvertPage: React.FC = () => {
 
       {/* Conversion Flow */}
       {conversionMode === 'single' ? (
-        <ConversionFlowManager
-          onComplete={handleComplete}
-          onError={handleError}
-          showReport={true}
-          autoReset={false}
-        />
+        <ErrorBoundary>
+          <ConversionFlowManager
+            onComplete={handleComplete}
+            onError={handleError}
+            showReport={true}
+            autoReset={false}
+          />
+        </ErrorBoundary>
       ) : (
-        <BatchConversionManager
-          onComplete={handleBatchComplete}
-          onError={handleBatchError}
-        />
+        <ErrorBoundary>
+          <BatchConversionManager
+            onComplete={handleBatchComplete}
+            onError={handleBatchError}
+          />
+        </ErrorBoundary>
+      )}
+
+      {/* Conversion Summary Panel */}
+      {lastConversionSummary && (
+        <div className="conversion-summary-panel">
+          <div className="summary-header">
+            <h3>Last Conversion Summary</h3>
+            <button
+              className="summary-close"
+              onClick={clearConversionSummary}
+              aria-label="Close summary"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="summary-content">
+            <div className="summary-item">
+              <span className="summary-label">File:</span>
+              <span className="summary-value">
+                {lastConversionSummary.filename}
+              </span>
+            </div>
+            <div className="summary-item">
+              <span className="summary-label">Status:</span>
+              <span
+                className={`summary-status ${lastConversionSummary.status}`}
+              >
+                {lastConversionSummary.status === 'completed' && '✓ Completed'}
+                {lastConversionSummary.status === 'failed' && '✕ Failed'}
+                {lastConversionSummary.status === 'partial' && '⚠ Partial'}
+              </span>
+            </div>
+            {lastConversionSummary.filesProcessed !== undefined && (
+              <div className="summary-item">
+                <span className="summary-label">Files Processed:</span>
+                <span className="summary-value">
+                  {lastConversionSummary.filesProcessed}
+                </span>
+              </div>
+            )}
+            {lastConversionSummary.assetsConverted !== undefined &&
+              lastConversionSummary.assetsTotal !== undefined && (
+                <div className="summary-item">
+                  <span className="summary-label">Assets Converted:</span>
+                  <span className="summary-value">
+                    {lastConversionSummary.assetsConverted}/
+                    {lastConversionSummary.assetsTotal}(
+                    {Math.round(
+                      (lastConversionSummary.assetsConverted /
+                        lastConversionSummary.assetsTotal) *
+                        100
+                    )}
+                    %)
+                  </span>
+                </div>
+              )}
+            {lastConversionSummary.manualReviewFeatures &&
+              lastConversionSummary.manualReviewFeatures.length > 0 && (
+                <div className="summary-item">
+                  <span className="summary-label">Manual Review:</span>
+                  <span className="summary-value">
+                    {lastConversionSummary.manualReviewFeatures.join(', ')}
+                  </span>
+                </div>
+              )}
+          </div>
+          <div className="summary-actions">
+            <a
+              href={`/api/v1/conversions/${lastConversionSummary.jobId}/download`}
+              className="summary-download-btn"
+              onClick={(e) => {
+                if (lastConversionSummary.status === 'failed') {
+                  e.preventDefault();
+                }
+              }}
+            >
+              Download .mcaddon
+            </a>
+          </div>
+        </div>
       )}
 
       <div className="convert-page-footer">

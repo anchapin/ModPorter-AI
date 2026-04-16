@@ -111,6 +111,117 @@
   margin: 0 auto 1.5rem;
 }
 
+/* Conversion Summary Panel */
+.conversion-summary-panel {
+  max-width: 600px;
+  margin: 0 auto 1.5rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.summary-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #1f2937;
+}
+
+.summary-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.summary-close:hover {
+  background-color: #e5e7eb;
+  color: #1f2937;
+}
+
+.summary-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.summary-label {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.summary-value {
+  font-size: 14px;
+  color: #1f2937;
+  font-weight: 500;
+  text-align: right;
+  max-width: 60%;
+  word-break: break-word;
+}
+
+.summary-status {
+  font-weight: 600;
+}
+
+.summary-status.completed {
+  color: #10b981;
+}
+
+.summary-status.failed {
+  color: #ef4444;
+}
+
+.summary-status.partial {
+  color: #f59e0b;
+}
+
+.summary-actions {
+  padding: 15px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.summary-download-btn {
+  display: block;
+  text-align: center;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.summary-download-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+}
+
+.summary-download-btn.disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .convert-page {
@@ -131,5 +242,19 @@
 
   .convert-page-footer {
     margin-top: 40px;
+  }
+
+  .conversion-summary-panel {
+    margin: 0 auto 1rem;
+  }
+
+  .summary-item {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .summary-value {
+    text-align: left;
+    max-width: 100%;
   }
 }

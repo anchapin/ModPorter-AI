@@ -98,8 +98,6 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
   // Handle conversion start
   const handleConversionStart = useCallback(
     (jobId: string, filename: string) => {
-      console.log('[ConversionFlow] Started:', jobId, filename);
-
       // Track conversion start
       trackStart(jobId, { filename });
 
@@ -118,8 +116,6 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
   // Handle conversion complete
   const handleConversionComplete = useCallback(
     (jobId: string) => {
-      console.log('[ConversionFlow] Completed:', jobId);
-
       // Track conversion complete
       trackComplete(jobId, { filename: flowState.filename });
 
@@ -161,8 +157,6 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
   // Handle conversion failed
   const handleConversionFailed = useCallback(
     (jobId: string, error: string) => {
-      console.error('[ConversionFlow] Failed:', jobId, error);
-
       // Process error for user-friendly message
       const friendlyError = processError(error);
 
