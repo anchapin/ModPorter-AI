@@ -203,13 +203,16 @@ export const ConversionFlowManager: React.FC<ConversionFlowManagerProps> = ({
       // Track download
       trackDownload(flowState.jobId, { filename: flowState.filename });
     } catch (error: any) {
+      const downloadErrorMsg =
+        error.message || 'Download failed. Please try again.';
       console.error('[ConversionFlow] Download failed:', error);
+      errorNotification('Download Failed', downloadErrorMsg);
       setFlowState((prev) => ({
         ...prev,
-        error: `Download failed: ${error.message || 'Unknown error'}`,
+        error: downloadErrorMsg,
       }));
     }
-  }, [flowState.jobId, flowState.filename, trackDownload]);
+  }, [flowState.jobId, flowState.filename, trackDownload, errorNotification]);
 
   // Render upload component when idle
   if (flowState.status === 'idle') {

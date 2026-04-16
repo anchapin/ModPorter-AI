@@ -11,6 +11,9 @@ import './ErrorBoundary.css';
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  onRetry?: () => void;
+  isRetryable?: boolean;
+  retryMessage?: string;
 }
 
 interface State {
@@ -89,6 +92,9 @@ export class ErrorBoundary extends Component<Props, State> {
       error: null,
       errorInfo: null,
     });
+    if (this.props.onRetry) {
+      this.props.onRetry();
+    }
   };
 
   private handleReload = () => {
@@ -142,10 +148,21 @@ export class ErrorBoundary extends Component<Props, State> {
               safe.
             </p>
 
+            {this.props.isRetryable && this.props.retryMessage && (
+              <div className="error-retry-info">
+                <p className="retry-message">{this.props.retryMessage}</p>
+              </div>
+            )}
+
             <div className="error-actions">
-              <button className="error-btn primary" onClick={this.handleRetry}>
-                🔄 Try Again
-              </button>
+              {(this.props.isRetryable || this.props.onRetry) && (
+                <button
+                  className="error-btn primary"
+                  onClick={this.handleRetry}
+                >
+                  🔄 Try Again
+                </button>
+              )}
 
               <button
                 className="error-btn secondary"
