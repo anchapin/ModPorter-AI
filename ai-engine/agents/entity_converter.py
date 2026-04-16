@@ -9,6 +9,9 @@ from typing import Dict, List, Any, Optional
 from pathlib import Path
 from dataclasses import dataclass
 from enum import Enum
+from converters.spawn_rule_generator import SpawnRuleGenerator
+from converters.loot_table_generator import LootTableGenerator
+from converters.rendering_converter import convert_animation_controller
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +73,12 @@ class EntityConverter:
                 "events": {},
             },
         }
+
+        # Spawn rule generator for Issue #1003
+        self.spawn_rule_generator = SpawnRuleGenerator()
+
+        # Loot table generator for Issue #1003
+        self.loot_table_generator = LootTableGenerator()
 
         # Common Bedrock entity components
         self.base_components = {
@@ -225,6 +234,16 @@ class EntityConverter:
                 entity_id = bedrock_entity["minecraft:entity"]["description"]["identifier"]
                 bedrock_entities[entity_id] = bedrock_entity
 
+                # Generate spawn rules (Issue #1003)
+                spawn_rules = self.spawn_rule_generator.generate_spawn_rules(java_entity)
+                if spawn_rules.get("minecraft:spawn_rules", {}).get("conditions"):
+                    bedrock_entities[f"{entity_id}_spawn_rules"] = spawn_rules
+
+                # Generate loot tables (Issue #1003)
+                loot_table = self._generate_entity_loot_table(java_entity, entity_id)
+                if loot_table:
+                    bedrock_entities[f"{entity_id}_loot_table"] = loot_table
+
                 # Also generate behavior and animation files if needed
                 behaviors = self._generate_entity_behaviors(java_entity)
                 animations = self._generate_entity_animations(java_entity)
@@ -233,6 +252,11 @@ class EntityConverter:
                     bedrock_entities[f"{entity_id}_behaviors"] = behaviors
                 if animations:
                     bedrock_entities[f"{entity_id}_animations"] = animations
+
+                # Generate animation controllers (Issue #1003)
+                animation_controllers = self._generate_animation_controllers(java_entity, entity_id)
+                if animation_controllers:
+                    bedrock_entities[f"{entity_id}_animation_controllers"] = animation_controllers
 
             except Exception as e:
                 logger.error(f"Failed to convert entity {java_entity.get('id', 'unknown')}: {e}")
@@ -772,6 +796,44 @@ class EntityConverter:
                 config["look_distance"] = goal_config["range"]
             components[bedrock_behavior] = config
 
+    def _generate_entity_loot_table(
+        self, java_entity: Dict[str, Any], entity_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """Generate loot table for an entity (Issue #1003)."""
+        loot_table_data = java_entity.get("loot_table_data", {})
+
+        if not loot_table_data and not java_entity.get("has_loot_table", False):
+            return None
+
+        if loot_table_data:
+            return self.loot_table_generator.generate_loot_table(loot_table_data, entity_id)
+
+        return self.loot_table_generator.generate_entity_loot_table(entity_id)
+
+    def _generate_animation_controllers(
+        self, java_entity: Dict[str, Any], entity_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """Generate animation controllers for an entity (Issue #1003)."""
+        controllers = java_entity.get("animation_controllers", [])
+        if not controllers:
+            return None
+
+        result = {"format_version": "1.19.0", "animation_controllers": {}}
+
+        for controller in controllers:
+            try:
+                converted = convert_animation_controller(controller)
+                controller_id = converted.identifier
+                result["animation_controllers"][controller_id] = {
+                    "initial_state": converted.initial_state,
+                    "states": converted.states,
+                }
+            except Exception as e:
+                logger.warning(f"Failed to convert animation controller: {e}")
+                continue
+
+        return result["animation_controllers"] or None
+
     def convert_ai_goals(self, java_goals: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
         """
         Convert Java AI goals to Bedrock behaviors.
@@ -836,7 +898,13 @@ class EntityConverter:
         Returns:
             Dictionary of written file paths
         """
-        written_files = {"entities": [], "behaviors": [], "animations": []}
+        written_files = {
+            "entities": [],
+            "behaviors": [],
+            "animations": [],
+            "spawn_rules": [],
+            "loot_tables": [],
+        }
 
         # Create directories
         bp_entities_dir = bp_path / "entities"
@@ -845,9 +913,31 @@ class EntityConverter:
         rp_entity_dir = rp_path / "entity"
         rp_entity_dir.mkdir(parents=True, exist_ok=True)
 
+        # Create directories for spawn rules and loot tables
+        bp_spawn_rules_dir = bp_path / "spawn_rules"
+        bp_spawn_rules_dir.mkdir(parents=True, exist_ok=True)
+        bp_loot_tables_dir = bp_path / "loot_tables"
+        bp_loot_tables_dir.mkdir(parents=True, exist_ok=True)
+
         for entity_key, entity_data in entities.items():
             try:
-                if entity_key.endswith("_behaviors"):
+                if entity_key.endswith("_spawn_rules"):
+                    # Write spawn rules file
+                    entity_id = entity_key.replace("_spawn_rules", "")
+                    spawn_rules_file = bp_spawn_rules_dir / f"{entity_id.split(':')[-1]}.json"
+                    with open(spawn_rules_file, "w", encoding="utf-8") as f:
+                        json.dump(entity_data, f, indent=2, ensure_ascii=False)
+                    written_files["spawn_rules"].append(spawn_rules_file)
+
+                elif entity_key.endswith("_loot_table"):
+                    # Write loot table file
+                    entity_id = entity_key.replace("_loot_table", "")
+                    loot_table_file = bp_loot_tables_dir / f"{entity_id.split(':')[-1]}.json"
+                    with open(loot_table_file, "w", encoding="utf-8") as f:
+                        json.dump(entity_data, f, indent=2, ensure_ascii=False)
+                    written_files["loot_tables"].append(loot_table_file)
+
+                elif entity_key.endswith("_behaviors"):
                     # Write behavior file
                     entity_id = entity_key.replace("_behaviors", "")
                     behavior_file = bp_entities_dir / f"{entity_id.split(':')[-1]}_behaviors.json"
@@ -877,7 +967,9 @@ class EntityConverter:
         logger.info(
             f"Written {len(written_files['entities'])} entities, "
             f"{len(written_files['behaviors'])} behaviors, "
-            f"{len(written_files['animations'])} animations to disk"
+            f"{len(written_files['animations'])} animations, "
+            f"{len(written_files['spawn_rules'])} spawn_rules, "
+            f"{len(written_files['loot_tables'])} loot_tables to disk"
         )
 
         return written_files
