@@ -67,6 +67,9 @@ class TestSecretRotationManager:
         old_secret = "old_secret_key_12345"
         new_secret = "new_secret_key_67890"
 
+        manager._current_secret = old_secret
+        manager._secret_version = 1
+
         manager.rotate_secret(new_secret, grace_period_hours=24)
 
         # During grace period, old secret should be valid

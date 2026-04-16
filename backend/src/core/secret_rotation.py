@@ -86,10 +86,7 @@ class SecretRotationManager:
             # Set environment variable for persistence
             os.environ[self.secret_env_var] = new_secret
 
-            logger.info(
-                f"Secret rotated to version {self._secret_version}. "
-                f"Previous secret valid until {self._previous_expires}"
-            )
+            logger.info(f"Secret rotated to version {self._secret_version}")
             return True
 
     def is_valid_secret(self, secret: str) -> bool:
