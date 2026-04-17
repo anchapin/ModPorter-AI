@@ -66,6 +66,7 @@ from api import (
     analytics,
     health,
     rag,
+    billing,
 )
 from api.rate_limit_dashboard import router as rate_limit_dashboard_router
 
@@ -211,6 +212,7 @@ app.include_router(mod_imports.router, prefix="/api/v1/mods", tags=["mod-imports
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["analytics"])
 app.include_router(rate_limit_dashboard_router, prefix="/api/v1/rate-limit", tags=["rate-limiting"])
 app.include_router(rag.router, prefix="/api/v1/search", tags=["rag-search"])
+app.include_router(billing.router, prefix="/api/v1/billing", tags=["Billing"])
 
 # Health check endpoints (no prefix - used for Kubernetes probes)
 app.include_router(health.router)
