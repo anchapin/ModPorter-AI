@@ -33,7 +33,6 @@
     "storybook": "cd frontend && pnpm run storybook",
     "build-storybook": "cd frontend && pnpm run build-storybook",
     "setup-ai-commits": "bash scripts/setup-ai-commits.sh",
-    "prepare": "husky install",
     "commit": "cz commit"
   },
   "keywords": [
