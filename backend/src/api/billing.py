@@ -34,8 +34,8 @@ STRIPE_PUBLISHABLE_KEY = "pk_test_placeholder"  # Loaded from env
 STRIPE_WEBHOOK_SECRET = "whsec_placeholder"  # Loaded from env
 
 TIER_PRICE_IDS = {
-    "pro": "price_pro_monthly",  # Replace with actual Stripe Price IDs
-    "studio": "price_studio_monthly",
+    "pro": "prod_ULsnGiOD4DbTer",
+    "studio": "prod_ULso0In8XJcHQv",
     "enterprise": None,  # Enterprise uses custom pricing, no subscription
 }
 
