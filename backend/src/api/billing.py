@@ -29,9 +29,9 @@ router = APIRouter(prefix="/billing", tags=["Billing"])
 
 security = HTTPBearer()
 
-STRIPE_SECRET_KEY = "sk_test_placeholder"  # Loaded from env
-STRIPE_PUBLISHABLE_KEY = "pk_test_placeholder"  # Loaded from env
-STRIPE_WEBHOOK_SECRET = "whsec_placeholder"  # Loaded from env
+STRIPE_SECRET_KEY = ""  # Loaded from env
+STRIPE_PUBLISHABLE_KEY = ""  # Loaded from env
+STRIPE_WEBHOOK_SECRET = ""  # Loaded from env
 
 TIER_PRICE_IDS = {
     "pro": "prod_ULsnGiOD4DbTer",
@@ -50,7 +50,7 @@ def get_stripe():
     load_dotenv()
 
     secret_key = os.getenv("STRIPE_SECRET_KEY", STRIPE_SECRET_KEY)
-    if not secret_key or secret_key == "sk_test_placeholder":
+    if not secret_key:
         logger.warning("Stripe secret key not configured - billing endpoints will fail")
     stripe.api_key = secret_key
     return stripe
@@ -454,5 +454,5 @@ async def get_publishable_key():
 
     load_dotenv()
 
-    publishable_key = os.getenv("STRIPE_PUBLISHABLE_KEY", "pk_test_placeholder")
+    publishable_key = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
     return {"publishable_key": publishable_key}
