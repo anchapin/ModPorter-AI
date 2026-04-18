@@ -669,14 +669,14 @@ async def get_oauth_authorization_url(
     oauth_authorization_url: str = oauth_provider.get_authorization_url(oauth_state)
     oauth_cookie_name: str = f"oauth_state_{provider.lower()}"
     oauth_cookie_value: str = oauth_state
-    response.set_cookie(  # codeql:disable-line py/cookie-construction, py/clear-text-storage
+    response.set_cookie(
         key=oauth_cookie_name,
         value=oauth_cookie_value,
         httponly=True,
         secure=True,
         samesite="lax",
         max_age=600,
-    )
+    )  # codeql:disable-line py/cookie-construction, py/clear-text-storage
 
     return {"authorization_url": oauth_authorization_url, "state": oauth_state}
 
