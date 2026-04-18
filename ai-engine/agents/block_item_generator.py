@@ -278,22 +278,40 @@ class BlockItemGenerator:
                         continue
 
                 if isinstance(bedrock_recipe, dict):
+                    recipe_id = None
                     for recipe_key, recipe_content in bedrock_recipe.items():
                         if recipe_key.startswith("minecraft:recipe_"):
                             recipe_id = recipe_content.get("description", {}).get(
                                 "identifier", f"recipe_{len(bedrock_recipes)}"
                             )
-                            bedrock_recipes[recipe_id] = bedrock_recipe
                             break
                     else:
                         if "identifier" in bedrock_recipe:
-                            bedrock_recipes[bedrock_recipe["identifier"]] = bedrock_recipe
+                            recipe_id = bedrock_recipe["identifier"]
                         elif bedrock_recipe.get("manual_review_required"):
                             logger.info(
                                 f"Recipe {java_recipe.get('id', 'unknown')} flagged for manual review: "
                                 f"{bedrock_recipe.get('reason', 'Unknown reason')}"
                             )
                             manual_review_count += 1
+
+                    if recipe_id:
+                        if recipe_id in bedrock_recipes:
+                            raw_ingredients = java_recipe.get("ingredients") or [
+                                java_recipe.get("ingredient", {})
+                            ]
+                            input_suffix = ""
+                            if isinstance(raw_ingredients, list) and len(raw_ingredients) > 0:
+                                first_ing = raw_ingredients[0]
+                                if isinstance(first_ing, dict):
+                                    item_id = first_ing.get("item", first_ing.get("tag", ""))
+                                    if item_id:
+                                        input_suffix = "_from_" + item_id.split(":")[-1]
+                            if input_suffix:
+                                recipe_id = f"{recipe_id}{input_suffix}"
+                            else:
+                                recipe_id = f"{recipe_id}_alt_{len(bedrock_recipes)}"
+                        bedrock_recipes[recipe_id] = bedrock_recipe
             except Exception as e:
                 logger.error(f"Failed to convert recipe {java_recipe.get('id', 'unknown')}: {e}")
                 continue
