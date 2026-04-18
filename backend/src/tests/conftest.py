@@ -202,18 +202,14 @@ async def async_client():
 @pytest_asyncio.fixture(scope="function")
 async def auth_headers():
     """Create authentication headers for a test user."""
-    from datetime import datetime, timedelta
+    from datetime import timedelta
     from security.auth import create_access_token
 
     test_user_id = "test-user-123"
-    test_email = "test@example.com"
 
     token = create_access_token(
-        data={
-            "sub": test_user_id,
-            "email": test_email,
-            "exp": datetime.utcnow() + timedelta(hours=1),
-        }
+        user_id=test_user_id,
+        expires_delta=timedelta(hours=1),
     )
 
     return {"Authorization": f"Bearer {token}"}
