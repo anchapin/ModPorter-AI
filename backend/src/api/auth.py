@@ -52,7 +52,7 @@ def require_feature_flag(flag_name: str):
     return check_flag
 
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(tags=["Authentication"])
 
 # Security scheme
 security = HTTPBearer()
