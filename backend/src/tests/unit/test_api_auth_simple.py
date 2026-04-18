@@ -14,7 +14,7 @@ from api.auth import router, get_current_user, get_db
 
 
 app = FastAPI()
-app.include_router(router, prefix="/api/v1")
+app.include_router(router, prefix="/api/v1/auth")
 
 
 @pytest.fixture
