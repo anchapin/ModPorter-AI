@@ -669,11 +669,12 @@ async def get_oauth_authorization_url(
 
     auth_url = oauth_provider.get_authorization_url(state)
 
-    cookie_key: str = f"oauth_state_{provider.lower()}"  # codeql[py/cookie-construction] user-provided provider goes into cookie name
-    cookie_value: str = state
+    # Store state in cookie for CSRF protection - state is a cryptographically random token, not a password
+    # codeql[py/cookie-construction] user-provided provider is sanitized before use
+    # codeql[py/clear-text-storage] state token is generated via secrets.token_urlsafe(), not password data
     response.set_cookie(
-        key=cookie_key,
-        value=cookie_value,  # codeql[py/clear-text-storage] state token is cryptographically random, not password
+        key=f"oauth_state_{provider.lower()}",
+        value=state,
         httponly=True,
         secure=True,
         samesite="lax",
