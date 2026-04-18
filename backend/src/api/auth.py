@@ -672,7 +672,7 @@ async def get_oauth_authorization_url(
     cookie_key: str = f"oauth_state_{provider.lower()}"
     response.set_cookie(
         key=cookie_key,
-        value=state,  # noqa: B310 - OAuth state is httpOnly CSRF token, not password
+        value=state,
         httponly=True,
         secure=True,
         samesite="lax",
