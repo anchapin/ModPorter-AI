@@ -680,7 +680,7 @@ async def get_oauth_authorization_url(
         max_age=600,
     )
 
-    return {"authorization_url": auth_url}
+    return {"authorization_url": auth_url, "state": state}
 
 
 @router.get("/oauth/{provider}/callback", tags=["OAuth"])
