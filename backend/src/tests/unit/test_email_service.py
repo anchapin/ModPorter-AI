@@ -72,6 +72,9 @@ def test_render_template_unknown(email_service):
 
 
 def test_get_email_service():
+    import services.email_service as email_service_module
+
+    email_service_module._email_service = None
     with patch.dict("os.environ", {"SENDGRID_API_KEY": "env-key"}):
         service = get_email_service()
         assert service.api_key == "env-key"
