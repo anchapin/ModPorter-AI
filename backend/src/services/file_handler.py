@@ -5,16 +5,25 @@ Provides:
 - JAR/ZIP file validation
 - Metadata extraction from JAR files
 - Mod loader identification (Forge/Fabric/NeoForge)
-- Virus scanning placeholder
+- Malware scanning via ClamAV
+- Auto-deletion of uploaded files after conversion
+
+Issue: #973 - File upload security: sandboxing, validation, and virus scanning
 """
 
 import os
 import json
 import zipfile
 import logging
+import asyncio
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
+
+from services.malware_scanner import scan_file_for_malware, ScanStatus, get_scanner
+from services.audit_logger import get_audit_logger, AuditEventType
+from core.storage import storage_manager
 
 logger = logging.getLogger(__name__)
 
@@ -154,10 +163,24 @@ class FileHandler:
                 "message": "Identifying mod loader",
             }
 
-            # Step 4: Virus scan placeholder
-            scan_result = await self.virus_scan_placeholder(file_path)
-            if not scan_result:
-                validation.warnings.append("Virus scan not available")
+            # Step 4: Malware scan via ClamAV
+            scan_passed, scan_status = await self.virus_scan(file_path, job_id)
+            if not scan_passed:
+                self._upload_status[job_id] = {
+                    "status": "failed",
+                    "progress": 0,
+                    "message": f"Security scan failed: {scan_status}",
+                }
+                # Delete the infected/malicious file
+                await self.delete_uploaded_file(
+                    job_id, file_path, reason=f"security_scan_failed: {scan_status}"
+                )
+                return ProcessingResult(
+                    success=False,
+                    job_id=job_id,
+                    validation=validation,
+                    error=f"Security scan failed: {scan_status}",
+                )
 
             self._upload_status[job_id] = {
                 "status": "completed",
@@ -363,23 +386,121 @@ class FileHandler:
 
         return ModLoader.UNKNOWN
 
-    async def virus_scan_placeholder(self, file_path: str) -> bool:
+    async def virus_scan(self, file_path: str, job_id: str) -> tuple[bool, str]:
         """
-        Placeholder for virus scanning integration.
+        Scan a file for malware using ClamAV.
 
-        NOTE: Antivirus integration not yet implemented.
+        Args:
+            file_path: Path to the file to scan
+            job_id: Job ID for audit logging
 
         Returns:
-            True if scan passes (or not available), False if scan fails
+            Tuple of (is_safe, status_message)
         """
-        # Placeholder - always returns True
-        # In production, this would:
-        # 1. Submit file to antivirus scanner (e.g., ClamAV)
-        # 2. Wait for scan result
-        # 3. Return True if clean, False if infected
+        audit = get_audit_logger()
 
-        logger.info(f"Virus scan placeholder: {file_path} - would scan if implemented")
-        return True
+        try:
+            scanner = get_scanner()
+
+            # Check if ClamAV is available
+            if not scanner.is_available:
+                # Try health check
+                is_healthy = await scanner.health_check()
+                if not is_healthy:
+                    logger.warning(f"ClamAV unavailable, skipping malware scan for {file_path}")
+                    audit.log_file_scanned(
+                        job_id=job_id,
+                        filename=file_path,
+                        scan_result="skipped",
+                        threats_found=[],
+                        metadata={"reason": "scanner_unavailable"},
+                    )
+                    return True, "scanner_unavailable"
+
+            # Perform scan
+            result = await scanner.scan_file(file_path)
+
+            if result.status == ScanStatus.CLEAN:
+                logger.info(f"File scanned clean: {file_path}")
+                audit.log_file_scanned(
+                    job_id=job_id,
+                    filename=file_path,
+                    scan_result="clean",
+                    duration_ms=result.scan_duration_ms,
+                )
+                return True, "clean"
+
+            elif result.status == ScanStatus.INFECTED:
+                logger.error(f"INFECTED file detected: {file_path} - {result.threats_found}")
+                audit.log_file_scanned(
+                    job_id=job_id,
+                    filename=file_path,
+                    scan_result="infected",
+                    threats_found=result.threats_found,
+                    duration_ms=result.scan_duration_ms,
+                )
+                return False, f"infected: {', '.join(result.threats_found)}"
+
+            elif result.status == ScanStatus.SKIPPED:
+                logger.warning(f"Scan skipped for {file_path}: {result.error_message}")
+                audit.log_file_scanned(
+                    job_id=job_id,
+                    filename=file_path,
+                    scan_result="skipped",
+                    metadata={"reason": result.error_message},
+                )
+                return True, "skipped"
+
+            else:  # ERROR
+                logger.error(f"Scan error for {file_path}: {result.error_message}")
+                audit.log_file_scanned(
+                    job_id=job_id,
+                    filename=file_path,
+                    scan_result="error",
+                    metadata={"error": result.error_message},
+                )
+                # On error, we fail safe - reject the file
+                return False, f"scan_error: {result.error_message}"
+
+        except Exception as e:
+            logger.error(f"Virus scan exception for {file_path}: {e}")
+            return False, f"scan_exception: {str(e)}"
+
+    async def delete_uploaded_file(
+        self, job_id: str, file_path: str, reason: str = "conversion_complete"
+    ) -> bool:
+        """
+        Delete an uploaded file and log the deletion.
+
+        Args:
+            job_id: Job ID
+            file_path: Path to the file to delete
+            reason: Reason for deletion
+
+        Returns:
+            True if deleted successfully
+        """
+        audit = get_audit_logger()
+
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                logger.info(
+                    f"Deleted uploaded file: {file_path} (job_id={job_id}, reason={reason})"
+                )
+                audit.log_file_deleted(
+                    job_id=job_id,
+                    filename=file_path,
+                    deleted_by="system",
+                    reason=reason,
+                )
+                return True
+            else:
+                logger.warning(f"File not found for deletion: {file_path}")
+                return False
+        except Exception as e:
+            logger.error(f"Error deleting file {file_path}: {e}")
+            return False
 
     async def get_upload_status(self, job_id: str) -> Optional[Dict[str, Any]]:
         """Get the current status of an upload job"""

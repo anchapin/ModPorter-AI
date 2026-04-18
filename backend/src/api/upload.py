@@ -5,11 +5,14 @@ Provides endpoints for:
 - JAR file upload with validation
 - Chunked upload support for large files
 - Upload status tracking
+
+Issue: #973 - File upload security: sandboxing, validation, and virus scanning
 """
 
 import os
 import uuid
 import logging
+import time
 from typing import Optional, List
 from datetime import datetime, timezone
 
@@ -22,12 +25,14 @@ from fastapi import (
     BackgroundTasks,
     Path,
     Query,
+    Request,
 )
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from core.storage import StorageManager
 from services.file_handler import FileHandler
+from services.audit_logger import get_audit_logger, AuditEventType
 from api.auth import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -116,6 +121,7 @@ async def upload_jar_file(
     file: UploadFile = File(...),
     background_tasks: BackgroundTasks = None,
     current_user=Depends(get_current_user),
+    request: Request = None,
 ) -> UploadCompleteResponse:
     """
     Upload a JAR file for processing.
@@ -126,16 +132,41 @@ async def upload_jar_file(
 
     Maximum file size: 100MB
     """
+    audit = get_audit_logger()
     user_id = str(current_user.id)
+    job_id = str(uuid.uuid4())
+    original_filename = file.filename
+    start_time = time.time()
+
+    # Get client IP
+    ip_address = None
+    if request:
+        forwarded = request.headers.get("X-Forwarded-For")
+        if forwarded:
+            ip_address = forwarded.split(",")[0].strip()
+        elif request.client:
+            ip_address = request.client.host
+
+    # Log upload start
+    audit.log_upload_started(
+        job_id=job_id,
+        filename=original_filename,
+        user_id=user_id,
+        ip_address=ip_address,
+    )
+
     # Validate file type
     if not validate_file_type(file.filename, file.content_type):
+        audit.log_security_violation(
+            violation_type="invalid_file_type",
+            filename=original_filename,
+            user_id=user_id,
+            ip_address=ip_address,
+            details=f"Extension not allowed: {os.path.splitext(original_filename)[1]}",
+        )
         raise HTTPException(
             status_code=400, detail=f"Invalid file type. Allowed: .jar, .zip, .mcaddon"
         )
-
-    # Generate job ID
-    job_id = str(uuid.uuid4())
-    original_filename = file.filename
 
     # Determine save path
     file_ext = os.path.splitext(original_filename)[1].lower()
@@ -149,6 +180,13 @@ async def upload_jar_file(
         # Validate file size (max 100MB)
         MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB
         if file_size > MAX_UPLOAD_SIZE:
+            audit.log_security_violation(
+                violation_type="file_size_exceeded",
+                filename=original_filename,
+                user_id=user_id,
+                ip_address=ip_address,
+                details=f"Size {file_size} > {MAX_UPLOAD_SIZE}",
+            )
             raise HTTPException(
                 status_code=413,
                 detail=f"File size exceeds the limit of {MAX_UPLOAD_SIZE // (1024 * 1024)}MB",
@@ -166,6 +204,16 @@ async def upload_jar_file(
         if background_tasks:
             background_tasks.add_task(file_handler.process_file, job_id=job_id, file_path=file_path)
 
+        duration_ms = (time.time() - start_time) * 1000
+        audit.log_upload_completed(
+            job_id=job_id,
+            filename=original_filename,
+            file_size=file_size,
+            user_id=user_id,
+            duration_ms=duration_ms,
+            ip_address=ip_address,
+        )
+
         logger.info(f"File uploaded successfully: {original_filename} -> {job_id}")
 
         return UploadCompleteResponse(
@@ -179,6 +227,14 @@ async def upload_jar_file(
     except HTTPException:
         raise
     except Exception as e:
+        duration_ms = (time.time() - start_time) * 1000
+        audit.log_upload_failed(
+            job_id=job_id,
+            filename=original_filename,
+            error_message=str(e),
+            user_id=user_id,
+            ip_address=ip_address,
+        )
         logger.error(f"Error uploading file: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to upload file: {str(e)}")
 
