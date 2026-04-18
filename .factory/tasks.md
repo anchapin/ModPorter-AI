@@ -1,6 +1,21 @@
 # Current Tasks
 
 ## Completed
+- ✅ Issue #1104: Texture Atlas Unpacking (JEI at 0%, JourneyMap at 7%)
+  - ✅ Created `ai-engine/utils/atlas_descriptor_parser.py`:
+    - `AtlasSpriteInfo`: Sprite data class with name, x, y, width, height
+    - `parse_atlas_descriptor()`: Parses Minecraft/sprite JSON formats
+    - `find_atlas_descriptors_in_jar()`: Finds atlas descriptor files
+    - `find_atlas_textures_in_jar()`: Detects potential atlas textures
+    - `extract_sprites_from_atlas()`: Extracts sprites using descriptor info
+    - `is_likely_atlas_texture()`: Heuristic for atlas detection
+  - ✅ Enhanced `bedrock_builder.py`:
+    - Added `_extract_atlas_textures_from_jar()` method
+    - Integrated into `_build_addon_mvp()` pipeline after bulk extraction
+    - Graceful fallback when no descriptor found (logs warning, skips)
+  - ✅ Added `ai-engine/tests/unit/test_atlas_descriptor_parser.py` (24 tests passing)
+
+## Completed
 - ✅ Issue #973: File upload security hardening (commit 77ef4db5)
   - ClamAV malware scanning integration
   - Audit logging for upload events

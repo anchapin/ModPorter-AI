@@ -9,7 +9,7 @@ import json
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from PIL import Image
 import logging
 from jinja2 import Environment, FileSystemLoader
@@ -17,6 +17,13 @@ from crewai.tools import tool
 
 from models.smart_assumptions import SmartAssumptionEngine
 from templates.template_engine import TemplateEngine
+from utils.atlas_descriptor_parser import (
+    parse_atlas_descriptor,
+    find_atlas_descriptors_in_jar,
+    find_atlas_textures_in_jar,
+    extract_sprites_from_atlas,
+    AtlasSpriteInfo,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -138,6 +145,16 @@ class BedrockBuilderAgent:
             result["bulk_textures_extracted"] = bulk_texture_results.get("extracted_count", 0)
             result["bulk_textures_copied"] = len(bulk_texture_results.get("copied_files", []))
             result["bulk_texture_errors"] = bulk_texture_results.get("errors", [])
+
+            # Atlas texture extraction: extract sprites from texture atlases (Issue #1104 fix)
+            # This handles JEI, JourneyMap, and other mods that use sprite sheet atlases
+            atlas_texture_results = self._extract_atlas_textures_from_jar(
+                jar_path, rp_path, namespace
+            )
+            result["atlas_textures_extracted"] = atlas_texture_results.get("extracted_count", 0)
+            result["atlases_detected"] = atlas_texture_results.get("atlases_detected", 0)
+            result["atlases_processed"] = atlas_texture_results.get("atlases_processed", 0)
+            result["atlas_texture_warnings"] = atlas_texture_results.get("warnings", [])
 
             # Package into .mcaddon file - use namespace:block_name format
             full_registry_name = f"{namespace}:{block_name}"
@@ -554,6 +571,156 @@ class BedrockBuilderAgent:
             result["errors"].append(f"Invalid JAR file: {jar_path}")
         except Exception as e:
             result["errors"].append(f"Failed to extract textures: {str(e)}")
+
+        return result
+
+    def _extract_atlas_textures_from_jar(
+        self,
+        jar_path: str,
+        rp_path: Path,
+        namespace: str,
+    ) -> Dict[str, Any]:
+        """
+        Extract textures from sprite sheet atlases using JSON descriptors.
+
+        This handles mods like JEI and JourneyMap that pack their textures
+        into sprite sheet atlases with accompanying JSON descriptor files
+        that map sprite names to regions.
+
+        Args:
+            jar_path: Path to the source JAR file
+            rp_path: Path to the resource pack directory
+            namespace: Default namespace if not found in JAR
+
+        Returns:
+            Dict with extraction results (extracted_count, copied_files, errors, warnings)
+        """
+        result = {
+            "extracted_count": 0,
+            "copied_files": [],
+            "errors": [],
+            "skipped_count": 0,
+            "warnings": [],
+            "atlases_detected": 0,
+            "atlases_processed": 0,
+        }
+
+        try:
+            with zipfile.ZipFile(jar_path, "r") as jar:
+                file_list = jar.namelist()
+
+                # Find all potential atlas textures
+                atlases = find_atlas_textures_in_jar(jar, namespace)
+
+                if not atlases:
+                    return result
+
+                result["atlases_detected"] = len(atlases)
+                logger.info(
+                    f"Atlas detection: found {len(atlases)} potential atlas textures in JAR"
+                )
+
+                for atlas_info in atlases:
+                    atlas_path = atlas_info["texture_path"]
+
+                    try:
+                        # Look for associated JSON descriptor
+                        json_descriptors = find_atlas_descriptors_in_jar(jar, namespace, "gui")
+                        descriptor_path = json_descriptors.get(atlas_path)
+
+                        # Read atlas image data
+                        atlas_data = jar.read(atlas_path)
+
+                        # Save to temp file for PIL processing
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as temp_atlas:
+                            temp_atlas.write(atlas_data)
+                            temp_atlas_path = temp_atlas.name
+
+                        sprites = {}
+
+                        if descriptor_path:
+                            # Parse the JSON descriptor
+                            try:
+                                desc_data = jar.read(descriptor_path)
+                                desc_json = json.loads(desc_data.decode("utf-8"))
+                                sprites = parse_atlas_descriptor(descriptor_path, atlas_path)
+                                logger.info(
+                                    f"Found atlas descriptor for {atlas_path}: "
+                                    f"{len(sprites)} sprites"
+                                )
+                            except Exception as e:
+                                result["warnings"].append(
+                                    f"Failed to parse descriptor {descriptor_path}: {e}"
+                                )
+
+                        if not sprites:
+                            # No descriptor - log and skip gracefully
+                            result["warnings"].append(
+                                f"No descriptor for atlas {atlas_path}, skipping "
+                                f"(manual extraction needed)"
+                            )
+                            logger.info(f"Skipping atlas {atlas_path} - no descriptor found")
+                            # Clean up temp file
+                            Path(temp_atlas_path).unlink(missing_ok=True)
+                            continue
+
+                        # Extract sprites using descriptor info
+                        extracted = extract_sprites_from_atlas(
+                            temp_atlas_path,
+                            sprites,
+                            str(rp_path / "textures"),
+                            naming_pattern="sprite_{name}",
+                        )
+
+                        for sprite in extracted:
+                            sprite_name = sprite["name"]
+                            sprite_path = sprite["path"]
+
+                            # Map to Bedrock path
+                            bedrock_path = f"textures/ui/{sprite_name}.png"
+
+                            # Move from temp location to final location
+                            final_path = rp_path / bedrock_path
+                            final_path.parent.mkdir(parents=True, exist_ok=True)
+
+                            # Read from temp, write to final
+                            with open(sprite_path, "rb") as f:
+                                sprite_data = f.read()
+                            with open(final_path, "wb") as f:
+                                f.write(sprite_data)
+
+                            result["copied_files"].append(
+                                {
+                                    "original_path": atlas_path,
+                                    "sprite_name": sprite_name,
+                                    "bedrock_path": bedrock_path,
+                                    "output_path": str(final_path),
+                                    "x": sprite["x"],
+                                    "y": sprite["y"],
+                                    "width": sprite["width"],
+                                    "height": sprite["height"],
+                                }
+                            )
+                            result["extracted_count"] += 1
+
+                        result["atlases_processed"] += 1
+
+                        # Clean up temp file
+                        Path(temp_atlas_path).unlink(missing_ok=True)
+
+                    except Exception as e:
+                        result["errors"].append(f"Failed to process atlas {atlas_path}: {str(e)}")
+                        result["skipped_count"] += 1
+
+                logger.info(
+                    f"Atlas extraction complete: {result['extracted_count']} sprites, "
+                    f"{result['atlases_processed']}/{result['atlases_detected']} atlases processed"
+                )
+
+        except zipfile.BadZipFile:
+            result["errors"].append(f"Invalid JAR file: {jar_path}")
+        except Exception as e:
+            result["errors"].append(f"Failed to extract atlas textures: {str(e)}")
 
         return result
 
