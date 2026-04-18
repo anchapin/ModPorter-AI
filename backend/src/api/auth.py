@@ -667,11 +667,11 @@ async def get_oauth_authorization_url(
 
     oauth_state: str = generate_oauth_state()
     oauth_authorization_url: str = oauth_provider.get_authorization_url(oauth_state)
-    oauth_csrf_token: str = oauth_state
-    oauth_cookie_key: str = f"oauth_state_{provider.lower()}"
+    cookie_val: str = oauth_state
+    cookie_key: str = f"oauth_state_{provider.lower()}"
     response.set_cookie(
-        key=oauth_cookie_key,
-        value=oauth_csrf_token,
+        key=cookie_key,
+        value=cookie_val,
         httponly=True,
         secure=True,
         samesite="lax",
