@@ -192,11 +192,31 @@ async def clean_db():
 @pytest_asyncio.fixture(scope="function")
 async def async_client():
     """Create an async HTTP client for testing FastAPI endpoints."""
+    from unittest.mock import patch, AsyncMock
     from httpx import AsyncClient, ASGITransport
     from src.main import app
+    from db.base import get_db
+
+    test_session_maker = async_sessionmaker(
+        bind=test_engine, expire_on_commit=False, class_=AsyncSession
+    )
+
+    async def override_get_db():
+        async with test_session_maker() as session:
+            try:
+                yield session
+            except Exception:
+                await session.rollback()
+                raise
+            finally:
+                await session.close()
+
+    app.dependency_overrides[get_db] = override_get_db
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
+
+    app.dependency_overrides.clear()
 
 
 @pytest_asyncio.fixture(scope="function")

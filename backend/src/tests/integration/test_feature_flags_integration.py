@@ -34,7 +34,7 @@ class TestFeatureFlagGating:
         )
 
         assert response.status_code == 403
-        assert "disabled" in response.json()["detail"].lower()
+        assert "disabled" in response.json()["message"].lower()
 
         os.environ["FEATURE_USER_ACCOUNTS"] = "true"
 
@@ -70,7 +70,7 @@ class TestFeatureFlagGating:
         )
 
         assert response.status_code == 403
-        assert "disabled" in response.json()["detail"].lower()
+        assert "disabled" in response.json()["message"].lower()
 
     async def test_billing_checkout_blocked_when_flag_disabled(
         self, async_client: AsyncClient, auth_headers: dict
@@ -85,7 +85,7 @@ class TestFeatureFlagGating:
         )
 
         assert response.status_code == 403
-        assert "disabled" in response.json()["detail"].lower()
+        assert "disabled" in response.json()["message"].lower()
 
         os.environ["FEATURE_PREMIUM_FEATURES"] = "true"
 
@@ -101,7 +101,7 @@ class TestFeatureFlagGating:
         )
 
         assert response.status_code == 403
-        assert "disabled" in response.json()["detail"].lower()
+        assert "disabled" in response.json()["message"].lower()
 
     async def test_api_keys_blocked_when_flag_disabled(
         self, async_client: AsyncClient, auth_headers: dict
@@ -116,7 +116,7 @@ class TestFeatureFlagGating:
         )
 
         assert response.status_code == 403
-        assert "disabled" in response.json()["detail"].lower()
+        assert "disabled" in response.json()["message"].lower()
 
         os.environ["FEATURE_API_KEYS"] = "true"
 
@@ -150,7 +150,7 @@ class TestFeatureFlagGracefulFallback:
         )
 
         assert response.status_code == 403
-        detail = response.json()["detail"].lower()
+        detail = response.json()["message"].lower()
         assert "disabled" in detail or "contact" in detail
 
         os.environ["FEATURE_USER_ACCOUNTS"] = "true"
@@ -167,7 +167,7 @@ class TestFeatureFlagGracefulFallback:
         )
 
         assert response.status_code == 403
-        detail = response.json()["detail"].lower()
+        detail = response.json()["message"].lower()
         assert "disabled" in detail or "premium" in detail
 
     async def test_clear_message_when_api_keys_disabled(
@@ -183,7 +183,7 @@ class TestFeatureFlagGracefulFallback:
         )
 
         assert response.status_code == 403
-        detail = response.json()["detail"].lower()
+        detail = response.json()["message"].lower()
         assert "disabled" in detail or "contact" in detail
 
 
