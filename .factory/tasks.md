@@ -64,6 +64,17 @@
 - 🟡 Issue #1002: Sound and localization extraction (0/187 sounds, 0/292 lang files)
 
 ## Recently Completed
+- ✅ Issue #978: Marketing landing page for ModPorter-AI
+  - ✅ Landing page with B2B conversion accelerator positioning
+  - ✅ Hero section: "Get Your Java Mods on the Marketplace Faster"
+  - ✅ Conversion benchmarks section (68% avg coverage, 30+ mods tested)
+  - ✅ Features: automated conversion, detailed reports, professional output
+  - ✅ How it works: Upload → Convert → Review Report → Finish Manual
+  - ✅ Social proof with testimonials from Marketplace creators
+  - ✅ Pricing: Free (5/mo), Pro ($9.99/mo), Marketplace (custom)
+  - ✅ FAQ, SEO meta tags, mobile responsive design
+  - ✅ Routes: / → LandingPage, /convert → ConvertPage
+
 - ✅ Issue #989: Implement Prompt-Based Reinforcement Learning with Conversion Examples
   - ✅ Created `rl/prompt_optimizer.py` with:
     - `PromptExampleStore`: Stores high-quality examples in vector DB (SQLite + embeddings)
