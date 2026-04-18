@@ -13,7 +13,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import stripe
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -25,7 +25,7 @@ from security.auth import verify_token
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/billing", tags=["Billing"])
+router = APIRouter(prefix="", tags=["Billing"])
 
 security = HTTPBearer()
 
@@ -116,16 +116,23 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """Dependency to get the current authenticated user"""
+    from uuid import UUID
+
     token = credentials.credentials
     payload = verify_token(token)
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
-    user_id = payload.get("sub")
+    user_id = payload
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid token payload")
 
-    result = await db.execute(select(User).where(User.id == user_id))
+    try:
+        user_uuid = UUID(user_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    result = await db.execute(select(User).where(User.id == user_uuid))
     user = result.scalar_one_or_none()
 
     if not user:
@@ -149,6 +156,13 @@ async def create_checkout_session(
     3. Backend creates Stripe Checkout session with optional trial
     4. Returns checkout_url for frontend redirect
     """
+    from services.feature_flags import is_feature_enabled
+
+    if not is_feature_enabled("premium_features"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Premium features are currently disabled. Please contact support if you believe this is an error.",
+        )
     if request.tier not in TIER_PRICE_IDS:
         raise HTTPException(status_code=400, detail=f"Invalid tier: {request.tier}")
 
@@ -227,6 +241,13 @@ async def create_portal_session(
     - Cancel subscriptions
     - Download invoices
     """
+    from services.feature_flags import is_feature_enabled
+
+    if not is_feature_enabled("premium_features"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Premium features are currently disabled. Please contact support if you believe this is an error.",
+        )
     if not user.stripe_customer_id:
         raise HTTPException(
             status_code=400, detail="No billing account found. Please subscribe first."
@@ -436,8 +457,17 @@ async def handle_invoice_paid(invoice: dict, db: AsyncSession):
 
 
 @router.get("/subscription", response_model=SubscriptionStatus)
-async def get_subscription_status(user: User = Depends(get_current_user)):
+async def get_subscription_status(
+    user: User = Depends(get_current_user),
+):
     """Get current user's subscription status"""
+    from services.feature_flags import is_feature_enabled
+
+    if not is_feature_enabled("premium_features"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Premium features are currently disabled. Please contact support if you believe this is an error.",
+        )
     return SubscriptionStatus(
         tier=user.subscription_tier or "free",
         status=user.subscription_status,

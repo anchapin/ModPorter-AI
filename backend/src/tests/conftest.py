@@ -177,6 +177,132 @@ async def db_session():
             await session.close()
 
 
+@pytest_asyncio.fixture(scope="function")
+async def clean_db():
+    """Create a clean database session that rolls back after each test."""
+    async with test_engine.begin() as connection:
+        session = AsyncSession(bind=connection, expire_on_commit=False)
+        try:
+            yield session
+        finally:
+            await session.rollback()
+            await session.close()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def async_client():
+    """Create an async HTTP client for testing FastAPI endpoints."""
+    from unittest.mock import patch, AsyncMock
+    from httpx import AsyncClient, ASGITransport
+    from src.main import app
+    from db.base import get_db
+
+    test_session_maker = async_sessionmaker(
+        bind=test_engine, expire_on_commit=False, class_=AsyncSession
+    )
+
+    async def override_get_db():
+        async with test_session_maker() as session:
+            try:
+                yield session
+            except Exception:
+                await session.rollback()
+                raise
+            finally:
+                await session.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        yield client
+
+    app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def auth_headers():
+    """Create authentication headers for a test user with a real database entry."""
+    from datetime import timedelta
+    from security.auth import create_access_token
+    from db.models import User
+    import uuid
+
+    test_user_id = uuid.uuid4()
+    unique_email = f"test-{uuid.uuid4().hex[:8]}@example.com"
+
+    test_session_maker = async_sessionmaker(
+        bind=test_engine, expire_on_commit=False, class_=AsyncSession
+    )
+    async with test_session_maker() as session:
+        test_user = User(
+            id=test_user_id,
+            email=unique_email,
+            password_hash="$2b$12$test_hash_for_testing_only",
+            is_verified=True,
+        )
+        session.add(test_user)
+        await session.commit()
+
+    token = create_access_token(
+        user_id=str(test_user_id),
+        expires_delta=timedelta(hours=1),
+    )
+
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture(autouse=True)
+def reset_feature_flag_manager():
+    """Reset the feature flag manager singleton between tests to prevent state pollution."""
+    import services.feature_flags as ff_module
+
+    # Store original manager
+    original_manager = ff_module._default_manager
+
+    # Reset to None before each test
+    ff_module._default_manager = None
+
+    yield
+
+    # Reset after each test as well
+    ff_module._default_manager = None
+
+    # Restore original if it existed
+    if original_manager is not None:
+        ff_module._default_manager = original_manager
+
+
+@pytest.fixture(autouse=True)
+def clean_feature_flag_env():
+    """Clean feature flag environment variables before each test."""
+    import os
+
+    # Store original values
+    original_values = {}
+    flag_vars = [
+        "FEATURE_USER_ACCOUNTS",
+        "FEATURE_PREMIUM_FEATURES",
+        "FEATURE_API_KEYS",
+        "FEATURE_FLAG_USER_ACCOUNTS",
+        "FEATURE_FLAG_PREMIUM_FEATURES",
+        "FEATURE_FLAG_API_KEYS",
+    ]
+
+    for var in flag_vars:
+        original_values[var] = os.environ.get(var)
+        if var in os.environ:
+            del os.environ[var]
+
+    yield
+
+    # Restore original values
+    for var, value in original_values.items():
+        if value is not None:
+            os.environ[var] = value
+        elif var in os.environ:
+            del os.environ[var]
+
+
 @pytest.fixture
 def client():
     """Create a test client for the FastAPI app with clean database per test."""

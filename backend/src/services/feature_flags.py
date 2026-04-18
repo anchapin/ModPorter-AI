@@ -123,13 +123,11 @@ class FeatureFlagManager:
 
     def _load_from_env(self) -> None:
         """Load feature flags from environment variables."""
-        # Environment variable prefix for feature flags
         prefix = "FEATURE_FLAG_"
 
         for key, value in os.environ.items():
             if key.startswith(prefix):
                 flag_name = key[len(prefix) :].lower()
-                # Parse boolean value
                 is_enabled = value.lower() in ("true", "1", "yes", "on")
                 self.register_flag(
                     name=flag_name,
@@ -138,6 +136,23 @@ class FeatureFlagManager:
                     description=f"Loaded from environment variable {key}",
                 )
                 logger.debug(f"Loaded feature flag '{flag_name}' from environment: {is_enabled}")
+
+        legacy_flags = {
+            "FEATURE_USER_ACCOUNTS": "user_accounts",
+            "FEATURE_PREMIUM_FEATURES": "premium_features",
+            "FEATURE_API_KEYS": "api_keys",
+        }
+        for env_var, flag_name in legacy_flags.items():
+            if env_var in os.environ:
+                is_enabled = os.environ[env_var].lower() in ("true", "1", "yes", "on")
+                if flag_name not in self._flags:
+                    self.register_flag(
+                        name=flag_name,
+                        flag_type=FeatureFlagType.BOOLEAN,
+                        enabled=is_enabled,
+                        description=f"Loaded from {env_var}",
+                    )
+                    logger.debug(f"Loaded feature flag '{flag_name}' from {env_var}: {is_enabled}")
 
     def _load_from_file(self, config_file: str) -> None:
         """Load feature flags from a JSON configuration file."""
@@ -591,6 +606,21 @@ DEFAULT_FLAGS = {
         "enabled": True,
         "percentage": 5.0,
         "description": "Gradual rollout of failure analysis features",
+    },
+    "user_accounts": {
+        "flag_type": "boolean",
+        "enabled": False,
+        "description": "Enable user registration and login (FEATURE_USER_ACCOUNTS)",
+    },
+    "premium_features": {
+        "flag_type": "boolean",
+        "enabled": False,
+        "description": "Enable premium features including billing (FEATURE_PREMIUM_FEATURES)",
+    },
+    "api_keys": {
+        "flag_type": "boolean",
+        "enabled": False,
+        "description": "Enable API key generation and management (FEATURE_API_KEYS)",
     },
 }
 

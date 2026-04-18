@@ -33,10 +33,26 @@ from security.auth import (
     generate_api_key,
     hash_api_key,
 )
+from services.feature_flags import is_feature_enabled
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+def require_feature_flag(flag_name: str):
+    """Dependency that checks if a feature flag is enabled."""
+
+    async def check_flag():
+        if not is_feature_enabled(flag_name):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"This feature is currently disabled. Please contact support if you believe this is an error.",
+            )
+        return True
+
+    return check_flag
+
+
+router = APIRouter(tags=["Authentication"])
 
 # Security scheme
 security = HTTPBearer()
@@ -150,6 +166,8 @@ async def get_current_user(
     Raises:
         HTTPException: 401 if token is invalid or user not found
     """
+    from uuid import UUID
+
     token = credentials.credentials
     user_id = verify_token(token, "access")
 
@@ -160,7 +178,16 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    result = await db.execute(select(User).where(User.id == user_id))
+    try:
+        user_uuid = UUID(user_id)
+    except (ValueError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    result = await db.execute(select(User).where(User.id == user_uuid))
     user = result.scalar_one_or_none()
 
     if not user:
@@ -182,6 +209,7 @@ async def get_current_user(
 async def register(
     request_data: RegisterRequest,
     db: AsyncSession = Depends(get_db),
+    _: bool = Depends(require_feature_flag("user_accounts")),
 ):
     """
     Register a new user account.
@@ -220,6 +248,7 @@ async def register(
 async def login(
     request_data: LoginRequest,
     db: AsyncSession = Depends(get_db),
+    _: bool = Depends(require_feature_flag("user_accounts")),
 ):
     """
     Login with email and password.
@@ -461,6 +490,7 @@ async def create_api_key_endpoint(
     request_data: dict,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    _: bool = Depends(require_feature_flag("api_keys")),
 ):
     """
     Create a new API key.
@@ -494,6 +524,7 @@ async def create_api_key_endpoint(
 async def list_api_keys(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    _: bool = Depends(require_feature_flag("api_keys")),
 ):
     """
     List all API keys for current user.
@@ -521,6 +552,7 @@ async def revoke_api_key(
     key_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    _: bool = Depends(require_feature_flag("api_keys")),
 ):
     """
     Revoke (delete) an API key.
