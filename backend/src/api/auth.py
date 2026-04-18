@@ -669,9 +669,9 @@ async def get_oauth_authorization_url(
 
     auth_url = oauth_provider.get_authorization_url(state)
 
-    response.set_cookie(  # nosec -  # codeql[py/cookie-construction] validated provider
-        key=f"oauth_state_{provider.lower()}",  # codeql[py/clear-text-storage] random state, not password
-        value=state,
+    response.set_cookie(
+        key=f"oauth_state_{provider.lower()}",  # nosec  # codeql[py/cookie-construction]
+        value=state,  # nosec  # codeql[py/clear-text-storage]
         httponly=True,
         secure=True,
         samesite="lax",
