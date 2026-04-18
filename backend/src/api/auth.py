@@ -34,6 +34,7 @@ from security.auth import (
     hash_api_key,
 )
 from services.feature_flags import is_feature_enabled
+from services.email_service import send_verification_email, send_password_reset_email
 
 logger = logging.getLogger(__name__)
 
@@ -238,6 +239,12 @@ async def register(
 
     logger.info(f"Email verification token generated for {request_data.email}")
 
+    await send_verification_email(
+        email=user.email,
+        verification_token=verification_token,
+        expiry_hours=24,
+    )
+
     return RegisterResponse(
         message="User registered. Please check email for verification link.",
         user_id=str(user.id),
@@ -374,6 +381,12 @@ async def forgot_password(
         await db.commit()
 
         logger.info(f"Password reset token generated for {request_data.email}")
+
+        await send_password_reset_email(
+            email=user.email,
+            reset_token=reset_token,
+            expiry_hours=1,
+        )
 
     return MessageResponse(
         message="If the email is registered, a password reset link has been sent."
