@@ -149,6 +149,13 @@ async def create_checkout_session(
     3. Backend creates Stripe Checkout session with optional trial
     4. Returns checkout_url for frontend redirect
     """
+    from services.feature_flags import is_feature_enabled
+
+    if not is_feature_enabled("premium_features"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Premium features are currently disabled. Please contact support if you believe this is an error.",
+        )
     if request.tier not in TIER_PRICE_IDS:
         raise HTTPException(status_code=400, detail=f"Invalid tier: {request.tier}")
 
@@ -227,6 +234,13 @@ async def create_portal_session(
     - Cancel subscriptions
     - Download invoices
     """
+    from services.feature_flags import is_feature_enabled
+
+    if not is_feature_enabled("premium_features"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Premium features are currently disabled. Please contact support if you believe this is an error.",
+        )
     if not user.stripe_customer_id:
         raise HTTPException(
             status_code=400, detail="No billing account found. Please subscribe first."
@@ -438,6 +452,13 @@ async def handle_invoice_paid(invoice: dict, db: AsyncSession):
 @router.get("/subscription", response_model=SubscriptionStatus)
 async def get_subscription_status(user: User = Depends(get_current_user)):
     """Get current user's subscription status"""
+    from services.feature_flags import is_feature_enabled
+
+    if not is_feature_enabled("premium_features"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Premium features are currently disabled. Please contact support if you believe this is an error.",
+        )
     return SubscriptionStatus(
         tier=user.subscription_tier or "free",
         status=user.subscription_status,

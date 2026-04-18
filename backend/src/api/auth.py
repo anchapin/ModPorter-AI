@@ -33,8 +33,24 @@ from security.auth import (
     generate_api_key,
     hash_api_key,
 )
+from services.feature_flags import is_feature_enabled
 
 logger = logging.getLogger(__name__)
+
+
+def require_feature_flag(flag_name: str):
+    """Dependency that checks if a feature flag is enabled."""
+
+    async def check_flag():
+        if not is_feature_enabled(flag_name):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"This feature is currently disabled. Please contact support if you believe this is an error.",
+            )
+        return True
+
+    return check_flag
+
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -182,6 +198,7 @@ async def get_current_user(
 async def register(
     request_data: RegisterRequest,
     db: AsyncSession = Depends(get_db),
+    _: bool = Depends(require_feature_flag("user_accounts")),
 ):
     """
     Register a new user account.
@@ -220,6 +237,7 @@ async def register(
 async def login(
     request_data: LoginRequest,
     db: AsyncSession = Depends(get_db),
+    _: bool = Depends(require_feature_flag("user_accounts")),
 ):
     """
     Login with email and password.
@@ -461,6 +479,7 @@ async def create_api_key_endpoint(
     request_data: dict,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    _: bool = Depends(require_feature_flag("api_keys")),
 ):
     """
     Create a new API key.
@@ -494,6 +513,7 @@ async def create_api_key_endpoint(
 async def list_api_keys(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    _: bool = Depends(require_feature_flag("api_keys")),
 ):
     """
     List all API keys for current user.
@@ -521,6 +541,7 @@ async def revoke_api_key(
     key_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    _: bool = Depends(require_feature_flag("api_keys")),
 ):
     """
     Revoke (delete) an API key.
