@@ -53,7 +53,10 @@ def client(mock_db):
                                     return_value=("full_key_123", "prefix_123"),
                                 ):
                                     with patch("api.auth.hash_api_key", return_value="hashed_key"):
-                                        yield TestClient(app)
+                                        with patch(
+                                            "api.auth.is_feature_enabled", return_value=True
+                                        ):
+                                            yield TestClient(app)
 
     app.dependency_overrides.clear()
 
