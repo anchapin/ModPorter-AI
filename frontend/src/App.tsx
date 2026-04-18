@@ -15,6 +15,7 @@ const DocumentationSimple = lazy(() =>
   }))
 );
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const LandingPage = lazy(() => import('./pages/LandingPage'));
 const ConvertPage = lazy(() => import('./pages/ConvertPage'));
 const ComparisonView = lazy(() =>
   import('./components/ComparisonView').then((m) => ({
@@ -73,6 +74,14 @@ function App() {
               <Routes>
                 <Route
                   path="/"
+                  element={
+                    <Suspense fallback={<div>Loading...</div>}>
+                      <LandingPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/convert"
                   element={
                     <Suspense fallback={<div>Loading...</div>}>
                       <ConvertPage />
