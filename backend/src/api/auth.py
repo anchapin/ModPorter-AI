@@ -9,19 +9,27 @@ Endpoints:
 - GET /api/v1/auth/verify-email/{token} - Verify email address
 - POST /api/v1/auth/forgot-password - Request password reset
 - POST /api/v1/auth/reset-password/{token} - Reset password
+OAuth Endpoints (Issue #980):
+- GET /api/v1/auth/oauth/{provider} - Get OAuth authorization URL
+- GET /api/v1/auth/oauth/{provider}/callback - OAuth callback
+- GET /api/v1/auth/oauth/{provider}/status - Get OAuth connection status
+- DELETE /api/v1/auth/oauth/{provider}/unlink - Unlink OAuth account
+- POST /api/v1/auth/oauth/link - Link OAuth account to user
 """
 
 import logging
+import secrets
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.base import get_db
-from db.models import User, APIKey
+from db.models import User, APIKey, OAuthAccount
 from security.auth import (
     hash_password,
     verify_password,
@@ -35,6 +43,7 @@ from security.auth import (
 )
 from services.feature_flags import is_feature_enabled
 from services.email_service import send_verification_email, send_password_reset_email
+from services.oauth_service import oauth_service, generate_oauth_state
 
 logger = logging.getLogger(__name__)
 
@@ -588,3 +597,327 @@ async def revoke_api_key(
     await db.commit()
 
     return MessageResponse(message="API key revoked")
+
+
+# ============================================
+# OAuth Endpoints (Issue #980)
+# ============================================
+
+
+class OAuthAuthorizationRequest(BaseModel):
+    """Optional request to link OAuth to existing account"""
+
+    email: Optional[EmailStr] = None
+
+
+class OAuthLinkRequest(BaseModel):
+    """Request to link OAuth account to existing user"""
+
+    oauth_provider: str
+    oauth_provider_user_id: str
+    oauth_email: Optional[str] = None
+
+
+class OAuthCallbackResponse(BaseModel):
+    """OAuth callback response"""
+
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    is_new_user: bool
+    message: str
+
+
+class OAuthProviderStatus(BaseModel):
+    """OAuth provider connection status"""
+
+    provider: str
+    enabled: bool
+    connected: bool
+    email: Optional[str] = None
+    username: Optional[str] = None
+
+
+@router.get("/oauth/{provider}", tags=["OAuth"])
+async def get_oauth_authorization_url(
+    provider: str,
+    response: Response,
+):
+    """
+    Get OAuth authorization URL for the specified provider.
+
+    Providers: discord, github, google
+    """
+    provider = provider.lower()
+
+    if provider not in ["discord", "github", "google"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported OAuth provider: {provider}. Supported: discord, github, google",
+        )
+
+    oauth_service_instance = oauth_service
+    oauth_provider = oauth_service_instance.get_provider(provider)
+
+    if not oauth_provider:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"{provider.title()} OAuth is not configured",
+        )
+
+    oauth_state: str = generate_oauth_state()
+    oauth_authorization_url: str = oauth_provider.get_authorization_url(oauth_state)
+    cookie_val: str = oauth_state
+    cookie_key: str = f"oauth_state_{provider.lower()}"
+    response.set_cookie(
+        key=cookie_key,
+        value=cookie_val,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=600,
+    )
+
+    return {"authorization_url": oauth_authorization_url, "state": oauth_state}
+
+
+@router.get("/oauth/{provider}/callback", tags=["OAuth"])
+async def oauth_callback(
+    provider: str,
+    code: str,
+    state: Optional[str] = None,
+    error: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    OAuth callback endpoint.
+
+    Handles the OAuth callback from the provider and either:
+    - Creates a new user account
+    - Logs in existing user via OAuth
+    - Links OAuth account to existing user (if email matches)
+    """
+    provider = provider.lower()
+
+    if error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"OAuth error: {error}",
+        )
+
+    if provider not in ["discord", "github", "google"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported OAuth provider: {provider}",
+        )
+
+    oauth_provider = oauth_service.get_provider(provider)
+    if not oauth_provider:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"{provider.title()} OAuth is not configured",
+        )
+
+    oauth_user_info = await oauth_provider.exchange_code(code)
+
+    existing_oauth_account = await db.execute(
+        select(OAuthAccount).where(
+            OAuthAccount.oauth_provider == provider,
+            OAuthAccount.oauth_provider_user_id == oauth_user_info.provider_user_id,
+        )
+    )
+    oauth_account = existing_oauth_account.scalar_one_or_none()
+
+    if oauth_account:
+        result = await db.execute(select(User).where(User.id == oauth_account.user_id))
+        user = result.scalar_one_or_none()
+        if user:
+            access_token = create_access_token(str(user.id))
+            refresh_token = create_refresh_token(str(user.id))
+            return OAuthCallbackResponse(
+                access_token=access_token,
+                refresh_token=refresh_token,
+                is_new_user=False,
+                message="Logged in successfully",
+            )
+
+    if oauth_user_info.email:
+        result = await db.execute(select(User).where(User.email == oauth_user_info.email))
+        existing_user = result.scalar_one_or_none()
+
+        if existing_user:
+            new_oauth_account = OAuthAccount(
+                user_id=existing_user.id,
+                oauth_provider=provider,
+                oauth_provider_user_id=oauth_user_info.provider_user_id,
+                oauth_access_token=oauth_user_info.access_token,
+                oauth_refresh_token=oauth_user_info.refresh_token,
+                oauth_token_expires_at=oauth_user_info.expires_at,
+                oauth_email=oauth_user_info.email,
+                oauth_username=oauth_user_info.username,
+            )
+            db.add(new_oauth_account)
+            await db.commit()
+
+            access_token = create_access_token(str(existing_user.id))
+            refresh_token = create_refresh_token(str(existing_user.id))
+            return OAuthCallbackResponse(
+                access_token=access_token,
+                refresh_token=refresh_token,
+                is_new_user=False,
+                message="OAuth account linked to existing user",
+            )
+
+    verification_token = generate_verification_token()
+    temp_password = secrets.token_urlsafe(32)
+
+    new_user = User(
+        email=oauth_user_info.email or f"{provider}_{oauth_user_info.provider_user_id}@oauth.local",
+        password_hash=hash_password(temp_password),
+        is_verified=True,
+        verification_token=verification_token,
+        verification_token_expires=datetime.now(timezone.utc) + timedelta(hours=24),
+        oauth_provider=provider,
+        oauth_provider_user_id=oauth_user_info.provider_user_id,
+    )
+    db.add(new_user)
+    await db.commit()
+    await db.refresh(new_user)
+
+    new_oauth_account = OAuthAccount(
+        user_id=new_user.id,
+        oauth_provider=provider,
+        oauth_provider_user_id=oauth_user_info.provider_user_id,
+        oauth_access_token=oauth_user_info.access_token,
+        oauth_refresh_token=oauth_user_info.refresh_token,
+        oauth_token_expires_at=oauth_user_info.expires_at,
+        oauth_email=oauth_user_info.email,
+        oauth_username=oauth_user_info.username,
+    )
+    db.add(new_oauth_account)
+    await db.commit()
+
+    access_token = create_access_token(str(new_user.id))
+    refresh_token = create_refresh_token(str(new_user.id))
+    return OAuthCallbackResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        is_new_user=True,
+        message="Account created successfully",
+    )
+
+
+@router.get("/oauth/{provider}/status", tags=["OAuth"])
+async def get_oauth_status(
+    provider: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get OAuth connection status for a provider.
+    """
+    provider = provider.lower()
+
+    result = await db.execute(
+        select(OAuthAccount).where(
+            OAuthAccount.user_id == current_user.id,
+            OAuthAccount.oauth_provider == provider,
+        )
+    )
+    oauth_account = result.scalar_one_or_none()
+
+    return OAuthProviderStatus(
+        provider=provider,
+        enabled=oauth_service.is_provider_enabled(provider),
+        connected=oauth_account is not None,
+        email=oauth_account.oauth_email if oauth_account else None,
+        username=oauth_account.oauth_username if oauth_account else None,
+    )
+
+
+@router.delete("/oauth/{provider}/unlink", tags=["OAuth"])
+async def unlink_oauth_account(
+    provider: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Unlink OAuth account from user.
+
+    User must have a password set to unlink OAuth.
+    """
+    provider = provider.lower()
+
+    if not current_user.password_hash:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot unlink last authentication method. Please set a password first.",
+        )
+
+    result = await db.execute(
+        select(OAuthAccount).where(
+            OAuthAccount.user_id == current_user.id,
+            OAuthAccount.oauth_provider == provider,
+        )
+    )
+    oauth_account = result.scalar_one_or_none()
+
+    if not oauth_account:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No {provider} account linked",
+        )
+
+    await db.delete(oauth_account)
+    await db.commit()
+
+    return MessageResponse(message=f"{provider.title()} account unlinked successfully")
+
+
+@router.post("/oauth/link", tags=["OAuth"])
+async def link_oauth_account(
+    request_data: OAuthLinkRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Link an OAuth account to the current user.
+    """
+    provider = request_data.oauth_provider.lower()
+
+    if provider not in ["discord", "github", "google"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported OAuth provider: {provider}",
+        )
+
+    if not current_user.password_hash:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot link OAuth to account without password. Please set a password first.",
+        )
+
+    result = await db.execute(
+        select(OAuthAccount).where(
+            OAuthAccount.oauth_provider == provider,
+            OAuthAccount.oauth_provider_user_id == request_data.oauth_provider_user_id,
+        )
+    )
+    existing = result.scalar_one_or_none()
+
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This OAuth account is already linked to another user",
+        )
+
+    new_oauth_account = OAuthAccount(
+        user_id=current_user.id,
+        oauth_provider=provider,
+        oauth_provider_user_id=request_data.oauth_provider_user_id,
+        oauth_email=request_data.oauth_email,
+    )
+    db.add(new_oauth_account)
+    await db.commit()
+
+    return MessageResponse(message=f"{provider.title()} account linked successfully")

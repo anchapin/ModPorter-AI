@@ -765,7 +765,7 @@ class User(Base):
         unique=True,
         index=True,
     )
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     is_verified: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
@@ -788,6 +788,15 @@ class User(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+    # OAuth fields (Issue #980)
+    # Primary OAuth provider (discord, github, google)
+    oauth_provider: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    # OAuth provider's user ID
+    oauth_provider_user_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    # Store OAuth access token (encrypted) for API calls if needed
+    oauth_access_token: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    # Store OAuth refresh token (encrypted) for token refresh
+    oauth_refresh_token: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     # Subscription / Billing fields (Issue #970)
     subscription_tier: Mapped[str] = mapped_column(
         String(50),
@@ -819,6 +828,62 @@ class User(Base):
     # Relationships
     api_keys = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
     usage_records = relationship("UsageRecord", back_populates="user", cascade="all, delete-orphan")
+
+    # OAuth account linking
+    oauth_accounts = relationship(
+        "OAuthAccount", back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class OAuthAccount(Base):
+    """OAuth account linking for users (Issue #980)"""
+
+    __tablename__ = "oauth_accounts"
+    __table_args__ = {"extend_existing": True}
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    user_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    oauth_provider: Mapped[str] = mapped_column(String(50), nullable=False)
+    oauth_provider_user_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    oauth_access_token: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    oauth_refresh_token: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    oauth_token_expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    oauth_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    oauth_username: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # Relationship
+    user = relationship("User", back_populates="oauth_accounts")
+
+    __table_args__ = (
+        Index(
+            "ix_oauth_accounts_provider_user",
+            "oauth_provider",
+            "oauth_provider_user_id",
+            unique=True,
+        ),
+    )
 
 
 class APIKey(Base):

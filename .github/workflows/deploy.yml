@@ -222,7 +222,7 @@ jobs:
           scan-ref: '.'
           format: 'sarif'
           output: 'trivy-results.sarif'
-          version: 'latest'
+          version: 'v0.25.4'
           exit-code: '0' # Report only, don't fail workflow
           ignore-unfixed: true
           vuln-type: 'os,library'
