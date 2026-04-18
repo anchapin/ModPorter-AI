@@ -669,7 +669,7 @@ async def get_oauth_authorization_url(
 
     auth_url = oauth_provider.get_authorization_url(state)
 
-    # CodeQL: state is cryptographically random, not user input
+    # CodeQL: state is cryptographically random CSRF token (secrets.token_urlsafe), not password
     response.set_cookie(
         key=f"oauth_state_{provider.lower()}",
         value=state,
@@ -679,7 +679,7 @@ async def get_oauth_authorization_url(
         max_age=600,
     )
 
-    return {"authorization_url": auth_url, "state": state}
+    return {"authorization_url": auth_url}
 
 
 @router.get("/oauth/{provider}/callback", tags=["OAuth"])
