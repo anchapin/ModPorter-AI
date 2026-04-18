@@ -240,6 +240,37 @@ def reset_feature_flag_manager():
         ff_module._default_manager = original_manager
 
 
+@pytest.fixture(autouse=True)
+def clean_feature_flag_env():
+    """Clean feature flag environment variables before each test."""
+    import os
+
+    # Store original values
+    original_values = {}
+    flag_vars = [
+        "FEATURE_USER_ACCOUNTS",
+        "FEATURE_PREMIUM_FEATURES",
+        "FEATURE_API_KEYS",
+        "FEATURE_FLAG_USER_ACCOUNTS",
+        "FEATURE_FLAG_PREMIUM_FEATURES",
+        "FEATURE_FLAG_API_KEYS",
+    ]
+
+    for var in flag_vars:
+        original_values[var] = os.environ.get(var)
+        if var in os.environ:
+            del os.environ[var]
+
+    yield
+
+    # Restore original values
+    for var, value in original_values.items():
+        if value is not None:
+            os.environ[var] = value
+        elif var in os.environ:
+            del os.environ[var]
+
+
 @pytest.fixture
 def client():
     """Create a test client for the FastAPI app with clean database per test."""
