@@ -670,7 +670,7 @@ async def get_oauth_authorization_url(
     auth_url = oauth_provider.get_authorization_url(state)
 
     cookie_key = f"oauth_state_{provider.lower()}"  # nosec
-    cookie_value = state  # nosec
+    cookie_value: str = state  # nosec - OAuth state token, not a password
     response.set_cookie(
         key=cookie_key,
         value=cookie_value,
