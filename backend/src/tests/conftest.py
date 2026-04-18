@@ -177,6 +177,69 @@ async def db_session():
             await session.close()
 
 
+@pytest_asyncio.fixture(scope="function")
+async def clean_db():
+    """Create a clean database session that rolls back after each test."""
+    async with test_engine.begin() as connection:
+        session = AsyncSession(bind=connection, expire_on_commit=False)
+        try:
+            yield session
+        finally:
+            await session.rollback()
+            await session.close()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def async_client():
+    """Create an async HTTP client for testing FastAPI endpoints."""
+    from httpx import AsyncClient, ASGITransport
+    from src.main import app
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        yield client
+
+
+@pytest_asyncio.fixture(scope="function")
+async def auth_headers():
+    """Create authentication headers for a test user."""
+    from datetime import datetime, timedelta
+    from security.auth import create_access_token
+
+    test_user_id = "test-user-123"
+    test_email = "test@example.com"
+
+    token = create_access_token(
+        data={
+            "sub": test_user_id,
+            "email": test_email,
+            "exp": datetime.utcnow() + timedelta(hours=1),
+        }
+    )
+
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture(autouse=True)
+def reset_feature_flag_manager():
+    """Reset the feature flag manager singleton between tests to prevent state pollution."""
+    import services.feature_flags as ff_module
+
+    # Store original manager
+    original_manager = ff_module._default_manager
+
+    # Reset to None before each test
+    ff_module._default_manager = None
+
+    yield
+
+    # Reset after each test as well
+    ff_module._default_manager = None
+
+    # Restore original if it existed
+    if original_manager is not None:
+        ff_module._default_manager = original_manager
+
+
 @pytest.fixture
 def client():
     """Create a test client for the FastAPI app with clean database per test."""
