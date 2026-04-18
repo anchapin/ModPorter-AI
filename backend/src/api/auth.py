@@ -665,22 +665,20 @@ async def get_oauth_authorization_url(
             detail=f"{provider.title()} OAuth is not configured",
         )
 
-    state: str = generate_oauth_state()
-
-    auth_url = oauth_provider.get_authorization_url(state)
-
-    cookie_key = f"oauth_state_{provider.lower()}"  # nosec
-    cookie_value: str = state  # nosec - OAuth state token, not a password
+    oauth_state: str = generate_oauth_state()
+    oauth_authorization_url: str = oauth_provider.get_authorization_url(oauth_state)
+    oauth_cookie_name: str = f"oauth_state_{provider.lower()}"
+    oauth_cookie_value: str = oauth_state  # nosec - OAuth state token, not a password
     response.set_cookie(
-        key=cookie_key,
-        value=cookie_value,
+        key=oauth_cookie_name,
+        value=oauth_cookie_value,
         httponly=True,
         secure=True,
         samesite="lax",
         max_age=600,
     )
 
-    return {"authorization_url": auth_url, "state": state}
+    return {"authorization_url": oauth_authorization_url, "state": oauth_state}
 
 
 @router.get("/oauth/{provider}/callback", tags=["OAuth"])
