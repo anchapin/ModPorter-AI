@@ -54,21 +54,21 @@ async def test_send_email_success(email_service):
 
 
 def test_render_template_welcome(email_service):
-    content = email_service._render_template("welcome", {"user_name": "Alex"})
-    assert "Welcome to ModPorter AI, Alex!" in content
+    plain_text, html_content = email_service._render_template("welcome", {"user_name": "Alex"})
+    assert "Welcome to ModPorter AI, Alex!" in plain_text
 
 
 def test_render_template_verification(email_service):
-    content = email_service._render_template(
+    plain_text, html_content = email_service._render_template(
         "email_verification", {"verification_url": "http://example.com/verify", "expiry_hours": 24}
     )
-    assert "http://example.com/verify" in content
-    assert "24 hours" in content
+    assert "http://example.com/verify" in plain_text
+    assert "24 hours" in plain_text
 
 
 def test_render_template_unknown(email_service):
-    content = email_service._render_template("nonexistent", {})
-    assert "Unknown template" in content
+    plain_text, html_content = email_service._render_template("nonexistent", {})
+    assert "Unknown template" in plain_text
 
 
 def test_get_email_service():

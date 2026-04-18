@@ -57,6 +57,7 @@ email-validator>=2.0.0
 Pillow>=10.0.0
 setuptools>=65.0.0  # Required by opentelemetry-instrumentation packages for pkg_resources
 stripe>=8.0.0  # Stripe payment integration (Issue #970)
+sendgrid>=6.11.0  # Transactional email sending (Issue #976)
 
 # Distributed Tracing - OpenTelemetry
 # Note: opentelemetry-exporter-jaeger 1.21.0 is the latest version compatible with Python 3.11
