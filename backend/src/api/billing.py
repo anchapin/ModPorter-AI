@@ -6,6 +6,7 @@ Endpoints:
 - POST /api/v1/billing/portal - Create Stripe Customer Portal session
 - POST /api/v1/billing/webhook - Handle Stripe webhook events
 - GET /api/v1/billing/subscription - Get current user's subscription status
+- GET /api/v1/billing/usage - Get current usage information (Issue #977)
 """
 
 import logging
@@ -22,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db.base import get_db
 from db.models import User
 from security.auth import verify_token
+from services.metering_service import MeteringService
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +111,24 @@ class SubscriptionStatus(BaseModel):
     cancel_at_period_end: bool = False
     current_period_end: Optional[datetime] = None
     stripe_customer_id: Optional[str] = None
+
+
+class UsageResponse(BaseModel):
+    """Current usage information for subscription tier limits (Issue #977)"""
+
+    tier: str
+    period_year: int
+    period_month: int
+    web_conversions: int
+    api_conversions: int
+    monthly_limit: int
+    api_limit: int
+    remaining: int
+    api_remaining: int
+    is_at_limit: bool
+    is_api_at_limit: bool
+    should_upgrade: bool
+    upgrade_message: Optional[str] = None
 
 
 async def get_current_user(
@@ -476,6 +496,39 @@ async def get_subscription_status(
     )
 
 
+@router.get("/usage", response_model=UsageResponse)
+async def get_usage_status(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get current user's usage information for subscription tier limits (Issue #977)
+
+    Returns:
+    - Current tier and usage counts
+    - Monthly limits
+    - Remaining conversions
+    - Whether upgrade is recommended
+    """
+    metering_service = MeteringService(db)
+    usage_info = await metering_service.get_usage_info(user)
+
+    return UsageResponse(
+        tier=usage_info.tier,
+        period_year=usage_info.period_year,
+        period_month=usage_info.period_month,
+        web_conversions=usage_info.web_conversions,
+        api_conversions=usage_info.api_conversions,
+        monthly_limit=usage_info.monthly_limit if usage_info.monthly_limit != -1 else -1,
+        api_limit=usage_info.api_limit if usage_info.api_limit != -1 else -1,
+        remaining=usage_info.remaining if usage_info.remaining != float("inf") else -1,
+        api_remaining=usage_info.api_remaining if usage_info.api_remaining != float("inf") else -1,
+        is_at_limit=usage_info.is_at_limit,
+        is_api_at_limit=usage_info.is_api_at_limit,
+        should_upgrade=usage_info.should_upgrade,
+        upgrade_message=usage_info.upgrade_message,
+    )
+
+
 @router.get("/publishable-key")
 async def get_publishable_key():
     """Get Stripe publishable key for frontend"""
@@ -486,3 +539,171 @@ async def get_publishable_key():
 
     publishable_key = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
     return {"publishable_key": publishable_key}
+
+
+class AdminUsageMetrics(BaseModel):
+    """Usage metrics for admin dashboard (Issue #977)"""
+
+    total_users: int
+    free_tier_users: int
+    pro_tier_users: int
+    studio_tier_users: int
+    enterprise_tier_users: int
+    total_web_conversions: int
+    total_api_conversions: int
+    users_at_limit: int
+    users_nearing_limit: int
+    period_year: int
+    period_month: int
+
+
+class TierUsageBreakdown(BaseModel):
+    """Usage breakdown by tier"""
+
+    tier: str
+    user_count: int
+    total_web_conversions: int
+    total_api_conversions: int
+    users_at_limit: int
+    users_nearing_limit: int
+
+
+@router.get("/admin/usage-metrics", response_model=AdminUsageMetrics)
+async def get_admin_usage_metrics(
+    db: AsyncSession = Depends(get_db),
+):
+    """Get aggregate usage metrics for admin dashboard (Issue #977)
+
+    Returns:
+    - Total users by tier
+    - Total conversions by type
+    - Users at limit or nearing limit
+    """
+    from sqlalchemy import func, select
+    from db.models import User, UsageRecord
+
+    now = datetime.now(timezone.utc)
+    year, month = now.year, now.month
+
+    tier_counts = await db.execute(
+        select(
+            User.subscription_tier,
+            func.count(User.id).label("count"),
+        ).group_by(User.subscription_tier)
+    )
+    tier_counts_dict = {row[0]: row[1] for row in tier_counts.all()}
+
+    total_users_result = await db.execute(select(func.count(User.id)))
+    total_users = total_users_result.scalar()
+
+    usage_records = await db.execute(
+        select(UsageRecord).where(
+            UsageRecord.period_year == year,
+            UsageRecord.period_month == month,
+        )
+    )
+    usage_records = usage_records.scalars().all()
+
+    total_web = sum(r.web_conversions for r in usage_records)
+    total_api = sum(r.api_conversions for r in usage_records)
+
+    users_at_limit = 0
+    users_nearing_limit = 0
+
+    for record in usage_records:
+        user_result = await db.execute(select(User).where(User.id == record.user_id))
+        user = user_result.scalar_one_or_none()
+        if user:
+            limits = TIER_LIMITS.get(user.subscription_tier, TIER_LIMITS["free"])
+            monthly_limit = limits["monthly_conversions"]
+            if monthly_limit != -1:
+                if record.web_conversions >= monthly_limit:
+                    users_at_limit += 1
+                elif record.web_conversions >= monthly_limit * 0.8:
+                    users_nearing_limit += 1
+
+    return AdminUsageMetrics(
+        total_users=total_users or 0,
+        free_tier_users=tier_counts_dict.get("free", 0),
+        pro_tier_users=tier_counts_dict.get("pro", 0),
+        studio_tier_users=tier_counts_dict.get("studio", 0),
+        enterprise_tier_users=tier_counts_dict.get("enterprise", 0),
+        total_web_conversions=total_web,
+        total_api_conversions=total_api,
+        users_at_limit=users_at_limit,
+        users_nearing_limit=users_nearing_limit,
+        period_year=year,
+        period_month=month,
+    )
+
+
+@router.get("/admin/usage-by-tier", response_model=list[TierUsageBreakdown])
+async def get_usage_by_tier(
+    db: AsyncSession = Depends(get_db),
+):
+    """Get usage breakdown by subscription tier (Issue #977)
+
+    Returns per-tier usage metrics for admin analysis.
+    """
+    from sqlalchemy import func, select
+    from db.models import User, UsageRecord
+
+    now = datetime.now(timezone.utc)
+    year, month = now.year, now.month
+
+    tiers = ["free", "creator", "pro", "studio", "enterprise"]
+    results = []
+
+    for tier in tiers:
+        tier_users_result = await db.execute(
+            select(func.count(User.id)).where(User.subscription_tier == tier)
+        )
+        user_count = tier_users_result.scalar() or 0
+
+        tier_usage_result = await db.execute(
+            select(
+                func.sum(UsageRecord.web_conversions),
+                func.sum(UsageRecord.api_conversions),
+            ).where(
+                UsageRecord.period_year == year,
+                UsageRecord.period_month == month,
+                UsageRecord.user_id.in_(select(User.id).where(User.subscription_tier == tier)),
+            )
+        )
+        row = tier_usage_result.one_or_none()
+        web_conv = row[0] or 0 if row else 0
+        api_conv = row[1] or 0 if row else 0
+
+        limits = TIER_LIMITS.get(tier, TIER_LIMITS["free"])
+        monthly_limit = limits["monthly_conversions"]
+
+        tier_usage_records = await db.execute(
+            select(UsageRecord).where(
+                UsageRecord.period_year == year,
+                UsageRecord.period_month == month,
+                UsageRecord.user_id.in_(select(User.id).where(User.subscription_tier == tier)),
+            )
+        )
+        tier_usage_records = tier_usage_records.scalars().all()
+
+        tier_at_limit = 0
+        tier_nearing_limit = 0
+        for record in tier_usage_records:
+            if monthly_limit != -1:
+                if record.web_conversions >= monthly_limit:
+                    tier_at_limit += 1
+                elif record.web_conversions >= monthly_limit * 0.8:
+                    tier_nearing_limit += 1
+
+        results.append(
+            TierUsageBreakdown(
+                tier=tier,
+                user_count=user_count,
+                total_web_conversions=web_conv,
+                total_api_conversions=api_conv,
+                users_at_limit=tier_at_limit,
+                users_nearing_limit=tier_nearing_limit,
+            )
+        )
+
+    return results

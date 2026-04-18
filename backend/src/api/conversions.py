@@ -31,22 +31,27 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
     status,
+    Request,
 )
 from fastapi.responses import FileResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field, field_validator, validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.base import get_db
 from db import crud
+from db.models import User
 from websocket.manager import manager
 from websocket.progress_handler import ProgressHandler
 from services.cache import CacheService
 from services.task_queue import enqueue_task, TaskPriority
 from services.conversion_service import get_conversion_service
+from services.metering_service import MeteringService
 from security.file_security import (
     FileSecurityScanner,
     SecurityScanResult,
 )
+from security.auth import verify_token
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +70,9 @@ cache = CacheService()
 # Security scanner instance
 _security_scanner: Optional[FileSecurityScanner] = None
 
+# HTTP Bearer security scheme
+security = HTTPBearer(auto_error=False)
+
 
 def get_security_scanner() -> FileSecurityScanner:
     """Get or create the global security scanner instance."""
@@ -72,6 +80,28 @@ def get_security_scanner() -> FileSecurityScanner:
     if _security_scanner is None:
         _security_scanner = FileSecurityScanner()
     return _security_scanner
+
+
+async def get_optional_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[User]:
+    """Optional authentication - returns None if no valid token provided."""
+    if not credentials:
+        return None
+
+    token = credentials.credentials
+    user_id = verify_token(token)
+    if not user_id:
+        return None
+
+    try:
+        user_uuid = UUID(user_id)
+    except (ValueError, TypeError):
+        return None
+
+    result = await db.execute(select(User).where(User.id == user_uuid))
+    return result.scalar_one_or_none()
 
 
 # Pydantic Models
@@ -457,6 +487,7 @@ async def create_conversion(
     options: str = Form(default="{}", description="JSON string of conversion options"),
     background_tasks: BackgroundTasks = None,
     db: AsyncSession = Depends(get_db),
+    user: Optional[User] = Depends(get_optional_user),
 ):
     """
     Start a new mod conversion job.
@@ -495,6 +526,33 @@ async def create_conversion(
     - WS /api/v1/conversions/{id}/ws - Real-time progress
     - GET /api/v1/conversions/{id}/download - Download result
     """
+    # Metering check for subscription tier limits (Issue #977)
+    if user:
+        metering_service = MeteringService(db)
+        metering_result = await metering_service.check_and_increment_web_usage(user)
+
+        if not metering_result.allowed:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "error": "usage_limit_exceeded",
+                    "message": metering_result.error_message,
+                    "upgrade_cta": metering_result.upgrade_cta,
+                    "usage": {
+                        "tier": metering_result.usage_info.tier,
+                        "web_conversions": metering_result.usage_info.web_conversions,
+                        "monthly_limit": metering_result.usage_info.monthly_limit,
+                        "remaining": metering_result.usage_info.remaining,
+                    },
+                },
+            )
+
+        if metering_result.usage_info.should_upgrade:
+            logger.info(
+                f"User {user.id} approaching conversion limit: "
+                f"{metering_result.usage_info.web_conversions}/{metering_result.usage_info.monthly_limit}"
+            )
+
     # Validate file was provided
     if not file.filename:
         raise HTTPException(
