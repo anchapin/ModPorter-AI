@@ -306,7 +306,12 @@ class BlockItemGenerator:
                                 if isinstance(first_ing, dict):
                                     item_id = first_ing.get("item", first_ing.get("tag", ""))
                                     if item_id:
-                                        input_suffix = "_from_" + item_id.split(":")[-1]
+                                        slug = (
+                                            item_id.split(":")[-1]
+                                            .replace("/", "_")
+                                            .replace("\\", "_")
+                                        )
+                                        input_suffix = "_from_" + slug
                             if input_suffix:
                                 recipe_id = f"{recipe_id}{input_suffix}"
                             else:
