@@ -15,6 +15,7 @@ from sqlalchemy import (
     DECIMAL,
     TIMESTAMP,
     TypeDecorator,
+    Index,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.dialects.sqlite import JSON as SQLiteJSON
@@ -817,6 +818,7 @@ class User(Base):
 
     # Relationships
     api_keys = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
+    usage_records = relationship("UsageRecord", back_populates="user", cascade="all, delete-orphan")
 
 
 class APIKey(Base):
@@ -859,3 +861,50 @@ class APIKey(Base):
 
     # Relationships
     user = relationship("User", back_populates="api_keys")
+
+
+class UsageRecord(Base):
+    """Tracks monthly usage for conversion limits per subscription tier (Issue #977)"""
+
+    __tablename__ = "usage_records"
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    user_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    period_year: Mapped[int] = mapped_column(Integer, nullable=False)
+    period_month: Mapped[int] = mapped_column(Integer, nullable=False)
+    web_conversions: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default=text("'0'"),
+    )
+    api_conversions: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default=text("'0'"),
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    user = relationship("User", back_populates="usage_records")
+
+    __table_args__ = (
+        Index("ix_usage_user_period", "user_id", "period_year", "period_month", unique=True),
+    )

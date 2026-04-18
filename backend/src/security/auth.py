@@ -10,7 +10,7 @@ Provides:
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import jwt
 import bcrypt
@@ -219,3 +219,33 @@ def hash_api_key(api_key: str) -> str:
     import hashlib
 
     return hashlib.sha256(api_key.encode()).hexdigest()
+
+
+async def verify_api_key(db, api_key: str) -> "Optional[User]":
+    """
+    Verify an API key and return the associated user.
+
+    Args:
+        db: Database session
+        api_key: Plain text API key
+
+    Returns:
+        User if API key is valid, None otherwise
+    """
+    from sqlalchemy import select
+    from db.models import APIKey, User
+
+    key_hash = hash_api_key(api_key)
+    result = await db.execute(
+        select(APIKey).where(
+            APIKey.key_hash == key_hash,
+            APIKey.is_active == True,
+        )
+    )
+    api_key_record = result.scalar_one_or_none()
+
+    if not api_key_record:
+        return None
+
+    result = await db.execute(select(User).where(User.id == api_key_record.user_id))
+    return result.scalar_one_or_none()
