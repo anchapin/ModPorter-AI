@@ -214,12 +214,13 @@ def hash_api_key(api_key: str) -> str:
         api_key: Plain text API key
 
     Returns:
-        Hashed API key using HMAC-SHA3-256
+        Hashed API key using scrypt (memory-hard KDF)
     """
     import hashlib
-    import hmac
 
-    return hmac.new(SECRET_KEY.encode(), api_key.encode(), hashlib.sha3_256).hexdigest()
+    return hashlib.scrypt(
+        api_key.encode(), salt=SECRET_KEY.encode(), n=16384, r=8, p=1, dklen=32
+    ).hex()
 
 
 async def verify_api_key(db, api_key: str) -> "Optional[User]":
