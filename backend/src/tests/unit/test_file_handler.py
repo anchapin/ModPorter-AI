@@ -126,7 +126,7 @@ async def test_process_file_success(file_handler):
         patch.object(file_handler, "validate_jar", return_value=ValidationResult(is_valid=True)),
         patch.object(file_handler, "extract_metadata", return_value=ModMetadata(modid="test")),
         patch.object(file_handler, "identify_mod_loader", return_value=ModLoader.FORGE),
-        patch.object(file_handler, "virus_scan_placeholder", return_value=True),
+        patch.object(file_handler, "virus_scan", return_value=(True, "clean")),
     ):
         result = await file_handler.process_file(job_id, file_path)
         assert result.success is True

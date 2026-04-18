@@ -35,6 +35,8 @@ services:
         condition: service_healthy
       jaeger:
         condition: service_healthy
+      clamav:
+        condition: service_healthy
     volumes:
       - ./backend/src:/app/src
       - conversion-cache:/app/cache
@@ -49,6 +51,26 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  clamav:
+    image: clamav/clamav:1.3
+    ports:
+      - '3310:3310'
+    environment:
+      - CLAMD_CONF=/etc/clamav/clamd.conf
+      - CLAMAV_NO_CLAMD=0
+      - CLAMAV_NO_FRESHCLAMD=1
+    volumes:
+      - clamav-db:/var/lib/clamav
+    networks:
+      - modporter-network
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'clamdscan', '--ping']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
 
   ai-engine:
     build:
@@ -94,7 +116,7 @@ services:
       - modporter-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -115,7 +137,7 @@ services:
       - modporter-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d modporter"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d modporter']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -199,6 +221,8 @@ volumes:
   prometheus-data:
     driver: local
   grafana-data:
+    driver: local
+  clamav-db:
     driver: local
 
 networks:

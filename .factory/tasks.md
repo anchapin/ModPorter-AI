@@ -1,7 +1,12 @@
 # Current Tasks
 
-## In Progress
-- 🔄 Issue #971: E2E validation - Recipe converter regression (0% coverage, "Unknown recipe category: unknown")
+## Completed
+- ✅ Issue #973: File upload security hardening (commit 77ef4db5)
+  - ClamAV malware scanning integration
+  - Audit logging for upload events
+  - Auto-delete uploaded files after conversion
+  - CSP headers for download endpoints
+  - ClamAV sidecar added to docker-compose
 - ⏳ Investigate why model coverage dropped (68% vs v5's 82%)
 
 ## Completed
