@@ -317,6 +317,7 @@ class OAuthService:
         return self.get_provider(provider) is not None
 
 
+# Used for OAuth CSRF state - cryptographically secure, not a password
 def generate_oauth_state() -> str:
     """Generate secure state parameter for OAuth flow."""
     return secrets.token_urlsafe(32)
