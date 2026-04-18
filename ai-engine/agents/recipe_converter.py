@@ -284,9 +284,12 @@ class RecipeConverterAgent:
             normalized["cooking_time"] = recipe_data.get("cookingtime", 200)
             normalized["experience"] = recipe_data.get("experience", 0.0)
             normalized["container"] = recipe_data.get("container")
-            ingredient = recipe_data.get("ingredient")
-            if ingredient:
-                normalized["ingredients"] = [ingredient]
+            ingredients = recipe_data.get("ingredients") or []
+            if not ingredients:
+                ingredient = recipe_data.get("ingredient")
+                if ingredient:
+                    ingredients = [ingredient]
+            normalized["ingredients"] = ingredients
         elif "farmersdelight:cutting" in recipe_type:
             normalized["recipe_category"] = "cutting_board"
             normalized["tool"] = recipe_data.get("tool")
