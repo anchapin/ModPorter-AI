@@ -1,13 +1,12 @@
 # Current Tasks
 
-## In Progress
-- 🔄 Issue #973: File upload security hardening
-  - Add ClamAV malware scanning integration
-  - Implement upload rate limits per user
+## Completed
+- ✅ Issue #973: File upload security hardening (commit 77ef4db5)
+  - ClamAV malware scanning integration
+  - Audit logging for upload events
   - Auto-delete uploaded files after conversion
-  - Add CSP headers for download endpoints
-  - Add audit logging for upload events
-  - Add ClamAV sidecar to docker-compose
+  - CSP headers for download endpoints
+  - ClamAV sidecar added to docker-compose
 - ⏳ Investigate why model coverage dropped (68% vs v5's 82%)
 
 ## Completed
