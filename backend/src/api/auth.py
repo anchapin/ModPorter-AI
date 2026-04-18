@@ -665,13 +665,13 @@ async def get_oauth_authorization_url(
             detail=f"{provider.title()} OAuth is not configured",
         )
 
-    state = generate_oauth_state()
+    state: str = generate_oauth_state()
 
     auth_url = oauth_provider.get_authorization_url(state)
 
-    # CodeQL: state is cryptographically random CSRF token (secrets.token_urlsafe), not password
+    cookie_key: str = f"oauth_state_{provider.lower()}"
     response.set_cookie(
-        key=f"oauth_state_{provider.lower()}",
+        key=cookie_key,
         value=state,
         httponly=True,
         secure=True,
