@@ -36,6 +36,8 @@ const PricingPage = lazy(() => import('./pages/PricingPage'));
 const UploadPage = lazy(() => import('./pages/UploadPage'));
 const ProgressPage = lazy(() => import('./pages/ProgressPage'));
 const ResultsPage = lazy(() => import('./pages/ResultsPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const OAuthCallbackPage = lazy(() => import('./pages/OAuthCallbackPage'));
 
 function App() {
   console.log('App component is rendering...');
@@ -194,6 +196,22 @@ function App() {
                   element={
                     <Suspense fallback={<div>Loading Results...</div>}>
                       <ResultsPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/login"
+                  element={
+                    <Suspense fallback={<div>Loading...</div>}>
+                      <LoginPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/auth/callback/:provider"
+                  element={
+                    <Suspense fallback={<div>Processing...</div>}>
+                      <OAuthCallbackPage />
                     </Suspense>
                   }
                 />
