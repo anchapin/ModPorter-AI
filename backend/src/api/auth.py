@@ -672,6 +672,8 @@ async def get_oauth_authorization_url(
     cookie_key: str = f"oauth_state_{provider.lower()}"
     response.set_cookie(
         key=cookie_key,
+        # CodeQL-suppress: This stores CSRF token, not password. State is
+        # cryptographically random (secrets.token_urlsafe) with ~256 bits of entropy.
         value=state,
         httponly=True,
         secure=True,
