@@ -20,7 +20,7 @@ PortKit converts Minecraft Java mods to Bedrock add-ons. Positioned as a **B2B c
 ## Conversion Audit History
 
 | Cycle | Date | Mods | Textures | Models | Recipes | Sound | Lang | B2B est. | Key Changes |
-|-------|------|------|----------|--------|---------|-------|------|-----------|-------------|
+|-------|------|------|----------|--------|---------|-------|------|----------|-------------|
 | v1 | Apr 8 | 8 | ~0% | 0% | 0% | 0% | 0% | ~5% | Baseline |
 | v2 | Apr 9 | 8 | 54.8% | 0.2% | 0% | 0% | 0% | ~25% | Bulk texture extraction |
 | v3 | Apr 10a | 8 | 54.7% | 0% | 0% | 0% | 0% | ~28% | Entity routing fix |
@@ -33,7 +33,7 @@ PortKit converts Minecraft Java mods to Bedrock add-ons. Positioned as a **B2B c
 
 **v9 B2B breakdown:**
 | Asset Type | Coverage | Weight | Contribution |
-|------------|----------|--------|-------------|
+|------------|----------|--------|--------------|
 | Texture | 54.7% | 25% | 13.7% |
 | Model | 82.3% | 30% | 24.7% |
 | Recipe | 26.6% | 20% | 5.3% |
@@ -75,7 +75,7 @@ Recipe coverage is **capped by unconvertible custom machine recipes**, primarily
 | #1068 Error handling & user-visible feedback | ✅ |
 | #1078 Custom Forge recipe types | ✅ (partial — cooking fixed; cutting board [#1086] pending) |
 
-### 🔄 M3 — Weeks 5-6: Infrastructure (Due: May 18)
+### 🔔 M3 — Weeks 5-6: Infrastructure (Due: May 18)
 
 | Issue | Status | Priority |
 |-------|--------|----------|
@@ -134,6 +134,26 @@ Email verification, password reset, and subscription confirmations are needed be
 
 ### Post-Launch / AI
 - [#1048](https://github.com/anchapin/ModPorter-AI/issues/1048) IDE plugins | [#994](https://github.com/anchapin/ModPorter-AI/issues/994) Embedding upgrade | [#996](https://github.com/anchapin/ModPorter-AI/issues/996) Diffusion LoRA | [#997](https://github.com/anchapin/ModPorter-AI/issues/997) LLM fine-tune
+- [#989](https://github.com/anchapin/ModPorter-AI/issues/989) Prompt-based RL → revisit post-#990/#991 using **GEP/DSPy patterns** (see [updated research notes on issue](https://github.com/anchapin/ModPorter-AI/issues/989))
+
+---
+
+## AI Self-Improvement Strategy (Post-Launch)
+
+> **Prerequisite:** Revisit after LLM-powered translation ([#990](https://github.com/anchapin/ModPorter-AI/issues/990), [#991](https://github.com/anchapin/ModPorter-AI/issues/991)) is shipped. Prompt optimization on a rule-based pipeline yields no benefit.
+
+The original prompt-RL proposal ([#989](https://github.com/anchapin/ModPorter-AI/issues/989)) is sound but can be implemented with more structure using established patterns:
+
+| Pattern | Fit | Notes |
+|---------|-----|---------|
+| **[DSPy](https://github.com/stanfordnlp/dspy)** (Stanford, Python/MIT) | ⭐ Best fit | Python-native; defines conversion as `Signature(java_code, mod_type → bedrock_json)` and auto-optimizes prompts using existing few-shot examples; integrates with RAG + CrewAI; MIT license |
+| **[GEP / Evolver](https://github.com/EvoMap/evolver)** (EvoMap) | Good concepts | Principled Genes/Capsules/EvolutionEvents model with auditable trail; `EVOLVE_STRATEGY=harden` fits PortKit's need to solidify known-good patterns; Node.js dependency + moving to source-available license are friction points |
+| **[OPRO](https://arxiv.org/abs/2309.03409)** (Google DeepMind) | Lightweight | Pure meta-prompting — LLM acts as its own optimizer; no framework required but less structured than DSPy or GEP |
+| **[TextGrad](https://github.com/zou-group/textgrad)** (MIT, Python) | Advanced | Treats LLM pipeline as autodiff graph; powerful for post-PMF optimization, complexity not warranted at current stage |
+
+**Recommended path:** Ship #990/#991 → collect quality-scored conversions via existing `ConversionQualityScorer` → implement DSPy `Signatures` wrapping core translation functions → use `BootstrapFewShot` optimizer with high-reward conversions as training examples.
+
+**Design principle from GEP worth preserving regardless of implementation:** auditable `EvolutionEvents` — B2B clients benefit from knowing *why* a conversion strategy changed. Log optimization steps and prompt mutations the same way the pipeline logs conversion decisions.
 
 ---
 
