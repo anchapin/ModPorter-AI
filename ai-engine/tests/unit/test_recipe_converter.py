@@ -493,6 +493,23 @@ class TestCustomForgeRecipeTypes:
         assert "minecraft:recipe_shaped" in result
         assert "cutting_board" in result["minecraft:recipe_shaped"]["tags"]
 
+    def test_convert_cooking_pot_plural_ingredients(self, agent):
+        """Test conversion of cooking pot recipe with plural 'ingredients' array (real FD format)"""
+        recipe = {
+            "type": "farmersdelight:cooking",
+            "ingredients": [{"item": "farmersdelight:raw_cod"}, {"item": "minecraft:carrot"}],
+            "result": {"item": "farmersdelight:baked_cod_stew", "count": 1},
+            "cookingtime": 160,
+            "experience": 0.35,
+        }
+        result = agent.convert_recipe(
+            recipe, namespace="farmersdelight", recipe_name="baked_cod_stew"
+        )
+
+        assert result["format_version"] == "1.20.10"
+        assert "minecraft:recipe_furnace" in result
+        assert result["minecraft:recipe_furnace"]["tags"] == ["crafting_table", "cooking_pot"]
+
     def test_convert_mechanical_crafting_within_3x3(self, agent):
         """Test conversion of mechanical crafting within Bedrock limits"""
         recipe = {

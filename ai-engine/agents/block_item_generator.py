@@ -234,6 +234,7 @@ class BlockItemGenerator:
 
         logger.info(f"Converting {len(java_recipes)} Java recipes to Bedrock format")
         bedrock_recipes = {}
+        manual_review_count = 0
 
         recipe_converter = RecipeConverterAgent.get_instance()
 
@@ -281,11 +282,19 @@ class BlockItemGenerator:
                     else:
                         if "identifier" in bedrock_recipe:
                             bedrock_recipes[bedrock_recipe["identifier"]] = bedrock_recipe
+                        elif bedrock_recipe.get("manual_review_required"):
+                            logger.info(
+                                f"Recipe {java_recipe.get('id', 'unknown')} flagged for manual review: "
+                                f"{bedrock_recipe.get('reason', 'Unknown reason')}"
+                            )
+                            manual_review_count += 1
             except Exception as e:
                 logger.error(f"Failed to convert recipe {java_recipe.get('id', 'unknown')}: {e}")
                 continue
 
-        logger.info(f"Successfully converted {len(bedrock_recipes)} recipes")
+        logger.info(
+            f"Successfully converted {len(bedrock_recipes)} recipes ({manual_review_count} flagged for manual review)"
+        )
         return bedrock_recipes
 
     def generate_tool_item(self, data: Dict[str, Any]) -> Dict[str, Any]:
