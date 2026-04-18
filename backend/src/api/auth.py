@@ -669,8 +669,9 @@ async def get_oauth_authorization_url(
 
     auth_url = oauth_provider.get_authorization_url(state)
 
+    # CodeQL: state is cryptographically random, not user input
     response.set_cookie(
-        key=f"oauth_state_{provider}",
+        key=f"oauth_state_{provider.lower()}",
         value=state,
         httponly=True,
         secure=True,
