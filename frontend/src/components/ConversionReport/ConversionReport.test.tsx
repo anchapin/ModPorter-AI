@@ -267,8 +267,12 @@ describe('Feedback Functionality in ConversionReport', () => {
     render(<ConversionReport conversionResult={minimalMockReport} />);
 
     expect(screen.getByText('Rate this Conversion')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Thumbs Up' })).toBeInTheDocument(); // Using title for emoji buttons
-    expect(screen.getByRole('button', { name: 'Thumbs Down' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Thumbs Up' })
+    ).toBeInTheDocument(); // Using title for emoji buttons
+    expect(
+      screen.getByRole('button', { name: 'Thumbs Down' })
+    ).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText('Optional: Add any comments here...')
     ).toBeInTheDocument();
@@ -281,7 +285,9 @@ describe('Feedback Functionality in ConversionReport', () => {
     render(<ConversionReport conversionResult={minimalMockReport} />);
 
     const thumbsUpButton = screen.getByRole('button', { name: 'Thumbs Up' });
-    const thumbsDownButton = screen.getByRole('button', { name: 'Thumbs Down' });
+    const thumbsDownButton = screen.getByRole('button', {
+      name: 'Thumbs Down',
+    });
 
     // Initially, neither should be "pressed" - use aria-pressed attribute which is more reliable
     expect(thumbsUpButton).toHaveAttribute('aria-pressed', 'false');
@@ -333,7 +339,9 @@ describe('Feedback Functionality in ConversionReport', () => {
     expect(
       screen.queryByRole('button', { name: 'Submit Feedback' })
     ).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Thumbs Up' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Thumbs Up' })
+    ).not.toBeInTheDocument();
   });
 
   test('submit feedback API error flow', async () => {
