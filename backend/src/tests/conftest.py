@@ -221,14 +221,30 @@ async def async_client():
 
 @pytest_asyncio.fixture(scope="function")
 async def auth_headers():
-    """Create authentication headers for a test user."""
+    """Create authentication headers for a test user with a real database entry."""
     from datetime import timedelta
     from security.auth import create_access_token
+    from db.models import User
+    import uuid
 
-    test_user_id = "test-user-123"
+    test_user_id = uuid.uuid4()
+    unique_email = f"test-{uuid.uuid4().hex[:8]}@example.com"
+
+    test_session_maker = async_sessionmaker(
+        bind=test_engine, expire_on_commit=False, class_=AsyncSession
+    )
+    async with test_session_maker() as session:
+        test_user = User(
+            id=test_user_id,
+            email=unique_email,
+            password_hash="$2b$12$test_hash_for_testing_only",
+            is_verified=True,
+        )
+        session.add(test_user)
+        await session.commit()
 
     token = create_access_token(
-        user_id=test_user_id,
+        user_id=str(test_user_id),
         expires_delta=timedelta(hours=1),
     )
 

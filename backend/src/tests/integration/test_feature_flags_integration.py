@@ -228,7 +228,7 @@ class TestFeatureFlagNoCrashOnToggle:
         """Request should fail gracefully if flag is toggled off mid-request."""
         os.environ["FEATURE_USER_ACCOUNTS"] = "true"
 
-        await async_client.post(
+        response = await async_client.post(
             "/api/v1/auth/register",
             json={
                 "email": "toggle_test@example.com",
@@ -236,7 +236,13 @@ class TestFeatureFlagNoCrashOnToggle:
             },
         )
 
+        assert response.status_code == 201
+
         os.environ["FEATURE_USER_ACCOUNTS"] = "false"
+
+        import services.feature_flags as ff_module
+
+        ff_module._default_manager = None
 
         response = await async_client.post(
             "/api/v1/auth/register",
