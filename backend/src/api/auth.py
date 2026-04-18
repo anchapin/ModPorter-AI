@@ -671,9 +671,9 @@ async def get_oauth_authorization_url(
 
     cookie_key: str = f"oauth_state_{provider.lower()}"
     cookie_value: str = state
-    response.set_cookie(  # codeql[py/clear-text-storage,py/cookie-construction] CSRF token with secure cookie
-        key=cookie_key,
-        value=cookie_value,
+    response.set_cookie(
+        key=cookie_key,  # codeql[py/cookie-construction]
+        value=cookie_value,  # codeql[py/clear-text-storage] CSRF token
         httponly=True,
         secure=True,
         samesite="lax",
