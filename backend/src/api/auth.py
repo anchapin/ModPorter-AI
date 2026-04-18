@@ -665,15 +665,13 @@ async def get_oauth_authorization_url(
             detail=f"{provider.title()} OAuth is not configured",
         )
 
-    state: str = generate_oauth_state()  # codeql[py/clear-text-storage] CSRF token, not password
+    state: str = generate_oauth_state()
 
     auth_url = oauth_provider.get_authorization_url(state)
 
-    cookie_key: str = (
-        f"oauth_state_{provider.lower()}"  # codeql[py/cookie-construction] prefix is constant
-    )
+    cookie_key: str = f"oauth_state_{provider.lower()}"
     cookie_value: str = state
-    response.set_cookie(
+    response.set_cookie(  # codeql[py/clear-text-storage,py/cookie-construction] CSRF token with secure cookie
         key=cookie_key,
         value=cookie_value,
         httponly=True,
