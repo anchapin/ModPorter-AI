@@ -1,7 +1,16 @@
 # Current Tasks
 
 ## Completed
-- ✅ Issue #1099: Split monolithic java_analyzer.py into modular package
+- ✅ Issue #1098: Consolidate task queues to Celery (committed 55354192, 08bc495e)
+  - ✅ Deleted `task_queue.py` (superseded by enhanced version)
+  - ✅ Created `backend/src/services/celery_config.py` with Celery configuration
+  - ✅ Created `backend/src/services/celery_tasks.py` replacing task_queue_enhanced.py with Celery tasks
+  - ✅ Updated `task_worker.py` to use Celery
+  - ✅ Added Celery dependencies to `requirements.txt` and `setup.py`
+  - ✅ Updated `pyproject.toml` with Celery mypy overrides and ruff ignores
+  - ✅ Added Celery worker and Flower services to `docker-compose.yml`
+  - ✅ Created comprehensive tests in `test_celery_tasks.py`
+  - ⚠️ Pending: Add Celery Flower monitoring to deployment docs
   - ✅ Created `ai-engine/agents/java_analyzer/` package with 8 files
   - ✅ Updated `pyproject.toml` to change C901 suppression to `agents/java_analyzer/`
   - ✅ Commits: 41f1e6b9 (initial split), 5dc99a7d (delegation method fixes)

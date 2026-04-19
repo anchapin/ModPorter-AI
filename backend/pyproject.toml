@@ -55,6 +55,10 @@ module = "redis.*"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
+module = "celery.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
 module = "psycopg2.*"
 ignore_missing_imports = true
 
@@ -188,6 +192,7 @@ ignore = [
 "src/services/error_handlers.py" = ["N818", "C901"]  # exception names should have Error suffix (legacy names)
 "src/exceptions.py" = ["N818"]  # exception names should have Error suffix (legacy names)
 "src/services/*.py" = ["N806"]  # variable in function should be lowercase (constants in functions)
+"src/services/celery_tasks.py" = ["C901"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app", "core", "src"]

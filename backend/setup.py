@@ -17,6 +17,7 @@ setup(
         "pgvector>=0.1.1",
         "aiosqlite>=0.19.0",
         "redis>=7.1.0",
+        "celery>=5.3.0",
         "python-multipart==0.0.26",
         "tomli==2.4.1",
         "python-magic==0.4.27",
