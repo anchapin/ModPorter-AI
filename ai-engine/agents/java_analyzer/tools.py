@@ -40,7 +40,9 @@ class JavaAnalyzerTools:
             """Determine mod type and framework"""
             if mod_path.endswith((".jar", ".zip")):
                 mod_type = "jar"
-                framework = agent._detect_framework_from_jar_files(mod_path)
+                with zipfile.ZipFile(mod_path, "r") as jar:
+                    file_list = jar.namelist()
+                    framework = agent._detect_framework_from_jar_files(file_list, jar)
             elif os.path.isdir(mod_path):
                 mod_type = "source"
                 framework = agent.framework_indicators.get("unknown", "unknown")
