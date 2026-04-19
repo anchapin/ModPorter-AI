@@ -216,7 +216,7 @@ class TestConversionEndpoints:
     ):
         """Test listing all conversion jobs."""
         # Mock database call
-        mock_list_jobs.return_value = []
+        mock_list_jobs.return_value = ([], 0)
 
         # Create a mock job for when create_job is called
         mock_job = AsyncMock()

@@ -118,7 +118,7 @@ class TestConversionsAPITargeted:
             error_message=None,
         )
 
-        mock_crud.list_jobs = AsyncMock(return_value=[mock_job])
+        mock_crud.list_jobs = AsyncMock(return_value=([mock_job], 1))
         mock_crud.count_jobs = AsyncMock(return_value=1)
 
         response = client.get("/api/v1/conversions")

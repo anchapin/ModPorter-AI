@@ -79,6 +79,17 @@
 - 🟡 Issue #1002: Sound and localization extraction (0/187 sounds, 0/292 lang files)
 
 ## Recently Completed
+- ✅ Issue #979: Conversion History Dashboard with per-user stats (COMPLETED)
+  - ✅ Converted ConversionHistory from localStorage to API-based data fetching
+  - ✅ Added per-user filtering to list_jobs() with pagination support
+  - ✅ Enhanced job responses with complexity_tier, features_converted, features_skipped, warnings
+  - ✅ Added /api/v1/conversions/{id}/report and /report/download endpoints
+  - ✅ Added billing subscription and usage stats display
+  - ✅ Implemented responsive mobile design with stacked layout
+  - ✅ Added search/filter controls and pagination to history list
+  - ✅ PR #1115 updated with detailed description
+  - ✅ 5 commits: 91428d53, afce1b6d, fb1f1dc0, f4ea4456, e8c2ea78
+
 - ✅ Issue #978: Marketing landing page for ModPorter-AI
   - ✅ Landing page with B2B conversion accelerator positioning
   - ✅ Hero section: "Get Your Java Mods on the Marketplace Faster"

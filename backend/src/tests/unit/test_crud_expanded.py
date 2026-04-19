@@ -219,9 +219,10 @@ class TestListJobs:
         mock_session = AsyncMock(spec=AsyncSession)
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = []
+        mock_result.scalar.return_value = 0
         mock_session.execute = AsyncMock(return_value=mock_result)
 
-        jobs = await list_jobs(mock_session)
+        jobs, total = await list_jobs(mock_session)
 
         assert isinstance(jobs, list)
 
@@ -231,9 +232,10 @@ class TestListJobs:
         mock_session = AsyncMock(spec=AsyncSession)
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = []
+        mock_result.scalar.return_value = 0
         mock_session.execute = AsyncMock(return_value=mock_result)
 
-        jobs = await list_jobs(mock_session, skip=0, limit=10)
+        jobs, total = await list_jobs(mock_session, skip=0, limit=10)
 
         assert isinstance(jobs, list)
 

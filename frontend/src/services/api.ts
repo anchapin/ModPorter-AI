@@ -1536,3 +1536,106 @@ export const modImportsAPI = {
     return response.json();
   },
 };
+
+// --- Billing API Functions ---
+
+export interface SubscriptionStatus {
+  tier: string;
+  status: string | null;
+  trial_ends_at: string | null;
+  stripe_customer_id: string | null;
+}
+
+export interface UsageInfo {
+  tier: string;
+  period_year: number;
+  period_month: number;
+  web_conversions: number;
+  api_conversions: number;
+  monthly_limit: number;
+  api_limit: number;
+  remaining: number;
+  api_remaining: number;
+  is_at_limit: boolean;
+  is_api_at_limit: boolean;
+  should_upgrade: boolean;
+  upgrade_message: string | null;
+}
+
+export const billingAPI = {
+  getSubscriptionStatus: async (): Promise<SubscriptionStatus> => {
+    const response = await fetch(`${API_BASE_URL}/billing/subscription`);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        detail: 'Failed to get subscription status',
+      }));
+      throw new ApiError(
+        errorData.detail || 'Failed to get subscription status',
+        response.status
+      );
+    }
+
+    return response.json();
+  },
+
+  getUsageInfo: async (): Promise<UsageInfo> => {
+    const response = await fetch(`${API_BASE_URL}/billing/usage`);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        detail: 'Failed to get usage information',
+      }));
+      throw new ApiError(
+        errorData.detail || 'Failed to get usage information',
+        response.status
+      );
+    }
+
+    return response.json();
+  },
+};
+
+export interface ConversionReportInfo {
+  download_url: string;
+  format: string;
+}
+
+export const downloadConversionReport = async (
+  conversionId: string,
+  format: 'json' | 'html' | 'csv' = 'json'
+): Promise<void> => {
+  const response = await fetch(
+    `${API_BASE_URL}/conversions/${conversionId}/report/download?format=${format}`
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({
+      detail: 'Failed to download conversion report',
+    }));
+    throw new ApiError(
+      errorData.detail || 'Failed to download conversion report',
+      response.status
+    );
+  }
+
+  const blob = await response.blob();
+  const contentDisposition = response.headers.get('Content-Disposition');
+  let filename = `conversion_report_${conversionId}.${format}`;
+
+  if (contentDisposition) {
+    const fileNameMatch = contentDisposition.match(/filename="([^"]+)"/);
+    if (fileNameMatch) {
+      filename = fileNameMatch[1];
+    }
+  }
+
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+};

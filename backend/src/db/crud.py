@@ -21,16 +21,20 @@ async def create_job(
     original_filename: str,
     target_version: str,
     options: Optional[dict] = None,
+    user_id: Optional[str] = None,
     commit: bool = True,
 ) -> models.ConversionJob:
+    input_data = {
+        "file_id": file_id,
+        "original_filename": original_filename,
+        "target_version": target_version,
+        "options": options or {},
+    }
+    if user_id:
+        input_data["user_id"] = user_id
     job = models.ConversionJob(
         status="queued",
-        input_data={
-            "file_id": file_id,
-            "original_filename": original_filename,
-            "target_version": target_version,
-            "options": options or {},
-        },
+        input_data=input_data,
     )
     # By using the relationship, SQLAlchemy will handle creating both
     # records and linking them in a single transaction.
@@ -958,21 +962,39 @@ async def upsert_progress(
 
 
 async def list_jobs(
-    session: AsyncSession, skip: int = 0, limit: int = 100
-) -> List[models.ConversionJob]:
-    """List all conversion jobs with pagination."""
-    stmt = (
-        select(models.ConversionJob)
-        .options(
-            selectinload(models.ConversionJob.results),
-            selectinload(models.ConversionJob.progress),
-        )
-        .offset(skip)
-        .limit(limit)
-        .order_by(models.ConversionJob.created_at.desc())
+    session: AsyncSession, skip: int = 0, limit: int = 100, user_id: Optional[str] = None
+) -> tuple[List[models.ConversionJob], int]:
+    """List conversion jobs with pagination, optionally filtered by user_id.
+
+    Returns tuple of (jobs list, total count).
+    When user_id is None, returns jobs without user_id (public/anonymous).
+    When user_id is provided, returns jobs for that specific user.
+    """
+    from sqlalchemy import cast, Text, func
+
+    stmt = select(models.ConversionJob).options(
+        selectinload(models.ConversionJob.results),
+        selectinload(models.ConversionJob.progress),
     )
+
+    count_stmt = select(func.count(models.ConversionJob.id))
+
+    if user_id:
+        stmt = stmt.where(models.ConversionJob.input_data["user_id"].astext == user_id)
+        count_stmt = count_stmt.where(models.ConversionJob.input_data["user_id"].astext == user_id)
+    else:
+        stmt = stmt.where(models.ConversionJob.input_data["user_id"].is_(None))
+        count_stmt = count_stmt.where(models.ConversionJob.input_data["user_id"].is_(None))
+
+    stmt = stmt.offset(skip).limit(limit).order_by(models.ConversionJob.created_at.desc())
+
     result = await session.execute(stmt)
-    return result.scalars().all()
+    jobs = result.scalars().all()
+
+    count_result = await session.execute(count_stmt)
+    total = count_result.scalar() or 0
+
+    return jobs, total
 
 
 # Addon CRUD operations
