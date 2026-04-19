@@ -4,8 +4,10 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { NotificationProvider } from './components/NotificationSystem';
 import { TopNavigation } from './components/TopNavigation';
 import { OnboardingFlow } from './components/Onboarding';
+import { CookieConsentBanner } from './components/common/CookieConsentBanner';
 import { usePageViewTracking } from './hooks/useAnalytics';
 import './App.css';
+import './components/common/CookieConsentBanner.css';
 
 // Lazy load heavy components
 // Using type assertion to handle named exports
@@ -39,6 +41,9 @@ const ProgressPage = lazy(() => import('./pages/ProgressPage'));
 const ResultsPage = lazy(() => import('./pages/ResultsPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const OAuthCallbackPage = lazy(() => import('./pages/OAuthCallbackPage'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
+const CookiesPage = lazy(() => import('./pages/CookiesPage'));
 
 function App() {
   console.log('App component is rendering...');
@@ -69,6 +74,7 @@ function App() {
               onClose={() => setShowOnboarding(false)}
             />
             <TopNavigation />
+            <CookieConsentBanner />
 
             <main>
               <Routes>
@@ -221,6 +227,30 @@ function App() {
                   element={
                     <Suspense fallback={<div>Processing...</div>}>
                       <OAuthCallbackPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/terms"
+                  element={
+                    <Suspense fallback={<div>Loading...</div>}>
+                      <TermsPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/privacy"
+                  element={
+                    <Suspense fallback={<div>Loading...</div>}>
+                      <PrivacyPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/cookies"
+                  element={
+                    <Suspense fallback={<div>Loading...</div>}>
+                      <CookiesPage />
                     </Suspense>
                   }
                 />

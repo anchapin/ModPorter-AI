@@ -445,3 +445,28 @@
     max-width: 300px;
   }
 }
+
+/* Legal Links */
+.pricing-legal {
+  padding: 2rem 20px;
+  text-align: center;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.legal-links {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.legal-links a {
+  color: #6366f1;
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+
+.legal-links a:hover {
+  text-decoration: underline;
+}
