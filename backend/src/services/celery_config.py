@@ -57,5 +57,3 @@ celery_app.conf.update(
         },
     },
 )
-
-TaskPriority = Celery.signature("services.celery_tasks.process_task", args=(), kwargs={}).type
