@@ -14,6 +14,7 @@ interface ConversionHistoryItemProps {
   onToggle: (jobId: string) => void;
   onDelete: (jobId: string) => void;
   onDownload: (jobId: string, filename: string) => void;
+  onDownloadReport?: (jobId: string) => void;
 }
 
 export const ConversionHistoryItem = memo(
@@ -23,6 +24,7 @@ export const ConversionHistoryItem = memo(
     onToggle,
     onDelete,
     onDownload,
+    onDownloadReport,
   }: ConversionHistoryItemProps) => {
     const [showConfirm, setShowConfirm] = useState(false);
 
@@ -88,19 +90,72 @@ export const ConversionHistoryItem = memo(
                 <span aria-hidden="true">⚠️</span> {item.error_message}
               </div>
             )}
+
+            {(item.complexity_tier || item.warnings?.length > 0) && (
+              <div className="item-details">
+                {item.complexity_tier && (
+                  <span className={`tier-badge tier-${item.complexity_tier}`}>
+                    {item.complexity_tier.charAt(0).toUpperCase() +
+                      item.complexity_tier.slice(1)}
+                  </span>
+                )}
+                {item.warnings && item.warnings.length > 0 && (
+                  <span
+                    className="warnings-badge"
+                    title={item.warnings.join(', ')}
+                  >
+                    <span aria-hidden="true">⚠️</span> {item.warnings.length}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {item.features_converted && item.features_converted.length > 0 && (
+              <div className="features-summary">
+                <span className="features-label">Converted:</span>
+                <span className="features-list">
+                  {item.features_converted.slice(0, 3).join(', ')}
+                  {item.features_converted.length > 3 &&
+                    ` +${item.features_converted.length - 3} more`}
+                </span>
+              </div>
+            )}
+
+            {item.features_skipped && item.features_skipped.length > 0 && (
+              <div className="features-skipped">
+                <span className="features-label">Skipped:</span>
+                <span className="features-list">
+                  {item.features_skipped.slice(0, 3).join(', ')}
+                  {item.features_skipped.length > 3 &&
+                    ` +${item.features_skipped.length - 3} more`}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
         <div className="item-actions">
           {item.status === 'completed' && !showConfirm && (
-            <button
-              className="download-btn"
-              onClick={() => onDownload(item.job_id, item.original_filename)}
-              title="Download converted file"
-              aria-label={`Download ${item.original_filename}`}
-            >
-              <span aria-hidden="true">⬇️</span> Download
-            </button>
+            <>
+              <button
+                className="download-btn"
+                onClick={() => onDownload(item.job_id, item.original_filename)}
+                title="Download converted file"
+                aria-label={`Download ${item.original_filename}`}
+              >
+                <span aria-hidden="true">⬇️</span> Download
+              </button>
+              {onDownloadReport && (
+                <button
+                  className="report-btn"
+                  onClick={() => onDownloadReport(item.job_id)}
+                  title="Download conversion report"
+                  aria-label={`Download report for ${item.original_filename}`}
+                >
+                  <span aria-hidden="true">📄</span> Report
+                </button>
+              )}
+            </>
           )}
 
           {showConfirm ? (
