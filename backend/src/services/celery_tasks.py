@@ -23,7 +23,9 @@ import redis.asyncio as aioredis
 
 from services.celery_config import celery_app, REDIS_URL
 
-logger = celery_app.log.get_logger(__name__)
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TaskStatus(Enum):
