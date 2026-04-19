@@ -1,8 +1,16 @@
 """Result aggregation for QA reports."""
 
 from datetime import datetime
-from typing import Dict, Any, List
-from qa.report.models import Issue, IssueSeverity, IssueLocation, AgentResult, QAReport
+from typing import Dict, Any, List, Optional
+from qa.report.models import (
+    Issue,
+    IssueSeverity,
+    IssueLocation,
+    AgentResult,
+    QAReport,
+    SegmentConfidence,
+    ConfidenceDistribution,
+)
 from qa.report.scorer import WeightedScorer
 
 
@@ -48,12 +56,10 @@ class ResultAggregator:
 
     def aggregate(self, job_id: str, agent_outputs: Dict[str, Dict[str, Any]]) -> QAReport:
         """Aggregate agent outputs into QAReport."""
-        # Convert raw outputs to AgentResult objects
         agent_results: List[AgentResult] = []
         for agent_name, output in agent_outputs.items():
             agent_results.append(convert_agent_output(agent_name, output))
 
-        # Calculate quality score
         quality_score = self.scorer.calculate(agent_results)
 
         return QAReport(
@@ -70,7 +76,6 @@ class ResultAggregator:
         for agent_name, output in agent_outputs.items():
             agent_results.append(convert_agent_output(agent_name, output))
 
-        # If no results, return empty report
         if not agent_results:
             return QAReport(job_id=job_id, timestamp=datetime.now())
 
@@ -81,4 +86,27 @@ class ResultAggregator:
             timestamp=datetime.now(),
             agent_results=agent_results,
             quality_score=quality_score.overall,
+        )
+
+    def aggregate_with_confidence(
+        self,
+        job_id: str,
+        agent_outputs: Dict[str, Dict[str, Any]],
+        confidence_segments: List[SegmentConfidence],
+        confidence_distribution: ConfidenceDistribution,
+    ) -> QAReport:
+        """Aggregate agent outputs with confidence scoring."""
+        agent_results: List[AgentResult] = []
+        for agent_name, output in agent_outputs.items():
+            agent_results.append(convert_agent_output(agent_name, output))
+
+        quality_score = self.scorer.calculate(agent_results)
+
+        return QAReport(
+            job_id=job_id,
+            timestamp=datetime.now(),
+            agent_results=agent_results,
+            quality_score=quality_score.overall,
+            confidence_segments=confidence_segments,
+            confidence_distribution=confidence_distribution,
         )
