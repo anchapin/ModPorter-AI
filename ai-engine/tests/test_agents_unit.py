@@ -492,13 +492,27 @@ class TestMockedDependencies:
         # Agent should work with mocked LLM
         assert agent is not None
 
-    @patch("agents.java_analyzer.javalang.parse.parse")
-    def test_java_parsing_mocked(self, mock_parse):
-        """Test Java parsing with mocked parser"""
-        # Create mock AST
+    @patch("agents.java_analyzer.Parser")
+    @patch("agents.java_analyzer.ts_java")
+    def test_java_parsing_mocked(self, mock_ts_java, mock_parser):
+        """Test Java parsing with mocked tree-sitter parser"""
+        mock_lang = Mock()
+        mock_ts_java.language.return_value = mock_lang
+
+        mock_parser_instance = Mock()
+        mock_parser.return_value = mock_parser_instance
+
         mock_tree = Mock()
-        mock_tree.types = []
-        mock_parse.return_value = mock_tree
+        mock_tree.root_node = Mock()
+        mock_tree.root_node.type = "translation_unit"
+        mock_tree.root_node.children = []
+        mock_tree.root_node.text = b""
+        mock_tree.root_node.start_point = (0, 0)
+        mock_tree.root_node.end_point = (0, 0)
+        mock_tree.root_node.start_byte = 0
+        mock_tree.root_node.end_byte = 0
+        mock_tree.root_node.child_count = 0
+        mock_parser_instance.parse.return_value = mock_tree
 
         from agents.java_analyzer import JavaAnalyzerAgent
 

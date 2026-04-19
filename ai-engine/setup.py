@@ -40,8 +40,9 @@ def get_install_requires():
         # Data Processing
         "numpy",
         "python-dotenv",
-        # Java analysis
-        "javalang>=0.13.0",
+        # Java analysis - tree-sitter for Java 17+ support
+        "tree-sitter>=0.21.0",
+        "tree-sitter-java",
         # File processing
         "Pillow>=10.0.0",
         "pydub",
