@@ -46,6 +46,9 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] =
     useState<SubscriptionStatus | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const pageSize = 20;
 
   // Confirmation states
   const [confirmClear, setConfirmClear] = useState(false);
@@ -64,7 +67,12 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
       setLoading(true);
       setError(null);
 
-      const response = await listConversions({ page_size: maxItems });
+      const response = await listConversions({
+        page: currentPage,
+        page_size: pageSize,
+      });
+
+      setTotalItems(response.total);
 
       // Map API response to component format
       const mappedHistory: ConversionHistoryItem[] = response.conversions.map(
@@ -98,7 +106,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [maxItems]);
+  }, [currentPage, maxItems]);
 
   // Load usage stats
   const loadUsageStats = useCallback(async () => {
@@ -131,7 +139,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
     loadHistory();
     loadUsageStats();
     loadSubscriptionStatus();
-  }, [loadHistory, loadUsageStats, loadSubscriptionStatus]);
+  }, [loadHistory, loadUsageStats, loadSubscriptionStatus, currentPage]);
 
   // Filter history based on search and status
   const filteredHistory = useMemo(() => {
@@ -453,19 +461,49 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
           )}
         </div>
       ) : (
-        <div className="history-list">
-          {filteredHistory.map((item) => (
-            <ConversionHistoryItemRow
-              key={item.job_id}
-              item={item}
-              isSelected={selectedItems.has(item.job_id)}
-              onToggle={toggleSelection}
-              onDelete={deleteConversion}
-              onDownload={downloadConversion}
-              onDownloadReport={downloadReport}
-            />
-          ))}
-        </div>
+        <>
+          <div className="history-list">
+            {filteredHistory.map((item) => (
+              <ConversionHistoryItemRow
+                key={item.job_id}
+                item={item}
+                isSelected={selectedItems.has(item.job_id)}
+                onToggle={toggleSelection}
+                onDelete={deleteConversion}
+                onDownload={downloadConversion}
+                onDownloadReport={downloadReport}
+              />
+            ))}
+          </div>
+
+          {totalItems > pageSize && (
+            <div className="pagination">
+              <button
+                className="pagination-btn"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                aria-label="Previous page"
+              >
+                <span aria-hidden="true">‹</span> Prev
+              </button>
+              <span className="pagination-info">
+                Page {currentPage} of {Math.ceil(totalItems / pageSize)}
+              </span>
+              <button
+                className="pagination-btn"
+                onClick={() =>
+                  setCurrentPage((p) =>
+                    Math.min(Math.ceil(totalItems / pageSize), p + 1)
+                  )
+                }
+                disabled={currentPage >= Math.ceil(totalItems / pageSize)}
+                aria-label="Next page"
+              >
+                Next <span aria-hidden="true">›</span>
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
