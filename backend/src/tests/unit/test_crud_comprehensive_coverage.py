@@ -165,9 +165,10 @@ class TestJobCRUD:
         mock_result.scalars.return_value.all.return_value = []
         mock_session.execute.return_value = mock_result
 
-        jobs = await crud.list_jobs(session=mock_session)
+        jobs, total = await crud.list_jobs(session=mock_session)
 
         assert jobs == []
+        assert total == 0
 
     @pytest.mark.asyncio
     async def test_list_jobs_with_results(self):
@@ -177,11 +178,13 @@ class TestJobCRUD:
         mock_job1 = MagicMock(spec=ConversionJob)
         mock_job2 = MagicMock(spec=ConversionJob)
         mock_result.scalars.return_value.all.return_value = [mock_job1, mock_job2]
+        mock_result.scalar.return_value = 2
         mock_session.execute.return_value = mock_result
 
-        jobs = await crud.list_jobs(session=mock_session)
+        jobs, total = await crud.list_jobs(session=mock_session)
 
         assert len(jobs) == 2
+        assert total == 2
 
     @pytest.mark.asyncio
     async def test_upsert_progress_alias(self):
