@@ -10,7 +10,6 @@ import {
   listConversions,
   billingAPI,
   downloadConversionReport,
-  UsageInfo,
   SubscriptionStatus,
 } from '../../services/api';
 import './ConversionHistory.css';
@@ -44,7 +43,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
-  const [subscriptionStatus, setSubscriptionStatus] =
+  const [_ubscriptionStatus, setSubscriptionStatus] =
     useState<SubscriptionStatus | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
