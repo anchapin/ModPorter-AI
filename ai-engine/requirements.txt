@@ -22,8 +22,10 @@ numpy
 python-dotenv~=1.2.1
 
 # Java analysis - tree-sitter for Java 17+ support
+# Note: javalang is still required by logic_translator.py
 tree-sitter>=0.21.0
 tree-sitter-java
+javalang==0.13.0
 
 # File processing - align with backend version
 python-magic==0.4.27
