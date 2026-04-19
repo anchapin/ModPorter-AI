@@ -14,6 +14,7 @@ interface ConversionHistoryItemProps {
   onToggle: (jobId: string) => void;
   onDelete: (jobId: string) => void;
   onDownload: (jobId: string, filename: string) => void;
+  onDownloadReport?: (jobId: string) => void;
 }
 
 export const ConversionHistoryItem = memo(
@@ -23,6 +24,7 @@ export const ConversionHistoryItem = memo(
     onToggle,
     onDelete,
     onDownload,
+    onDownloadReport,
   }: ConversionHistoryItemProps) => {
     const [showConfirm, setShowConfirm] = useState(false);
 
@@ -93,14 +95,26 @@ export const ConversionHistoryItem = memo(
 
         <div className="item-actions">
           {item.status === 'completed' && !showConfirm && (
-            <button
-              className="download-btn"
-              onClick={() => onDownload(item.job_id, item.original_filename)}
-              title="Download converted file"
-              aria-label={`Download ${item.original_filename}`}
-            >
-              <span aria-hidden="true">⬇️</span> Download
-            </button>
+            <>
+              <button
+                className="download-btn"
+                onClick={() => onDownload(item.job_id, item.original_filename)}
+                title="Download converted file"
+                aria-label={`Download ${item.original_filename}`}
+              >
+                <span aria-hidden="true">⬇️</span> Download
+              </button>
+              {onDownloadReport && (
+                <button
+                  className="report-btn"
+                  onClick={() => onDownloadReport(item.job_id)}
+                  title="Download conversion report"
+                  aria-label={`Download report for ${item.original_filename}`}
+                >
+                  <span aria-hidden="true">📄</span> Report
+                </button>
+              )}
+            </>
           )}
 
           {showConfirm ? (

@@ -9,6 +9,7 @@ import {
   triggerDownload,
   listConversions,
   billingAPI,
+  downloadConversionReport,
   UsageInfo,
   SubscriptionStatus,
 } from '../../services/api';
@@ -183,6 +184,19 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
       setError('Failed to download file');
     }
   }, []);
+
+  // Download conversion report
+  const downloadReport = useCallback(
+    async (jobId: string, format: 'json' | 'html' | 'csv' = 'json') => {
+      try {
+        await downloadConversionReport(jobId, format);
+      } catch (err) {
+        console.error('Report download failed:', err);
+        setError('Failed to download report');
+      }
+    },
+    []
+  );
 
   // Delete conversion from history (local only - API delete is not implemented)
   const deleteConversion = useCallback((jobId: string) => {
@@ -444,6 +458,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
               onToggle={toggleSelection}
               onDelete={deleteConversion}
               onDownload={downloadConversion}
+              onDownloadReport={downloadReport}
             />
           ))}
         </div>

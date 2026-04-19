@@ -1595,3 +1595,47 @@ export const billingAPI = {
     return response.json();
   },
 };
+
+export interface ConversionReportInfo {
+  download_url: string;
+  format: string;
+}
+
+export const downloadConversionReport = async (
+  conversionId: string,
+  format: 'json' | 'html' | 'csv' = 'json'
+): Promise<void> => {
+  const response = await fetch(
+    `${API_BASE_URL}/conversions/${conversionId}/report/download?format=${format}`
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({
+      detail: 'Failed to download conversion report',
+    }));
+    throw new ApiError(
+      errorData.detail || 'Failed to download conversion report',
+      response.status
+    );
+  }
+
+  const blob = await response.blob();
+  const contentDisposition = response.headers.get('Content-Disposition');
+  let filename = `conversion_report_${conversionId}.${format}`;
+
+  if (contentDisposition) {
+    const fileNameMatch = contentDisposition.match(/filename="([^"]+)"/);
+    if (fileNameMatch) {
+      filename = fileNameMatch[1];
+    }
+  }
+
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+};
