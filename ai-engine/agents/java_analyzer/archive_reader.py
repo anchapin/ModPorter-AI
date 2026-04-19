@@ -213,6 +213,23 @@ class ArchiveReader:
             return "unknown"
         return name
 
+    def extract_registry_name_from_jar_simple(self, jar: zipfile.ZipFile, file_list: list) -> str:
+        """Extract block registry name from JAR metadata (simple version)."""
+        mod_id = self._extract_mod_id_from_metadata(jar, file_list)
+        if mod_id:
+            block_class = self._find_block_class_name(file_list)
+            if block_class:
+                block_name = self._class_name_to_registry_name(block_class)
+                return f"{mod_id}:{block_name}"
+            return f"{mod_id}:copper_block"
+
+        block_class = self._find_block_class_name(file_list)
+        if block_class:
+            block_name = self._class_name_to_registry_name(block_class)
+            return f"modporter:{block_name}"
+
+        return "modporter:copper_block"
+
 
 def _snake_case(name: str) -> str:
     """Convert CamelCase to snake_case."""

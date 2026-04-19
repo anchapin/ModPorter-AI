@@ -47,6 +47,13 @@ class JavaAnalyzerAgent:
 
     _instance = None
 
+    analyze_mod_structure_tool = JavaAnalyzerTools.analyze_mod_structure_tool
+    extract_mod_metadata_tool = JavaAnalyzerTools.extract_mod_metadata_tool
+    identify_features_tool = JavaAnalyzerTools.identify_features_tool
+    analyze_dependencies_tool = JavaAnalyzerTools.analyze_dependencies_tool
+    extract_assets_tool = JavaAnalyzerTools.extract_assets_tool
+    analyze_complexity_with_llm_tool = JavaAnalyzerTools.analyze_complexity_with_llm_tool
+
     def __init__(self):
         self.logger = logger
         self.smart_assumption_engine = SmartAssumptionEngine()
@@ -504,7 +511,7 @@ class JavaAnalyzerAgent:
                     result["texture_path"] = texture_path
                     logger.info(f"Found texture: {texture_path}")
 
-                registry_name = self._archive_reader.extract_registry_name_from_jar(jar, file_list)
+                registry_name = self._extract_registry_name_from_jar(jar, file_list)
                 if registry_name:
                     result["registry_name"] = registry_name
                     logger.info(f"Found registry name: {registry_name}")
@@ -623,13 +630,53 @@ class JavaAnalyzerAgent:
         """Analyze assets in the JAR file."""
         return self._archive_reader.analyze_assets_from_jar(file_list)
 
+    def _extract_mod_id_from_metadata(self, jar: zipfile.ZipFile, file_list: list) -> Optional[str]:
+        """Extract mod ID from metadata files."""
+        return self._archive_reader._extract_mod_id_from_metadata(jar, file_list)
+
+    def _extract_mod_info_from_jar(self, jar: zipfile.ZipFile, file_list: list) -> dict:
+        """Extract mod info from JAR metadata."""
+        return self._archive_reader.extract_mod_info_from_jar(jar, file_list)
+
+    def _find_block_class_name(self, file_list: list) -> Optional[str]:
+        """Find the main block class name from file paths."""
+        return self._archive_reader._find_block_class_name(file_list)
+
+    def _find_nodes_by_type(self, node: Dict, target_type: str) -> List[Dict]:
+        """Find all nodes of a specific type in tree-sitter AST."""
+        return self._feature_extractor._find_nodes_by_type(node, target_type)
+
+    def _extract_features_from_class_name(self, class_name: str) -> Dict:
+        """Extract features from a single class name (fallback for parse failures)."""
+        return self._feature_extractor.extract_features_from_class_name(class_name)
+
+    def _analyze_bytecode_class(self, class_data: bytes, class_name: str) -> Dict:
+        """Analyze a Java class file using Javassist."""
+        return self._feature_extractor.analyze_bytecode_class(class_data, class_name)
+
+    def _extract_features_from_ast(self, tree: Dict) -> Dict:
+        """Extract features from parsed Java AST."""
+        return self._feature_extractor.extract_features_from_ast(tree)
+
+    def _extract_features_from_classes(self, file_list: List[str]) -> Dict:
+        """Extract features from class file names (fallback method)."""
+        return self._feature_extractor.extract_features_from_classes(file_list)
+
+    def _analyze_dependencies_from_ast(self, tree: Dict) -> List[Dict]:
+        """Analyze dependencies from parsed Java AST."""
+        return self._feature_extractor.analyze_dependencies_from_ast(tree)
+
     def _detect_reflection_in_mods(self, tree: Dict) -> Dict:
         """Detect reflection usage in mods through static analysis."""
         return self._feature_extractor.detect_reflection_in_mods(tree)
 
+    def _parse_java_source(self, source_code: str) -> Optional[Dict]:
+        """Parse Java source code into an AST."""
+        return self._feature_extractor.parse_java_source(source_code)
+
     def _parse_java_source_fallback(self, source_code: str) -> Optional[Dict]:
         """Fallback parsing that tries to handle partial/incomplete Java source code."""
-        return self._feature_extractor.parse_java_source_fallback(source_code)
+        return self._feature_extractor._parse_java_source_fallback(source_code)
 
     def _extract_annotation_element(self, element) -> Optional[Any]:
         """Extract value from an annotation element (for fallback compatibility)."""
@@ -646,6 +693,10 @@ class JavaAnalyzerAgent:
             return None
 
     def _extract_block_properties_from_ast(self, class_node: Dict) -> Dict:
+        """Extract block properties from tree-sitter block class node."""
+        return self._feature_extractor._extract_block_properties_from_ts(class_node)
+
+    def _extract_block_properties_from_ts(self, class_node: Dict) -> Dict:
         """Extract block properties from tree-sitter block class node."""
         return self._feature_extractor._extract_block_properties_from_ts(class_node)
 
