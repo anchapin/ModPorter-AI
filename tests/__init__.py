@@ -1,1 +1,1 @@
-"""Test suite for ModPorter AI."""
+"""Test suite for PortKit."""

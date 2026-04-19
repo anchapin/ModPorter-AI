@@ -210,7 +210,7 @@ ignore_errors = true
 name = "ai-engine"
 version = "0.1.0"
 description = "AI Engine with GPU acceleration support"
-authors = [{name = "ModPorter AI", email = "ai@modporter.dev"}]
+authors = [{name = "PortKit", email = "ai@portkit.ai"}]
 license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.8"

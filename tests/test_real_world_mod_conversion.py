@@ -4,7 +4,7 @@ End-to-End Real-World Mod Conversion Tests
 Tests conversion pipeline against 20+ real Java mods from CurseForge/Modrinth.
 Validates the full conversion workflow and tracks asset coverage metrics.
 
-Issue #971: https://github.com/anchapin/ModPorter-AI/issues/971
+Issue #971: https://github.com/anchapin/PortKit/issues/971
 """
 
 import pytest
@@ -29,7 +29,7 @@ MODRINTH_API_BASE = "https://api.modrinth.com/v2"
 
 CONVERT_MOD_IMPORT_ERROR = None
 try:
-    from modporter.cli.main import convert_mod
+    from portkit.cli.main import convert_mod
 except ImportError as e:
     convert_mod = None
     CONVERT_MOD_IMPORT_ERROR = str(e)
@@ -195,7 +195,7 @@ class RealWorldModTester:
         try:
             response = httpx.get(
                 f"{MODRINTH_API_BASE}/project/{slug}",
-                headers={"User-Agent": "ModPorter-AI/1.0"},
+                headers={"User-Agent": "PortKit/1.0"},
                 timeout=30.0,
             )
             response.raise_for_status()
@@ -211,7 +211,7 @@ class RealWorldModTester:
         try:
             response = httpx.get(
                 f"{MODRINTH_API_BASE}/project/{slug}/version",
-                headers={"User-Agent": "ModPorter-AI/1.0"},
+                headers={"User-Agent": "PortKit/1.0"},
                 timeout=30.0,
             )
             response.raise_for_status()

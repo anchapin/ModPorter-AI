@@ -11,7 +11,7 @@ import json
 
 # Set up imports
 try:
-    from modporter.cli.main import convert_mod
+    from portkit.cli.main import convert_mod
     IMPORTS_AVAILABLE = True
 except ImportError:
     IMPORTS_AVAILABLE = False

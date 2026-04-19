@@ -17,13 +17,13 @@ import pytest
 def test_file_processor_module_exists():
     """file_processor.py should exist"""
     import os
-    path = "/home/alex/Projects/ModPorter-AI/backend/src/file_processor.py"
+    path = "/home/alex/Projects/PortKit/backend/src/file_processor.py"
     assert os.path.exists(path), f"Module not found at {path}"
 
 
 def test_file_processor_module_can_be_parsed():
     """file_processor module should be valid Python"""
-    with open("/home/alex/Projects/ModPorter-AI/backend/src/file_processor.py") as f:
+    with open("/home/alex/Projects/PortKit/backend/src/file_processor.py") as f:
         source = f.read()
     
     tree = ast.parse(source)
@@ -32,7 +32,7 @@ def test_file_processor_module_can_be_parsed():
 
 def test_file_processor_has_classes():
     """file_processor.py should define classes"""
-    with open("/home/alex/Projects/ModPorter-AI/backend/src/file_processor.py") as f:
+    with open("/home/alex/Projects/PortKit/backend/src/file_processor.py") as f:
         source = f.read()
     
     class_count = source.count("class ")
@@ -41,7 +41,7 @@ def test_file_processor_has_classes():
 
 def test_file_processor_has_functions():
     """file_processor.py should have functions"""
-    with open("/home/alex/Projects/ModPorter-AI/backend/src/file_processor.py") as f:
+    with open("/home/alex/Projects/PortKit/backend/src/file_processor.py") as f:
         source = f.read()
     
     func_count = source.count("def ")
@@ -54,7 +54,7 @@ def test_file_processor_has_functions():
 
 def test_file_processor_imports_zipfile():
     """file_processor.py should import zipfile"""
-    with open("/home/alex/Projects/ModPorter-AI/backend/src/file_processor.py") as f:
+    with open("/home/alex/Projects/PortKit/backend/src/file_processor.py") as f:
         source = f.read()
     
     assert "import zipfile" in source or "from zipfile" in source
@@ -62,7 +62,7 @@ def test_file_processor_imports_zipfile():
 
 def test_file_processor_imports_pathlib():
     """file_processor.py should import pathlib"""
-    with open("/home/alex/Projects/ModPorter-AI/backend/src/file_processor.py") as f:
+    with open("/home/alex/Projects/PortKit/backend/src/file_processor.py") as f:
         source = f.read()
     
     assert "import pathlib" in source or "from pathlib" in source
@@ -70,7 +70,7 @@ def test_file_processor_imports_pathlib():
 
 def test_file_processor_imports_os():
     """file_processor.py should import os"""
-    with open("/home/alex/Projects/ModPorter-AI/backend/src/file_processor.py") as f:
+    with open("/home/alex/Projects/PortKit/backend/src/file_processor.py") as f:
         source = f.read()
     
     assert "import os" in source
@@ -82,7 +82,7 @@ def test_file_processor_imports_os():
 
 def test_file_processor_has_process_method():
     """file_processor should have process method"""
-    with open("/home/alex/Projects/ModPorter-AI/backend/src/file_processor.py") as f:
+    with open("/home/alex/Projects/PortKit/backend/src/file_processor.py") as f:
         source = f.read()
     
     assert "process" in source.lower()
@@ -90,7 +90,7 @@ def test_file_processor_has_process_method():
 
 def test_file_processor_has_extract_function():
     """file_processor should have extract function"""
-    with open("/home/alex/Projects/ModPorter-AI/backend/src/file_processor.py") as f:
+    with open("/home/alex/Projects/PortKit/backend/src/file_processor.py") as f:
         source = f.read()
     
     assert "extract" in source.lower()
@@ -98,7 +98,7 @@ def test_file_processor_has_extract_function():
 
 def test_file_processor_has_validate_function():
     """file_processor should have validate function"""
-    with open("/home/alex/Projects/ModPorter-AI/backend/src/file_processor.py") as f:
+    with open("/home/alex/Projects/PortKit/backend/src/file_processor.py") as f:
         source = f.read()
     
     assert "valid" in source.lower()
@@ -110,7 +110,7 @@ def test_file_processor_has_validate_function():
 
 def test_file_processor_has_error_handling():
     """file_processor should handle errors"""
-    with open("/home/alex/Projects/ModPorter-AI/backend/src/file_processor.py") as f:
+    with open("/home/alex/Projects/PortKit/backend/src/file_processor.py") as f:
         source = f.read()
     
     assert "try:" in source or "except" in source or "Exception" in source
@@ -118,7 +118,7 @@ def test_file_processor_has_error_handling():
 
 def test_file_processor_has_exceptions():
     """file_processor should define custom exceptions"""
-    with open("/home/alex/Projects/ModPorter-AI/backend/src/file_processor.py") as f:
+    with open("/home/alex/Projects/PortKit/backend/src/file_processor.py") as f:
         source = f.read()
     
     assert "Exception" in source or "Error" in source
@@ -130,7 +130,7 @@ def test_file_processor_has_exceptions():
 
 def test_file_processor_has_async_functions():
     """file_processor should have async functions"""
-    with open("/home/alex/Projects/ModPorter-AI/backend/src/file_processor.py") as f:
+    with open("/home/alex/Projects/PortKit/backend/src/file_processor.py") as f:
         source = f.read()
     
     assert "async def" in source
@@ -142,7 +142,7 @@ def test_file_processor_has_async_functions():
 
 def test_file_processor_has_config():
     """file_processor should have configuration"""
-    with open("/home/alex/Projects/ModPorter-AI/backend/src/file_processor.py") as f:
+    with open("/home/alex/Projects/PortKit/backend/src/file_processor.py") as f:
         source = f.read()
     
     assert "config" in source.lower() or "settings" in source.lower()
@@ -150,7 +150,7 @@ def test_file_processor_has_config():
 
 def test_file_processor_has_constants():
     """file_processor should have constants"""
-    with open("/home/alex/Projects/ModPorter-AI/backend/src/file_processor.py") as f:
+    with open("/home/alex/Projects/PortKit/backend/src/file_processor.py") as f:
         source = f.read()
     
     # Look for MAX_ or SIZE_ constants
@@ -163,7 +163,7 @@ def test_file_processor_has_constants():
 
 def test_file_processor_supports_jar():
     """file_processor should support JAR files"""
-    with open("/home/alex/Projects/ModPorter-AI/backend/src/file_processor.py") as f:
+    with open("/home/alex/Projects/PortKit/backend/src/file_processor.py") as f:
         source = f.read()
     
     assert ".jar" in source.lower() or "jar" in source.lower()
@@ -171,7 +171,7 @@ def test_file_processor_supports_jar():
 
 def test_file_processor_supports_zip():
     """file_processor should support ZIP files"""
-    with open("/home/alex/Projects/ModPorter-AI/backend/src/file_processor.py") as f:
+    with open("/home/alex/Projects/PortKit/backend/src/file_processor.py") as f:
         source = f.read()
     
     assert "zip" in source.lower()
@@ -183,7 +183,7 @@ def test_file_processor_supports_zip():
 
 def test_file_processor_has_hash_function():
     """file_processor may have hash function"""
-    with open("/home/alex/Projects/ModPorter-AI/backend/src/file_processor.py") as f:
+    with open("/home/alex/Projects/PortKit/backend/src/file_processor.py") as f:
         source = f.read()
     
     # Hash function is optional - just verify module is complete
@@ -192,7 +192,7 @@ def test_file_processor_has_hash_function():
 
 def test_file_processor_has_size_function():
     """file_processor should have size calculation"""
-    with open("/home/alex/Projects/ModPorter-AI/backend/src/file_processor.py") as f:
+    with open("/home/alex/Projects/PortKit/backend/src/file_processor.py") as f:
         source = f.read()
     
     assert "size" in source.lower()

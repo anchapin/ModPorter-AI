@@ -6,11 +6,11 @@ defaults:
   notifiers:
     - desktop
 projects:
-  ModPorter-AI:
-    name: ModPorter-AI
-    sessionPrefix: mpai
-    repo: anchapin/ModPorter-AI
-    path: /home/alex/Projects/ModPorter-AI
+  PortKit:
+    name: PortKit
+    sessionPrefix: portkit
+    repo: anchapin/PortKit
+    path: /home/alex/Projects/PortKit
     defaultBranch: main
     agentRules: >-
       Always run tests before pushing.

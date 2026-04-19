@@ -1,5 +1,5 @@
 """
-Comprehensive tests for ModPorter CLI main module.
+Comprehensive tests for PortKit CLI main module.
 Tests convert command, CLI parsing, agent integration, and error handling.
 """
 
@@ -13,7 +13,7 @@ from io import StringIO
 
 # Set up imports
 try:
-    from modporter.cli.main import (
+    from portkit.cli.main import (
         convert_mod,
         main,
         add_ai_engine_to_path,
@@ -76,9 +76,9 @@ class TestAddAIEngineToPath:
 class TestConvertModFunction:
     """Test convert_mod function."""
 
-    @patch("modporter.cli.main.JavaAnalyzerAgent")
-    @patch("modporter.cli.main.BedrockBuilderAgent")
-    @patch("modporter.cli.main.PackagingAgent")
+    @patch("portkit.cli.main.JavaAnalyzerAgent")
+    @patch("portkit.cli.main.BedrockBuilderAgent")
+    @patch("portkit.cli.main.PackagingAgent")
     def test_convert_mod_success(
         self, mock_packaging, mock_bedrock, mock_java_analyzer, temp_jar_file, temp_output_dir
     ):
@@ -116,7 +116,7 @@ class TestConvertModFunction:
         assert "test_block" in result["registry_name"]
         assert "output_file" in result
 
-    @patch("modporter.cli.main.JavaAnalyzerAgent")
+    @patch("portkit.cli.main.JavaAnalyzerAgent")
     def test_convert_mod_file_not_found(self, mock_java_analyzer):
         """Test convert_mod with non-existent file."""
         result = convert_mod("/nonexistent/path/to/mod.jar")
@@ -124,7 +124,7 @@ class TestConvertModFunction:
         assert result["success"] is False
         assert "not found" in result["error"].lower()
 
-    @patch("modporter.cli.main.JavaAnalyzerAgent")
+    @patch("portkit.cli.main.JavaAnalyzerAgent")
     def test_convert_mod_invalid_jar_extension(self, mock_java_analyzer, temp_jar_file):
         """Test convert_mod with invalid file extension."""
         invalid_file = temp_jar_file.parent / "test.txt"
@@ -135,9 +135,9 @@ class TestConvertModFunction:
         assert result["success"] is False
         assert "must be a .jar file" in result["error"].lower()
 
-    @patch("modporter.cli.main.JavaAnalyzerAgent")
-    @patch("modporter.cli.main.BedrockBuilderAgent")
-    @patch("modporter.cli.main.PackagingAgent")
+    @patch("portkit.cli.main.JavaAnalyzerAgent")
+    @patch("portkit.cli.main.BedrockBuilderAgent")
+    @patch("portkit.cli.main.PackagingAgent")
     def test_convert_mod_analysis_failure(
         self, mock_packaging, mock_bedrock, mock_java_analyzer, temp_jar_file, temp_output_dir
     ):
@@ -154,9 +154,9 @@ class TestConvertModFunction:
         assert result["success"] is False
         assert "Analysis failed" in result["error"]
 
-    @patch("modporter.cli.main.JavaAnalyzerAgent")
-    @patch("modporter.cli.main.BedrockBuilderAgent")
-    @patch("modporter.cli.main.PackagingAgent")
+    @patch("portkit.cli.main.JavaAnalyzerAgent")
+    @patch("portkit.cli.main.BedrockBuilderAgent")
+    @patch("portkit.cli.main.PackagingAgent")
     def test_convert_mod_builder_failure(
         self, mock_packaging, mock_bedrock, mock_java_analyzer, temp_jar_file, temp_output_dir
     ):
@@ -181,9 +181,9 @@ class TestConvertModFunction:
         assert result["success"] is False
         assert "Bedrock build failed" in result["error"]
 
-    @patch("modporter.cli.main.JavaAnalyzerAgent")
-    @patch("modporter.cli.main.BedrockBuilderAgent")
-    @patch("modporter.cli.main.PackagingAgent")
+    @patch("portkit.cli.main.JavaAnalyzerAgent")
+    @patch("portkit.cli.main.BedrockBuilderAgent")
+    @patch("portkit.cli.main.PackagingAgent")
     def test_convert_mod_packaging_failure(
         self, mock_packaging, mock_bedrock, mock_java_analyzer, temp_jar_file, temp_output_dir
     ):
@@ -220,9 +220,9 @@ class TestConvertModFunction:
         with tempfile.TemporaryDirectory() as tmp_dir:
             output_dir = Path(tmp_dir) / "nested" / "output"
 
-            with patch("modporter.cli.main.JavaAnalyzerAgent"):
-                with patch("modporter.cli.main.BedrockBuilderAgent"):
-                    with patch("modporter.cli.main.PackagingAgent"):
+            with patch("portkit.cli.main.JavaAnalyzerAgent"):
+                with patch("portkit.cli.main.BedrockBuilderAgent"):
+                    with patch("portkit.cli.main.PackagingAgent"):
                         # Just verify it doesn't error on missing directory
                         try:
                             # We expect this to fail at the analyzer stage
@@ -240,17 +240,17 @@ class TestMainCLI:
 
     def test_main_help(self, capsys):
         """Test --help argument."""
-        with patch("sys.argv", ["modporter", "--help"]):
+        with patch("sys.argv", ["portkit, "--help"]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
 
             assert exc_info.value.code == 0
             captured = capsys.readouterr()
-            assert "ModPorter" in captured.out or "ModPorter" in captured.err
+            assert "PortKit" in captured.out or "PortKit" in captured.err
 
     def test_main_version(self, capsys):
         """Test --version argument."""
-        with patch("sys.argv", ["modporter", "--version"]):
+        with patch("sys.argv", ["portkit", "--version"]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
 
@@ -258,7 +258,7 @@ class TestMainCLI:
             captured = capsys.readouterr()
             assert "v0.1.0" in captured.out or "v0.1.0" in captured.err
 
-    @patch("modporter.cli.main.convert_mod")
+    @patch("portkit.cli.main.convert_mod")
     def test_main_convert_command(self, mock_convert, temp_jar_file):
         """Test convert subcommand."""
         mock_convert.return_value = {
@@ -269,14 +269,14 @@ class TestMainCLI:
             "validation": {"valid": True},
         }
 
-        with patch("sys.argv", ["modporter", "convert", str(temp_jar_file)]):
+        with patch("sys.argv", ["portkit, "convert", str(temp_jar_file)]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
 
             assert exc_info.value.code == 0
             mock_convert.assert_called()
 
-    @patch("modporter.cli.main.convert_mod")
+    @patch("portkit.cli.main.convert_mod")
     def test_main_convert_with_output(self, mock_convert, temp_jar_file, temp_output_dir):
         """Test convert with output directory."""
         mock_convert.return_value = {
@@ -288,7 +288,7 @@ class TestMainCLI:
         }
 
         with patch(
-            "sys.argv", ["modporter", "convert", str(temp_jar_file), "-o", str(temp_output_dir)]
+            "sys.argv", ["portkit, "convert", str(temp_jar_file), "-o", str(temp_output_dir)]
         ):
             with pytest.raises(SystemExit) as exc_info:
                 main()
@@ -298,27 +298,27 @@ class TestMainCLI:
             call_args = mock_convert.call_args
             assert str(temp_output_dir) in str(call_args)
 
-    @patch("modporter.cli.main.CIFixer")
+    @patch("portkit.cli.main.CIFixer")
     def test_main_fix_ci_command(self, mock_fixer):
         """Test fix-ci subcommand."""
         mock_fixer_instance = MagicMock()
         mock_fixer.return_value = mock_fixer_instance
         mock_fixer_instance.fix_failing_ci.return_value = True
 
-        with patch("sys.argv", ["modporter", "fix-ci"]):
+        with patch("sys.argv", ["portkit, "fix-ci"]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
 
             assert exc_info.value.code == 0
 
-    @patch("modporter.cli.main.CIFixer")
+    @patch("portkit.cli.main.CIFixer")
     def test_main_fix_ci_with_repo_path(self, mock_fixer):
         """Test fix-ci with custom repo path."""
         mock_fixer_instance = MagicMock()
         mock_fixer.return_value = mock_fixer_instance
         mock_fixer_instance.fix_failing_ci.return_value = True
 
-        with patch("sys.argv", ["modporter", "fix-ci", "--repo-path", "/custom/repo"]):
+        with patch("sys.argv", ["portkit, "fix-ci", "--repo-path", "/custom/repo"]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
 
@@ -327,11 +327,11 @@ class TestMainCLI:
 
     def test_main_no_command_shows_convert(self):
         """Test that no command defaults to showing help/error."""
-        with patch("sys.argv", ["modporter"]):
+        with patch("sys.argv", ["portkit]):
             with pytest.raises(SystemExit):
                 main()
 
-    @patch("modporter.cli.main.convert_mod")
+    @patch("portkit.cli.main.convert_mod")
     def test_main_verbose_flag(self, mock_convert, temp_jar_file):
         """Test verbose logging flag."""
         mock_convert.return_value = {
@@ -342,31 +342,31 @@ class TestMainCLI:
             "validation": {"valid": True},
         }
 
-        with patch("sys.argv", ["modporter", "-v", "convert", str(temp_jar_file)]):
+        with patch("sys.argv", ["portkit, "-v", "convert", str(temp_jar_file)]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
 
             assert exc_info.value.code == 0
 
-    @patch("modporter.cli.main.convert_mod")
+    @patch("portkit.cli.main.convert_mod")
     def test_main_convert_failure(self, mock_convert, temp_jar_file):
         """Test main handles convert failure."""
         mock_convert.return_value = {"success": False, "error": "Conversion failed"}
 
-        with patch("sys.argv", ["modporter", "convert", str(temp_jar_file)]):
+        with patch("sys.argv", ["portkit, "convert", str(temp_jar_file)]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
 
             assert exc_info.value.code == 1
 
-    @patch("modporter.cli.main.CIFixer")
+    @patch("portkit.cli.main.CIFixer")
     def test_main_fix_ci_failure(self, mock_fixer):
         """Test main handles fix-ci failure."""
         mock_fixer_instance = MagicMock()
         mock_fixer.return_value = mock_fixer_instance
         mock_fixer_instance.fix_failing_ci.return_value = False
 
-        with patch("sys.argv", ["modporter", "fix-ci"]):
+        with patch("sys.argv", ["portkit, "fix-ci"]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
 
@@ -376,9 +376,9 @@ class TestMainCLI:
 class TestCLIIntegration:
     """Integration tests for CLI."""
 
-    @patch("modporter.cli.main.JavaAnalyzerAgent")
-    @patch("modporter.cli.main.BedrockBuilderAgent")
-    @patch("modporter.cli.main.PackagingAgent")
+    @patch("portkit.cli.main.JavaAnalyzerAgent")
+    @patch("portkit.cli.main.BedrockBuilderAgent")
+    @patch("portkit.cli.main.PackagingAgent")
     def test_end_to_end_conversion(
         self, mock_packaging, mock_bedrock, mock_java_analyzer, temp_jar_file, temp_output_dir
     ):
@@ -417,7 +417,7 @@ class TestCLIIntegration:
         mock_builder_instance.build_block_addon_mvp.assert_called_once()
         mock_packager_instance.build_mcaddon_mvp.assert_called_once()
 
-    @patch("modporter.cli.main.convert_mod")
+    @patch("portkit.cli.main.convert_mod")
     def test_cli_with_multiple_files(self, mock_convert, temp_jar_file, temp_output_dir):
         """Test CLI parsing for multiple operations."""
         mock_convert.return_value = {
@@ -430,7 +430,7 @@ class TestCLIIntegration:
 
         # Simulate converting multiple files
         for i in range(3):
-            with patch("sys.argv", ["modporter", "convert", str(temp_jar_file)]):
+            with patch("sys.argv", ["portkit, "convert", str(temp_jar_file)]):
                 with pytest.raises(SystemExit):
                     main()
 
@@ -441,12 +441,12 @@ class TestCLIIntegration:
 class TestCLIErrorMessages:
     """Test CLI error message handling."""
 
-    @patch("modporter.cli.main.convert_mod")
+    @patch("portkit.cli.main.convert_mod")
     def test_error_message_displayed(self, mock_convert, temp_jar_file, capsys):
         """Test that error messages are displayed."""
         mock_convert.return_value = {"success": False, "error": "Test error message"}
 
-        with patch("sys.argv", ["modporter", "convert", str(temp_jar_file)]):
+        with patch("sys.argv", ["portkit, "convert", str(temp_jar_file)]):
             with pytest.raises(SystemExit):
                 main()
 
@@ -455,7 +455,7 @@ class TestCLIErrorMessages:
 
     def test_missing_jar_file_argument(self):
         """Test error when JAR file argument is missing."""
-        with patch("sys.argv", ["modporter", "convert"]):
+        with patch("sys.argv", ["portkit, "convert"]):
             with pytest.raises(SystemExit):
                 main()
 
@@ -463,13 +463,13 @@ class TestCLIErrorMessages:
 class TestCLILogging:
     """Test CLI logging functionality."""
 
-    @patch("modporter.cli.main.logging.getLogger")
+    @patch("portkit.cli.main.logging.getLogger")
     def test_logging_configured(self, mock_get_logger):
         """Test that logging is properly configured."""
         mock_logger = MagicMock()
         mock_get_logger.return_value = mock_logger
 
-        with patch("sys.argv", ["modporter", "--help"]):
+        with patch("sys.argv", ["portkit, "--help"]):
             with pytest.raises(SystemExit):
                 main()
 
@@ -479,7 +479,7 @@ class TestSoundExtraction:
 
     def test_extract_sounds_from_jar_with_sounds(self, tmp_path):
         """Test extracting sounds from a JAR with sound files."""
-        from modporter.cli.main import _extract_sounds_from_jar
+        from portkit.cli.main import _extract_sounds_from_jar
 
         jar_path = tmp_path / "test_sounds.jar"
         import zipfile
@@ -498,7 +498,7 @@ class TestSoundExtraction:
 
     def test_extract_sounds_from_jar_no_sounds(self, tmp_path):
         """Test extracting sounds from a JAR without sound files."""
-        from modporter.cli.main import _extract_sounds_from_jar
+        from portkit.cli.main import _extract_sounds_from_jar
 
         jar_path = tmp_path / "empty.jar"
         import zipfile
@@ -517,7 +517,7 @@ class TestSoundConversion:
 
     def test_convert_java_sounds_to_bedrock(self, tmp_path):
         """Test converting Java sounds to Bedrock format."""
-        from modporter.cli.main import _convert_java_sounds_to_bedrock
+        from portkit.cli.main import _convert_java_sounds_to_bedrock
 
         jar_path = tmp_path / "test_sounds.jar"
         rp_path = tmp_path / "resource_pack"
@@ -563,7 +563,7 @@ class TestLocalizationExtraction:
 
     def test_extract_localization_from_jar_with_lang(self, tmp_path):
         """Test extracting localization files from a JAR."""
-        from modporter.cli.main import _extract_localization_from_jar
+        from portkit.cli.main import _extract_localization_from_jar
 
         jar_path = tmp_path / "test_lang.jar"
         import zipfile
@@ -582,7 +582,7 @@ class TestLocalizationExtraction:
 
     def test_extract_localization_from_jar_no_lang(self, tmp_path):
         """Test extracting localization from a JAR without lang files."""
-        from modporter.cli.main import _extract_localization_from_jar
+        from portkit.cli.main import _extract_localization_from_jar
 
         jar_path = tmp_path / "empty.jar"
         import zipfile
@@ -600,7 +600,7 @@ class TestLocalizationConversion:
 
     def test_convert_java_lang_to_bedrock(self, tmp_path):
         """Test converting Java lang files to Bedrock .lang format."""
-        from modporter.cli.main import _convert_java_lang_to_bedrock
+        from portkit.cli.main import _convert_java_lang_to_bedrock
 
         rp_path = tmp_path / "resource_pack"
         rp_path.mkdir()
@@ -623,7 +623,7 @@ class TestLocalizationConversion:
 
     def test_convert_java_lang_to_bedrock_with_namespace(self, tmp_path):
         """Test that keys with existing namespace are not double-namespaced."""
-        from modporter.cli.main import _convert_java_lang_to_bedrock
+        from portkit.cli.main import _convert_java_lang_to_bedrock
 
         rp_path = tmp_path / "resource_pack"
         rp_path.mkdir()

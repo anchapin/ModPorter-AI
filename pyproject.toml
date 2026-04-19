@@ -92,8 +92,8 @@ ignore = [
 "conftest.py" = ["F401"]
 "mock-ai-engine.py" = ["F401"]
 
-# Modporter CLI - legacy code
-"modporter/*" = ["E402", "F401", "E722", "F841"]
+# PortKit CLI - legacy code
+"portkit/*" = ["E402", "F401", "E722", "F841"]
 
 # __init__ files - allow imports not at top
 "__init__.py" = ["E402"]
@@ -109,7 +109,7 @@ ignore = [
 "backend/src/services/addon_exporter.py" = ["C901"]
 "backend/src/services/conversion_parser.py" = ["C901"]
 "backend/src/api/validation.py" = ["C901"]
-"modporter/cli/fix_ci.py" = ["C901"]
+"portkit/cli/fix_ci.py" = ["C901"]
 
 # ai-engine specific ignores
 "ai-engine/agents/asset_converter.py" = ["F811", "F841", "C901"]

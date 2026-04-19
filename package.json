@@ -1,5 +1,5 @@
 {
-  "name": "modporter-ai",
+  "name": "portkit",
   "version": "1.0.0",
   "description": "AI-powered tool for converting Minecraft Java Edition mods to Bedrock Edition add-ons",
   "type": "module",
@@ -43,7 +43,7 @@
     "java",
     "bedrock"
   ],
-  "author": "ModPorter AI Team",
+  "author": "PortKit Team",
   "license": "MIT",
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",

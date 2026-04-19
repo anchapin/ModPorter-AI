@@ -14,7 +14,7 @@ import logging
 
 # Set up imports
 try:
-    from modporter.cli.fix_ci import CIFixer
+    from portkit.cli.fix_ci import CIFixer
     IMPORTS_AVAILABLE = True
 except ImportError as e:
     IMPORTS_AVAILABLE = False

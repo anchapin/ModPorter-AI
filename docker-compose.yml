@@ -12,7 +12,7 @@ services:
       backend:
         condition: service_healthy
     networks:
-      - modporter-network
+      - portkit-network
     restart: unless-stopped
 
   backend:
@@ -43,7 +43,7 @@ services:
       - temp-uploads:/app/temp_uploads
       - conversion-outputs:/app/conversion_outputs
     networks:
-      - modporter-network
+      - portkit-network
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:8000/api/v1/health']
@@ -63,7 +63,7 @@ services:
     volumes:
       - clamav-db:/var/lib/clamav
     networks:
-      - modporter-network
+      - portkit-network
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'clamdscan', '--ping']
@@ -91,7 +91,7 @@ services:
       - ./backend/src:/app/src
       - conversion-cache:/app/cache
     networks:
-      - modporter-network
+      - portkit-network
     restart: unless-stopped
     deploy:
       resources:
@@ -113,7 +113,7 @@ services:
     volumes:
       - redis-data:/data
     networks:
-      - modporter-network
+      - portkit-network
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
@@ -127,17 +127,17 @@ services:
     ports:
       - '5432:5432'
     environment:
-      POSTGRES_DB: modporter
+      POSTGRES_DB: portkit
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_INITDB_ARGS: --encoding=UTF-8 --lc-collate=C --lc-ctype=C
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
-      - modporter-network
+      - portkit-network
     restart: unless-stopped
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d modporter']
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d portkit']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -153,7 +153,7 @@ services:
     environment:
       - COLLECTOR_OTLP_ENABLED=true
     networks:
-      - modporter-network
+      - portkit-network
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:16686/']
@@ -173,7 +173,7 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention.time=30d'
     networks:
-      - modporter-network
+      - portkit-network
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:9090/-/healthy']
@@ -195,7 +195,7 @@ services:
     depends_on:
       - prometheus
     networks:
-      - modporter-network
+      - portkit-network
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3000/api/health']
@@ -226,7 +226,7 @@ volumes:
     driver: local
 
 networks:
-  modporter-network:
+  portkit-network:
     driver: bridge
     ipam:
       config:

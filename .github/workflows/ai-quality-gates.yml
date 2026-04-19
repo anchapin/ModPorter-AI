@@ -21,27 +21,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      
+
       - name: Install dependencies
         run: |
           pip install ruff bandit
-      
+
       - name: Run Pre-Commit Quality Gates
         run: |
           echo "🔍 Gate 1: Ruff Format Check"
           ruff format --check backend/src || exit 1
-          
+
           echo "🔍 Gate 2: Ruff Lint Check"
           ruff check backend/src || exit 1
-          
+
           echo "🔍 Gate 3: Bandit Security Scan"
           bandit -r backend/src -f json | tee /tmp/bandit.json || true
-          
+
           echo "✅ Pre-commit gates passed"
 
   # ============================================
@@ -52,18 +52,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      
+
       - name: Install dependencies
         run: |
           pip install -r backend/requirements.txt
           pip install -r backend/requirements-dev.txt
           pip install pytest pytest-cov pytest-asyncio PyJWT psutil
-      
+
       - name: Run Batch 1 Tests
         run: |
           cd backend
@@ -78,17 +78,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      
+
       - name: Install dependencies
         run: |
           pip install -r backend/requirements.txt
           pip install pytest pytest-cov pytest-asyncio PyJWT psutil
-      
+
       - name: Run Batch 2 Tests
         run: |
           cd backend
@@ -105,17 +105,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      
+
       - name: Install dependencies
         run: |
           pip install -r backend/requirements.txt
           pip install pytest pytest-cov pytest-asyncio PyJWT psutil
-      
+
       - name: Run Batch 3 Tests
         run: |
           cd backend
@@ -135,18 +135,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      
+
       - name: Install dependencies
         run: |
           pip install -r backend/requirements.txt
           pip install -r backend/requirements-dev.txt
           pip install pytest pytest-cov pytest-asyncio PyJWT psutil pytest-randomly pytest-xdist pytest-timeout
-      
+
       - name: Run Coverage Tests
         run: |
           cd backend
@@ -157,7 +157,7 @@ jobs:
             --cov-report=xml \
             -q --tb=short \
             --ignore=src/tests/unit/test_task_worker_coverage.py
-      
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v6
         with:
@@ -172,18 +172,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      
+
       - name: Install dependencies
         run: |
           pip install -r backend/requirements.txt
           pip install -r backend/requirements-dev.txt
           pip install pytest pytest-asyncio PyJWT
-      
+
       - name: Run Integration Tests
         run: |
           cd backend
@@ -198,7 +198,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
@@ -206,17 +206,17 @@ jobs:
           scan-ref: 'backend/src'
           format: 'sarif'
           output: 'trivy-results.sarif'
-      
+
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-results.sarif'
-      
+
       - name: Run Bandit
         run: |
           pip install --timeout=300 bandit
           bandit -r backend/src -f json | tee bandit-results.json || true
-      
+
       - name: Check for critical vulnerabilities
         run: |
           if grep -q '"severity": "CRITICAL"' bandit-results.json; then
@@ -236,26 +236,26 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      
+
       - name: Install dependencies
         run: |
           pip install ruff bandit
-      
+
       - name: Run AI Code Review
         run: |
           echo "🤖 Running AI Code Review..."
-          
+
           # Get list of changed files
           CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.sha }})
-          
+
           echo "Changed files:"
           echo "$CHANGED_FILES"
-          
+
           # Run automated review checks
           echo "📝 Checking Python files..."
           for file in $CHANGED_FILES; do
@@ -265,13 +265,13 @@ jobs:
               ruff check "$file" || true
             fi
           done
-          
+
           echo "🔍 Checking for common issues..."
           # Check for TODO comments (should have issue numbers)
           if grep -r "TODO" --include="*.py" backend/src/ | grep -v "[A-Z]-[0-9]"; then
             echo "⚠️ TODO without issue number found"
           fi
-          
+
           echo "✅ AI Code Review complete"
 
   # ============================================
@@ -284,23 +284,32 @@ jobs:
     if: github.ref == 'refs/heads/develop'
     environment:
       name: staging
-      url: https://staging.modporter.ai
+      url: https://staging.portkit.ai
     steps:
       - uses: actions/checkout@v6
-      
+
       - name: Deploy to staging
         run: |
           echo "🚀 Deploying to staging..."
           # Add deployment commands here
           echo "✅ Deployment complete"
 
-# ============================================
-# NOTIFICATION ON FAILURE
-# ============================================
+  # ============================================
+  # NOTIFICATION ON FAILURE
+  # ============================================
   notify-failure:
     name: Notify on Failure
     runs-on: ubuntu-latest
-    needs: [pre-commit, unit-tests-batch-1, unit-tests-batch-2, unit-tests-batch-3, unit-tests-coverage, integration-tests, security-scan]
+    needs:
+      [
+        pre-commit,
+        unit-tests-batch-1,
+        unit-tests-batch-2,
+        unit-tests-batch-3,
+        unit-tests-coverage,
+        integration-tests,
+        security-scan,
+      ]
     if: failure()
     steps:
       - name: Notify

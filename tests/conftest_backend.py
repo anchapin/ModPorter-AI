@@ -12,8 +12,7 @@ from sqlalchemy.orm import sessionmaker
 
 # Database URL for testing
 TEST_DATABASE_URL = os.getenv(
-    "TEST_DATABASE_URL",
-    "postgresql+asyncpg://postgres:password@localhost:5433/modporter"
+    "TEST_DATABASE_URL", "postgresql+asyncpg://postgres:password@localhost:5433/portkit"
 )
 
 
@@ -34,9 +33,7 @@ async def test_engine(test_db_url):
 @pytest.fixture
 async def test_db_session(test_engine):
     """Create test database session."""
-    async_session = sessionmaker(
-        test_engine, class_=AsyncSession, expire_on_commit=False
-    )
+    async_session = sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
     async with async_session() as session:
         yield session
         await session.rollback()

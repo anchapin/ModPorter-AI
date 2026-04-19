@@ -7,7 +7,7 @@ CLI Integration test for mod conversion workflow.
 
 Tests the complete pipeline using the CLI: simple_copper_block.jar -> .mcaddon
 
-Issue #170: https://github.com/anchapin/ModPorter-AI/issues/170
+Issue #170: https://github.com/anchapin/PortKit/issues/170
 """
 
 import pytest
@@ -37,7 +37,7 @@ class TestCLIIntegration:
         with tempfile.TemporaryDirectory() as temp_dir:
             # Step 3: Run CLI conversion
             result = subprocess.run([
-                "python3", "-m", "modporter.cli", "convert",
+                "python3", "-m", "portkit.cli", "convert",
                 str(fixture_path),
                 "-o", temp_dir
             ], capture_output=True, text=True, cwd=project_root)
@@ -79,7 +79,7 @@ class TestCLIIntegration:
             with tempfile.TemporaryDirectory() as temp_dir:
                 # Run CLI conversion with invalid file
                 result = subprocess.run([
-                    "python3", "-m", "modporter.cli", "convert",
+                    "python3", "-m", "portkit.cli", "convert",
                     temp_jar_path,
                     "-o", temp_dir
                 ], capture_output=True, text=True, cwd=project_root)
@@ -102,7 +102,7 @@ class TestCLIIntegration:
         with tempfile.TemporaryDirectory() as temp_dir:
             # Run CLI conversion
             result = subprocess.run([
-                "python3", "-m", "modporter.cli", "convert",
+                "python3", "-m", "portkit.cli", "convert",
                 str(fixture_path),
                 "-o", temp_dir
             ], capture_output=True, text=True, cwd=project_root)

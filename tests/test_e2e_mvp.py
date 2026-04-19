@@ -373,7 +373,7 @@ def test_simple_block_conversion():
 
 def main():
     """Run all end-to-end tests."""
-    print_header("ModPorter AI - End-to-End MVP Conversion Tests")
+    print_header("PortKit - End-to-End MVP Conversion Tests")
 
     results = {}
 

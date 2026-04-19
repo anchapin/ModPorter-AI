@@ -4,7 +4,7 @@ logger = logging.getLogger(__name__)
 
 """
 Test to validate that the simple_copper_block.jar fixture is properly structured
-and can be used for testing the ModPorter AI pipeline.
+and can be used for testing the PortKit pipeline.
 
 This test ensures Issue #174 requirements are met:
 - Simple test mod .jar file exists

@@ -1,5 +1,5 @@
 """
-ModPorter CLI module
+PortKit CLI module
 """
 
 from .main import convert_mod

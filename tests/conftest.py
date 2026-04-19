@@ -1,5 +1,5 @@
 """
-Pytest configuration and fixtures for ModPorter AI tests.
+Pytest configuration and fixtures for PortKit tests.
 """
 
 import os
@@ -16,4 +16,3 @@ os.environ["TESTING"] = "true"
 def project_root():
     """Provide project root path for consistent fixture paths."""
     return Path(__file__).parent.parent
-

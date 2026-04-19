@@ -94,13 +94,13 @@ jobs:
 
       - name: Build Docker images for scanning
         run: |
-          docker build --no-cache -t modporter-backend:latest -f Dockerfile .
-          docker build --no-cache -t modporter-ai-engine:latest -f ai-engine/Dockerfile ai-engine/
+          docker build --no-cache -t portkit-backend:latest -f Dockerfile .
+          docker build --no-cache -t portkit-ai-engine:latest -f ai-engine/Dockerfile ai-engine/
 
       - name: Run Trivy vulnerability scanner (image)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'modporter-backend:latest'
+          image-ref: 'portkit-backend:latest'
           format: 'json'
           output: 'trivy-backend-results.json'
           severity: 'CRITICAL,HIGH,MEDIUM'
@@ -110,7 +110,7 @@ jobs:
       - name: Run Trivy on AI Engine image
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'modporter-ai-engine:latest'
+          image-ref: 'portkit-ai-engine:latest'
           format: 'json'
           output: 'trivy-ai-engine-results.json'
           severity: 'CRITICAL,HIGH,MEDIUM'
@@ -140,7 +140,7 @@ jobs:
       - name: Clean up Docker images
         if: always()
         run: |
-          docker rmi modporter-backend:latest modporter-ai-engine:latest 2>/dev/null || true
+          docker rmi portkit-backend:latest portkit-ai-engine:latest 2>/dev/null || true
           docker system prune -af --volumes 2>/dev/null || true
 
   # =============================================================================

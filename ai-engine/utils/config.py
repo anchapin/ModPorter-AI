@@ -14,7 +14,7 @@ class Config:
 
     # Database Configuration
     DATABASE_URL: str = os.getenv(
-        "DATABASE_URL", "postgresql://postgres:password@localhost:5432/modporter_ai"
+        "DATABASE_URL", "postgresql://postgres:password@localhost:5432/portkit_ai"
     )
 
     # OpenAI Configuration
@@ -61,7 +61,7 @@ class Config:
 
     # File Processing Configuration
     MAX_FILE_SIZE: int = int(os.getenv("MAX_FILE_SIZE", "100").replace("MB", ""))  # MB
-    TEMP_DIR: str = os.getenv("TEMP_DIR", "/tmp/modporter")
+    TEMP_DIR: str = os.getenv("TEMP_DIR", "/tmp/portkit")
 
     # Java Analysis Configuration
     JAVA_ANALYSIS_TIMEOUT: int = int(os.getenv("JAVA_ANALYSIS_TIMEOUT", "60"))  # seconds

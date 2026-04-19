@@ -18,19 +18,19 @@ import pytest
 
 def test_agents_directory_exists():
     """agents directory should exist"""
-    path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents"
+    path = "/home/alex/Projects/PortKit/ai-engine/agents"
     assert os.path.isdir(path), f"agents directory not found at {path}"
 
 
 def test_java_analyzer_exists():
     """java_analyzer.py should exist"""
-    path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents/java_analyzer.py"
+    path = "/home/alex/Projects/PortKit/ai-engine/agents/java_analyzer.py"
     assert os.path.exists(path), f"java_analyzer not found at {path}"
 
 
 def test_java_analyzer_parseable():
     """java_analyzer should be valid Python"""
-    path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents/java_analyzer.py"
+    path = "/home/alex/Projects/PortKit/ai-engine/agents/java_analyzer.py"
     with open(path) as f:
         source = f.read()
     
@@ -40,7 +40,7 @@ def test_java_analyzer_parseable():
 
 def test_java_analyzer_has_agent_class():
     """Should define JavaAnalyzer agent"""
-    path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents/java_analyzer.py"
+    path = "/home/alex/Projects/PortKit/ai-engine/agents/java_analyzer.py"
     with open(path) as f:
         source = f.read()
     
@@ -49,7 +49,7 @@ def test_java_analyzer_has_agent_class():
 
 def test_java_analyzer_has_imports():
     """Should have required imports"""
-    path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents/java_analyzer.py"
+    path = "/home/alex/Projects/PortKit/ai-engine/agents/java_analyzer.py"
     with open(path) as f:
         source = f.read()
     
@@ -63,13 +63,13 @@ def test_java_analyzer_has_imports():
 
 def test_logic_translator_exists():
     """logic_translator.py should exist"""
-    path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents/logic_translator.py"
+    path = "/home/alex/Projects/PortKit/ai-engine/agents/logic_translator.py"
     assert os.path.exists(path)
 
 
 def test_logic_translator_has_class():
     """logic_translator should have agent class"""
-    path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents/logic_translator.py"
+    path = "/home/alex/Projects/PortKit/ai-engine/agents/logic_translator.py"
     with open(path) as f:
         source = f.read()
     
@@ -78,13 +78,13 @@ def test_logic_translator_has_class():
 
 def test_asset_converter_exists():
     """asset_converter.py should exist"""
-    path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents/asset_converter.py"
+    path = "/home/alex/Projects/PortKit/ai-engine/agents/asset_converter.py"
     assert os.path.exists(path)
 
 
 def test_asset_converter_has_class():
     """asset_converter should have class"""
-    path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents/asset_converter.py"
+    path = "/home/alex/Projects/PortKit/ai-engine/agents/asset_converter.py"
     with open(path) as f:
         source = f.read()
     
@@ -93,25 +93,25 @@ def test_asset_converter_has_class():
 
 def test_bedrock_architect_exists():
     """bedrock_architect.py should exist"""
-    path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents/bedrock_architect.py"
+    path = "/home/alex/Projects/PortKit/ai-engine/agents/bedrock_architect.py"
     assert os.path.exists(path)
 
 
 def test_bedrock_builder_exists():
     """bedrock_builder.py should exist"""
-    path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents/bedrock_builder.py"
+    path = "/home/alex/Projects/PortKit/ai-engine/agents/bedrock_builder.py"
     assert os.path.exists(path)
 
 
 def test_packaging_agent_exists():
     """file_packager.py should exist"""
-    path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents/file_packager.py"
+    path = "/home/alex/Projects/PortKit/ai-engine/agents/file_packager.py"
     assert os.path.exists(path)
 
 
 def test_qa_validator_exists():
     """addon_validator.py should exist"""
-    path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents/addon_validator.py"
+    path = "/home/alex/Projects/PortKit/ai-engine/agents/addon_validator.py"
     assert os.path.exists(path)
 
 
@@ -122,7 +122,7 @@ def test_qa_validator_exists():
 
 def test_agents_use_agent_framework():
     """Agents should use CrewAI or agent framework"""
-    path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents/java_analyzer.py"
+    path = "/home/alex/Projects/PortKit/ai-engine/agents/java_analyzer.py"
     with open(path) as f:
         source = f.read()
     
@@ -132,7 +132,7 @@ def test_agents_use_agent_framework():
 
 def test_agents_have_run_method():
     """Agents should have run or execute method"""
-    path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents/java_analyzer.py"
+    path = "/home/alex/Projects/PortKit/ai-engine/agents/java_analyzer.py"
     with open(path) as f:
         source = f.read()
     
@@ -142,7 +142,7 @@ def test_agents_have_run_method():
 
 def test_agents_have_tools():
     """Agents should define or use tools"""
-    path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents/java_analyzer.py"
+    path = "/home/alex/Projects/PortKit/ai-engine/agents/java_analyzer.py"
     with open(path) as f:
         source = f.read()
     
@@ -151,7 +151,7 @@ def test_agents_have_tools():
 
 def test_agents_handle_files():
     """Agents should handle file operations"""
-    path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents/java_analyzer.py"
+    path = "/home/alex/Projects/PortKit/ai-engine/agents/java_analyzer.py"
     with open(path) as f:
         source = f.read()
     
@@ -160,7 +160,7 @@ def test_agents_handle_files():
 
 def test_agents_return_results():
     """Agents should return results"""
-    path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents/java_analyzer.py"
+    path = "/home/alex/Projects/PortKit/ai-engine/agents/java_analyzer.py"
     with open(path) as f:
         source = f.read()
     
@@ -182,7 +182,7 @@ def test_all_core_agents_exist():
         "file_packager.py",
     ]
     
-    base = "/home/alex/Projects/ModPorter-AI/ai-engine/agents"
+    base = "/home/alex/Projects/PortKit/ai-engine/agents"
     for agent in agents:
         path = os.path.join(base, agent)
         assert os.path.exists(path), f"Missing agent: {agent}"
@@ -190,7 +190,7 @@ def test_all_core_agents_exist():
 
 def test_agent_count():
     """Should have multiple agent files"""
-    base = "/home/alex/Projects/ModPorter-AI/ai-engine/agents"
+    base = "/home/alex/Projects/PortKit/ai-engine/agents"
     files = [f for f in os.listdir(base) if f.endswith('.py') and not f.startswith('__')]
     assert len(files) >= 10, f"Should have 10+ agent files, found {len(files)}"
 
@@ -202,7 +202,7 @@ def test_agent_count():
 
 def test_agents_import_from_crew():
     """Agents should be orchestrated"""
-    path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents/java_analyzer.py"
+    path = "/home/alex/Projects/PortKit/ai-engine/agents/java_analyzer.py"
     with open(path) as f:
         source = f.read()
     
@@ -212,7 +212,7 @@ def test_agents_import_from_crew():
 
 def test_agents_have_logging():
     """Agents should have logging"""
-    path = "/home/alex/Projects/ModPorter-AI/ai-engine/agents/java_analyzer.py"
+    path = "/home/alex/Projects/PortKit/ai-engine/agents/java_analyzer.py"
     with open(path) as f:
         source = f.read()
     
