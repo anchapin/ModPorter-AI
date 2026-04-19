@@ -163,6 +163,7 @@ class TestJobCRUD:
         mock_session = AsyncMock(spec=AsyncSession)
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = []
+        mock_result.scalar.return_value = 0
         mock_session.execute.return_value = mock_result
 
         jobs, total = await crud.list_jobs(session=mock_session)
