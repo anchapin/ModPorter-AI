@@ -1,6 +1,27 @@
 # Current Tasks
 
 ## Completed
+- ✅ Issue #1096: Replace javalang with tree-sitter for Java 17+ support (COMPLETED)
+  - ✅ Updated `ai-engine/pyproject.toml`: Replaced `javalang>=0.13.0` with `tree-sitter>=0.21.0` and `tree-sitter-java`
+  - ✅ Updated `ai-engine/setup.py`: Same dependency change
+  - ✅ Refactored `ai-engine/agents/java_analyzer.py`:
+    - Replaced `_parse_java_source()` to use tree-sitter parser
+    - Added tree-sitter AST conversion methods: `_tree_sitter_to_dict()`, `_count_tree_sitter_errors()`
+    - Replaced `_extract_features_from_ast()`, `_extract_mod_metadata_from_ast()`, `_analyze_dependencies_from_ast()`, `_detect_reflection_in_mods()` for tree-sitter format
+    - Added helper methods: `_find_nodes_by_type()`, `_get_ts_method_name()`, `_get_ts_qualifier()`, `_get_method_arguments()`, `_extract_block_properties_from_ts()`, `_extract_annotation_data_ts()`, `_extract_string_content()`
+    - Fixed `_extract_numeric_arg()` to handle `decimal_floating_point_literal` type (e.g., 2.0f)
+    - Fixed `_get_ts_method_name()` and `_get_ts_qualifier()` to handle method invocations like `Class.forName()`
+    - Fixed `_detect_reflection_in_mods()` for tree-sitter method invocation format
+    - Fixed `_extract_string_from_node()` to handle string_fragment children
+    - Added mixin annotation support in `_extract_annotation_data_ts()`
+  - ✅ Updated `ai-engine/tests/test_java_analyzer_coverage.py`:
+    - Removed javalang import, updated tests for tree-sitter API
+    - Fixed `test_extract_block_properties_from_ast_comprehensive` to find class by identifier child
+    - Fixed `test_detect_reflection_in_mods` to check method_reflection for getmethod/getfield
+    - Fixed `test_extract_annotation_data_types` to use proper tree-sitter annotation structure
+  - ✅ All 55 tests in test_java_analyzer*.py pass
+  - ✅ All 86 tests in java_analyzer and logic_translator test suites pass
+
 - ✅ Issue #1104: Texture Atlas Unpacking (JEI at 0%, JourneyMap at 7%)
   - ✅ Created `ai-engine/utils/atlas_descriptor_parser.py`:
     - `AtlasSpriteInfo`: Sprite data class with name, x, y, width, height

@@ -15,9 +15,17 @@ import os
 import zipfile
 from pathlib import Path
 import time
-import javalang
 
-# Make javassist optional - will be used for bytecode analysis if available
+try:
+    import tree_sitter_java as ts_java
+    from tree_sitter import Language, Parser
+
+    TREE_SITTER_AVAILABLE = True
+except ImportError:
+    TREE_SITTER_AVAILABLE = False
+    ts_java = None
+    Parser = None
+
 try:
     import javassist
 
@@ -689,58 +697,87 @@ class JavaAnalyzerAgent:
         # Ensure it's not empty after processing
         return name if name else "unknown"
 
-    def _parse_java_source(self, source_code: str) -> javalang.ast.Node:
-        """
-        Parse Java source code into an AST using javalang.
+    def _get_tree_sitter_parser(self):
+        """Get or create tree-sitter parser instance."""
+        if not TREE_SITTER_AVAILABLE:
+            return None
+        if not hasattr(self, "_ts_parser") or self._ts_parser is None:
+            try:
+                lang = Language(ts_java.language())
+                self._ts_parser = Parser(lang)
+            except Exception as e:
+                logger.warning(f"Failed to initialize tree-sitter parser: {e}")
+                self._ts_parser = None
+        return self._ts_parser
 
-        Improved to handle more Java syntax with better error handling.
+    def _parse_java_source(self, source_code: str) -> Optional[Dict]:
+        """
+        Parse Java source code into an AST using tree-sitter.
 
         Args:
             source_code: Java source code as string
 
         Returns:
-            Parsed AST or None if parsing fails
+            Parsed AST dict or None if parsing fails
         """
-        try:
-            tree = javalang.parse.parse(source_code)
-            return tree
-        except javalang.parser.ParserError as e:
-            # Handle specific parser errors with more context
-            logger.warning(f"Parser error while parsing Java source: {e}")
-            # Try to extract partial information even from malformed code
+        parser = self._get_tree_sitter_parser()
+        if parser is None:
+            logger.warning("Tree-sitter not available, using fallback parsing")
             return self._parse_java_source_fallback(source_code)
-        except javalang.parser.JavaSyntaxError as e:
-            logger.warning(f"Java syntax error: {e}")
-            return self._parse_java_source_fallback(source_code)
-        except Exception as e:
-            logger.warning(f"Failed to parse Java source: {e}")
-            return None
 
-    def _parse_java_source_fallback(self, source_code: str) -> Optional[javalang.ast.Node]:
+        try:
+            tree = parser.parse(bytes(source_code, "utf8"))
+            return self._tree_sitter_to_dict(tree.root_node)
+        except Exception as e:
+            logger.warning(f"Tree-sitter parsing failed: {e}")
+            return self._parse_java_source_fallback(source_code)
+
+    def _tree_sitter_to_dict(self, node, error_count: int = 0) -> Dict[str, Any]:
+        """Convert tree-sitter node to dictionary for easier traversal."""
+        result = {
+            "type": node.type,
+            "start_point": node.start_point,
+            "end_point": node.end_point,
+            "start_byte": node.start_byte,
+            "end_byte": node.end_byte,
+            "has_errors": error_count > 0 or node.type == "ERROR",
+        }
+
+        if node.child_count == 0:
+            result["text"] = node.text.decode("utf8") if node.text else ""
+
+        if node.child_count > 0:
+            result["children"] = [
+                self._tree_sitter_to_dict(child, error_count) for child in node.children
+            ]
+
+        return result
+
+    def _count_tree_sitter_errors(self, node) -> int:
+        """Count error nodes in the AST."""
+        count = 0
+        if node.type == "ERROR":
+            count += 1
+        for child in node.children:
+            count += self._count_tree_sitter_errors(child)
+        return count
+
+    def _parse_java_source_fallback(self, source_code: str) -> Optional[Dict]:
         """
         Fallback parsing that tries to handle partial/incomplete Java source code.
 
         Attempts to extract useful information even from code that fails full parsing.
-
-        Args:
-            source_code: Java source code as string
-
-        Returns:
-            Partial AST or None if parsing fails completely
         """
         try:
-            # Try to extract imports using regex as fallback
             import re
 
             import_statements = re.findall(r"^import\s+([^;]+);", source_code, re.MULTILINE)
 
-            # Try to extract class declarations using regex
             class_pattern = (
                 r"(?:public\s+|private\s+|protected\s+)?(?:static\s+)?(?:abstract\s+)?class\s+(\w+)"
             )
             class_matches = re.findall(class_pattern, source_code)
 
-            # Create a minimal AST-like structure
             class FakeAST:
                 def __init__(self):
                     self.imports = []
@@ -754,8 +791,6 @@ class JavaAnalyzerAgent:
                     self.classes = class_matches
 
                 def __iter__(self):
-                    """Support tree walking"""
-                    # Yield fake class declarations for compatibility
                     for class_name in self.classes:
 
                         class FakeClassNode:
@@ -1046,12 +1081,12 @@ class JavaAnalyzerAgent:
 
         return features
 
-    def _extract_features_from_ast(self, tree: javalang.ast.Node) -> Dict:
+    def _extract_features_from_ast(self, tree: Dict) -> Dict:
         """
-        Extract features from parsed Java AST.
+        Extract features from parsed Java AST (tree-sitter format).
 
         Args:
-            tree: Parsed Java AST
+            tree: Parsed Java AST dict from tree-sitter
 
         Returns:
             Dictionary with extracted features
@@ -1070,130 +1105,163 @@ class JavaAnalyzerAgent:
         }
 
         try:
-            # Extract class declarations
-            for path, node in tree:
-                if isinstance(node, javalang.tree.ClassDeclaration):
-                    # Check for BlockEntity subclasses BEFORE Block (issue #1001)
-                    # BlockEntity subclasses should be classified as tile_entities, not blocks
-                    is_block_entity = False
-                    if node.extends:
-                        superclass_name = (
-                            node.extends.name
-                            if hasattr(node.extends, "name")
-                            else str(node.extends)
-                        )
-                        if "BlockEntity" in superclass_name:
-                            is_block_entity = True
+            classes = self._find_nodes_by_type(tree, "class_declaration")
 
-                    if is_block_entity:
-                        tile_info = {
-                            "name": node.name,
-                            "registry_name": self._class_name_to_registry_name(node.name),
-                            "methods": [method.name for method in node.methods],
+            for class_node in classes:
+                class_info = self._extract_class_info_from_ts(class_node)
+                class_name = class_info.get("name", "")
+                superclass = class_info.get("superclass", "")
+
+                is_block_entity = "BlockEntity" in superclass
+
+                if is_block_entity:
+                    tile_info = {
+                        "name": class_name,
+                        "registry_name": self._class_name_to_registry_name(class_name),
+                        "methods": class_info.get("methods", []),
+                    }
+                    features["tile_entities"].append(tile_info)
+                    logger.debug(f"Extracted tile_entity: {class_name}")
+                elif "Block" in class_name and not class_name.startswith("Abstract"):
+                    block_info = {
+                        "name": class_name,
+                        "registry_name": self._class_name_to_registry_name(class_name),
+                        "methods": class_info.get("methods", []),
+                        "properties": self._extract_block_properties_from_ts(class_node),
+                    }
+                    features["blocks"].append(block_info)
+                    logger.debug(
+                        f"Extracted block: {class_name} with properties: {block_info['properties']}"
+                    )
+                elif "Item" in class_name and not class_name.startswith("Abstract"):
+                    features["items"].append(
+                        {
+                            "name": class_name,
+                            "registry_name": self._class_name_to_registry_name(class_name),
+                            "methods": class_info.get("methods", []),
                         }
-                        features["tile_entities"].append(tile_info)
-                        logger.debug(f"Extracted tile_entity: {node.name}")
-                    # Check if it's a block class
-                    elif "Block" in node.name and not node.name.startswith("Abstract"):
-                        block_info = {
-                            "name": node.name,
-                            "registry_name": self._class_name_to_registry_name(node.name),
-                            "methods": [method.name for method in node.methods],
-                            "properties": self._extract_block_properties_from_ast(node),
+                    )
+                elif "Entity" in class_name and not class_name.startswith("Abstract"):
+                    features["entities"].append(
+                        {
+                            "name": class_name,
+                            "registry_name": self._class_name_to_registry_name(class_name),
+                            "methods": class_info.get("methods", []),
                         }
-                        features["blocks"].append(block_info)
-                        logger.debug(
-                            f"Extracted block: {node.name} with properties: {block_info['properties']}"
-                        )
+                    )
 
-                    # Check if it's an item class
-                    elif "Item" in node.name and not node.name.startswith("Abstract"):
-                        features["items"].append(
-                            {
-                                "name": node.name,
-                                "registry_name": self._class_name_to_registry_name(node.name),
-                                "methods": [method.name for method in node.methods],
-                            }
-                        )
+            method_declarations = self._find_nodes_by_type(tree, "method_declaration")
+            for method_node in method_declarations:
+                method_name = self._get_method_name(method_node)
 
-                    # Check if it's an entity class
-                    elif "Entity" in node.name and not node.name.startswith("Abstract"):
-                        features["entities"].append(
-                            {
-                                "name": node.name,
-                                "registry_name": self._class_name_to_registry_name(node.name),
-                                "methods": [method.name for method in node.methods],
-                            }
-                        )
+                if any(keyword in method_name.lower() for keyword in ["recipe", "craft", "smelt"]):
+                    features["recipes"].append(
+                        {
+                            "name": method_name,
+                            "parameters": self._get_method_parameters(method_node),
+                        }
+                    )
 
-                # Extract method declarations for recipes, commands, events
-                elif isinstance(node, javalang.tree.MethodDeclaration):
-                    method_name = node.name
+                if any(keyword in method_name.lower() for keyword in ["command", "execute"]):
+                    features["commands"].append(
+                        {
+                            "name": method_name,
+                            "parameters": self._get_method_parameters(method_node),
+                        }
+                    )
 
-                    # Check for recipe-related methods
-                    if any(
-                        keyword in method_name.lower() for keyword in ["recipe", "craft", "smelt"]
-                    ):
-                        features["recipes"].append(
-                            {
-                                "name": method_name,
-                                "parameters": [param.type.name for param in node.parameters]
-                                if node.parameters
-                                else [],
-                            }
-                        )
-
-                    # Check for command-related methods
-                    if any(keyword in method_name.lower() for keyword in ["command", "execute"]):
-                        features["commands"].append(
-                            {
-                                "name": method_name,
-                                "parameters": [param.type.name for param in node.parameters]
-                                if node.parameters
-                                else [],
-                            }
-                        )
-
-                    # Check for event-related methods
-                    if any(
-                        keyword in method_name.lower() for keyword in ["event", "trigger", "handle"]
-                    ):
-                        features["events"].append(
-                            {
-                                "name": method_name,
-                                "parameters": [param.type.name for param in node.parameters]
-                                if node.parameters
-                                else [],
-                            }
-                        )
+                if any(
+                    keyword in method_name.lower() for keyword in ["event", "trigger", "handle"]
+                ):
+                    features["events"].append(
+                        {
+                            "name": method_name,
+                            "parameters": self._get_method_parameters(method_node),
+                        }
+                    )
 
             return features
         except Exception as e:
             logger.warning(f"Error extracting features from AST: {e}")
             return features
 
-    def _extract_block_properties_from_ast(
-        self, class_node: javalang.tree.ClassDeclaration
-    ) -> Dict:
-        """
-        Extract block properties from a Block class AST node.
+    def _find_nodes_by_type(self, node: Dict, target_type: str) -> List[Dict]:
+        """Find all nodes of a specific type in tree-sitter AST."""
+        results = []
+        if not isinstance(node, dict):
+            return results
 
-        Analyzes constructor and method calls to extract:
-        - Material type (METAL, STONE, WOOD, etc.)
-        - Hardness value
-        - Explosion resistance
-        - Sound type
-        - Light emission
-        - Tool requirements
+        if node.get("type") == target_type:
+            results.append(node)
 
-        Args:
-            class_node: ClassDeclaration node for a Block class
+        for child in node.get("children", []):
+            results.extend(self._find_nodes_by_type(child, target_type))
 
-        Returns:
-            Dictionary with extracted block properties
-        """
+        return results
+
+    def _extract_class_info_from_ts(self, class_node: Dict) -> Dict:
+        """Extract class information from tree-sitter class_declaration node."""
+        class_info = {"name": "", "superclass": "", "methods": [], "modifiers": []}
+
+        for child in class_node.get("children", []):
+            child_type = child.get("type")
+            if child_type == "identifier":
+                class_info["name"] = child.get("text", "")
+            elif child_type == "modifiers":
+                class_info["modifiers"] = self._extract_modifiers(child)
+            elif child_type == "superclass":
+                superclass_text = self._get_superclass_text(child)
+                class_info["superclass"] = superclass_text
+
+        block_body = self._find_nodes_by_type(class_node, "class_body")
+        if block_body:
+            method_nodes = self._find_nodes_by_type(block_body[0], "method_declaration")
+            class_info["methods"] = [self._get_method_name(m) for m in method_nodes]
+
+        return class_info
+
+    def _get_superclass_text(self, superclass_node: Dict) -> str:
+        """Get superclass name from superclass node."""
+        text_parts = []
+        for child in superclass_node.get("children", []):
+            if child.get("type") == "type_identifier":
+                text_parts.append(child.get("text", ""))
+            elif child.get("type") == "identifier":
+                text_parts.append(child.get("text", ""))
+        return ".".join(text_parts)
+
+    def _extract_modifiers(self, modifiers_node: Dict) -> List[str]:
+        """Extract modifier keywords."""
+        modifiers = []
+        for child in modifiers_node.get("children", []):
+            mod_text = child.get("text", "")
+            if mod_text in ["public", "private", "protected", "static", "final", "abstract"]:
+                modifiers.append(mod_text)
+        return modifiers
+
+    def _get_method_name(self, method_node: Dict) -> str:
+        """Get method name from method_declaration node."""
+        for child in method_node.get("children", []):
+            if child.get("type") == "identifier":
+                return child.get("text", "")
+        return ""
+
+    def _get_method_parameters(self, method_node: Dict) -> List[str]:
+        """Get method parameters from method_declaration node."""
+        params = []
+        for child in method_node.get("children", []):
+            if child.get("type") == "formal_parameters":
+                param_list = self._find_nodes_by_type(child, "formal_parameter")
+                for param in param_list:
+                    for pchild in param.get("children", []):
+                        if pchild.get("type") == "type_identifier":
+                            params.append(pchild.get("text", ""))
+        return params
+
+    def _extract_block_properties_from_ts(self, class_node: Dict) -> Dict:
+        """Extract block properties from tree-sitter block class node."""
         properties = {
-            "material": "stone",  # Default
+            "material": "stone",
             "hardness": 1.0,
             "explosion_resistance": 0.0,
             "sound_type": "stone",
@@ -1202,123 +1270,153 @@ class JavaAnalyzerAgent:
         }
 
         try:
-            # Look for constructor calls and method chains
-            for path, node in javalang.ast.walk_tree(class_node):
-                # Look for method invocations like .strength(), .sound(), etc.
-                if isinstance(node, javalang.tree.MethodInvocation):
-                    method_name = node.member.lower()
+            method_invocations = self._find_nodes_by_type(class_node, "method_invocation")
+            for inv in method_invocations:
+                method_name = self._get_ts_method_name(inv).lower()
+                args = self._get_method_arguments(inv)
 
-                    # Extract hardness and resistance from .strength(hardness, resistance)
-                    if method_name == "strength":
-                        if node.arguments and len(node.arguments) >= 1:
-                            # Try to extract hardness value
-                            hardness_arg = node.arguments[0]
-                            if hasattr(hardness_arg, "value"):
-                                try:
-                                    properties["hardness"] = float(hardness_arg.value.rstrip("Ff"))
-                                except (ValueError, AttributeError):
-                                    pass
-                            if len(node.arguments) >= 2:
-                                resistance_arg = node.arguments[1]
-                                if hasattr(resistance_arg, "value"):
-                                    try:
-                                        properties["explosion_resistance"] = float(
-                                            resistance_arg.value.rstrip("Ff")
-                                        )
-                                    except (ValueError, AttributeError):
-                                        pass
+                if method_name == "strength":
+                    if len(args) >= 1:
+                        properties["hardness"] = self._extract_numeric_arg(args[0])
+                    if len(args) >= 2:
+                        properties["explosion_resistance"] = self._extract_numeric_arg(args[1])
 
-                    # Extract sound type from .sound(SoundType.XXX)
-                    elif method_name == "sound":
-                        if node.arguments and len(node.arguments) >= 1:
-                            sound_arg = node.arguments[0]
-                            if hasattr(sound_arg, "qualifier") and hasattr(sound_arg, "member"):
-                                # SoundType.COPPER -> 'copper'
-                                sound_name = (
-                                    sound_arg.member.lower() if sound_arg.member else "stone"
-                                )
-                                properties["sound_type"] = sound_name
+                elif method_name == "sound":
+                    if args:
+                        properties["sound_type"] = self._extract_sound_type(args[0])
 
-                    # Check for tool requirements
-                    elif "requirescorrecttool" in method_name or "requires_tool" in method_name:
-                        properties["requires_tool"] = True
+                elif "requirescorrecttool" in method_name or "requires_tool" in method_name:
+                    properties["requires_tool"] = True
 
-                    # Extract light level from .lightLevel() or .luminance()
-                    elif method_name in ["lightlevel", "luminance", "emitslight"]:
-                        if node.arguments and len(node.arguments) >= 1:
-                            light_arg = node.arguments[0]
-                            if hasattr(light_arg, "value"):
-                                try:
-                                    properties["light_level"] = int(
-                                        float(light_arg.value.rstrip("Ff"))
-                                    )
-                                except (ValueError, AttributeError):
-                                    pass
+                elif method_name in ["lightlevel", "luminance", "emitslight"]:
+                    if args:
+                        properties["light_level"] = self._extract_numeric_arg(args[0])
 
-                # Look for Material.XXX in method calls like Properties.of(Material.METAL)
-                elif isinstance(node, javalang.tree.MemberReference):
-                    # Check for Material.XXX pattern
-                    if hasattr(node, "qualifier") and node.qualifier == "Material":
-                        material_name = node.member.lower() if node.member else "stone"
-                        properties["material"] = material_name
+            member_accesses = self._find_nodes_by_type(class_node, "field_access")
+            for access in member_accesses:
+                qualifier = self._get_ts_qualifier(access)
+                if qualifier == "Material":
+                    member = self._get_ts_member(access)
+                    if member:
+                        properties["material"] = member.lower()
 
-            logger.debug(f"Extracted block properties: {properties}")
             return properties
-
         except Exception as e:
             logger.warning(f"Error extracting block properties from AST: {e}")
             return properties
 
-    def _extract_mod_metadata_from_ast(self, tree: javalang.ast.Node) -> Dict:
+    def _get_method_arguments(self, inv_node: Dict) -> List:
+        """Extract arguments from method_invocation node."""
+        args = []
+        for child in inv_node.get("children", []):
+            if child.get("type") == "argument_list":
+                for arg in child.get("children", []):
+                    if arg.get("type") not in ["(", ")", ","]:
+                        args.append(arg)
+        return args
+
+    def _extract_sound_type(self, arg_node: Dict) -> str:
+        """Extract sound type from method argument."""
+        if arg_node.get("type") == "field_access":
+            parts = []
+            self._collect_identifiers(arg_node, parts)
+            if len(parts) >= 2:
+                return parts[-1].lower()
+        return "stone"
+
+    def _collect_identifiers(self, node: Dict, parts: List):
+        """Recursively collect identifiers from field_access or similar nodes."""
+        for child in node.get("children", []):
+            if child.get("type") == "identifier":
+                parts.append(child.get("text", ""))
+            elif child.get("type") == "field_access":
+                self._collect_identifiers(child, parts)
+
+    def _get_ts_method_name(self, inv_node: Dict) -> str:
+        """Get method name from method_invocation node."""
+        identifiers = []
+        for child in inv_node.get("children", []):
+            if child.get("type") == "identifier":
+                identifiers.append(child.get("text", ""))
+        if identifiers:
+            return identifiers[-1]
+        return ""
+
+    def _get_ts_qualifier(self, node: Dict) -> str:
+        """Get qualifier from field_access or method_invocation.
+
+        For method_invocation like Class.forName():
+        - The first identifier is the object (Class)
+        - The last identifier is the method name (forName)
+
+        For field_access like Material.METAL:
+        - Returns the first identifier part (Material)
         """
-        Extract mod metadata from parsed Java AST.
+        identifiers = []
+        for child in node.get("children", []):
+            if child.get("type") == "identifier":
+                identifiers.append(child.get("text", ""))
+        if len(identifiers) >= 2:
+            return identifiers[0]
+        return ""
 
-        Improved to handle more annotation types and complex annotation structures.
+    def _get_ts_qualifier_member(self, node: Dict) -> str:
+        """Get qualifier.member from method_invocation."""
+        for child in node.get("children", []):
+            if child.get("type") == "field_access":
+                return self._get_ts_member(child)
+        return ""
 
-        Args:
-            tree: Parsed Java AST
+    def _get_ts_member(self, node: Dict) -> str:
+        """Get member name from field_access node."""
+        for child in node.get("children", []):
+            if child.get("type") == "identifier":
+                return child.get("text", "")
+        return ""
 
-        Returns:
-            Dictionary with extracted metadata
-        """
+    def _extract_numeric_arg(self, arg_node: Dict) -> float:
+        """Extract numeric value from an argument node."""
+        if arg_node.get("type") == "decimal_integer_literal":
+            try:
+                return float(arg_node.get("text", "0").rstrip("LlFf"))
+            except ValueError:
+                pass
+        elif arg_node.get("type") == "decimal_floating_point_literal":
+            try:
+                text = arg_node.get("text", "0")
+                return float(text.rstrip("Ff"))
+            except ValueError:
+                pass
+        return 1.0
+
+    def _extract_mod_metadata_from_ast(self, tree: Dict) -> Dict:
+        """Extract mod metadata from parsed Java AST (tree-sitter format)."""
         metadata = {}
         annotations_found = []
 
         try:
-            # Look for annotations that might indicate mod information
-            for path, node in tree:
-                if isinstance(node, javalang.tree.Annotation):
-                    annotation_data = self._extract_annotation_data(node)
-                    annotations_found.append(annotation_data)
+            all_annotations = self._find_nodes_by_type(tree, "annotation")
+            marker_annotations = self._find_nodes_by_type(tree, "marker_annotation")
+            all_annotations.extend(marker_annotations)
 
-                    # Check for common mod annotations
-                    if node.name in ["Mod", "ModInstance", "Instance", "ModEventBusSubscriber"]:
-                        # Extract the annotation element
-                        if hasattr(node, "element") and node.element is not None:
-                            element = node.element
-                            # Handle Literal values correctly by extracting the actual value
-                            if hasattr(element, "value"):
-                                # For string literals, also strip quotes
-                                if isinstance(element.value, str):
-                                    metadata["value"] = element.value.strip('"')
-                                else:
-                                    metadata["value"] = element.value
-                            else:
-                                # Handle complex annotation elements (key-value pairs)
-                                metadata["value"] = str(element)
+            for ann_node in all_annotations:
+                annotation_data = self._extract_annotation_data_ts(ann_node)
+                annotations_found.append(annotation_data)
 
-                    # Handle other common Minecraft/Forge annotations
-                    elif node.name in ["SubscribeEvent", "Mod.EventBusSubscriber"]:
+                ann_name = annotation_data.get("name", "")
+
+                if ann_name in ["Mod", "ModInstance", "ModEventBusSubscriber"]:
+                    value = annotation_data.get("value")
+                    if value:
+                        metadata["value"] = value
+                    if ann_name in ["SubscribeEvent", "Mod.EventBusSubscriber"]:
                         metadata["event_subscriber"] = True
+                elif ann_name == "ObjectHolder":
+                    if annotation_data.get("value"):
+                        metadata["object_holder"] = annotation_data["value"]
+                elif ann_name == "Instance":
+                    pass
 
-                    elif node.name == "ObjectHolder":
-                        # Extract ObjectHolder annotation for registry entries
-                        if hasattr(node, "element") and node.element:
-                            obj_holder = self._extract_annotation_element(node.element)
-                            if obj_holder:
-                                metadata["object_holder"] = obj_holder
-
-            # Store all annotations found for comprehensive analysis
             if annotations_found:
                 metadata["all_annotations"] = annotations_found
 
@@ -1327,187 +1425,118 @@ class JavaAnalyzerAgent:
             logger.warning(f"Error extracting metadata from AST: {e}")
             return metadata
 
-    def _extract_annotation_data(self, node: javalang.tree.Annotation) -> Dict:
-        """
-        Extract comprehensive data from an annotation node.
-
-        Args:
-            node: Annotation AST node
-
-        Returns:
-            Dictionary with annotation data
-        """
-        annotation_info = {
-            "name": node.name if hasattr(node, "name") else "unknown",
-            "type": "unknown",
-        }
+    def _extract_annotation_data_ts(self, ann_node: Dict) -> Dict:
+        """Extract annotation data from tree-sitter annotation node."""
+        annotation_info = {"name": "", "type": "unknown", "value": None}
 
         try:
-            # Determine annotation type
-            if node.name:
-                name_lower = node.name.lower()
-                if name_lower in ["mod", "modinstance", "modid"]:
-                    annotation_info["type"] = "mod_id"
-                elif "eventbus" in name_lower or "subscribe" in name_lower:
-                    annotation_info["type"] = "event_subscriber"
-                elif "objectholder" in name_lower:
-                    annotation_info["type"] = "object_holder"
-                elif name_lower.startswith("inject") or name_lower.startswith("redirect"):
-                    annotation_info["type"] = "mixin"
+            for child in ann_node.get("children", []):
+                child_type = child.get("type")
+                if child_type == "identifier":
+                    annotation_info["name"] = child.get("text", "")
+                elif child_type == "element_value_pair":
+                    key = ""
+                    value = ""
+                    for pair_child in child.get("children", []):
+                        if pair_child.get("type") == "identifier":
+                            key = pair_child.get("text", "")
+                        elif pair_child.get("type") == "string_literal":
+                            value = self._extract_string_content(pair_child)
+                    if key:
+                        annotation_info[key] = value
+                elif child_type == "annotation_argument_list":
+                    for arg_child in child.get("children", []):
+                        if arg_child.get("type") == "string_literal":
+                            annotation_info["value"] = self._extract_string_content(arg_child)
+                            break
+                elif child_type == "string_literal":
+                    annotation_info["value"] = self._extract_string_content(child)
 
-            # Extract annotation element value(s)
-            if hasattr(node, "element") and node.element:
-                element_value = self._extract_annotation_element(node.element)
-                if element_value:
-                    annotation_info["value"] = element_value
+            name_lower = annotation_info["name"].lower()
+            if name_lower in ["mod", "modinstance", "modid"]:
+                annotation_info["type"] = "mod_id"
+            elif "eventbus" in name_lower or "subscribe" in name_lower:
+                annotation_info["type"] = "event_subscriber"
+            elif "objectholder" in name_lower:
+                annotation_info["type"] = "object_holder"
+            elif "inject" in name_lower or "mixin" in name_lower:
+                annotation_info["type"] = "mixin"
 
             return annotation_info
-
         except Exception as e:
             logger.debug(f"Error extracting annotation data: {e}")
             return annotation_info
 
+    def _extract_string_content(self, string_node: Dict) -> str:
+        """Extract string content from string_literal node, handling nested children."""
+        if string_node.get("text"):
+            return string_node.get("text", "").strip('"')
+        for child in string_node.get("children", []):
+            if child.get("type") == "string_fragment":
+                return child.get("text", "").strip('"')
+        return ""
+
     def _extract_annotation_element(self, element) -> Optional[Any]:
-        """
-        Extract value from an annotation element, handling various formats.
-
-        Handles:
-        - Simple literal values
-        - Key-value pairs (element-value pairs)
-        - Nested annotations
-        - Arrays
-
-        Args:
-            element: Annotation element node
-
-        Returns:
-            Extracted value or None
-        """
+        """Extract value from an annotation element (for fallback compatibility)."""
         if element is None:
             return None
-
         try:
-            # Direct value attribute
             if hasattr(element, "value"):
                 value = element.value
                 if isinstance(value, str):
                     return value.strip('"')
                 return value
-
-            # Element value pair (for key="value" annotations)
-            if hasattr(element, "element") and hasattr(element, "value"):
-                # This is an ElementValuePair
-                key = element.element if hasattr(element, "element") else "unknown"
-                val = element.value
-
-                if isinstance(val, str):
-                    return {key: val.strip('"')}
-                elif hasattr(val, "value"):
-                    val_str = val.value
-                    if isinstance(val_str, str):
-                        return {key: val_str.strip('"')}
-                    return {key: val_str}
-                return {key: str(val)}
-
-            # Literal node
-            if hasattr(element, "literal"):
-                return str(element.literal).strip('"')
-
-            # For arrays, collect all values
-            if hasattr(element, "values"):
-                values = []
-                for val in element.values:
-                    if hasattr(val, "value"):
-                        val_str = val.value
-                        if isinstance(val_str, str):
-                            values.append(val_str.strip('"'))
-                        else:
-                            values.append(val_str)
-                    elif hasattr(val, "literal"):
-                        values.append(str(val.literal).strip('"'))
-                return values if values else None
-
             return str(element)
-
-        except Exception as e:
-            logger.debug(f"Error extracting annotation element: {e}")
+        except Exception:
             return None
 
-    def _analyze_dependencies_from_ast(self, tree: javalang.ast.Node) -> List[Dict]:
-        """
-        Analyze dependencies from parsed Java AST.
-
-        Improved to also detect reflection usage and API patterns.
-
-        Args:
-            tree: Parsed Java AST
-
-        Returns:
-            List of dependency information
-        """
+    def _analyze_dependencies_from_ast(self, tree: Dict) -> List[Dict]:
+        """Analyze dependencies from parsed Java AST (tree-sitter format)."""
         dependencies = []
         reflection_uses = []
 
         try:
-            # Extract import statements
-            if hasattr(tree, "imports"):
-                for imp in tree.imports:
-                    if hasattr(imp, "path"):
-                        dependencies.append({"import": imp.path, "type": "explicit"})
+            imports = self._find_nodes_by_type(tree, "import_declaration")
+            for imp in imports:
+                import_path = self._get_import_path(imp)
+                if import_path:
+                    dependencies.append({"import": import_path, "type": "explicit"})
 
-            # Extract method calls that might indicate dependencies
-            for path, node in tree:
-                if isinstance(node, javalang.tree.MethodInvocation):
-                    if hasattr(node, "qualifier") and node.qualifier:
-                        # Check if this is a call to a library
-                        qualifier_parts = node.qualifier.split(".")
-                        if len(qualifier_parts) > 1:
-                            dependencies.append(
-                                {
-                                    "import": node.qualifier,
-                                    "type": "implicit",
-                                    "method": node.member,
-                                }
-                            )
+            method_invocations = self._find_nodes_by_type(tree, "method_invocation")
+            for inv in method_invocations:
+                method_name = self._get_ts_method_name(inv)
+                qualifier = self._get_ts_qualifier(inv)
 
-                    # Detect reflection usage patterns
-                    method_name = node.member.lower() if hasattr(node, "member") else ""
-                    if method_name in [
-                        "class_forname",
-                        "class",
-                        "getmethod",
-                        "getfield",
-                        "getdeclaredmethod",
-                        "getdeclaredfield",
-                        "newinstance",
-                        "invoke",
-                        "setaccessible",
-                        "getclass",
-                    ]:
-                        reflection_uses.append(
-                            {
-                                "type": "reflection",
-                                "method": method_name,
-                                "qualifier": node.qualifier if hasattr(node, "qualifier") else None,
-                                "static_analysis": "Note: Reflection usage detected. Static analysis has limited visibility into dynamically accessed members.",
-                            }
-                        )
+                if qualifier:
+                    dependencies.append(
+                        {
+                            "import": qualifier,
+                            "type": "implicit",
+                            "method": method_name,
+                        }
+                    )
 
-            # Detect reflection patterns in string literals (Class.forName("..."))
-            if hasattr(tree, "children"):
-                for child in tree.children:
-                    if isinstance(child, str):
-                        # Check for class name patterns in string literals
-                        if "net." in child or "com." in child or "org." in child:
-                            reflection_uses.append(
-                                {
-                                    "type": "string_reflection",
-                                    "pattern": "Potential class name in string",
-                                    "static_analysis": "Dynamic class loading detected in string. Full analysis requires runtime information.",
-                                }
-                            )
+                method_lower = method_name.lower()
+                if method_lower in [
+                    "class_forname",
+                    "class",
+                    "getmethod",
+                    "getfield",
+                    "getdeclaredmethod",
+                    "getdeclaredfield",
+                    "newinstance",
+                    "invoke",
+                    "setaccessible",
+                    "getclass",
+                ]:
+                    reflection_uses.append(
+                        {
+                            "type": "reflection",
+                            "method": method_lower,
+                            "qualifier": qualifier,
+                        }
+                    )
 
-            # Combine dependencies with reflection analysis
             if reflection_uses:
                 dependencies.extend(reflection_uses)
 
@@ -1516,19 +1545,26 @@ class JavaAnalyzerAgent:
             logger.warning(f"Error analyzing dependencies from AST: {e}")
             return dependencies
 
-    def _detect_reflection_in_mods(self, tree: javalang.ast.Node) -> Dict:
-        """
-        Detect reflection usage in mods through static analysis.
+    def _get_import_path(self, imp_node: Dict) -> str:
+        """Get import path from import_declaration node."""
+        parts = []
+        for child in imp_node.get("children", []):
+            if child.get("type") == "scoped_identifier":
+                parts = self._get_scoped_identifier_parts(child)
+        return ".".join(parts)
 
-        This helps identify dynamically accessed classes and methods that
-        cannot be fully analyzed statically.
+    def _get_scoped_identifier_parts(self, node: Dict) -> List[str]:
+        """Get parts from scoped_identifier."""
+        parts = []
+        for child in node.get("children", []):
+            if child.get("type") == "identifier":
+                parts.append(child.get("text", ""))
+            elif child.get("type") == "scoped_identifier":
+                parts.extend(self._get_scoped_identifier_parts(child))
+        return parts
 
-        Args:
-            tree: Parsed Java AST
-
-        Returns:
-            Dictionary with reflection detection results
-        """
+    def _detect_reflection_in_mods(self, tree: Dict) -> Dict:
+        """Detect reflection usage in mods through static analysis."""
         reflection_info = {
             "detected": False,
             "class_forname": [],
@@ -1538,61 +1574,39 @@ class JavaAnalyzerAgent:
         }
 
         try:
-            for path, node in tree:
-                # Check for Class.forName calls
-                if isinstance(node, javalang.tree.MethodInvocation):
-                    member = node.member.lower() if hasattr(node, "member") else ""
-                    qualifier = (
-                        node.qualifier.lower()
-                        if hasattr(node, "qualifier") and node.qualifier
-                        else ""
+            method_invocations = self._find_nodes_by_type(tree, "method_invocation")
+            for inv in method_invocations:
+                method_name = self._get_ts_method_name(inv).lower()
+                qualifier = self._get_ts_qualifier(inv)
+
+                if method_name == "forname" and qualifier.lower() == "class":
+                    reflection_info["detected"] = True
+                    args = self._get_method_arguments(inv)
+                    if args:
+                        class_name = self._extract_string_from_node(args[0])
+                        if class_name:
+                            reflection_info["class_forname"].append(class_name)
+
+                elif method_name in ["getmethod", "getdeclaredmethod"]:
+                    reflection_info["detected"] = True
+                    reflection_info["method_reflection"].append(
+                        {
+                            "method": method_name,
+                            "qualifier": qualifier,
+                        }
                     )
 
-                    if member == "forname" and qualifier == "class":
-                        reflection_info["detected"] = True
-                        # Try to extract the class name argument
-                        if node.arguments and len(node.arguments) > 0:
-                            arg = node.arguments[0]
-                            class_name = self._extract_string_value(arg)
-                            if class_name:
-                                reflection_info["class_forname"].append(class_name)
+                elif method_name in ["getfield", "getdeclaredfield"]:
+                    reflection_info["detected"] = True
+                    reflection_info["field_reflection"].append(
+                        {
+                            "method": method_name,
+                            "qualifier": qualifier,
+                        }
+                    )
 
-                    # Check for getMethod, getDeclaredMethod
-                    elif member in ["getmethod", "getdeclaredmethod"]:
-                        reflection_info["detected"] = True
-                        reflection_info["method_reflection"].append(
-                            {
-                                "method": member,
-                                "qualifier": node.qualifier if hasattr(node, "qualifier") else None,
-                            }
-                        )
-
-                    # Check for getField, getDeclaredField
-                    elif member in ["getfield", "getdeclaredfield"]:
-                        reflection_info["detected"] = True
-                        reflection_info["field_reflection"].append(
-                            {
-                                "method": member,
-                                "qualifier": node.qualifier if hasattr(node, "qualifier") else None,
-                            }
-                        )
-
-                    # Check for setAccessible
-                    elif member == "setaccessible":
-                        reflection_info["detected"] = True
-
-                # Check for .class literal (ClassName.class)
-                elif isinstance(node, javalang.tree.ClassReference):
-                    # This is normal usage, not reflection
-                    pass
-
-                # Check for type cast to Class<?>
-                elif isinstance(node, javalang.tree.Cast):
-                    if hasattr(node, "type") and hasattr(node.type, "name"):
-                        if node.type.name == "Class":
-                            reflection_info["warnings"].append(
-                                "Type cast to Class detected - may indicate reflection usage"
-                            )
+                elif method_name == "setaccessible":
+                    reflection_info["detected"] = True
 
             if reflection_info["detected"]:
                 logger.debug(
@@ -1601,32 +1615,29 @@ class JavaAnalyzerAgent:
                 )
 
             return reflection_info
-
         except Exception as e:
             logger.warning(f"Error detecting reflection: {e}")
             return reflection_info
 
+    def _extract_string_from_node(self, node: Dict) -> Optional[str]:
+        """Extract string value from an AST node."""
+        if node.get("type") == "string_literal":
+            text = node.get("text", "").strip('"')
+            if text:
+                return text
+            for child in node.get("children", []):
+                if child.get("type") == "string_fragment":
+                    return child.get("text", "").strip('"')
+        return None
+
     def _extract_string_value(self, node) -> Optional[str]:
-        """
-        Extract string value from an AST node.
-
-        Args:
-            node: AST node that may contain a string literal
-
-        Returns:
-            String value or None
-        """
+        """Extract string value from an AST node (fallback compatibility)."""
         if node is None:
             return None
-
-        # Direct string value
         if hasattr(node, "value") and isinstance(node.value, str):
             return node.value.strip("\"'")
-
-        # Literal node
         if hasattr(node, "literal"):
             return str(node.literal).strip("\"'")
-
         return None
 
     def _analyze_jar_file(self, jar_path: str, result: dict) -> dict:

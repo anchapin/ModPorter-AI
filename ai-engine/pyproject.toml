@@ -248,7 +248,8 @@ dependencies = [
     "python-dotenv",
 
     # Java analysis
-    "javalang>=0.13.0",
+    "tree-sitter>=0.21.0",
+    "tree-sitter-java",
 
     # File processing
     "Pillow>=11.3.0",  # For texture conversion
