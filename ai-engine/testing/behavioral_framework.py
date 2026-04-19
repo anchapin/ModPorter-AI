@@ -1,5 +1,5 @@
 """
-Behavioral Testing Framework for ModPorter AI
+Behavioral Testing Framework for PortKit
 
 This module provides comprehensive behavioral testing capabilities for verifying
 that converted Bedrock add-ons maintain original mod functionality through

@@ -62,9 +62,9 @@ def get_install_requires():
 setup(
     name="ai-engine",
     version="0.1.0",
-    description="AI Engine with GPU acceleration support for ModPorter",
-    author="ModPorter AI",
-    author_email="ai@modporter.dev",
+    description="AI Engine with GPU acceleration support for PortKit",
+    author="PortKit",
+    author_email="ai@portkit.ai",
     license="MIT",
     packages=find_packages(where="."),
     python_requires=">=3.9",

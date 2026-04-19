@@ -12,7 +12,7 @@ import logging
 
 # Set up imports - use try/except and create inline stubs for missing modules
 try:
-    from modporter.cli.main import convert_mod
+    from portkit.cli.main import convert_mod
     from services.conversion_service import ConversionService
     from services.task_queue import TaskQueue, TaskPriority
     IMPORTS_AVAILABLE = True

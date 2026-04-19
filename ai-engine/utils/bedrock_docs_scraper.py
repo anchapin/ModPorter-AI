@@ -72,7 +72,7 @@ class BedrockDocsScraper:
             timeout=httpx.Timeout(30.0, connect=10.0),
             follow_redirects=True,
             headers={
-                "User-Agent": "ModPorter-AI Bedrock Documentation Scraper v2.1.0",
+                "User-Agent": "PortKit Bedrock Documentation Scraper v2.1.0",
                 "Accept": "text/html,application/json,text/plain,*/*",
                 "Accept-Language": "en-US,en;q=0.9",
             },

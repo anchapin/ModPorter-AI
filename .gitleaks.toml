@@ -1,5 +1,5 @@
 # =============================================================================
-# Gitleaks Configuration for ModPorter-AI
+# Gitleaks Configuration for PortKit
 # =============================================================================
 # Uses gitleaks' built-in rules by default.
 # Custom rules and allowlists defined below.

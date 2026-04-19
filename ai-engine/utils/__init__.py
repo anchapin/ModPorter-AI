@@ -1,4 +1,4 @@
-# Utils package for ModPorter AI Engine
+# Utils package for PortKit Engine
 
 from .vector_db_client import VectorDBClient
 

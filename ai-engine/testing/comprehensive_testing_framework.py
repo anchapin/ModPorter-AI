@@ -1128,7 +1128,7 @@ if __name__ == "__main__":
 
     async def demo_comprehensive_testing():
         """Demonstrate comprehensive testing framework capabilities"""
-        print("\n=== ModPorter AI Comprehensive Testing Framework Demo ===")
+        print("\n=== PortKit Comprehensive Testing Framework Demo ===")
 
         # Initialize framework
         config = {

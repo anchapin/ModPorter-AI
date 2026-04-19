@@ -1,6 +1,6 @@
 # AI Engine
 
-The AI Engine is the core component of ModPorter AI responsible for intelligent mod conversion using a multi-agent system powered by CrewAI and enhanced with RAG (Retrieval Augmented Generation) capabilities.
+The AI Engine is the core component of PortKit responsible for intelligent mod conversion using a multi-agent system powered by CrewAI and enhanced with RAG (Retrieval Augmented Generation) capabilities.
 
 ## Architecture
 
@@ -178,8 +178,8 @@ export PYTHONPATH="${PYTHONPATH}:$(pwd)"
 python -c "
 import logging
 logging.basicConfig(level=logging.DEBUG)
-from crew.conversion_crew import ModPorterConversionCrew
-crew = ModPorterConversionCrew()
+from crew.conversion_crew import PortKitConversionCrew
+crew = PortKitConversionCrew()
 "
 ```
 

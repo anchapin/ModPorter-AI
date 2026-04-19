@@ -1,8 +1,8 @@
-# ModPorter AI
+# PortKit
 
 An AI-powered tool for converting Minecraft Java Edition mods to Bedrock Edition add-ons.
 
-[![codecov](https://codecov.io/gh/anchapin/ModPorter-AI/branch/main/graph/badge.svg)](https://codecov.io/gh/anchapin/ModPorter-AI)
+[![codecov](https://codecov.io/gh/anchapin/PortKit/branch/main/graph/badge.svg)](https://codecov.io/gh/anchapin/PortKit)
 
 ## 🎯 Vision
 Empower Minecraft players and creators with a "one-click" AI-powered tool that intelligently converts Java Edition mods into functional Bedrock Edition add-ons using smart assumptions to bridge technical gaps.
@@ -50,8 +50,8 @@ This option uses pre-built Docker images from Docker Hub for a production-like e
 
 ```bash
 # Clone the repository
-git clone https://github.com/anchapin/ModPorter-AI.git
-cd ModPorter-AI
+git clone https://github.com/anchapin/PortKit.git
+cd PortKit
 
 # Copy environment variables
 cp .env.example .env
@@ -77,8 +77,8 @@ docker compose ps
 #### Production Environment
 ```bash
 # Clone the repository
-git clone https://github.com/anchapin/ModPorter-AI.git
-cd ModPorter-AI
+git clone https://github.com/anchapin/PortKit.git
+cd PortKit
 
 # Copy environment variables
 cp .env.example .env
@@ -134,7 +134,7 @@ If you prefer to run services locally without Docker:
 ## 🐳 Docker Architecture
 
 ### Services Overview
-ModPorter AI uses a microservices architecture with the following containers:
+PortKit uses a microservices architecture with the following containers:
 
 | Service | Technology | Port | Purpose |
 |---------|------------|------|---------|
@@ -153,8 +153,8 @@ ANTHROPIC_API_KEY=your-anthropic-api-key
 
 # Database Configuration
 # For local development (auto-configured for Docker):
-DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/modporter
-POSTGRES_DB=modporter
+DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/portkit
+POSTGRES_DB=portkit
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=password
 
@@ -375,7 +375,7 @@ docker compose up -d --build
 #### Database Management
 ```bash
 # Access PostgreSQL directly
-docker compose exec postgres psql -U postgres -d modporter
+docker compose exec postgres psql -U postgres -d portkit
 
 # Run database migrations
 docker compose exec backend alembic upgrade head
@@ -420,9 +420,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/anchapin/ModPorter-AI/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/anchapin/ModPorter-AI/discussions)
-- **Documentation**: [Project Wiki](https://github.com/anchapin/ModPorter-AI/wiki)
+- **Issues**: [GitHub Issues](https://github.com/anchapin/PortKit/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/anchapin/PortKit/discussions)
+- **Documentation**: [Project Wiki](https://github.com/anchapin/PortKit/wiki)
 
 ## 🏆 Acknowledgments
 
@@ -434,6 +434,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-Made with ❤️ by the ModPorter AI team
+Made with ❤️ by the PortKit team
 
 # test

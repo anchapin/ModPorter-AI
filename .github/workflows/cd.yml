@@ -83,13 +83,13 @@ jobs:
           push: true
           tags: |
             ${{ steps.meta.outputs.tags }}-${{ matrix.tag-suffix }}
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/modporter-ai-${{ matrix.tag-suffix }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/portkit-${{ matrix.tag-suffix }}:${{ github.sha }}
           cache-from: |
             type=gha,scope=${{ matrix.service }}
-            type=registry,ref=ghcr.io/${{ github.repository_owner }}/modporter-ai/modporter-ai-${{ matrix.tag-suffix }}:cache
+            type=registry,ref=ghcr.io/${{ github.repository_owner }}/portkit/portkit-${{ matrix.tag-suffix }}:cache
           cache-to: |
             type=gha,mode=max,scope=${{ matrix.service }}
-            type=registry,ref=ghcr.io/${{ github.repository_owner }}/modporter-ai/modporter-ai-${{ matrix.tag-suffix }}:cache,mode=max
+            type=registry,ref=ghcr.io/${{ github.repository_owner }}/portkit/portkit-${{ matrix.tag-suffix }}:cache,mode=max
           # PRs: AMD64 only (fast). Main/tag pushes: full multi-arch.
           platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           build-args: |
@@ -99,7 +99,7 @@ jobs:
       # - name: Generate artifact attestation
       #   uses: actions/attest-build-provenance@v4
       #   with:
-      #     subject-name: ${{ env.REGISTRY }}/${{ github.repository_owner }}/modporter-ai-frontend
+      #     subject-name: ${{ env.REGISTRY }}/${{ github.repository_owner }}/portkit-frontend
       #     subject-digest: sha256:${{ steps.build.outputs.digest }}
       #     predicate-type: https://slsa.dev/provenance/v1
 
@@ -126,15 +126,15 @@ jobs:
 
           # Update image tags in Kubernetes manifests
           kubectl set image deployment/backend \
-            backend=${{ env.REGISTRY }}/${{ github.repository_owner }}/modporter-ai-backend:${{ github.sha }} \
+            backend=${{ env.REGISTRY }}/${{ github.repository_owner }}/portkit-backend:${{ github.sha }} \
             --namespace=staging
             
           kubectl set image deployment/ai-engine \
-            ai-engine=${{ env.REGISTRY }}/${{ github.repository_owner }}/modporter-ai-ai-engine:${{ github.sha }} \
+            ai-engine=${{ env.REGISTRY }}/${{ github.repository_owner }}/portkit-ai-engine:${{ github.sha }} \
             --namespace=staging
             
           kubectl set image deployment/frontend \
-            frontend=${{ env.REGISTRY }}/${{ github.repository_owner }}/modporter-ai-frontend:${{ github.sha }} \
+            frontend=${{ env.REGISTRY }}/${{ github.repository_owner }}/portkit-frontend:${{ github.sha }} \
             --namespace=staging
 
       - name: Wait for deployment
@@ -148,9 +148,9 @@ jobs:
         run: |
           echo "Running smoke tests..."
           # Test health endpoint
-          curl -f https://staging.modporter.ai/health || exit 1
+          curl -f https://staging.portkit.ai/health || exit 1
           # Test API endpoint
-          curl -f https://staging.api.modporter.ai/health || exit 1
+          curl -f https://staging.api.portkit.ai/health || exit 1
 
       - name: Notify deployment
         if: always()
@@ -180,15 +180,15 @@ jobs:
 
           # Update image tags in Kubernetes manifests
           kubectl set image deployment/backend \
-            backend=${{ env.REGISTRY }}/${{ github.repository_owner }}/modporter-ai-backend:${{ github.sha }} \
+            backend=${{ env.REGISTRY }}/${{ github.repository_owner }}/portkit-backend:${{ github.sha }} \
             --namespace=production
             
           kubectl set image deployment/ai-engine \
-            ai-engine=${{ env.REGISTRY }}/${{ github.repository_owner }}/modporter-ai-ai-engine:${{ github.sha }} \
+            ai-engine=${{ env.REGISTRY }}/${{ github.repository_owner }}/portkit-ai-engine:${{ github.sha }} \
             --namespace=production
             
           kubectl set image deployment/frontend \
-            frontend=${{ env.REGISTRY }}/${{ github.repository_owner }}/modporter-ai-frontend:${{ github.sha }} \
+            frontend=${{ env.REGISTRY }}/${{ github.repository_owner }}/portkit-frontend:${{ github.sha }} \
             --namespace=production
 
       - name: Wait for deployment
@@ -202,9 +202,9 @@ jobs:
         run: |
           echo "Running production smoke tests..."
           # Test health endpoint
-          curl -f https://modporter.ai/health || exit 1
+          curl -f https://portkit.ai/health || exit 1
           # Test API endpoint
-          curl -f https://api.modporter.ai/health || exit 1
+          curl -f https://api.portkit.ai/health || exit 1
 
       - name: Create release tag
         if: startsWith(github.ref, 'refs/tags/v')

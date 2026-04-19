@@ -1,7 +1,7 @@
-# GitHub Actions CI/CD Pipeline for ModPorter AI
+# GitHub Actions CI/CD Pipeline for PortKit
 # Optimized for parallel execution
 
-name: Deploy ModPorter AI
+name: Deploy PortKit
 
 'on':
   push:
@@ -27,9 +27,9 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: modporter_test
+          POSTGRES_DB: portkit_test
         options: >-
-          --health-cmd "pg_isready -U postgres -d modporter_test"
+          --health-cmd "pg_isready -U postgres -d portkit_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -78,7 +78,7 @@ jobs:
 
       - name: Run backend tests
         env:
-          DATABASE_URL: postgresql://postgres:***@localhost:5432/modporter_test
+          DATABASE_URL: postgresql://postgres:***@localhost:5432/portkit_test
           REDIS_URL: redis://localhost:6379
           SECRET_KEY: test_secret_key
           JWT_SECRET_KEY: test_jwt_secret
@@ -258,13 +258,13 @@ jobs:
         include:
           - service: frontend
             context: ./frontend
-            image: modporter/frontend
+            image: portkit/frontend
           - service: backend
             context: ./backend
-            image: modporter/backend
+            image: portkit/backend
           - service: ai-engine
             context: ./ai-engine
-            image: modporter/ai-engine
+            image: portkit/ai-engine
 
     steps:
       - name: Checkout code
@@ -347,10 +347,10 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
         run: |
-          scp -r . $SERVER_USER@$SERVER_HOST:/opt/modporter-ai/
+          scp -r . $SERVER_USER@$SERVER_HOST:/opt/portkit/
 
           ssh $SERVER_USER@$SERVER_HOST << 'EOF'
-            cd /opt/modporter-ai
+            cd /opt/portkit
 
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" > .env.prod
             echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env.prod
@@ -414,7 +414,7 @@ jobs:
           SERVER_USER: ${{ secrets.SERVER_USER }}
         run: |
           ssh $SERVER_USER@$SERVER_HOST << 'EOF'
-            cd /opt/modporter-ai
+            cd /opt/portkit
 
             docker-compose -f docker-compose.prod.yml down
             docker-compose -f docker-compose.prod.yml pull

@@ -6,7 +6,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 """
-Comprehensive End-to-End Integration Testing Framework for ModPorter AI
+Comprehensive End-to-End Integration Testing Framework for PortKit
 
 This module implements the testing framework for Issue #324:
 - End-to-End Integration Testing Framework

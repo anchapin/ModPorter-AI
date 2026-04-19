@@ -1,10 +1,10 @@
 ---
 name: implement-v2.5-gaps
-description: Implement v2.5 automation gaps for ModPorter-AI using Pipeline + Supervisor patterns. Use when implementing GAP-2.5-01 through GAP-2.5-06 from docs/GAP-ANALYSIS-v2.5.md.
+description: Implement v2.5 automation gaps for PortKit using Pipeline + Supervisor patterns. Use when implementing GAP-2.5-01 through GAP-2.5-06 from docs/GAP-ANALYSIS-v2.5.md.
 version: 1.0.0
-author: ModPorter-AI Team
+author: PortKit Team
 metadata:
-  modporter:
+  portkit:
     milestone: v2.5
     gaps: [GAP-2.5-01, GAP-2.5-02, GAP-2.5-03, GAP-2.5-04, GAP-2.5-05, GAP-2.5-06]
     patterns: [pipeline, supervisor, fallback, learning-from-history]
@@ -12,7 +12,7 @@ metadata:
 
 # Implement v2.5 Gaps
 
-Implement automation features for ModPorter-AI Milestone v2.5 following best-practice AI agent patterns.
+Implement automation features for PortKit Milestone v2.5 following best-practice AI agent patterns.
 
 ## Gap Priority Order
 

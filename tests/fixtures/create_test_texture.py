@@ -40,7 +40,7 @@ def create_jar_with_real_texture(jar_path):
             "version": "1.0.0",
             "name": "Simple Copper Block",
             "description": "A simple mod that adds a polished copper block",
-            "authors": ["ModPorter AI"],
+            "authors": ["PortKit"],
             "license": "MIT"
         }
         zf.writestr('fabric.mod.json', json.dumps(fabric_mod, indent=2))

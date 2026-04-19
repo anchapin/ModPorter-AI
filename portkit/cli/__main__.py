@@ -1,5 +1,5 @@
 """
-Entry point for python -m modporter.cli
+Entry point for python -m portkit.cli
 """
 
 from .main import main

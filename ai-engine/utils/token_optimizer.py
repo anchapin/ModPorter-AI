@@ -1,5 +1,5 @@
 """
-LLM Token Optimization Module for ModPorter AI
+LLM Token Optimization Module for PortKit
 Provides context trimming, prompt caching, and cost tracking for LLM API calls.
 
 Issue: #385 - LLM token optimization (Phase 3)

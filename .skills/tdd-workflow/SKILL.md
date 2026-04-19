@@ -1,11 +1,11 @@
 ---
 name: tdd-workflow
-description: Test-Driven Development workflow for ModPorter-AI. Follows RED-GREEN-REFACTOR cycle with explicit task tracking.
+description: Test-Driven Development workflow for PortKit. Follows RED-GREEN-REFACTOR cycle with explicit task tracking.
 version: 1.0.0
-author: ModPorter-AI Team
+author: PortKit Team
 ---
 
-# TDD Workflow for ModPorter-AI
+# TDD Workflow for PortKit
 
 Test-Driven Development following best-practice AI agent patterns.
 

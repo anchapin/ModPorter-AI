@@ -1,8 +1,8 @@
 ---
 name: auto-code-review
-description: Automated code review agent for ModPorter-AI. Use when reviewing PRs or code changes. Follows Pipeline pattern: Security → Quality → Performance → Patterns.
+description: Automated code review agent for PortKit. Use when reviewing PRs or code changes. Follows Pipeline pattern: Security → Quality → Performance → Patterns.
 version: 1.0.0
-author: ModPorter-AI Team
+author: PortKit Team
 ---
 
 # Auto Code Review Agent

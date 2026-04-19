@@ -1,5 +1,5 @@
 """
-Centralized logging configuration for ModPorter AI Engine
+Centralized logging configuration for PortKit Engine
 Provides structured logging using structlog for all agents and crew operations
 
 Issue #695: Add structured logging
@@ -55,7 +55,7 @@ def configure_structlog(
             json_format = True
 
     # Get log directory
-    log_dir = os.getenv("LOG_DIR", "/tmp/modporter-ai/logs")
+    log_dir = os.getenv("LOG_DIR", "/tmp/portkit/logs")
 
     # Configure processors based on format
     processors = [

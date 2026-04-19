@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 
 # Set up imports - use try/except and create inline stubs for missing modules
 try:
-    from modporter.cli.main import convert_mod
+    from portkit.cli.main import convert_mod
     IMPORTS_AVAILABLE = True
 except ImportError:
     IMPORTS_AVAILABLE = False

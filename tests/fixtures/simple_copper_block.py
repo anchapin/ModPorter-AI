@@ -26,7 +26,7 @@ def create_simple_copper_block_jar():
     """
     Create a simple test JAR with a polished copper block.
     
-    This fixture is designed to test the complete ModPorter AI pipeline:
+    This fixture is designed to test the complete PortKit pipeline:
     1. JavaAnalyzerAgent can extract registry name and texture path
     2. Conversion pipeline can generate Bedrock blocks
     3. Packager can create .mcaddon files
@@ -49,7 +49,7 @@ def create_simple_copper_block_jar():
         os.makedirs(meta_dir, exist_ok=True)
         with open(os.path.join(meta_dir, "MANIFEST.MF"), 'w') as f:
             f.write("""Manifest-Version: 1.0
-Created-By: ModPorter AI Test Suite
+Created-By: PortKit Test Suite
 Specification-Title: Simple Copper Block
 Specification-Version: 1.0.0
 Implementation-Title: simple_copper
@@ -85,7 +85,7 @@ Implementation-Version: 1.0.0
             "version": "1.0.0",
             "name": "Simple Copper Block",
             "description": "A simple mod that adds a polished copper block",
-            "authors": ["ModPorter AI"],
+            "authors": ["PortKit"],
             "license": "MIT",
             "environment": "*",
             "entrypoints": {
@@ -108,7 +108,7 @@ import net.minecraft.world.level.material.Material;
 import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
 
 /**
- * Simple polished copper block for testing ModPorter AI conversion.
+ * Simple polished copper block for testing PortKit conversion.
  * Registry name should be extracted as "polished_copper"
  */
 public class PolishedCopperBlock extends Block {
