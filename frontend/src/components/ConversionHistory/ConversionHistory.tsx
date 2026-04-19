@@ -75,6 +75,10 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
           created_at: item.created_at,
           completed_at: item.updated_at,
           error_message: item.error,
+          complexity_tier: item.complexity_tier,
+          features_converted: item.features_converted || [],
+          features_skipped: item.features_skipped || [],
+          warnings: item.warnings || [],
           options: {},
         })
       );

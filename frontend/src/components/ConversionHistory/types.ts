@@ -27,4 +27,8 @@ export interface ConversionHistoryItemFromAPI {
   original_filename?: string;
   error?: string;
   result_url?: string;
+  complexity_tier?: 'simple' | 'moderate' | 'complex' | 'unknown';
+  features_converted?: string[];
+  features_skipped?: string[];
+  warnings?: string[];
 }

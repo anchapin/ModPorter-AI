@@ -191,6 +191,17 @@ class ConversionStatusResponse(BaseModel):
     overall_percentage: Optional[float] = Field(
         None, description="Overall conversion percentage across all assets"
     )
+    # Issue #979: Conversion history with per-user stats
+    complexity_tier: Optional[str] = Field(
+        None, description="Complexity tier: simple, moderate, complex"
+    )
+    features_converted: Optional[List[str]] = Field(
+        None, description="List of features successfully converted"
+    )
+    features_skipped: Optional[List[str]] = Field(
+        None, description="List of features that were skipped"
+    )
+    warnings: Optional[List[str]] = Field(None, description="List of warnings during conversion")
 
 
 class ConversionListResponse(BaseModel):
@@ -871,6 +882,10 @@ async def list_conversions(
                 structured_error=None,
                 asset_results=None,
                 overall_percentage=None,
+                complexity_tier=input_data.get("complexity_tier"),
+                features_converted=input_data.get("features_converted", []),
+                features_skipped=input_data.get("features_skipped", []),
+                warnings=input_data.get("warnings", []),
             )
         )
 
