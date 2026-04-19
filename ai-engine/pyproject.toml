@@ -184,11 +184,11 @@ ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = "redis.*"
-ignore_errors = true
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = "httpx.*"
-ignore_errors = true
+module = "celery.*"
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "openai.*"
