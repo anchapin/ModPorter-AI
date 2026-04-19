@@ -219,3 +219,15 @@
 .login-footer a:hover {
   text-decoration: underline;
 }
+
+.login-legal-links {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 0.75rem;
+}
+
+.login-legal-links a {
+  color: #6b7280;
+  font-size: 0.75rem;
+}

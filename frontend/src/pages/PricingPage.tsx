@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import './PricingPage.css';
 import { createCheckoutSession, isAuthenticated } from '../services/billing';
 
@@ -408,6 +409,17 @@ export const PricingPage: React.FC = () => {
             >
               Read Documentation
             </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Legal Links */}
+      <section className="pricing-legal">
+        <div className="container">
+          <div className="legal-links">
+            <Link to="/terms">Terms of Service</Link>
+            <Link to="/privacy">Privacy Policy</Link>
+            <Link to="/cookies">Cookie Policy</Link>
           </div>
         </div>
       </section>

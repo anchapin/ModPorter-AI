@@ -165,8 +165,12 @@ export const LoginPage: React.FC = () => {
 
         <div className="login-footer">
           <p>
-            Don't have an account? <Link to="/register">Sign up</Link>
+            Don&apos;t have an account? <Link to="/register">Sign up</Link>
           </p>
+          <div className="login-legal-links">
+            <Link to="/terms">Terms of Service</Link>
+            <Link to="/privacy">Privacy Policy</Link>
+          </div>
         </div>
       </div>
     </div>
