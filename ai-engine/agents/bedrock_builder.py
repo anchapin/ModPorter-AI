@@ -145,6 +145,7 @@ class BedrockBuilderAgent:
             result["bulk_textures_extracted"] = bulk_texture_results.get("extracted_count", 0)
             result["bulk_textures_copied"] = len(bulk_texture_results.get("copied_files", []))
             result["bulk_texture_errors"] = bulk_texture_results.get("errors", [])
+            result["bulk_texture_warnings"] = bulk_texture_results.get("warnings", [])
 
             # Atlas texture extraction: extract sprites from texture atlases (Issue #1104 fix)
             # This handles JEI, JourneyMap, and other mods that use sprite sheet atlases
@@ -479,56 +480,101 @@ class BedrockBuilderAgent:
         that were explicitly referenced by detected blocks/entities, missing the
         majority of textures in complex mods.
 
+        Also handles non-standard JAR layouts (Issue #1105) by trying alternative
+        texture locations when standard patterns yield no results.
+
         Args:
             jar_path: Path to the source JAR file
             rp_path: Path to the resource pack directory
             namespace: Default namespace if not found in JAR
 
         Returns:
-            Dict with extraction results (extracted_count, copied_files, errors)
+            Dict with extraction results (extracted_count, copied_files, errors, warnings)
         """
         result = {
             "extracted_count": 0,
             "copied_files": [],
             "errors": [],
             "skipped_count": 0,
+            "warnings": [],
+            "layout_detected": "standard",
         }
 
         try:
             with zipfile.ZipFile(jar_path, "r") as jar:
                 file_list = jar.namelist()
 
-                # Find ALL texture files in assets/*/textures/
-                # Issue #999: Don't filter by type - extract everything
-                texture_files = [
+                texture_files = []
+                mcmeta_files = set()
+
+                standard_texture_files = [
                     f
                     for f in file_list
                     if f.startswith("assets/") and "/textures/" in f and f.endswith(".png")
                 ]
 
-                # Also find associated .mcmeta animation files
                 mcmeta_files = set(
                     f
                     for f in file_list
                     if f.startswith("assets/") and "/textures/" in f and f.endswith(".png.mcmeta")
                 )
 
-                logger.info(f"Bulk texture extraction: found {len(texture_files)} textures in JAR")
+                if standard_texture_files:
+                    texture_files = standard_texture_files
+                    result["layout_detected"] = "standard"
+                    logger.info(
+                        f"Bulk texture extraction: found {len(texture_files)} textures in standard layout"
+                    )
+                else:
+                    alt_patterns = ["textures/", "assets/textures/", "/textures/"]
+                    alt_texture_files = [
+                        f
+                        for f in file_list
+                        if any(f.startswith(pattern) for pattern in alt_patterns)
+                        and f.endswith(".png")
+                    ]
+
+                    if alt_texture_files:
+                        texture_files = alt_texture_files
+                        result["layout_detected"] = "non-standard"
+                        result["warnings"].append(
+                            f"Non-standard JAR layout detected (Issue #1105). "
+                            f"Found {len(texture_files)} textures in alternative locations. "
+                            f"Standard assets/*/textures/ pattern yielded 0 results."
+                        )
+                        logger.warning(
+                            f"Bulk texture extraction: found {len(texture_files)} textures in non-standard layout "
+                            f"(alternative patterns). Standard assets/*/textures/ pattern yielded 0 results."
+                        )
+
+                        alt_mcmeta_files = [
+                            f
+                            for f in file_list
+                            if any(f.startswith(pattern) for pattern in alt_patterns)
+                            and f.endswith(".png.mcmeta")
+                        ]
+                        mcmeta_files = set(alt_mcmeta_files)
+                    else:
+                        result["layout_detected"] = "none"
+                        result["warnings"].append(
+                            "No textures found in JAR. Tried standard assets/*/textures/ and "
+                            "alternative patterns (textures/, assets/textures/, /textures/). "
+                            "This may indicate a non-standard mod structure or empty asset directory."
+                        )
+                        logger.warning(
+                            "Bulk texture extraction: No textures found in JAR. "
+                            "Tried standard assets/*/textures/ and alternative patterns."
+                        )
 
                 for texture_file in texture_files:
                     try:
-                        # Read texture data from JAR
                         texture_data = jar.read(texture_file)
 
-                        # Map Java texture path to Bedrock path
-                        # assets/namespace/textures/block/name.png -> textures/blocks/name.png
                         bedrock_path = self._map_java_texture_to_bedrock(texture_file)
 
-                        # Create output subdirectories
                         full_output_dir = rp_path / Path(bedrock_path).parent
                         full_output_dir.mkdir(parents=True, exist_ok=True)
 
-                        # Save texture
                         output_file = rp_path / bedrock_path
                         with open(output_file, "wb") as f:
                             f.write(texture_data)
@@ -542,7 +588,6 @@ class BedrockBuilderAgent:
                         )
                         result["extracted_count"] += 1
 
-                        # Check for associated .mcmeta animation file
                         mcmeta_path = texture_file + ".mcmeta"
                         if mcmeta_path in mcmeta_files:
                             mcmeta_data = jar.read(mcmeta_path)
@@ -564,7 +609,8 @@ class BedrockBuilderAgent:
 
                 logger.info(
                     f"Bulk texture extraction complete: {result['extracted_count']} textures, "
-                    f"{result['skipped_count']} skipped, {len(result['errors'])} errors"
+                    f"{result['skipped_count']} skipped, {len(result['errors'])} errors, "
+                    f"layout={result['layout_detected']}"
                 )
 
         except zipfile.BadZipFile:
@@ -728,8 +774,13 @@ class BedrockBuilderAgent:
         """
         Map Java mod texture path to Bedrock resource pack texture path.
 
-        Java: assets/<namespace>/textures/<type>/<name>.png
+        Java (standard): assets/<namespace>/textures/<type>/<name>.png
+        Java (non-standard): textures/<type>/<name>.png or assets/textures/<type>/<name>.png
         Bedrock: textures/<type>s/<name>.png (e.g., textures/blocks/name.png)
+
+        Handles non-standard layouts (Issue #1105) where textures may be at:
+        - textures/<type>/<name>.png (without assets/namespace/ prefix)
+        - assets/textures/<type>/<name>.png (without namespace)
 
         Args:
             java_path: Java mod texture path
@@ -739,17 +790,24 @@ class BedrockBuilderAgent:
         """
         parts = java_path.replace("\\", "/").split("/")
 
-        # Parse: assets/namespace/textures/type/name.png
         if len(parts) >= 5 and parts[0] == "assets" and parts[2] == "textures":
-            texture_type = parts[3]  # block, item, entity, etc.
-            texture_name = parts[4]  # name.png
-
-            # Map Java texture types to Bedrock (plural form)
+            texture_type = parts[3]
+            texture_name = parts[4]
             bedrock_type = self._map_texture_type_to_bedrock(texture_type)
-
             return f"textures/{bedrock_type}/{texture_name}"
 
-        # Fallback: just use the filename
+        if len(parts) >= 3 and parts[0] == "textures":
+            texture_type = parts[1]
+            texture_name = parts[2] if len(parts) >= 3 else Path(java_path).name
+            bedrock_type = self._map_texture_type_to_bedrock(texture_type)
+            return f"textures/{bedrock_type}/{texture_name}"
+
+        if len(parts) >= 4 and parts[0] == "assets" and parts[1] == "textures":
+            texture_type = parts[2]
+            texture_name = parts[3] if len(parts) >= 4 else Path(java_path).name
+            bedrock_type = self._map_texture_type_to_bedrock(texture_type)
+            return f"textures/{bedrock_type}/{texture_name}"
+
         return f"textures/misc/{Path(java_path).name}"
 
     def _map_texture_type_to_bedrock(self, java_type: str) -> str:

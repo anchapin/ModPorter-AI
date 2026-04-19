@@ -378,6 +378,135 @@ class TestBedrockBuilderMVP:
         assert any("MVP: Building block add-on" in msg for msg in info_calls)
         assert any("MVP: Successfully created" in msg for msg in info_calls)
 
+    def test_non_standard_layout_textures_at_root(self, builder, output_dir):
+        """Test extraction from non-standard JAR layout with textures at root (Issue #1105).
+
+        Some mods have textures at 'textures/block/name.png' instead of
+        'assets/modid/textures/block/name.png'. This test verifies that the
+        fallback mechanism properly detects and extracts these textures.
+        """
+        with tempfile.NamedTemporaryFile(suffix=".jar", delete=False) as jar_file:
+            with zipfile.ZipFile(jar_file.name, "w") as zf:
+                from PIL import Image
+                import io
+
+                textures = [
+                    ("textures/block/stone.png", (128, 128, 128, 255)),
+                    ("textures/block/dirt.png", (139, 69, 19, 255)),
+                    ("textures/item/iron_sword.png", (200, 200, 200, 255)),
+                ]
+
+                for texture_path, color in textures:
+                    img = Image.new("RGBA", (16, 16), color)
+                    png_buffer = io.BytesIO()
+                    img.save(png_buffer, format="PNG")
+                    zf.writestr(texture_path, png_buffer.getvalue())
+
+            try:
+                result = builder.build_block_addon_mvp(
+                    registry_name="test_mod:nonstandard_block",
+                    texture_path="textures/block/stone.png",
+                    jar_path=jar_file.name,
+                    output_dir=output_dir,
+                )
+
+                assert result["success"] is True
+                assert "bulk_texture_warnings" in result or len(result.get("errors", [])) == 0
+                assert result["bulk_textures_extracted"] >= 3, (
+                    f"Expected at least 3 textures from non-standard layout, got {result['bulk_textures_extracted']}"
+                )
+
+                rp_path = Path(output_dir) / "resource_pack"
+                assert (rp_path / "textures" / "blocks").exists(), (
+                    "blocks texture dir should exist for non-standard layout"
+                )
+
+            finally:
+                os.unlink(jar_file.name)
+
+    def test_non_standard_layout_assets_textures_without_namespace(self, builder, output_dir):
+        """Test extraction from non-standard JAR layout with assets/textures/ (Issue #1105).
+
+        Some mods have textures at 'assets/textures/block/name.png' instead of
+        'assets/modid/textures/block/name.png'.
+        """
+        with tempfile.NamedTemporaryFile(suffix=".jar", delete=False) as jar_file:
+            with zipfile.ZipFile(jar_file.name, "w") as zf:
+                from PIL import Image
+                import io
+
+                textures = [
+                    ("assets/textures/block/stone.png", (128, 128, 128, 255)),
+                    ("assets/textures/block/dirt.png", (139, 69, 19, 255)),
+                ]
+
+                for texture_path, color in textures:
+                    img = Image.new("RGBA", (16, 16), color)
+                    png_buffer = io.BytesIO()
+                    img.save(png_buffer, format="PNG")
+                    zf.writestr(texture_path, png_buffer.getvalue())
+
+            try:
+                result = builder.build_block_addon_mvp(
+                    registry_name="test_mod:alt_layout_block",
+                    texture_path="assets/textures/block/stone.png",
+                    jar_path=jar_file.name,
+                    output_dir=output_dir,
+                )
+
+                assert result["success"] is True
+                assert result["bulk_textures_extracted"] >= 2, (
+                    f"Expected at least 2 textures from assets/textures layout, got {result['bulk_textures_extracted']}"
+                )
+
+            finally:
+                os.unlink(jar_file.name)
+
+    def test_empty_jar_no_textures(self, builder, output_dir):
+        """Test handling of JAR with no textures (Issue #1105).
+
+        When a JAR contains no textures, appropriate warnings should be surfaced.
+        """
+        with tempfile.NamedTemporaryFile(suffix=".jar", delete=False) as jar_file:
+            with zipfile.ZipFile(jar_file.name, "w") as zf:
+                zf.writestr("README.txt", b"This mod has no textures")
+                zf.writestr(
+                    "data/modid/recipes/example.json", b'{"type":"minecraft:crafting_shaped"}'
+                )
+
+            try:
+                result = builder.build_block_addon_mvp(
+                    registry_name="test_mod:empty_block",
+                    texture_path="assets/test/textures/block/stone.png",
+                    jar_path=jar_file.name,
+                    output_dir=output_dir,
+                )
+
+                assert result["bulk_textures_extracted"] == 0, (
+                    "Should report 0 textures extracted for empty JAR"
+                )
+                assert result.get("bulk_texture_warnings") or len(result.get("errors", [])) > 0, (
+                    "Should have warnings or errors for empty texture extraction"
+                )
+
+            finally:
+                os.unlink(jar_file.name)
+
+    def test_map_java_texture_to_bedrock_nonstandard_path(self, builder):
+        """Test _map_java_texture_to_bedrock handles non-standard paths (Issue #1105)."""
+        standard_path = "assets/modid/textures/block/stone.png"
+        root_path = "textures/block/stone.png"
+        assets_textures_path = "assets/textures/block/stone.png"
+
+        standard_result = builder._map_java_texture_to_bedrock(standard_path)
+        assert standard_result == "textures/blocks/stone.png"
+
+        root_result = builder._map_java_texture_to_bedrock(root_path)
+        assert root_result == "textures/blocks/stone.png"
+
+        assets_textures_result = builder._map_java_texture_to_bedrock(assets_textures_path)
+        assert assets_textures_result == "textures/blocks/stone.png"
+
 
 if __name__ == "__main__":
     pytest.main([__file__])
