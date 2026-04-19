@@ -20,7 +20,7 @@ sys.path.insert(0, str(project_root))
 from agents.java_analyzer import JavaAnalyzerAgent
 from agents.bedrock_builder import BedrockBuilderAgent
 from agents.packaging_agent import PackagingAgent
-from modporter.cli import convert_mod
+from portkit.cli import convert_mod
 
 
 class TestMVPPipelineIntegration(unittest.TestCase):
