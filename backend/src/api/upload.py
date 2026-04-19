@@ -236,7 +236,9 @@ async def upload_jar_file(
             ip_address=ip_address,
         )
         logger.error(f"Error uploading file: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to upload file: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to upload file. An unexpected error occurred."
+        )
 
 
 @router.post("/chunked/init", response_model=UploadInitResponse)
