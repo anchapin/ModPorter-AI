@@ -56,7 +56,7 @@ def convert_mod(jar_path: str, output_dir: str = None) -> Dict[str, Any]:
 
         # Step 1: Analyze the JAR file using AST-first approach (detects ALL entities)
         logger.info("Step 1: Analyzing Java mod (AST-first)...")
-        java_analyzer = JavaAnalyzerAgent()
+        java_analyzer = JavaAnalyzerAgent.get_instance()
 
         # Try AST analysis first - this detects all entities, blocks, items, etc.
         ast_analysis_result = java_analyzer.analyze_jar_with_ast(str(jar_file))
