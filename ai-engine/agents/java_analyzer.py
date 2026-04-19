@@ -778,6 +778,16 @@ class JavaAnalyzerAgent:
             )
             class_matches = re.findall(class_pattern, source_code)
 
+            annotation_pattern = r"@(\w+)(?:\(([^)]*)\))?"
+            annotation_matches = re.findall(annotation_pattern, source_code)
+            annotations = []
+            for ann_name, ann_value in annotation_matches:
+                if ann_value:
+                    ann_value = ann_value.strip('"')
+                annotations.append(
+                    {"name": ann_name, "value": ann_value, "type": "marker_annotation"}
+                )
+
             class FakeAST:
                 def __init__(self):
                     self.imports = []
@@ -789,6 +799,7 @@ class JavaAnalyzerAgent:
 
                         self.imports.append(FakeImport(imp))
                     self.classes = class_matches
+                    self.annotations = annotations
 
                 def __iter__(self):
                     for class_name in self.classes:
@@ -803,7 +814,7 @@ class JavaAnalyzerAgent:
                         yield [], FakeClassNode(class_name)
 
             logger.debug(
-                f"Fallback parsing extracted {len(import_statements)} imports and {len(class_matches)} classes"
+                f"Fallback parsing extracted {len(import_statements)} imports, {len(class_matches)} classes, and {len(annotations)} annotations"
             )
             return FakeAST()
         except Exception as e:
@@ -1390,32 +1401,55 @@ class JavaAnalyzerAgent:
         return 1.0
 
     def _extract_mod_metadata_from_ast(self, tree: Dict) -> Dict:
-        """Extract mod metadata from parsed Java AST (tree-sitter format)."""
+        """Extract mod metadata from parsed Java AST (tree-sitter format or fallback)."""
         metadata = {}
         annotations_found = []
 
         try:
-            all_annotations = self._find_nodes_by_type(tree, "annotation")
-            marker_annotations = self._find_nodes_by_type(tree, "marker_annotation")
-            all_annotations.extend(marker_annotations)
+            if hasattr(tree, "annotations"):
+                for ann in tree.annotations:
+                    annotation_data = {
+                        "name": ann.get("name", ""),
+                        "type": ann.get("type", "marker_annotation"),
+                        "value": ann.get("value"),
+                    }
+                    annotations_found.append(annotation_data)
 
-            for ann_node in all_annotations:
-                annotation_data = self._extract_annotation_data_ts(ann_node)
-                annotations_found.append(annotation_data)
+                    ann_name = annotation_data.get("name", "")
 
-                ann_name = annotation_data.get("name", "")
+                    if ann_name in ["Mod", "ModInstance", "ModEventBusSubscriber"]:
+                        value = annotation_data.get("value")
+                        if value:
+                            metadata["value"] = value
+                        if ann_name in ["SubscribeEvent", "Mod.EventBusSubscriber"]:
+                            metadata["event_subscriber"] = True
+                    elif ann_name == "ObjectHolder":
+                        if annotation_data.get("value"):
+                            metadata["object_holder"] = annotation_data["value"]
+                    elif ann_name == "Instance":
+                        pass
+            else:
+                all_annotations = self._find_nodes_by_type(tree, "annotation")
+                marker_annotations = self._find_nodes_by_type(tree, "marker_annotation")
+                all_annotations.extend(marker_annotations)
 
-                if ann_name in ["Mod", "ModInstance", "ModEventBusSubscriber"]:
-                    value = annotation_data.get("value")
-                    if value:
-                        metadata["value"] = value
-                    if ann_name in ["SubscribeEvent", "Mod.EventBusSubscriber"]:
-                        metadata["event_subscriber"] = True
-                elif ann_name == "ObjectHolder":
-                    if annotation_data.get("value"):
-                        metadata["object_holder"] = annotation_data["value"]
-                elif ann_name == "Instance":
-                    pass
+                for ann_node in all_annotations:
+                    annotation_data = self._extract_annotation_data_ts(ann_node)
+                    annotations_found.append(annotation_data)
+
+                    ann_name = annotation_data.get("name", "")
+
+                    if ann_name in ["Mod", "ModInstance", "ModEventBusSubscriber"]:
+                        value = annotation_data.get("value")
+                        if value:
+                            metadata["value"] = value
+                        if ann_name in ["SubscribeEvent", "Mod.EventBusSubscriber"]:
+                            metadata["event_subscriber"] = True
+                    elif ann_name == "ObjectHolder":
+                        if annotation_data.get("value"):
+                            metadata["object_holder"] = annotation_data["value"]
+                    elif ann_name == "Instance":
+                        pass
 
             if annotations_found:
                 metadata["all_annotations"] = annotations_found
@@ -1491,54 +1525,59 @@ class JavaAnalyzerAgent:
             return None
 
     def _analyze_dependencies_from_ast(self, tree: Dict) -> List[Dict]:
-        """Analyze dependencies from parsed Java AST (tree-sitter format)."""
+        """Analyze dependencies from parsed Java AST (tree-sitter format or fallback)."""
         dependencies = []
         reflection_uses = []
 
         try:
-            imports = self._find_nodes_by_type(tree, "import_declaration")
-            for imp in imports:
-                import_path = self._get_import_path(imp)
-                if import_path:
-                    dependencies.append({"import": import_path, "type": "explicit"})
+            if hasattr(tree, "imports"):
+                for imp in tree.imports:
+                    if hasattr(imp, "path"):
+                        dependencies.append({"import": imp.path, "type": "explicit"})
+            else:
+                imports = self._find_nodes_by_type(tree, "import_declaration")
+                for imp in imports:
+                    import_path = self._get_import_path(imp)
+                    if import_path:
+                        dependencies.append({"import": import_path, "type": "explicit"})
 
-            method_invocations = self._find_nodes_by_type(tree, "method_invocation")
-            for inv in method_invocations:
-                method_name = self._get_ts_method_name(inv)
-                qualifier = self._get_ts_qualifier(inv)
+                method_invocations = self._find_nodes_by_type(tree, "method_invocation")
+                for inv in method_invocations:
+                    method_name = self._get_ts_method_name(inv)
+                    qualifier = self._get_ts_qualifier(inv)
 
-                if qualifier:
-                    dependencies.append(
-                        {
-                            "import": qualifier,
-                            "type": "implicit",
-                            "method": method_name,
-                        }
-                    )
+                    if qualifier:
+                        dependencies.append(
+                            {
+                                "import": qualifier,
+                                "type": "implicit",
+                                "method": method_name,
+                            }
+                        )
 
-                method_lower = method_name.lower()
-                if method_lower in [
-                    "class_forname",
-                    "class",
-                    "getmethod",
-                    "getfield",
-                    "getdeclaredmethod",
-                    "getdeclaredfield",
-                    "newinstance",
-                    "invoke",
-                    "setaccessible",
-                    "getclass",
-                ]:
-                    reflection_uses.append(
-                        {
-                            "type": "reflection",
-                            "method": method_lower,
-                            "qualifier": qualifier,
-                        }
-                    )
+                    method_lower = method_name.lower()
+                    if method_lower in [
+                        "class_forname",
+                        "class",
+                        "getmethod",
+                        "getfield",
+                        "getdeclaredmethod",
+                        "getdeclaredfield",
+                        "newinstance",
+                        "invoke",
+                        "setaccessible",
+                        "getclass",
+                    ]:
+                        reflection_uses.append(
+                            {
+                                "type": "reflection",
+                                "method": method_lower,
+                                "qualifier": qualifier,
+                            }
+                        )
 
-            if reflection_uses:
-                dependencies.extend(reflection_uses)
+                if reflection_uses:
+                    dependencies.extend(reflection_uses)
 
             return dependencies
         except Exception as e:

@@ -21,8 +21,9 @@ chromadb==1.1.1
 numpy
 python-dotenv~=1.2.1
 
-# Java analysis - align with backend version
-javalang==0.13.0
+# Java analysis - tree-sitter for Java 17+ support
+tree-sitter>=0.21.0
+tree-sitter-java
 
 # File processing - align with backend version
 python-magic==0.4.27
