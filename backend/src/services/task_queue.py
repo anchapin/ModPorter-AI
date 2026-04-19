@@ -13,9 +13,10 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from enum import Enum
+from enum import IntEnum
 from typing import Dict, Any, Optional
 
+import redis
 import redis.asyncio as aioredis
 
 from services.celery_config import celery_app, REDIS_URL
@@ -35,7 +36,7 @@ class TaskStatus(Enum):
     RETRYING = "retrying"
 
 
-class TaskPriority(Enum):
+class TaskPriority(IntEnum):
     """Task priority enum."""
 
     LOW = 0
