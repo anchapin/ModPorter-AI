@@ -12,7 +12,7 @@ import asyncio
 import uuid
 import time
 from datetime import datetime, timedelta, timezone
-from enum import Enum
+from enum import Enum, IntEnum
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field, asdict
 
@@ -40,7 +40,7 @@ class TaskStatus(Enum):
     RETRYING = "retrying"
 
 
-class TaskPriority(Enum):
+class TaskPriority(IntEnum):
     """Task priority enum."""
 
     LOW = 0
