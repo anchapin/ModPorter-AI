@@ -1,8 +1,8 @@
-# PortKit (ModPorter-AI) — Development Roadmap
+# PortKit — Development Roadmap
 
-**Last Updated:** 2026-04-18 (v12 audit — 8:48pm ET)
-**Status:** M3 Complete ✅ | M4 In Progress (landing page + ToS done) | 8/8 PASS ✅
-**Repo:** [anchapin/ModPorter-AI](https://github.com/anchapin/ModPorter-AI) | Rebrand to PortKit pending ([#1043](https://github.com/anchapin/ModPorter-AI/issues/1043))
+**Last Updated:** 2026-04-19 (v13 audit — 12:51am ET)
+**Status:** M3 ✅ | M4 ✅ | M5 In Progress (beta launch) | 8/8 PASS ✅
+**Repo:** [anchapin/ModPorter-AI](https://github.com/anchapin/ModPorter-AI) | Rebranded to PortKit ✅ (#1114)
 **Target:** Public launch at modporter.ai by June 22, 2026
 
 ---
@@ -11,7 +11,7 @@
 
 PortKit converts Minecraft Java mods to Bedrock add-ons. Positioned as a **B2B conversion accelerator** targeting Marketplace creators.
 
-**B2B readiness: 66.4%** (v12, 8/8 PASS, no crashes). M3 complete (all 6 infrastructure issues). M4 landing page and ToS/Privacy shipped. Recipe coverage at all-time high of 41.7% after collision guard fix fully effective across Create (+371), FD (+74), Supplementaries (+61).
+**B2B readiness: 66.4%** (v13, 8/8 PASS, no regressions). M3 and M4 both complete. All major infrastructure, landing page, legal, dashboard, and rebrand shipped. Pipeline now handles both standard and non-standard JAR layouts. Heading into M5 beta launch.
 
 ---
 
@@ -21,19 +21,20 @@ PortKit converts Minecraft Java mods to Bedrock add-ons. Positioned as a **B2B c
 |-------|------|------|----------|--------|---------|-------|------|-----------|-------------|
 | v1 | Apr 8 | 8 | ~0% | 0% | 0% | 0% | 0% | ~5% | Baseline |
 | v2 | Apr 9 | 8 | 54.8% | 0.2% | 0% | 0% | 0% | ~25% | Bulk texture extraction |
-| v3–v4 | Apr 10 | 8 | 54.7% | 0% | 0% | 0% | 0% | ~28% | Entity routing fix; agents built |
+| v3–v4 | Apr 10 | 8 | 54.7% | 0% | 0% | 0% | 0% | ~28% | Entity routing fix |
 | v5 | Apr 11 | 8 | 54.7% | 82.3% | 25.8% | 0% | 0% | ~46% | Model+recipe converters wired |
 | v6 | Apr 15 | 30 | 68.7% | 68.3% | 40.2% | 0% | 0% | ~49% | NeoForge fix, 30-mod set |
 | v7 | Apr 16 | 8 | 54.7% | 82.3% | 25.8% | ~100% | 89.3% | ~63% 🎯 | Sound+lang, loot tables, spawn rules |
-| v8 | Apr 17 | 8 | 54.7% | 82.3% | 25.9% | ~100% | 89.3% | ~63% | Stripe, error handling (cooking recipe bug found) |
-| v9 | Apr 18 00:06 | 8 | 54.7% | 82.3% | 26.6% | ~100% | 89.3% | 63.4% | Cooking recipe fix +27 (cutting board bug found) |
-| v10 | Apr 18 10:15 | 8 | 54.7% | 82.3% | 28.5% | ~100% | 89.3% | 63.7% | Cutting board fix +72 (name collision bug found) |
-| v11 | Apr 18 19:16 | 7/8 ⚠️ | 54.7%* | 82.3%* | 32.1%* | ~100%* | 89.3%* | ~64.4%* | Collision fix +138 recipes; Create crash P0 regression |
-| **v12** | **Apr 18 20:48** | **8/8 ✅** | **54.7%** | **82.3%** | **41.7%** | **~100%** | **89.3%** | **66.4% 🎯** | **Create restored; collision guard fully effective** |
+| v8 | Apr 17 | 8 | 54.7% | 82.3% | 25.9% | ~100% | 89.3% | ~63% | Stripe, error handling |
+| v9 | Apr 18 00:06 | 8 | 54.7% | 82.3% | 26.6% | ~100% | 89.3% | 63.4% | Cooking recipe fix +27 |
+| v10 | Apr 18 10:15 | 8 | 54.7% | 82.3% | 28.5% | ~100% | 89.3% | 63.7% | Cutting board fix +72 |
+| v11 | Apr 18 19:16 | 7/8 ⚠️ | 54.7%* | 82.3%* | 32.1%* | ~100%* | 89.3%* | ~64.4%* | Collision fix +138; Create crash P0 |
+| v12 | Apr 18 20:48 | 8/8 ✅ | 54.7% | 82.3% | 41.7% | ~100% | 89.3% | 66.4% 🎯 | Create restored; recipe +509 total |
+| **v13** | **Apr 19 00:51** | **8/8 ✅** | **54.7%** | **82.3%** | **41.7%** | **~100%** | **89.3%** | **66.4% ✅** | **Non-std JAR fix ✅, rebrand ✅, M4 complete ✅** |
 
 \* v11 adjusted (Create excluded due to crash)
 
-**v12 B2B breakdown:**
+**v13 B2B breakdown:**
 | Asset Type | Coverage | Weight | Contribution |
 |------------|----------|--------|-------------|
 | Texture | 54.7% | 25% | 13.7% |
@@ -46,30 +47,16 @@ PortKit converts Minecraft Java mods to Bedrock add-ons. Positioned as a **B2B c
 
 ---
 
-## Texture Ceiling Analysis (v12 Finding)
+## Structural Ceiling Notes (Audit-Verified)
 
-JEI (0%) and JourneyMap (7%) are **structural ceilings**, not tooling gaps:
+### Texture (54.7% ceiling for canonical 8)
+- **JEI (0%)**: All textures are GUI UI elements — no Bedrock equivalent. 0% is correct.
+- **JourneyMap (7%)**: Minimap UI theme images + vanilla `minecraft`-namespace entity icons. 7% is the true ceiling.
+- **Non-standard JAR mods** (REI, Storage Drawers, etc.): Now supported via #1105 fallback scanner. Expected to bring 30-mod texture coverage up from 68.7%.
 
-- **JEI**: All 46 textures are GUI UI elements (buttons, backgrounds, arrows). Bedrock uses a completely different JSON-based UI system — 0% is the correct result.
-- **JourneyMap**: 323 PNGs = 239 minimap UI theme images + 218 vanilla entity icons (`minecraft` namespace, correctly excluded) + 105 Quark compat icons. No item/block textures with Bedrock equivalents. 7% is the true ceiling.
-
-The atlas unpacking PR (#1111) is deployed and will benefit **content mods** using sprite-sheet atlases. It does not affect UI mods.
-
-**54.7% is approximately the real texture ceiling for this canonical 8-mod set.**
-
----
-
-## Recipe Coverage Ceiling Analysis
-
-| Recipe type | Count (8 mods) | Status |
-|-------------|----------------|--------|
-| `create:milling` / `crushing` / `deploying` / `splashing` | ~602 | ❌ No Bedrock equivalent — hard ceiling |
-| `farmersdelight:cutting` | 126 | ✅ All converting |
-| `farmersdelight:cooking` | 27 | ✅ Fixed in #1083 |
-| Forge tag collisions | Fixed by #1094 + #1108 | ✅ All recovered |
-| Standard shaped/shapeless/smelting | ~3,024 | ~30% conversion rate |
-
-**41.7% recipe ceiling likely near ~45–47%** until Create-specific recipe types get Bedrock mappings.
+### Recipe (41.7% ceiling for canonical 8)
+- **Create custom recipe types** (~602 recipes): `create:milling`, `crushing`, `deploying`, `splashing` — no direct Bedrock equivalent. Hard ceiling until Create-specific mappings are added.
+- **Standard recipe ceiling**: ~45–47% when Create custom types are excluded.
 
 ---
 
@@ -81,83 +68,73 @@ The atlas unpacking PR (#1111) is deployed and will benefit **content mods** usi
 
 ### ✅ M3 — Weeks 5-6: Infrastructure (Complete Apr 18)
 
-| Issue | PR | Status |
-|-------|----|--------|
-| [#970](https://github.com/anchapin/ModPorter-AI/issues/970) Stripe subscription billing | #1081 | ✅ |
-| [#973](https://github.com/anchapin/ModPorter-AI/issues/973) File upload security | #1084 | ✅ |
-| [#972](https://github.com/anchapin/ModPorter-AI/issues/972) Feature flags | #1085 | ✅ |
-| [#977](https://github.com/anchapin/ModPorter-AI/issues/977) Usage limits + metering | #1088 | ✅ |
-| [#976](https://github.com/anchapin/ModPorter-AI/issues/976) Transactional email | #1092 | ✅ |
-| [#980](https://github.com/anchapin/ModPorter-AI/issues/980) OAuth login | #1095 | ✅ |
+All 6 infrastructure issues resolved: Stripe (#970), file security (#973), feature flags (#972), usage limits (#977), transactional email (#976), OAuth login (#980).
 
-### 🔄 M4 — Week 7: Landing Page + Legal + Rebrand (Due: May 25)
+### ✅ M4 — Week 7: Landing Page + Legal + Rebrand (Complete Apr 19)
 
-| Issue | PR | Status |
-|-------|----|--------|
-| [#978](https://github.com/anchapin/ModPorter-AI/issues/978) Marketing landing page | #1106 | ✅ |
-| [#975](https://github.com/anchapin/ModPorter-AI/issues/975) Terms of Service and Privacy Policy | #1112 | ✅ |
-| [#979](https://github.com/anchapin/ModPorter-AI/issues/979) Conversion history dashboard | — | **Open** |
-| [#1043](https://github.com/anchapin/ModPorter-AI/issues/1043) Rebrand to PortKit | — | **Open** |
+| Issue | Status |
+|-------|--------|
+| [#978](https://github.com/anchapin/ModPorter-AI/issues/978) Marketing landing page | ✅ #1106 |
+| [#975](https://github.com/anchapin/ModPorter-AI/issues/975) Terms of Service and Privacy Policy | ✅ #1112 |
+| [#979](https://github.com/anchapin/ModPorter-AI/issues/979) Conversion history dashboard | ✅ #1115 |
+| [#1043](https://github.com/anchapin/ModPorter-AI/issues/1043) Rebrand to PortKit | ✅ #1114 |
 
-### ⏳ M5 — Week 8: Beta Launch (Due: Jun 1)
-Requires: #979 history dashboard, #1043 rebrand, plus all M3 infra (complete ✅).
+### 🔄 M5 — Week 8: Beta Launch (Due: Jun 1)
+
+All M4 prerequisites complete. Ready for beta invitations. Key M5 work:
+- [ ] Beta user onboarding flow
+- [ ] Conversion quality improvements (#1096, #1100)
+- [ ] Confidence scoring for B2B users (#1091)
 
 ### ⏳ M6-M7 — Weeks 9-11: Beta Feedback + Public Launch (Due: Jun 22)
 
 ---
 
-## Top 3 Priority Issues (Apr 18, 8:48pm — post-v12)
+## Open Issues (15 total — 0 open PRs)
 
-### 🥇 #1: [#1105](https://github.com/anchapin/ModPorter-AI/issues/1105) — Non-Standard JAR Layouts (P1, Pipeline)
+### Conversion Quality / AI Engine
+- [#1096](https://github.com/anchapin/ModPorter-AI/issues/1096) Replace javalang with tree-sitter for Java 17+ support **← #1 PRIORITY**
+- [#1100](https://github.com/anchapin/ModPorter-AI/issues/1100) Replace hardcoded JAVA_TO_BEDROCK_ITEM_MAP with minecraft-data JSON **← #2 PRIORITY**
+- [#1091](https://github.com/anchapin/ModPorter-AI/issues/1091) Per-segment confidence scoring (priority:high, phase:2) **← #3 PRIORITY**
+- [#1090](https://github.com/anchapin/ModPorter-AI/issues/1090) Semantic chunking for large mods (priority:medium, phase:1)
+- [#1089](https://github.com/anchapin/ModPorter-AI/issues/1089) Multi-candidate consistency check (priority:medium, phase:2)
 
-8 mods in the 30-mod test produce **zero output** due to non-standard JAR structures (REI, Storage Drawers, Astral Sorcery, Silent Gear, Tinkers Construct, ProjectE, AbyssalCraft, Compact Machines). These are popular mods — fixing this would meaningfully expand the effective mod coverage percentage. Direct B2B pipeline impact.
-
-### 🥈 #2: [#1043](https://github.com/anchapin/ModPorter-AI/issues/1043) — Rebrand to PortKit (M4)
-
-The landing page and OAuth are live at modporter.ai — but the product is still called "ModPorter-AI" everywhere in the codebase, README, and GitHub repo. Needs to be PortKit before beta invitations go out. Alex confirmed PortKit is the name. Dependency for M5 beta launch.
-
-### 🥉 #3: [#979](https://github.com/anchapin/ModPorter-AI/issues/979) — Conversion History Dashboard (M4)
-
-Per-user conversion stats dashboard for beta. Creators need to see their past conversions, success rates, and download history. Required for M5 beta launch alongside rebrand.
-
----
-
-## Open Issues (20 total — 2 open PRs: #1109 security, #1110 perf)
-
-### P1 Pipeline
-- [#1105](https://github.com/anchapin/ModPorter-AI/issues/1105) Non-standard JAR layouts (8 mods zero output) **← #1 PRIORITY**
-
-### M4 Marketing/Legal/Product
-- [#1043](https://github.com/anchapin/ModPorter-AI/issues/1043) Rebrand to PortKit **← #2 PRIORITY**
-- [#979](https://github.com/anchapin/ModPorter-AI/issues/979) History dashboard **← #3 PRIORITY**
-
-### Automated PRs (Open)
-- [#1109](https://github.com/anchapin/ModPorter-AI/pull/1109) Security: prevent info leakage in upload error response
-- [#1110](https://github.com/anchapin/ModPorter-AI/pull/1110) Perf: optimize BedrockDocsPanel search filtering
-
-### Refactor/Code Quality
-- [#1096](https://github.com/anchapin/ModPorter-AI/issues/1096) Replace javalang with tree-sitter
+### Refactor / Code Quality
 - [#1097](https://github.com/anchapin/ModPorter-AI/issues/1097) Consolidate backend error-handling files
 - [#1098](https://github.com/anchapin/ModPorter-AI/issues/1098) Consolidate task queues → Celery
 - [#1099](https://github.com/anchapin/ModPorter-AI/issues/1099) Split java_analyzer.py (131K chars)
-- [#1100](https://github.com/anchapin/ModPorter-AI/issues/1100) Replace hardcoded JAVA_TO_BEDROCK_ITEM_MAP
+- [#1100](https://github.com/anchapin/ModPorter-AI/issues/1100) Replace hardcoded item map (also conversion quality)
 - [#1101](https://github.com/anchapin/ModPorter-AI/issues/1101) Remove dead BM25 fallback
 - [#1102](https://github.com/anchapin/ModPorter-AI/issues/1102) Consolidate backend report files
 - [#1103](https://github.com/anchapin/ModPorter-AI/issues/1103) Split texture_converter.py and model_converter.py
 
-### AI Research
-- [#1089](https://github.com/anchapin/ModPorter-AI/issues/1089) Multi-candidate consistency check
-- [#1090](https://github.com/anchapin/ModPorter-AI/issues/1090) Semantic chunking for large mods
-- [#1091](https://github.com/anchapin/ModPorter-AI/issues/1091) Per-segment confidence scoring
+### Post-Launch Enhancements
+- [#994](https://github.com/anchapin/ModPorter-AI/issues/994) Embedding upgrade (ada-002 → text-embedding-3)
+- [#996](https://github.com/anchapin/ModPorter-AI/issues/996) Diffusion LoRA for texture pairs
+- [#997](https://github.com/anchapin/ModPorter-AI/issues/997) Fine-tune open-weights LLM
+- [#1048](https://github.com/anchapin/ModPorter-AI/issues/1048) IDE/Plugin ecosystem integration
 
-### Post-Launch
-- [#994](https://github.com/anchapin/ModPorter-AI/issues/994) Embedding upgrade | [#996](https://github.com/anchapin/ModPorter-AI/issues/996) Diffusion LoRA | [#997](https://github.com/anchapin/ModPorter-AI/issues/997) LLM fine-tune | [#1048](https://github.com/anchapin/ModPorter-AI/issues/1048) IDE plugins
+---
+
+## Top 3 Priority Issues (Apr 19, 12:51am — post-v13)
+
+### 🥇 #1: [#1096](https://github.com/anchapin/ModPorter-AI/issues/1096) — Replace javalang with tree-sitter (Conversion Quality)
+
+`javalang` cannot parse Java 17+ features: records, sealed classes, text blocks, pattern matching. Modern mods (1.20+) increasingly use these. tree-sitter supports the full Java grammar and is production-proven. Failure to parse modern Java means the analyzer falls back to heuristics, reducing recipe and entity accuracy for new mods. Direct B2B impact as the mod ecosystem moves to Java 17+.
+
+### 🥈 #2: [#1100](https://github.com/anchapin/ModPorter-AI/issues/1100) — Replace Hardcoded Item Map with minecraft-data JSON
+
+`JAVA_TO_BEDROCK_ITEM_MAP` is hand-curated (~50–100 entries). The `minecraft-data` package has 1,000+ auto-generated item mappings kept current with each MC release. Replacing it would substantially improve recipe conversion fidelity (more source items resolve to valid Bedrock equivalents) and reduce manual review flags. Has `conversion-quality` label.
+
+### 🥉 #3: [#1091](https://github.com/anchapin/ModPorter-AI/issues/1091) — Per-Segment Confidence Scoring (priority:high, phase:2)
+
+For the B2B positioning ("accelerator, not 100% automation"), confidence scores per converted segment let creators know exactly which parts of their pack need manual review. This directly reduces creator review time and is a key differentiator vs manual conversion. `priority:high` label confirms scope intent.
 
 ---
 
 ## Audit Reports
 
-- [v9 — Apr 18 midnight](docs/audit-reports/real-world-scan-v9-20260418.md) — B2B 63.4%, cooking fix +27
 - [v10 — Apr 18 10am](docs/audit-reports/real-world-scan-v10-20260418.md) — B2B 63.7%, cutting board +72
 - [v11 — Apr 18 7pm](docs/audit-reports/real-world-scan-v11-20260418.md) — B2B ~64.4% adj, Create crash regression
-- [**v12 — Apr 18 8:48pm**](docs/audit-reports/real-world-scan-v12-20260418.md) — **B2B 66.4%** 🎯, 8/8 PASS, recipe +509 from v10
+- [v12 — Apr 18 8:48pm](docs/audit-reports/real-world-scan-v12-20260418.md) — B2B 66.4%, 8/8 PASS, recipe +509
+- [**v13 — Apr 19 12:51am**](docs/audit-reports/real-world-scan-v13-20260419.md) — **B2B 66.4% stable**, M4 complete, #1105 non-std JAR fix validated
