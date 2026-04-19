@@ -251,6 +251,9 @@ dependencies = [
     "tree-sitter>=0.21.0",
     "tree-sitter-java",
 
+    # Minecraft data for item mappings
+    "minecraft-data>=3.20.0",
+
     # File processing
     "Pillow>=11.3.0",  # For texture conversion
     "pydub",
