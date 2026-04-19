@@ -1536,3 +1536,62 @@ export const modImportsAPI = {
     return response.json();
   },
 };
+
+// --- Billing API Functions ---
+
+export interface SubscriptionStatus {
+  tier: string;
+  status: string | null;
+  trial_ends_at: string | null;
+  stripe_customer_id: string | null;
+}
+
+export interface UsageInfo {
+  tier: string;
+  period_year: number;
+  period_month: number;
+  web_conversions: number;
+  api_conversions: number;
+  monthly_limit: number;
+  api_limit: number;
+  remaining: number;
+  api_remaining: number;
+  is_at_limit: boolean;
+  is_api_at_limit: boolean;
+  should_upgrade: boolean;
+  upgrade_message: string | null;
+}
+
+export const billingAPI = {
+  getSubscriptionStatus: async (): Promise<SubscriptionStatus> => {
+    const response = await fetch(`${API_BASE_URL}/billing/subscription`);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        detail: 'Failed to get subscription status',
+      }));
+      throw new ApiError(
+        errorData.detail || 'Failed to get subscription status',
+        response.status
+      );
+    }
+
+    return response.json();
+  },
+
+  getUsageInfo: async (): Promise<UsageInfo> => {
+    const response = await fetch(`${API_BASE_URL}/billing/usage`);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        detail: 'Failed to get usage information',
+      }));
+      throw new ApiError(
+        errorData.detail || 'Failed to get usage information',
+        response.status
+      );
+    }
+
+    return response.json();
+  },
+};

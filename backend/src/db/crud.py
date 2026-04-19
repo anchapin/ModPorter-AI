@@ -21,16 +21,20 @@ async def create_job(
     original_filename: str,
     target_version: str,
     options: Optional[dict] = None,
+    user_id: Optional[str] = None,
     commit: bool = True,
 ) -> models.ConversionJob:
+    input_data = {
+        "file_id": file_id,
+        "original_filename": original_filename,
+        "target_version": target_version,
+        "options": options or {},
+    }
+    if user_id:
+        input_data["user_id"] = user_id
     job = models.ConversionJob(
         status="queued",
-        input_data={
-            "file_id": file_id,
-            "original_filename": original_filename,
-            "target_version": target_version,
-            "options": options or {},
-        },
+        input_data=input_data,
     )
     # By using the relationship, SQLAlchemy will handle creating both
     # records and linking them in a single transaction.
@@ -958,9 +962,9 @@ async def upsert_progress(
 
 
 async def list_jobs(
-    session: AsyncSession, skip: int = 0, limit: int = 100
+    session: AsyncSession, skip: int = 0, limit: int = 100, user_id: Optional[str] = None
 ) -> List[models.ConversionJob]:
-    """List all conversion jobs with pagination."""
+    """List conversion jobs with pagination, optionally filtered by user_id."""
     stmt = (
         select(models.ConversionJob)
         .options(
@@ -971,6 +975,8 @@ async def list_jobs(
         .limit(limit)
         .order_by(models.ConversionJob.created_at.desc())
     )
+    if user_id:
+        stmt = stmt.where(models.ConversionJob.input_data["user_id"].astext == user_id)
     result = await session.execute(stmt)
     return result.scalars().all()
 

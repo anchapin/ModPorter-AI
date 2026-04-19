@@ -631,12 +631,14 @@ async def create_conversion(
 
     # Create conversion job in database
     try:
+        user_id = str(user.id) if user else None
         job = await crud.create_job(
             session=db,
             file_id=file_id,
             original_filename=safe_filename,
             target_version=conversion_options.target_version,
             options=conversion_options.model_dump(),
+            user_id=user_id,
             commit=True,
         )
 
@@ -806,11 +808,13 @@ async def list_conversions(
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     status: Optional[str] = Query(None, description="Filter by status"),
     db: AsyncSession = Depends(get_db),
+    user: Optional[User] = Depends(get_optional_user),
 ):
     """
     List conversion jobs with pagination.
 
-    Returns a paginated list of conversions, optionally filtered by status.
+    Returns a paginated list of conversions for the authenticated user.
+    If not authenticated, returns only jobs without user_id (public/anonymous conversions).
 
     **Query Parameters:**
     - page: Page number (default: 1)
@@ -827,27 +831,27 @@ async def list_conversions(
     }
     ```
     """
-    # Get all jobs
-    jobs = await crud.list_jobs(db)
+    user_id = str(user.id) if user else None
+    jobs = await crud.list_jobs(db, skip=(page - 1) * page_size, limit=page_size, user_id=user_id)
 
-    # Filter by status if provided
     if status:
         jobs = [job for job in jobs if job.status == status]
 
-    # Pagination
     total = len(jobs)
-    start = (page - 1) * page_size
-    end = start + page_size
-    paginated_jobs = jobs[start:end]
 
-    # Build response
     conversions = []
-    for job in paginated_jobs:
+    for job in jobs:
         progress = job.progress.progress if job.progress else 0
         result_url = None
 
         if job.status == "completed":
             result_url = f"/api/v1/conversions/{job.id}/download"
+
+        input_data = job.input_data or {}
+        complexity_tier = input_data.get("complexity_tier", "unknown")
+        features_converted = input_data.get("features_converted", [])
+        features_skipped = input_data.get("features_skipped", [])
+        warnings = input_data.get("warnings", [])
 
         conversions.append(
             ConversionStatusResponse(
@@ -859,7 +863,7 @@ async def list_conversions(
                 updated_at=job.updated_at,
                 result_url=result_url,
                 error=None,
-                original_filename=job.input_data.get("original_filename"),
+                original_filename=input_data.get("original_filename"),
                 structured_error=None,
                 asset_results=None,
                 overall_percentage=None,

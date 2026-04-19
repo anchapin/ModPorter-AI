@@ -1,18 +1,34 @@
 /**
- * Conversion History Component - Day 5 Enhancement
+ * Conversion History Component - Enhanced
  * Shows user's previous conversions with status, download options, and management features
+ * Fetches from API and supports filtering/search
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { triggerDownload } from '../../services/api';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  triggerDownload,
+  listConversions,
+  billingAPI,
+  UsageInfo,
+  SubscriptionStatus,
+} from '../../services/api';
 import './ConversionHistory.css';
-import { ConversionHistoryItem } from './types';
+import { ConversionHistoryItem, ConversionHistoryItemFromAPI } from './types';
 import ConversionHistoryItemRow from './ConversionHistoryItem';
 
 interface ConversionHistoryProps {
   className?: string;
   maxItems?: number;
   onStartNewConversion?: () => void;
+}
+
+interface UsageStats {
+  tier: string;
+  conversions_this_month: number;
+  remaining: number;
+  monthly_limit: number;
+  should_upgrade: boolean;
+  upgrade_message: string | null;
 }
 
 export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
@@ -24,6 +40,11 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] =
+    useState<SubscriptionStatus | null>(null);
 
   // Confirmation states
   const [confirmClear, setConfirmClear] = useState(false);
@@ -36,58 +57,104 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
     }
   }, [selectedItems.size]);
 
-  // Load conversion history from localStorage
+  // Load conversion history from API
   const loadHistory = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
 
-      // For MVP, use localStorage to store conversion history
+      const response = await listConversions({ page_size: maxItems });
+
+      // Map API response to component format
+      const mappedHistory: ConversionHistoryItem[] = response.conversions.map(
+        (item: ConversionHistoryItemFromAPI) => ({
+          job_id: item.conversion_id,
+          original_filename: item.original_filename || 'Unknown',
+          status: item.status as ConversionHistoryItem['status'],
+          created_at: item.created_at,
+          completed_at: item.updated_at,
+          error_message: item.error,
+          options: {},
+        })
+      );
+
+      setHistory(mappedHistory);
+    } catch (err) {
+      console.error('Failed to load conversion history:', err);
+      // Fallback to localStorage if API fails
       const storedHistory = localStorage.getItem(
         'modporter_conversion_history'
       );
       const parsedHistory: ConversionHistoryItem[] = storedHistory
         ? JSON.parse(storedHistory)
         : [];
-
-      // ⚡ Bolt optimization: ISO 8601 strings are lexicographically sortable.
-      // Using standard operators (>, <) avoids both Date instantiation AND the slow
-      // Internationalization (Intl) API used by localeCompare, making sorting ~20x faster.
-      const sortedHistory = parsedHistory.sort((a, b) =>
-        b.created_at > a.created_at ? 1 : b.created_at < a.created_at ? -1 : 0
-      );
-
-      setHistory(sortedHistory.slice(0, maxItems));
-      setError(null);
-    } catch (err) {
-      console.error('Failed to load conversion history:', err);
-      setError('Failed to load conversion history');
-      setHistory([]);
+      setHistory(parsedHistory.slice(0, maxItems));
+      setError('Failed to load from server, showing cached data');
     } finally {
       setLoading(false);
     }
   }, [maxItems]);
 
+  // Load usage stats
+  const loadUsageStats = useCallback(async () => {
+    try {
+      const usage = await billingAPI.getUsageInfo();
+      setUsageStats({
+        tier: usage.tier,
+        conversions_this_month: usage.web_conversions,
+        remaining: usage.remaining,
+        monthly_limit: usage.monthly_limit,
+        should_upgrade: usage.should_upgrade,
+        upgrade_message: usage.upgrade_message,
+      });
+    } catch (err) {
+      console.error('Failed to load usage stats:', err);
+    }
+  }, []);
+
+  // Load subscription status
+  const loadSubscriptionStatus = useCallback(async () => {
+    try {
+      const subscription = await billingAPI.getSubscriptionStatus();
+      setSubscriptionStatus(subscription);
+    } catch (err) {
+      console.error('Failed to load subscription status:', err);
+    }
+  }, []);
+
   useEffect(() => {
     loadHistory();
-  }, [loadHistory]);
+    loadUsageStats();
+    loadSubscriptionStatus();
+  }, [loadHistory, loadUsageStats, loadSubscriptionStatus]);
 
-  // Sync state to localStorage whenever history changes
-  // This ensures deletions and updates are persisted without side effects in updaters
-  useEffect(() => {
-    if (!loading) {
-      localStorage.setItem(
-        'modporter_conversion_history',
-        JSON.stringify(history)
+  // Filter history based on search and status
+  const filteredHistory = useMemo(() => {
+    let result = [...history];
+
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (item) =>
+          item.original_filename.toLowerCase().includes(query) ||
+          item.job_id.toLowerCase().includes(query)
       );
     }
-  }, [history, loading]);
+
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      result = result.filter((item) => item.status === statusFilter);
+    }
+
+    return result;
+  }, [history, searchQuery, statusFilter]);
 
   // Add new conversion to history
   const addToHistory = useCallback(
     (item: ConversionHistoryItem) => {
       setHistory((prevHistory) => {
         const updatedHistory = [item, ...prevHistory].slice(0, maxItems);
-        // LocalStorage sync handled by useEffect
         return updatedHistory;
       });
     },
@@ -101,7 +168,6 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
         const updatedHistory = prevHistory.map((item) =>
           item.job_id === jobId ? { ...item, ...updates } : item
         );
-        // LocalStorage sync handled by useEffect
         return updatedHistory;
       });
     },
@@ -118,7 +184,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
     }
   }, []);
 
-  // Delete conversion from history
+  // Delete conversion from history (local only - API delete is not implemented)
   const deleteConversion = useCallback((jobId: string) => {
     setHistory((prevHistory) => {
       const updatedHistory = prevHistory.filter(
@@ -135,12 +201,11 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
     });
   }, []);
 
-  // Clear all history
+  // Clear all history (local only)
   const clearAllHistory = useCallback(() => {
     setHistory([]);
     setSelectedItems(new Set());
     setConfirmClear(false);
-    // LocalStorage sync handled by useEffect
   }, []);
 
   // Toggle item selection
@@ -179,6 +244,10 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
     [addToHistory, updateConversionStatus, loadHistory]
   );
 
+  const formatTierDisplay = (tier: string) => {
+    return tier.charAt(0).toUpperCase() + tier.slice(1);
+  };
+
   if (loading) {
     return (
       <div
@@ -195,18 +264,73 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
 
   return (
     <div className={`conversion-history ${className}`}>
+      {/* Usage Stats Header */}
+      {usageStats && (
+        <div className="usage-stats-bar">
+          <div className="usage-stat">
+            <span className="usage-label">Plan:</span>
+            <span className="usage-value tier-{usageStats.tier}">
+              {formatTierDisplay(usageStats.tier)}
+            </span>
+          </div>
+          <div className="usage-stat">
+            <span className="usage-label">This Month:</span>
+            <span className="usage-value">
+              {usageStats.conversions_this_month}
+              {usageStats.monthly_limit !== -1 &&
+                ` / ${usageStats.monthly_limit}`}
+            </span>
+          </div>
+          {usageStats.monthly_limit !== -1 && (
+            <div className="usage-stat">
+              <span className="usage-label">Remaining:</span>
+              <span className="usage-value">{usageStats.remaining}</span>
+            </div>
+          )}
+          {usageStats.should_upgrade && usageStats.upgrade_message && (
+            <a href="/billing?upgrade=true" className="upgrade-link">
+              <span aria-hidden="true">⚡</span> Upgrade
+            </a>
+          )}
+        </div>
+      )}
+
       <div className="history-header">
         <h3>
           <span className="history-icon">
             <span aria-hidden="true">📋</span>
           </span>
           Conversion History
-          {history.length > 0 && (
-            <span className="count">({history.length})</span>
+          {filteredHistory.length > 0 && (
+            <span className="count">({filteredHistory.length})</span>
           )}
         </h3>
 
-        {history.length > 0 && (
+        {/* Search and Filter Controls */}
+        <div className="history-controls">
+          <input
+            type="search"
+            className="search-input"
+            placeholder="Search conversions..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label="Search conversions"
+          />
+          <select
+            className="status-filter"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            aria-label="Filter by status"
+          >
+            <option value="all">All Status</option>
+            <option value="completed">Completed</option>
+            <option value="processing">Processing</option>
+            <option value="failed">Failed</option>
+            <option value="queued">Queued</option>
+          </select>
+        </div>
+
+        {filteredHistory.length > 0 && (
           <div className="history-actions">
             {selectedItems.size > 0 &&
               (confirmDelete ? (
@@ -289,14 +413,16 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
         </div>
       )}
 
-      {history.length === 0 ? (
+      {filteredHistory.length === 0 ? (
         <div className="empty-history" role="status">
           <div className="empty-icon" aria-hidden="true">
             📭
           </div>
           <p>No conversions yet</p>
           <p className="empty-subtitle">
-            Your conversion history will appear here
+            {searchQuery || statusFilter !== 'all'
+              ? 'No conversions match your filters'
+              : 'Your conversion history will appear here'}
           </p>
           {onStartNewConversion && (
             <button
@@ -310,7 +436,7 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
         </div>
       ) : (
         <div className="history-list">
-          {history.map((item) => (
+          {filteredHistory.map((item) => (
             <ConversionHistoryItemRow
               key={item.job_id}
               item={item}
@@ -334,19 +460,6 @@ export const useConversionHistory = () => {
   const addConversion = (conversion: ConversionHistoryItem) => {
     if (historyRef?.addToHistory) {
       historyRef.addToHistory(conversion);
-    } else {
-      // Fallback to localStorage if ref not available
-      const storedHistory = localStorage.getItem(
-        'modporter_conversion_history'
-      );
-      const history: ConversionHistoryItem[] = storedHistory
-        ? JSON.parse(storedHistory)
-        : [];
-      const updatedHistory = [conversion, ...history];
-      localStorage.setItem(
-        'modporter_conversion_history',
-        JSON.stringify(updatedHistory)
-      );
     }
   };
 
@@ -356,21 +469,6 @@ export const useConversionHistory = () => {
   ) => {
     if (historyRef?.updateConversionStatus) {
       historyRef.updateConversionStatus(jobId, updates);
-    } else {
-      // Fallback to localStorage
-      const storedHistory = localStorage.getItem(
-        'modporter_conversion_history'
-      );
-      const history: ConversionHistoryItem[] = storedHistory
-        ? JSON.parse(storedHistory)
-        : [];
-      const updatedHistory = history.map((item) =>
-        item.job_id === jobId ? { ...item, ...updates } : item
-      );
-      localStorage.setItem(
-        'modporter_conversion_history',
-        JSON.stringify(updatedHistory)
-      );
     }
   };
 
