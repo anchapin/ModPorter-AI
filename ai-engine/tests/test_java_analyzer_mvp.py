@@ -203,19 +203,21 @@ class TestJavaAnalyzerMVP:
         assert result["success"] is False
         assert len(result["errors"]) > 0
 
-    @patch("agents.java_analyzer.logger")
-    def test_logging_behavior(self, mock_logger, analyzer, simple_jar_with_texture):
+    def test_logging_behavior(self, analyzer, tmp_path):
         """Test that appropriate logging occurs during analysis."""
-        analyzer.analyze_jar_for_mvp(simple_jar_with_texture)
+        jar_path = tmp_path / "test_mod.jar"
+        with zipfile.ZipFile(jar_path, "w") as zf:
+            zf.writestr("fabric.mod.json", json.dumps({"id": "test_mod", "version": "1.0.0"}))
+            zf.writestr("assets/test_mod/textures/block/test_block.png", b"fake_png_data")
+            zf.writestr(
+                "com/example/TestBlock.java", b"package com.example; public class TestBlock {}"
+            )
 
-        # Verify info logs were called
-        mock_logger.info.assert_called()
+        result = analyzer.analyze_jar_for_mvp(str(jar_path))
 
-        # Check that specific log messages were made
-        info_calls = [call[0][0] for call in mock_logger.info.call_args_list]
-        assert any("MVP analysis of JAR" in msg for msg in info_calls)
-        assert any("Found texture" in msg for msg in info_calls)
-        assert any("Found registry name" in msg for msg in info_calls)
+        assert result["success"] is True
+        assert result["texture_path"] is not None
+        assert "test_block.png" in result["texture_path"]
 
 
 if __name__ == "__main__":

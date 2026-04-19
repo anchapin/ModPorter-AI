@@ -5,6 +5,8 @@ Provides the same public API as the original java_analyzer module
 by re-exporting JavaAnalyzerAgent from java_analyzer.java_analyzer.
 """
 
+from pathlib import Path
+
 from models.smart_assumptions import SmartAssumptionEngine
 from utils.embedding_generator import LocalEmbeddingGenerator
 
@@ -21,4 +23,5 @@ __all__ = [
     "SmartAssumptionEngine",
     "LocalEmbeddingGenerator",
     "logger",
+    "Path",
 ]
