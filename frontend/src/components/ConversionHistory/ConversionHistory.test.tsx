@@ -4,29 +4,18 @@ import ConversionHistory from './ConversionHistory';
 import { ConversionHistoryItem } from './types';
 import React from 'react';
 
-// Mock localStorage
-const localStorageMock = (() => {
-  let store: Record<string, string> = {};
-  return {
-    getItem: vi.fn((key: string) => store[key] || null),
-    setItem: vi.fn((key: string, value: string) => {
-      store[key] = value.toString();
-    }),
-    removeItem: vi.fn((key: string) => {
-      delete store[key];
-    }),
-    clear: vi.fn(() => {
-      store = {};
-    }),
-  };
-})();
+// Mock the API module
+vi.mock('../../services/api', () => ({
+  listConversions: vi.fn(),
+  billingAPI: {
+    getSubscriptionStatus: vi.fn(),
+    getUsageInfo: vi.fn(),
+  },
+  downloadConversionReport: vi.fn(),
+  triggerDownload: vi.fn(),
+}));
 
-Object.defineProperty(window, 'localStorage', {
-  value: localStorageMock,
-});
-
-// Mock fetch
-global.fetch = vi.fn();
+import { listConversions, billingAPI } from '../../services/api';
 
 describe('ConversionHistory', () => {
   const mockHistoryItems: ConversionHistoryItem[] = [
@@ -34,8 +23,8 @@ describe('ConversionHistory', () => {
       job_id: 'job-1',
       original_filename: 'test-mod.jar',
       status: 'completed',
-      created_at: '2026-02-18T00:37:20.000Z', // Fixed date for consistency
-      file_size: 1024 * 1024, // 1MB
+      created_at: '2026-02-18T00:37:20.000Z',
+      file_size: 1024 * 1024,
     },
     {
       job_id: 'job-2',
@@ -47,24 +36,28 @@ describe('ConversionHistory', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorageMock.clear();
-    // Setup initial localStorage data
-    localStorageMock.setItem(
-      'modporter_conversion_history',
-      JSON.stringify(mockHistoryItems)
+    (listConversions as ReturnType<typeof vi.fn>).mockResolvedValue({
+      conversions: mockHistoryItems,
+      total: 2,
+      page: 1,
+      page_size: 20,
+    });
+    (
+      billingAPI.getSubscriptionStatus as ReturnType<typeof vi.fn>
+    ).mockResolvedValue(null);
+    (billingAPI.getUsageInfo as ReturnType<typeof vi.fn>).mockResolvedValue(
+      null
     );
   });
 
-  it('renders history items from localStorage', async () => {
+  it('renders history items from API', async () => {
     render(<ConversionHistory />);
 
-    // Check items loaded
     await waitFor(() => {
       expect(screen.getByText('test-mod.jar')).toBeInTheDocument();
       expect(screen.getByText('another-mod.zip')).toBeInTheDocument();
     });
 
-    // Check status icons/text
     expect(screen.getByText('Completed')).toBeInTheDocument();
     expect(screen.getByText('Processing')).toBeInTheDocument();
   });
@@ -79,7 +72,6 @@ describe('ConversionHistory', () => {
     const checkbox = screen.getByLabelText('Select test-mod.jar');
     fireEvent.click(checkbox);
 
-    // Check if delete selected button appears
     expect(screen.getByText(/Delete Selected/i)).toBeInTheDocument();
   });
 
@@ -90,23 +82,16 @@ describe('ConversionHistory', () => {
       expect(screen.getByText('test-mod.jar')).toBeInTheDocument();
     });
 
-    // 1. Click delete button (trash icon)
     const deleteButtons = screen.getAllByTitle('Remove from history');
     fireEvent.click(deleteButtons[0]);
 
-    // 2. Expect confirmation buttons to appear
     const confirmButton = await screen.findByTitle('Confirm deletion');
     expect(confirmButton).toBeInTheDocument();
 
-    // 3. Click confirm
     fireEvent.click(confirmButton);
 
-    // 4. Verify item is removed
     await waitFor(() => {
       expect(screen.queryByText('test-mod.jar')).not.toBeInTheDocument();
     });
-
-    // Verify localStorage update
-    expect(localStorageMock.setItem).toHaveBeenCalled();
   });
 });
