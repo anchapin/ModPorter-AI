@@ -1,6 +1,12 @@
 # Current Tasks
 
 ## Completed
+- ✅ Issue #1090: Add semantic chunking strategy for large Java mods
+  - ✅ Created ai-engine/agents/java_semantic_chunker.py: ChunkInfo, ChunkManifest, JavaSemanticChunker
+  - ✅ Added generate_chunk_manifest() to JavaAnalyzerAgent (java_analyzer.py)
+  - ✅ 41 tests passing in ai-engine/tests/unit/test_java_semantic_chunker.py
+
+## Completed
 - ✅ Issue #1096: Replace javalang with tree-sitter for Java 17+ support (COMPLETED)
   - ✅ Updated `ai-engine/pyproject.toml`: Replaced `javalang>=0.13.0` with `tree-sitter>=0.21.0` and `tree-sitter-java`
   - ✅ Updated `ai-engine/setup.py`: Same dependency change
