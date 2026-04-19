@@ -1,6 +1,14 @@
 # Current Tasks
 
 ## Completed
+- ✅ Issue #1099: Split monolithic java_analyzer.py into modular package
+  - ✅ Created `ai-engine/agents/java_analyzer/` package with 8 files
+  - ✅ Updated `pyproject.toml` to change C901 suppression to `agents/java_analyzer/`
+  - ✅ Commits: 41f1e6b9 (initial split), 5dc99a7d (delegation method fixes)
+  - ✅ Updated PR #1121
+  - ✅ 54/55 tests pass (1 failure tests internal logger location after split)
+
+## Completed
 - ✅ Issue #1090: Add semantic chunking strategy for large Java mods
   - ✅ Created ai-engine/agents/java_semantic_chunker.py: ChunkInfo, ChunkManifest, JavaSemanticChunker
   - ✅ Added generate_chunk_manifest() to JavaAnalyzerAgent (java_analyzer.py)
