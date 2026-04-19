@@ -20,3 +20,6 @@
 ## 2024-04-14 - Array Filter Loop Hoisting
 **Learning:** React `useMemo` hooks often contain `.filter()` or `.map()` loops over large arrays. If operations inside the callback (like `.toLowerCase()` or creating standard regex patterns) are purely dependent on external closure variables and not the current array item, they will be wastefully recalculated $O(N)$ times, causing redundant allocations and performance overhead.
 **Action:** Always identify loop-invariant variables and operations within array iterations and manually hoist them outside the `.filter()` or `.map()` block, strictly before the loop begins.
+## 2026-04-18 - Pre-compute search strings for static arrays
+**Learning:** Performing multiple `.toLowerCase()` calls on object properties inside a `.filter()` callback for a search function creates $O(N \times M)$ redundant string allocations on every keystroke, causing noticeable input lag.
+**Action:** For static data arrays, pre-compute a concatenated lowercase search string once outside the component, and filter against that single string to eliminate allocations during renders.
