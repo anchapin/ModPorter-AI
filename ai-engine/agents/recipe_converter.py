@@ -7,6 +7,7 @@ to Bedrock-compatible recipe JSON files.
 
 import json
 import logging
+from pathlib import Path
 from typing import Dict, List
 
 from crewai.tools import tool
@@ -14,73 +15,45 @@ from crewai.tools import tool
 logger = logging.getLogger(__name__)
 
 
-# Java to Bedrock item ID mapping (simplified - would need expansion)
-JAVA_TO_BEDROCK_ITEM_MAP = {
-    # Ores and ingots
-    "minecraft:iron_ingot": "minecraft:iron_ingot",
-    "minecraft:gold_ingot": "minecraft:gold_ingot",
-    "minecraft:copper_ingot": "minecraft:copper_ingot",
-    "minecraft:diamond": "minecraft:diamond",
-    "minecraft:emerald": "minecraft:emerald",
-    # Blocks
-    "minecraft:iron_block": "minecraft:iron_block",
-    "minecraft:gold_block": "minecraft:gold_block",
-    "minecraft:diamond_block": "minecraft:diamond_block",
-    "minecraft:emerald_block": "minecraft:emerald_block",
-    "minecraft:copper_block": "minecraft:copper_block",
-    # Materials
-    "minecraft:cobblestone": "minecraft:cobblestone",
-    "minecraft:stone": "minecraft:stone",
-    "minecraft:wooden_planks": "minecraft:planks",
-    "minecraft:oak_planks": "minecraft:planks",
-    "minecraft:spruce_planks": "minecraft:spruce_planks",
-    "minecraft:birch_planks": "minecraft:birch_planks",
-    "minecraft:jungle_planks": "minecraft:jungle_planks",
-    "minecraft:acacia_planks": "minecraft:acacia_planks",
-    "minecraft:dark_oak_planks": "minecraft:dark_oak_planks",
-    # Sticks and rods
-    "minecraft:stick": "minecraft:stick",
-    "minecraft:bamboo": "minecraft:bamboo",
-    # Wool
-    "minecraft:white_wool": "minecraft:wool",
-    "minecraft:orange_wool": "minecraft:orange_wool",
-    "minecraft:magenta_wool": "minecraft:magenta_wool",
-    "minecraft:light_blue_wool": "minecraft:light_blue_wool",
-    "minecraft:yellow_wool": "minecraft:yellow_wool",
-    "minecraft:lime_wool": "minecraft:lime_wool",
-    "minecraft:pink_wool": "minecraft:pink_wool",
-    "minecraft:gray_wool": "minecraft:gray_wool",
-    "minecraft:light_gray_wool": "minecraft:light_gray_wool",
-    "minecraft:cyan_wool": "minecraft:cyan_wool",
-    "minecraft:purple_wool": "minecraft:purple_wool",
-    "minecraft:blue_wool": "minecraft:blue_wool",
-    "minecraft:brown_wool": "minecraft:brown_wool",
-    "minecraft:green_wool": "minecraft:green_wool",
-    "minecraft:red_wool": "minecraft:red_wool",
-    "minecraft:black_wool": "minecraft:black_wool",
-    # Glass
-    "minecraft:glass": "minecraft:glass",
-    "minecraft:glass_pane": "minecraft:glass_pane",
-    # Other common items
-    "minecraft:paper": "minecraft:paper",
-    "minecraft:book": "minecraft:book",
-    "minecraft:slime_ball": "minecraft:slime_ball",
-    "minecraft:ender_pearl": "minecraft:ender_pearl",
-    "minecraft:blaze_rod": "minecraft:blaze_rod",
-    "minecraft:ghast_tear": "minecraft:ghast_tear",
-    "minecraft:nether_wart": "minecraft:nether_wart",
-    "minecraft:spider_eye": "minecraft:spider_eye",
-    "minecraft:fermented_spider_eye": "minecraft:fermented_spider_eye",
-    "minecraft:magma_cream": "minecraft:magma_cream",
-    "minecraft:dragon_breath": "minecraft:dragon_breath",
-    "minecraft:shulker_shell": "minecraft:shulker_shell",
-    "minecraft:prismarine_shard": "minecraft:prismarine_shard",
-    "minecraft:prismarine_crystals": "minecraft:prismarine_crystals",
-    # Dyes
-    "minecraft:ink_sac": "minecraft:ink_sac",
-    "minecraft:red_dye": "minecraft:red_dye",
-    "minecraft:lapis_lazuli": "minecraft:lapis_lazuli",
-}
+def _load_item_mappings() -> Dict[str, str]:
+    """Load Java to Bedrock item ID mappings from the bundled JSON file.
+
+    Returns:
+        Dictionary mapping Java item IDs to Bedrock item IDs
+
+    The mappings are loaded from data/item_mappings.json which is generated
+    by scripts/generate_item_mappings.py using minecraft-data.
+    """
+    try:
+        data_dir = Path(__file__).parent.parent / "data"
+        mappings_file = data_dir / "item_mappings.json"
+
+        if not mappings_file.exists():
+            logger.warning(
+                f"Item mappings file not found at {mappings_file}. Falling back to empty mappings."
+            )
+            return {}
+
+        with open(mappings_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        mappings = data.get("mappings", {})
+        metadata = data.get("metadata", {})
+        logger.info(
+            f"Loaded {len(mappings)} item mappings from {mappings_file} "
+            f"(version: {metadata.get('version', 'unknown')})"
+        )
+        return mappings
+
+    except json.JSONDecodeError as e:
+        logger.error(f"Error parsing item mappings JSON: {e}. Falling back to empty mappings.")
+        return {}
+    except Exception as e:
+        logger.error(f"Error loading item mappings: {e}. Falling back to empty mappings.")
+        return {}
+
+
+JAVA_TO_BEDROCK_ITEM_MAP = _load_item_mappings()
 
 
 CUSTOM_RECIPE_TYPES = {

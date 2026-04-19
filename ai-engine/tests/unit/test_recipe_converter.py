@@ -36,12 +36,10 @@ class TestRecipeConverterAgent:
         assert result == "minecraft:diamond"
 
     def test_item_mapping_planks(self, agent):
-        """Test planks mapping"""
-        # Oak planks should map to planks
+        """Test planks mapping from minecraft-data"""
         result = agent._map_java_item_to_bedrock("minecraft:oak_planks")
-        assert result == "minecraft:planks"
+        assert result == "minecraft:oak_planks"
 
-        # Spruce planks maps to spruce_planks
         result = agent._map_java_item_to_bedrock("minecraft:spruce_planks")
         assert result == "minecraft:spruce_planks"
 
