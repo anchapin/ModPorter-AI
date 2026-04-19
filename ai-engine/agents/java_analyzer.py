@@ -15,6 +15,7 @@ import os
 import zipfile
 from pathlib import Path
 import time
+from agents.java_semantic_chunker import JavaSemanticChunker, ChunkManifest
 
 try:
     import tree_sitter_java as ts_java
@@ -225,6 +226,57 @@ class JavaAnalyzerAgent:
             return 0
         except (OSError, IOError):
             return 0
+
+    def generate_chunk_manifest(
+        self,
+        jar_path: str,
+        mod_id: str = "",
+        mod_name: str = "",
+        loader: str = "",
+        loader_version: str = "",
+    ) -> ChunkManifest:
+        """
+        Produce a ChunkManifest for all Java sources in the given JAR.
+
+        Reads every .java source from the JAR and delegates to JavaSemanticChunker
+        to split files by class/method boundaries, label component types, build a
+        dependency graph, and return chunks in topological order.
+
+        Args:
+            jar_path: Path to the mod JAR file
+            mod_id: Mod identifier (e.g. "examplemod")
+            mod_name: Human-readable mod name
+            loader: Loader name ("forge", "fabric", "quilt", …)
+            loader_version: Loader + game version string (e.g. "1.20.1")
+
+        Returns:
+            ChunkManifest with ordered chunks and context headers
+        """
+        sources: List = []
+        try:
+            with zipfile.ZipFile(jar_path, "r") as jar:
+                for name in jar.namelist():
+                    if name.endswith(".java"):
+                        try:
+                            code = jar.read(name).decode("utf-8", errors="replace")
+                            sources.append((name, code))
+                        except Exception as exc:
+                            logger.warning(f"Skipping {name}: {exc}")
+        except Exception as exc:
+            logger.error(f"Cannot open JAR for chunking: {exc}")
+
+        chunker = JavaSemanticChunker()
+        manifest = chunker.build_manifest(
+            sources,
+            mod_id=mod_id,
+            mod_name=mod_name,
+            loader=loader,
+            loader_version=loader_version,
+        )
+        logger.info(
+            f"ChunkManifest generated: {manifest.total_chunks} chunks from {len(sources)} Java sources"
+        )
+        return manifest
 
     def _analyze_sources_batch(self, jar: zipfile.ZipFile, java_sources: List[str]) -> Dict:
         """
