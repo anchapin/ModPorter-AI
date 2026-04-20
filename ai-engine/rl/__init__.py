@@ -50,6 +50,12 @@ from .prompt_optimizer import (
     ExampleQuality,
     get_rl_feedback_loop,
 )
+from .fine_tuning_export import (
+    FineTuningExporter,
+    FineTuningExample,
+    FineTuningExportConfig,
+    export_fine_tuning_data,
+)
 
 __version__ = "1.0.0"
 __author__ = "ModPorter AI Team"
@@ -99,13 +105,18 @@ __all__ = [
     "AgentPerformanceOptimizer",
     "DataCollectionStore",
     "DataCollectionPipeline",
-    # Prompt-based RL classes (NEW)
+    # Prompt-based RL classes
     "PromptExampleStore",
     "PromptExample",
     "PromptStrategyTracker",
     "FewShotPromptBuilder",
     "RLFeedbackLoop",
     "ExampleQuality",
+    # Fine-tuning export classes (Issue #997)
+    "FineTuningExporter",
+    "FineTuningExample",
+    "FineTuningExportConfig",
+    "export_fine_tuning_data",
     # Data classes
     "QualityMetrics",
     "RewardSignal",
