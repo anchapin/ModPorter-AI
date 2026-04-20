@@ -596,3 +596,207 @@ class TestCustomForgeRecipeTypes:
         assert agent._is_custom_recipe_type("create:mixing") is True
         assert agent._is_custom_recipe_type("minecraft:crafting_shaped") is False
         assert agent._is_custom_recipe_type("unknown:custom_type") is False
+
+
+class TestCreateCustomRecipeTypes:
+    """Test cases for Create custom recipe type converters (milling, crushing, deploying, splashing)"""
+
+    @pytest.fixture
+    def agent(self):
+        return RecipeConverterAgent()
+
+    def test_parse_create_milling(self, agent):
+        """Test parsing Create milling recipe"""
+        java_recipe = {
+            "type": "create:milling",
+            "ingredient": {"item": "create:crushed_copper_ore"},
+            "result": {"item": "create:copper_dust", "count": 2},
+        }
+        result = agent._parse_java_recipe(java_recipe)
+
+        assert result["recipe_category"] == "milling"
+        assert len(result["ingredients"]) == 1
+        assert result["ingredients"][0]["item"] == "create:crushed_copper_ore"
+
+    def test_parse_create_crushing(self, agent):
+        """Test parsing Create crushing recipe"""
+        java_recipe = {
+            "type": "create:crushing",
+            "ingredient": {"item": "minecraft:iron_ore"},
+            "result": {"item": "minecraft:iron_nugget", "count": 2},
+        }
+        result = agent._parse_java_recipe(java_recipe)
+
+        assert result["recipe_category"] == "crushing"
+        assert len(result["ingredients"]) == 1
+
+    def test_parse_create_deploying(self, agent):
+        """Test parsing Create deploying recipe"""
+        java_recipe = {
+            "type": "create:deploying",
+            "ingredients": [
+                {"item": "minecraft:iron_ingot"},
+                {"item": "create:andesite_casing"},
+            ],
+            "tool": {"item": "create:deployer"},
+            "result": {"item": "create:iron_sheet", "count": 2},
+        }
+        result = agent._parse_java_recipe(java_recipe)
+
+        assert result["recipe_category"] == "deploying"
+        assert len(result["ingredients"]) == 2
+        assert result["tool"]["item"] == "create:deployer"
+
+    def test_parse_create_splashing(self, agent):
+        """Test parsing Create splashing recipe"""
+        java_recipe = {
+            "type": "create:splashing",
+            "ingredients": [{"item": "minecraft:gravel"}],
+            "result": {"item": "minecraft:flint", "count": 1},
+        }
+        result = agent._parse_java_recipe(java_recipe)
+
+        assert result["recipe_category"] == "splashing"
+        assert len(result["ingredients"]) == 1
+
+    def test_parse_create_compacting(self, agent):
+        """Test parsing Create compacting recipe"""
+        java_recipe = {
+            "type": "create:compacting",
+            "ingredients": [{"item": "minecraft:iron_ingot", "count": 9}],
+            "result": {"item": "minecraft:iron_block", "count": 1},
+        }
+        result = agent._parse_java_recipe(java_recipe)
+
+        assert result["recipe_category"] == "compacting"
+        assert len(result["ingredients"]) == 1
+
+    def test_convert_milling(self, agent):
+        """Test conversion of Create milling recipe"""
+        recipe = {
+            "type": "create:milling",
+            "ingredient": {"item": "create:crushed_copper_ore"},
+            "result": {"item": "create:copper_dust", "count": 2},
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="copper_dust")
+
+        assert result["format_version"] == "1.20.10"
+        assert "minecraft:recipe_shaped" in result
+        assert (
+            "_converted_from_create"
+            in result["minecraft:recipe_shaped"]["description"]["identifier"]
+        )
+        assert "milling" in result["minecraft:recipe_shaped"]["tags"]
+        assert "备注" in result["minecraft:recipe_shaped"]
+
+    def test_convert_crushing(self, agent):
+        """Test conversion of Create crushing recipe"""
+        recipe = {
+            "type": "create:crushing",
+            "ingredient": {"item": "minecraft:iron_ore"},
+            "result": {"item": "minecraft:iron_nugget", "count": 2},
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="iron_nugget")
+
+        assert result["format_version"] == "1.20.10"
+        assert "minecraft:recipe_shaped" in result
+        assert (
+            "_converted_from_create"
+            in result["minecraft:recipe_shaped"]["description"]["identifier"]
+        )
+        assert "crushing" in result["minecraft:recipe_shaped"]["tags"]
+
+    def test_convert_deploying(self, agent):
+        """Test conversion of Create deploying recipe"""
+        recipe = {
+            "type": "create:deploying",
+            "ingredients": [
+                {"item": "minecraft:iron_ingot"},
+                {"item": "create:andesite_casing"},
+            ],
+            "tool": {"item": "create:deployer"},
+            "result": {"item": "create:iron_sheet", "count": 2},
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="iron_sheet")
+
+        assert result["format_version"] == "1.20.10"
+        assert "minecraft:recipe_shaped" in result
+        assert (
+            "_converted_from_create"
+            in result["minecraft:recipe_shaped"]["description"]["identifier"]
+        )
+        assert "deploying" in result["minecraft:recipe_shaped"]["tags"]
+
+    def test_convert_splashing(self, agent):
+        """Test conversion of Create splashing recipe"""
+        recipe = {
+            "type": "create:splashing",
+            "ingredients": [{"item": "minecraft:gravel"}],
+            "result": {"item": "minecraft:flint", "count": 1},
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="flint")
+
+        assert result["format_version"] == "1.20.10"
+        assert "minecraft:recipe_shapeless" in result
+        assert (
+            "_converted_from_create"
+            in result["minecraft:recipe_shapeless"]["description"]["identifier"]
+        )
+        assert "splashing" in result["minecraft:recipe_shapeless"]["tags"]
+
+    def test_convert_compacting(self, agent):
+        """Test conversion of Create compacting recipe"""
+        recipe = {
+            "type": "create:compacting",
+            "ingredients": [{"item": "minecraft:iron_ingot", "count": 9}],
+            "result": {"item": "minecraft:iron_block", "count": 1},
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="iron_block")
+
+        assert result["format_version"] == "1.20.10"
+        assert "minecraft:recipe_shaped" in result
+        assert (
+            "_converted_from_create"
+            in result["minecraft:recipe_shaped"]["description"]["identifier"]
+        )
+        assert "compacting" in result["minecraft:recipe_shaped"]["tags"]
+
+    def test_convert_milling_no_ingredients(self, agent):
+        """Test milling conversion with no ingredients returns manual review"""
+        recipe = {
+            "type": "create:milling",
+            "result": {"item": "create:copper_dust", "count": 2},
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="copper_dust")
+
+        assert result["manual_review_required"] is True
+
+    def test_convert_crushing_no_ingredients(self, agent):
+        """Test crushing conversion with no ingredients returns manual review"""
+        recipe = {
+            "type": "create:crushing",
+            "result": {"item": "minecraft:iron_nugget", "count": 2},
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="iron_nugget")
+
+        assert result["manual_review_required"] is True
+
+    def test_convert_deploying_no_ingredients(self, agent):
+        """Test deploying conversion with no ingredients returns manual review"""
+        recipe = {
+            "type": "create:deploying",
+            "result": {"item": "create:iron_sheet", "count": 2},
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="iron_sheet")
+
+        assert result["manual_review_required"] is True
+
+    def test_convert_splashing_no_ingredients(self, agent):
+        """Test splashing conversion with no ingredients returns manual review"""
+        recipe = {
+            "type": "create:splashing",
+            "result": {"item": "minecraft:flint", "count": 1},
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="flint")
+
+        assert result["manual_review_required"] is True
