@@ -23,3 +23,7 @@
 ## 2026-04-18 - Pre-compute search strings for static arrays
 **Learning:** Performing multiple `.toLowerCase()` calls on object properties inside a `.filter()` callback for a search function creates $O(N \times M)$ redundant string allocations on every keystroke, causing noticeable input lag.
 **Action:** For static data arrays, pre-compute a concatenated lowercase search string once outside the component, and filter against that single string to eliminate allocations during renders.
+
+## 2024-05-18 - Single-Pass React Filtering
+**Learning:** Chaining array methods like `result = result.filter(...)` inside React components, especially within `useMemo`, degrades performance by creating multiple iterations over large datasets and producing intermediate array allocations.
+**Action:** Combine multiple filtering conditions into a single O(N) pass, place cheaper condition checks first to allow short-circuiting, and hoist operations like `.toLowerCase()` outside the loop whenever possible.
