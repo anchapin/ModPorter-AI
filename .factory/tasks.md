@@ -7,6 +7,21 @@
 - ✅ Issue #1089: Multi-candidate consistency check (DPC-style)
 
 ## Completed
+- ✅ Issue #1140: Split reranking_engine.py (55K, 9 classes) into reranking/ subpackage
+  - ✅ Created `ai-engine/search/reranking/` package with:
+    - `__init__.py` - public API re-exports
+    - `base.py` - ReRankingStrategy, ReRankingFeature, ReRankingResult dataclasses
+    - `feature_reranker.py` - FeatureBasedReRanker (670 lines)
+    - `contextual_reranker.py` - ContextualReRanker (125 lines)
+    - `ensemble_reranker.py` - EnsembleReRanker (115 lines)
+    - `cross_encoder.py` - CrossEncoderReRanker (197 lines)
+    - `neural_reranker.py` - NeuralReRanker (145 lines)
+    - `hybrid_reranker.py` - HybridReRanker (146 lines)
+  - ✅ Created legacy `reranking_engine.py` that re-exports from package (backwards compatible with DeprecationWarning)
+  - ✅ Updated `pyproject.toml` with `search/reranking/` ignores (F401, C901)
+  - ✅ All 73 search tests pass, 17 reranking-specific tests pass
+
+## Completed
 - ✅ Issue #1141: Split logic_translator.py (143K, 3568 lines) into modular package
   - ✅ Created `ai-engine/agents/logic_translator/` package with:
     - `__init__.py` - public API re-exports
