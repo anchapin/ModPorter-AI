@@ -102,6 +102,7 @@ ignore = [
 "learning/correction_store.py" = ["N806"]  # Variable naming convention (CorrectionSubmission class)
 "qa/translator.py" = ["F841"]  # Unused local variable (logic_translator)
 "search/hybrid_search_engine.py" = ["C901"]  # Legacy complexity
+"search/reranking/" = ["F401", "C901"]  # Split reranking_engine.py into subpackage per Issue #1140
 "utils/texture_metadata_extractor.py" = ["F841"]  # Unused local variable (result)
 "converters/*.py" = ["F401", "F841"]  # Legacy unused imports/variables
 # Naming convention per-file ignores (legacy code)
