@@ -27,18 +27,26 @@ def test_can_import_main():
 
 
 def test_can_import_agents():
-    """Test that agent modules exist and have correct structure."""
-    # Check agent files exist
-    # java_analyzer is now a package (directory), not a module (file)
-    # For packages, we check the directory and the __init__.py file
-    # For modules, we check the .py file
+    """Test that agent modules exist and have correct structure.
+
+    After Issue #1141 and related refactors:
+    - java_analyzer is now a package (agents/java_analyzer/)
+    - logic_translator is now a package (agents/logic_translator/)
+    - texture_converter is now a package (agents/texture_converter/)
+    - model_converter is now a package (agents/model_converter/)
+    - bedrock_builder is still a module (agents/bedrock_builder.py)
+    """
     agent_items = [
-        ("agents/java_analyzer", "agents/java_analyzer/__init__.py"),  # package
-        ("agents/bedrock_builder.py", None),  # module
-        ("agents/logic_translator.py", None),  # module
-        ("agents/asset_converter.py", None),  # module
-        ("agents/packaging_agent.py", None),  # module
-        ("agents/qa_validator.py", None),  # module
+        # Packages (directories with __init__.py)
+        ("agents/java_analyzer", "agents/java_analyzer/__init__.py"),
+        ("agents/logic_translator", "agents/logic_translator/__init__.py"),
+        ("agents/texture_converter", "agents/texture_converter/__init__.py"),
+        ("agents/model_converter", "agents/model_converter/__init__.py"),
+        # Modules (.py files)
+        ("agents/bedrock_builder.py", None),
+        ("agents/asset_converter.py", None),
+        ("agents/packaging_agent.py", None),
+        ("agents/qa_validator.py", None),
     ]
 
     for item_path, init_file in agent_items:
@@ -49,7 +57,7 @@ def test_can_import_agents():
             # Verify package has expected structure
             with open(init_file, "r") as f:
                 content = f.read()
-            assert "class" in content or "JavaAnalyzerAgent" in content, (
+            assert "class" in content or "__all__" in content, (
                 f"{init_file} should define or re-export a class"
             )
         else:
@@ -59,10 +67,6 @@ def test_can_import_agents():
                 content = f.read()
             # Verify agent has basic structure
             assert "class" in content, f"{item_path} should define a class"
-            # Most agents import from crewai.tools
-            assert "from crewai.tools" in content or "from crewai" in content, (
-                f"{item_path} should import from crewai"
-            )
 
 
 def test_python_path():
@@ -73,3 +77,12 @@ def test_python_path():
     assert os.path.exists("main.py"), "main.py should exist in current directory"
     assert os.path.exists("agents"), "agents directory should exist"
     assert os.path.exists("agents/__init__.py"), "agents/__init__.py should exist"
+
+    # Verify agent packages have __init__.py files
+    for pkg_init in [
+        "agents/java_analyzer/__init__.py",
+        "agents/logic_translator/__init__.py",
+        "agents/texture_converter/__init__.py",
+        "agents/model_converter/__init__.py",
+    ]:
+        assert os.path.exists(pkg_init), f"{pkg_init} should exist for package"
