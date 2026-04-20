@@ -257,7 +257,9 @@ try:
     from services.structured_logging import correlation_id_var, set_correlation_id
 except ImportError:
     correlation_id_var = None
-    set_correlation_id = lambda: str(uuid.uuid4())[:8]
+
+    def set_correlation_id() -> str:
+        return str(uuid.uuid4())[:8]
 
 
 class ErrorResponse(BaseModel):
