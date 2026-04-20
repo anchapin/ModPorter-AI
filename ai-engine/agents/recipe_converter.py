@@ -56,6 +56,60 @@ def _load_item_mappings() -> Dict[str, str]:
 JAVA_TO_BEDROCK_ITEM_MAP = _load_item_mappings()
 
 
+FORGE_TAG_MAPPINGS = {
+    "#forge:ingots/iron": "minecraft:iron_ingot",
+    "#forge:ingots/gold": "minecraft:gold_ingot",
+    "#forge:ingots/copper": "minecraft:copper_ingot",
+    "#forge:ingots/netherite": "minecraft:netherite_ingot",
+    "#forge:nuggets/iron": "minecraft:iron_nugget",
+    "#forge:nuggets/gold": "minecraft:gold_nugget",
+    "#forge:nuggets/copper": "minecraft:copper_nugget",
+    "#forge:nuggets/tin": "minecraft:tin_nugget",
+    "#forge:ores/iron": "minecraft:iron_ore",
+    "#forge:ores/gold": "minecraft:gold_ore",
+    "#forge:ores/copper": "minecraft:copper_ore",
+    "#forge:ores/coal": "minecraft:coal_ore",
+    "#forge:ores/diamond": "minecraft:diamond_ore",
+    "#forge:ores/emerald": "minecraft:emerald_ore",
+    "#forge:ores/lapis": "minecraft:lapis_ore",
+    "#forge:ores/redstone": "minecraft:redstone_ore",
+    "#forge:storage_blocks/iron": "minecraft:iron_block",
+    "#forge:storage_blocks/gold": "minecraft:gold_block",
+    "#forge:storage_blocks/copper": "minecraft:copper_block",
+    "#forge:storage_blocks/diamond": "minecraft:diamond_block",
+    "#forge:storage_blocks/netherite": "minecraft:netherite_block",
+    "#forge:dusts/iron": "minecraft:iron_nugget",
+    "#forge:dusts/gold": "minecraft:gold_nugget",
+    "#forge:dusts/copper": "minecraft:copper_nugget",
+    "#forge:gems/diamond": "minecraft:diamond",
+    "#forge:gems/emerald": "minecraft:emerald",
+    "#forge:gems/lapis": "minecraft:lapis_lazuli",
+    "#forge:gems/quartz": "minecraft:quartz",
+    "#forge:crops/wheat": "minecraft:wheat",
+    "#forge:crops/carrot": "minecraft:carrot",
+    "#forge:crops/potato": "minecraft:potato",
+    "#forge:crops/beetroot": "minecraft:beetroot",
+    "#forge:leather": "minecraft:leather",
+    "#forge:paper": "minecraft:paper",
+    "#forge:seeds/wheat": "minecraft:wheat_seeds",
+    "#forge:seeds/pumpkin": "minecraft:pumpkin_seeds",
+    "#forge:seeds/melon": "minecraft:melon_seeds",
+    "#forge:seeds/rice": "minecraft:rice",
+    "#forge:wood/oak": "minecraft:oak_log",
+    "#forge:wood/spruce": "minecraft:spruce_log",
+    "#forge:wood/birch": "minecraft:birch_log",
+    "#forge:wood/jungle": "minecraft:jungle_log",
+    "#forge:wood/acacia": "minecraft:acacia_log",
+    "#forge:wood/dark_oak": "minecraft:dark_oak_log",
+    "#forge:planks/oak": "minecraft:oak_planks",
+    "#forge:planks/spruce": "minecraft:spruce_planks",
+    "#forge:planks/birch": "minecraft:birch_planks",
+    "#forge:planks/jungle": "minecraft:jungle_planks",
+    "#forge:planks/acacia": "minecraft:acacia_planks",
+    "#forge:planks/dark_oak": "minecraft:dark_oak_planks",
+}
+
+
 CUSTOM_RECIPE_TYPES = {
     # Farmer's Delight
     "farmersdelight:cooking": {
@@ -175,6 +229,9 @@ class RecipeConverterAgent:
         """Map a Java item ID to its Bedrock equivalent."""
         if java_item_id in self.custom_mappings:
             return self.custom_mappings[java_item_id]
+        # Check forge tag mappings first
+        if java_item_id in FORGE_TAG_MAPPINGS:
+            return FORGE_TAG_MAPPINGS[java_item_id]
         if java_item_id in self.item_mapping:
             return self.item_mapping[java_item_id]
         # Try case-insensitive match
@@ -224,6 +281,22 @@ class RecipeConverterAgent:
             normalized["result_item"] = first_result.get("item", first_result.get("id", ""))
             normalized["result_count"] = first_result.get("count", 1)
             normalized["result_data"] = first_result.get("data", 0)
+            # Store secondary outputs for multi-output recipes
+            if len(result) > 1:
+                secondary_outputs = []
+                for r in result[1:]:
+                    if isinstance(r, dict):
+                        secondary_outputs.append(
+                            {
+                                "item": r.get("item", r.get("id", "")),
+                                "count": r.get("count", 1),
+                                "data": r.get("data", 0),
+                            }
+                        )
+                    elif isinstance(r, str):
+                        secondary_outputs.append({"item": r, "count": 1, "data": 0})
+                if secondary_outputs:
+                    normalized["secondary_outputs"] = secondary_outputs
 
         # Handle different recipe types
         if "crafting_shaped" in recipe_type:
@@ -303,12 +376,6 @@ class RecipeConverterAgent:
             normalized["manual_review_reason"] = (
                 "Sequenced assembly requires multi-step crafting not supported in Bedrock"
             )
-        elif "create:mixing" in recipe_type:
-            normalized["recipe_category"] = "mixing"
-            normalized["requires_manual_review"] = True
-            normalized["manual_review_reason"] = (
-                "Mixing recipes require Create's mixer block not available in Bedrock"
-            )
         elif "create:deploying" in recipe_type:
             normalized["recipe_category"] = "deploying"
             normalized["ingredients"] = recipe_data.get("ingredients", [])
@@ -318,17 +385,49 @@ class RecipeConverterAgent:
             ingredient = recipe_data.get("ingredient")
             if ingredient:
                 normalized["ingredients"] = [ingredient]
+            normalized["heat_requirement"] = recipe_data.get("heatRequirement")
+            normalized["min_rpm"] = recipe_data.get("minRPM")
+            normalized["max_rpm"] = recipe_data.get("maxRPM")
         elif "create:crushing" in recipe_type:
             normalized["recipe_category"] = "crushing"
             ingredient = recipe_data.get("ingredient")
             if ingredient:
                 normalized["ingredients"] = [ingredient]
+            normalized["heat_requirement"] = recipe_data.get("heatRequirement")
+            normalized["min_rpm"] = recipe_data.get("minRPM")
+            normalized["max_rpm"] = recipe_data.get("maxRPM")
         elif "create:splashing" in recipe_type:
             normalized["recipe_category"] = "splashing"
             normalized["ingredients"] = recipe_data.get("ingredients", [])
+            normalized["min_rpm"] = recipe_data.get("minRPM")
+            normalized["max_rpm"] = recipe_data.get("maxRPM")
         elif "create:compacting" in recipe_type:
             normalized["recipe_category"] = "compacting"
             normalized["ingredients"] = recipe_data.get("ingredients", [])
+            normalized["heat_requirement"] = recipe_data.get("heatRequirement")
+            normalized["min_rpm"] = recipe_data.get("minRPM")
+            normalized["max_rpm"] = recipe_data.get("maxRPM")
+        elif "create:mixing" in recipe_type:
+            normalized["recipe_category"] = "mixing"
+            normalized["ingredients"] = recipe_data.get("ingredients", [])
+            normalized["heat_requirement"] = recipe_data.get("heatRequirement")
+            normalized["min_rpm"] = recipe_data.get("minRPM")
+            normalized["max_rpm"] = recipe_data.get("maxRPM")
+            fluid_ingredients = []
+            for ing in normalized.get("ingredients", []):
+                if (
+                    isinstance(ing, dict)
+                    and ing.get("tag")
+                    and ing["tag"].startswith("forge:fluids")
+                ):
+                    fluid_ingredients.append(ing)
+                elif isinstance(ing, str) and ing.startswith("forge:fluids"):
+                    fluid_ingredients.append(ing)
+            if fluid_ingredients:
+                normalized["requires_manual_review"] = True
+                normalized["manual_review_reason"] = (
+                    "Mixing recipes with fluid ingredients require Create's mixer block not available in Bedrock"
+                )
         elif "create:filling" in recipe_type or "create:emptying" in recipe_type:
             normalized["recipe_category"] = "fluid_interaction"
             normalized["requires_manual_review"] = True
@@ -854,6 +953,22 @@ class RecipeConverterAgent:
             "count": normalized_recipe.get("result_count", 1),
         }
 
+        secondary_note = ""
+        secondary_outputs = normalized_recipe.get("secondary_outputs", [])
+        if secondary_outputs:
+            secondary_items = [o.get("item", "") for o in secondary_outputs]
+            secondary_note = f" | Secondary outputs: {secondary_items}"
+
+        heat_note = ""
+        if normalized_recipe.get("heat_requirement"):
+            heat_note = f" | Heat: {normalized_recipe.get('heat_requirement')}"
+
+        rpm_note = ""
+        if normalized_recipe.get("min_rpm") or normalized_recipe.get("max_rpm"):
+            min_rpm = normalized_recipe.get("min_rpm", "?")
+            max_rpm = normalized_recipe.get("max_rpm", "?")
+            rpm_note = f" | RPM: {min_rpm}-{max_rpm}"
+
         bedrock_recipe = {
             "format_version": "1.20.10",
             "minecraft:recipe_shaped": {
@@ -862,7 +977,7 @@ class RecipeConverterAgent:
                 "pattern": ["A"],
                 "key": {"A": bedrock_ingredient},
                 "result": bedrock_result,
-                "备注": "Create milling recipe (Millstone) - approximated",
+                "备注": f"Create milling recipe (Millstone) - approximated{secondary_note}{heat_note}{rpm_note}",
             },
         }
 
@@ -901,6 +1016,22 @@ class RecipeConverterAgent:
             "count": normalized_recipe.get("result_count", 1),
         }
 
+        secondary_note = ""
+        secondary_outputs = normalized_recipe.get("secondary_outputs", [])
+        if secondary_outputs:
+            secondary_items = [o.get("item", "") for o in secondary_outputs]
+            secondary_note = f" | Secondary outputs: {secondary_items}"
+
+        heat_note = ""
+        if normalized_recipe.get("heat_requirement"):
+            heat_note = f" | Heat: {normalized_recipe.get('heat_requirement')}"
+
+        rpm_note = ""
+        if normalized_recipe.get("min_rpm") or normalized_recipe.get("max_rpm"):
+            min_rpm = normalized_recipe.get("min_rpm", "?")
+            max_rpm = normalized_recipe.get("max_rpm", "?")
+            rpm_note = f" | RPM: {min_rpm}-{max_rpm}"
+
         bedrock_recipe = {
             "format_version": "1.20.10",
             "minecraft:recipe_shaped": {
@@ -909,7 +1040,7 @@ class RecipeConverterAgent:
                 "pattern": ["A"],
                 "key": {"A": bedrock_ingredient},
                 "result": bedrock_result,
-                "备注": "Create crushing recipe (Crushing Wheels) - approximated",
+                "备注": f"Create crushing recipe (Crushing Wheels) - approximated{secondary_note}{heat_note}{rpm_note}",
             },
         }
 
@@ -1026,6 +1157,22 @@ class RecipeConverterAgent:
             "count": normalized_recipe.get("result_count", 1),
         }
 
+        secondary_note = ""
+        secondary_outputs = normalized_recipe.get("secondary_outputs", [])
+        if secondary_outputs:
+            secondary_items = [o.get("item", "") for o in secondary_outputs]
+            secondary_note = f" | Secondary outputs: {secondary_items}"
+
+        heat_note = ""
+        if normalized_recipe.get("heat_requirement"):
+            heat_note = f" | Heat: {normalized_recipe.get('heat_requirement')}"
+
+        rpm_note = ""
+        if normalized_recipe.get("min_rpm") or normalized_recipe.get("max_rpm"):
+            min_rpm = normalized_recipe.get("min_rpm", "?")
+            max_rpm = normalized_recipe.get("max_rpm", "?")
+            rpm_note = f" | RPM: {min_rpm}-{max_rpm}"
+
         bedrock_recipe = {
             "format_version": "1.20.10",
             "minecraft:recipe_shapeless": {
@@ -1033,7 +1180,7 @@ class RecipeConverterAgent:
                 "tags": ["crafting_table", "splashing"],
                 "ingredients": bedrock_ingredients,
                 "result": bedrock_result,
-                "备注": "Create splashing recipe (Water) - approximated",
+                "备注": f"Create splashing recipe (Water) - approximated{secondary_note}{heat_note}{rpm_note}",
             },
         }
 
@@ -1084,6 +1231,22 @@ class RecipeConverterAgent:
         for i, char in enumerate(["A", "B", "C"][: len(bedrock_ingredients)]):
             key[char] = bedrock_ingredients[i]
 
+        secondary_note = ""
+        secondary_outputs = normalized_recipe.get("secondary_outputs", [])
+        if secondary_outputs:
+            secondary_items = [o.get("item", "") for o in secondary_outputs]
+            secondary_note = f" | Secondary outputs: {secondary_items}"
+
+        heat_note = ""
+        if normalized_recipe.get("heat_requirement"):
+            heat_note = f" | Heat: {normalized_recipe.get('heat_requirement')}"
+
+        rpm_note = ""
+        if normalized_recipe.get("min_rpm") or normalized_recipe.get("max_rpm"):
+            min_rpm = normalized_recipe.get("min_rpm", "?")
+            max_rpm = normalized_recipe.get("max_rpm", "?")
+            rpm_note = f" | RPM: {min_rpm}-{max_rpm}"
+
         bedrock_recipe = {
             "format_version": "1.20.10",
             "minecraft:recipe_shaped": {
@@ -1092,7 +1255,7 @@ class RecipeConverterAgent:
                 "pattern": pattern,
                 "key": key,
                 "result": bedrock_result,
-                "备注": "Create compacting recipe - approximated",
+                "备注": f"Create compacting recipe - approximated{secondary_note}{heat_note}{rpm_note}",
             },
         }
 
