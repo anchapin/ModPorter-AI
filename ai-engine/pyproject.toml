@@ -258,6 +258,9 @@ dependencies = [
     # Minecraft data for item mappings
     "minecraft-data>=3.20.0",
 
+    # BM25 keyword search
+    "rank-bm25>=1.0.0",
+
     # File processing
     "Pillow>=11.3.0",  # For texture conversion
     "pydub",

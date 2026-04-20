@@ -17,14 +17,7 @@ import math
 # Initialize logger first
 logger = logging.getLogger(__name__)
 
-# BM25 import with fallback
-try:
-    from rank_bm25 import BM25Okapi
-
-    BM25_AVAILABLE = True
-except ImportError:
-    BM25_AVAILABLE = False
-    logger.warning("rank_bm25 not installed. BM25 search will not be available.")
+from rank_bm25 import BM25Okapi
 
 from schemas.multimodal_schema import SearchQuery, SearchResult, MultiModalDocument
 
@@ -362,10 +355,6 @@ class KeywordSearchEngine:
         Returns:
             True if index was built successfully, False otherwise
         """
-        if not BM25_AVAILABLE:
-            logger.warning("BM25 not available - rank_bm25 not installed")
-            return False
-
         try:
             # Prepare documents for BM25 (tokenized)
             self._bm25_documents = []
@@ -410,7 +399,7 @@ class KeywordSearchEngine:
         Returns:
             List of (document_id, bm25_score) tuples
         """
-        if not BM25_AVAILABLE or self._bm25_index is None:
+        if self._bm25_index is None:
             # Fall back to simple keyword search
             query_keywords = self.extract_keywords(query)
             results = []
@@ -496,15 +485,11 @@ class HybridSearchEngine:
             True if index was built successfully
         """
         # Build BM25 index for keyword search
-        if BM25_AVAILABLE:
-            self._bm25_built = self.keyword_engine.build_bm25_index(documents)
-            if self._bm25_built:
-                logger.info("BM25 index built successfully")
-            else:
-                logger.warning("Failed to build BM25 index, will use basic keyword search")
+        self._bm25_built = self.keyword_engine.build_bm25_index(documents)
+        if self._bm25_built:
+            logger.info("BM25 index built successfully")
         else:
-            logger.info("BM25 not available, using basic keyword search")
-            self._bm25_built = False
+            logger.warning("Failed to build BM25 index, will use basic keyword search")
 
         return True
 
@@ -541,7 +526,7 @@ class HybridSearchEngine:
 
         # Auto-build BM25 index if needed and keyword search is requested
         if search_mode in [SearchMode.KEYWORD_ONLY, SearchMode.HYBRID, SearchMode.ADAPTIVE]:
-            if not self._bm25_built and BM25_AVAILABLE:
+            if not self._bm25_built:
                 logger.info("Building BM25 index on first search...")
                 self.build_index(documents)
 
@@ -568,7 +553,7 @@ class HybridSearchEngine:
             if search_mode in [SearchMode.KEYWORD_ONLY, SearchMode.HYBRID, SearchMode.ADAPTIVE]:
                 if document.content_text:
                     # Try BM25 first if index is built
-                    if self.keyword_engine._bm25_index is not None and BM25_AVAILABLE:
+                    if self.keyword_engine._bm25_index is not None:
                         bm25_results = self.keyword_engine.search_bm25(
                             query.query_text, documents, top_k=len(documents)
                         )

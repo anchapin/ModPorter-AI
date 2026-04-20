@@ -21,7 +21,6 @@ from search.hybrid_search_engine import (
     HybridSearchEngine,
     SearchMode,
     RankingStrategy,
-    BM25_AVAILABLE,
 )
 from schemas.multimodal_schema import (
     SearchQuery,
@@ -139,7 +138,6 @@ class TestBM25Integration:
             )
         return docs
 
-    @pytest.mark.skipif(not BM25_AVAILABLE, reason="rank_bm25 not installed")
     def test_build_bm25_index(self, keyword_engine, sample_documents):
         """Test building BM25 index from documents."""
         result = keyword_engine.build_bm25_index(sample_documents)
@@ -148,16 +146,13 @@ class TestBM25Integration:
         assert keyword_engine._bm25_index is not None
         assert len(keyword_engine._bm25_documents) > 0
 
-    @pytest.mark.skipif(not BM25_AVAILABLE, reason="rank_bm25 not installed")
     def test_search_bm25(self, keyword_engine, sample_documents):
         """Test BM25 search returns relevant results."""
         # Build index first
         keyword_engine.build_bm25_index(sample_documents)
 
         # Search for "block creation"
-        results = keyword_engine.search_bm25(
-            "block creation", sample_documents, top_k=3
-        )
+        results = keyword_engine.search_bm25("block creation", sample_documents, top_k=3)
 
         assert isinstance(results, list)
         assert len(results) > 0
@@ -166,13 +161,10 @@ class TestBM25Integration:
         if len(results) > 1:
             assert results[0][1] >= results[1][1]
 
-    @pytest.mark.skipif(not BM25_AVAILABLE, reason="rank_bm25 not installed")
     def test_bm25_fallback(self, keyword_engine, sample_documents):
         """Test BM25 fallback when index not built."""
         # Don't build index - should fall back to basic keyword search
-        results = keyword_engine.search_bm25(
-            "block creation", sample_documents, top_k=3
-        )
+        results = keyword_engine.search_bm25("block creation", sample_documents, top_k=3)
 
         # Should still return results via fallback
         assert isinstance(results, list)
@@ -217,6 +209,7 @@ class TestHybridSearchEngine:
         embeddings = {}
         for i in range(5):
             import random
+
             embeddings[f"doc_{i}"] = [random.random() for _ in range(384)]
         return embeddings
 
@@ -273,7 +266,7 @@ class TestHybridSearchEngine:
 
         # All results should match the content type filter
         for result in results:
-            if hasattr(result, 'document'):
+            if hasattr(result, "document"):
                 assert result.document.content_type == ContentType.DOCUMENTATION
 
     @pytest.mark.asyncio
