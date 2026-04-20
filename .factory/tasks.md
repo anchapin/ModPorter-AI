@@ -4,6 +4,28 @@
 - 🔄 (none)
 
 ## Completed
+- ✅ Issue #997: Fine-tune Open-Weights Code LLM for Java→Bedrock Conversion
+  - ✅ Created `ai-engine/rl/fine_tuning_export.py`:
+    - `FineTuningExporter`: Exports conversion examples to fine-tuning formats
+    - `FineTuningExample`: Chat format example (messages with role/content)
+    - `FineTuningExportConfig`: Configurable export filters
+    - `export_fine_tuning_data()`: Convenience function for batch export
+    - Supports JSONL and HuggingFace dataset formats
+  - ✅ Created `ai-engine/notebooks/fine_tune_qwen_coder_java_bedrock.ipynb`:
+    - Unsloth Colab notebook for QLoRA fine-tuning Qwen3-Coder-7B
+    - Free tier T4 GPU compatible
+    - Chat template formatting for Qwen models
+    - Export to Ollama instructions included
+  - ✅ Created `ai-engine/docs/FINE_TUNING.md`:
+    - Full documentation on fine-tuning infrastructure
+    - Quick start guide with prerequisites
+    - Training data requirements (500+ examples needed)
+    - Cost comparison analysis
+    - A/B testing framework design
+    - References to Unsloth documentation
+  - ✅ Updated `ai-engine/rl/__init__.py` with fine-tuning exports
+  - ✅ All 21 RL tests pass
+
 - ✅ Issue #1101: Remove dead BM25 fallback in hybrid_search_engine.py
   - Added `rank-bm25>=1.0.0` to `ai-engine/pyproject.toml` dependencies
   - Replaced `try/except ImportError` block with hard import `from rank_bm25 import BM25Okapi`
