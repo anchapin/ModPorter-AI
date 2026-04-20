@@ -9,8 +9,8 @@ class TestLogicTranslatorCoverage:
     @pytest.fixture
     def agent(self):
         with (
-            patch("agents.logic_translator.SmartAssumptionEngine"),
-            patch("agents.logic_translator.JavaAnalyzerAgent"),
+            patch("models.smart_assumptions.SmartAssumptionEngine"),
+            patch("agents.java_analyzer.JavaAnalyzerAgent"),
         ):
             return LogicTranslatorAgent()
 
