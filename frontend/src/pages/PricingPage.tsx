@@ -211,7 +211,7 @@ export const PricingPage: React.FC = () => {
           tier: tierKey,
           trial: true,
         });
-        window.location.href = response.checkout_url;
+        window.location.assign(response.checkout_url);
       } catch (error) {
         console.error('Failed to create checkout session:', error);
         window.location.assign(

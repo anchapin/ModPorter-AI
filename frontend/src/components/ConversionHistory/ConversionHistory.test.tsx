@@ -17,17 +17,33 @@ vi.mock('../../services/api', () => ({
 
 import { listConversions, billingAPI } from '../../services/api';
 
+const mockUsageInfo = {
+  tier: 'free',
+  period_year: 2026,
+  period_month: 4,
+  web_conversions: 5,
+  api_conversions: 0,
+  monthly_limit: 10,
+  api_limit: 100,
+  remaining: 5,
+  api_remaining: 100,
+  is_at_limit: false,
+  is_api_at_limit: false,
+  should_upgrade: false,
+  upgrade_message: null,
+};
+
 describe('ConversionHistory', () => {
-  const mockHistoryItems: ConversionHistoryItem[] = [
+  const mockApiHistoryItems = [
     {
-      job_id: 'job-1',
+      conversion_id: 'job-1',
       original_filename: 'test-mod.jar',
       status: 'completed',
       created_at: '2026-02-18T00:37:20.000Z',
-      file_size: 1024 * 1024,
+      updated_at: '2026-02-18T00:37:25.000Z',
     },
     {
-      job_id: 'job-2',
+      conversion_id: 'job-2',
       original_filename: 'another-mod.zip',
       status: 'processing',
       created_at: '2026-02-18T00:37:10.000Z',
@@ -37,7 +53,7 @@ describe('ConversionHistory', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (listConversions as ReturnType<typeof vi.fn>).mockResolvedValue({
-      conversions: mockHistoryItems,
+      conversions: mockApiHistoryItems,
       total: 2,
       page: 1,
       page_size: 20,
@@ -46,7 +62,7 @@ describe('ConversionHistory', () => {
       billingAPI.getSubscriptionStatus as ReturnType<typeof vi.fn>
     ).mockResolvedValue(null);
     (billingAPI.getUsageInfo as ReturnType<typeof vi.fn>).mockResolvedValue(
-      null
+      mockUsageInfo
     );
   });
 
@@ -58,8 +74,17 @@ describe('ConversionHistory', () => {
       expect(screen.getByText('another-mod.zip')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Completed')).toBeInTheDocument();
-    expect(screen.getByText('Processing')).toBeInTheDocument();
+    const completedStatuses = screen.getAllByText('Completed');
+    const statusSpans = completedStatuses.filter(
+      (el) => el.className === 'status'
+    );
+    expect(statusSpans.length).toBeGreaterThanOrEqual(1);
+
+    const processingStatuses = screen.getAllByText('Processing');
+    const processingStatusSpans = processingStatuses.filter(
+      (el) => el.className === 'status'
+    );
+    expect(processingStatusSpans.length).toBeGreaterThanOrEqual(1);
   });
 
   it('handles item selection', async () => {

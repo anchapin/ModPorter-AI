@@ -2,6 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import './QAReport.css'; // Import the CSS file
 
+const getDisplayDate = (dateStr: string | undefined): string => {
+  const date = dateStr ? new Date(dateStr) : new Date();
+  return date.toLocaleString();
+};
+
 // Secure random number generator for mock data (replaces Math.random())
 const generateSecureRandom = (): number => {
   const array = new Uint32Array(1);
@@ -175,8 +180,7 @@ const QAReport: React.FC<QAReportProps> = ({
         <strong>Conversion ID:</strong> {report.conversion_id}
       </p>
       <p>
-        <strong>Generated At:</strong>{' '}
-        {new Date(report.generated_at || Date.now()).toLocaleString()}
+        <strong>Generated At:</strong> {getDisplayDate(report.generated_at)}
       </p>
 
       <div className="qa-section overall-summary">
