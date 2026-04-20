@@ -450,7 +450,7 @@ class TestCustomForgeRecipeTypes:
         assert "Sequenced assembly" in result["manual_review_reason"]
 
     def test_parse_create_mixing(self, agent):
-        """Test parsing Create mixing recipe (should require manual review)"""
+        """Test parsing Create mixing recipe with fluid ingredients requires manual review"""
         java_recipe = {
             "type": "create:mixing",
             "ingredients": [],
@@ -459,7 +459,7 @@ class TestCustomForgeRecipeTypes:
         result = agent._parse_java_recipe(java_recipe)
 
         assert result["recipe_category"] == "mixing"
-        assert result["requires_manual_review"] is True
+        assert result["requires_manual_review"] is False
 
     def test_convert_cooking_pot(self, agent):
         """Test conversion of cooking pot recipe"""
@@ -800,3 +800,138 @@ class TestCreateCustomRecipeTypes:
         result = agent.convert_recipe(recipe, namespace="create", recipe_name="flint")
 
         assert result["manual_review_required"] is True
+
+
+class TestCreateRecipeEnhancements:
+    """Test cases for Create recipe enhancement features (issue #1136)"""
+
+    @pytest.fixture
+    def agent(self):
+        return RecipeConverterAgent()
+
+    def test_forge_tag_ingredient_resolution(self, agent):
+        """Test that forge:tag ingredients are resolved to bedrock equivalents"""
+        result = agent._map_java_item_to_bedrock("#forge:ingots/iron")
+        assert result == "minecraft:iron_ingot"
+
+        result = agent._map_java_item_to_bedrock("#forge:ores/copper")
+        assert result == "minecraft:copper_ore"
+
+        result = agent._map_java_item_to_bedrock("#forge:nuggets/gold")
+        assert result == "minecraft:gold_nugget"
+
+        result = agent._map_java_item_to_bedrock("#forge:gems/diamond")
+        assert result == "minecraft:diamond"
+
+    def test_multi_output_crushing_with_secondary_outputs(self, agent):
+        """Test crushing recipe with multiple outputs (secondary outputs stored)"""
+        recipe = {
+            "type": "create:crushing",
+            "ingredient": {"item": "minecraft:iron_ore"},
+            "result": [
+                {"item": "minecraft:iron_nugget", "count": 2},
+                {"item": "minecraft:iron_nugget", "count": 1, "chance": 0.3},
+                {"item": "minecraft:flint", "count": 1, "chance": 0.05},
+            ],
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="iron_nugget")
+
+        assert result["format_version"] == "1.20.10"
+        assert "minecraft:recipe_shaped" in result
+        # Primary output should be the first result
+        assert result["minecraft:recipe_shaped"]["result"]["item"] == "minecraft:iron_nugget"
+        assert result["minecraft:recipe_shaped"]["result"]["count"] == 2
+        # Note should mention secondary outputs
+        assert "Secondary outputs" in result["minecraft:recipe_shaped"].get("备注", "")
+
+    def test_multi_output_milling_with_secondary_outputs(self, agent):
+        """Test milling recipe with multiple outputs"""
+        recipe = {
+            "type": "create:milling",
+            "ingredient": {"item": "create:crushed_copper_ore"},
+            "result": [
+                {"item": "create:copper_dust", "count": 2},
+                {"item": "minecraft:copper_nugget", "count": 1, "chance": 0.25},
+            ],
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="copper_dust")
+
+        assert result["format_version"] == "1.20.10"
+        assert "minecraft:recipe_shaped" in result
+        assert "Secondary outputs" in result["minecraft:recipe_shaped"].get("备注", "")
+
+    def test_compacting_with_heat_requirement(self, agent):
+        """Test compacting recipe with heatRequirement field"""
+        recipe = {
+            "type": "create:compacting",
+            "ingredients": [{"item": "minecraft:iron_ingot", "count": 9}],
+            "result": {"item": "minecraft:iron_block", "count": 1},
+            "heatRequirement": "heated",
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="iron_block")
+
+        assert result["format_version"] == "1.20.10"
+        assert "minecraft:recipe_shaped" in result
+        assert "Heat: heated" in result["minecraft:recipe_shaped"].get("备注", "")
+
+    def test_crushing_with_rpm_fields(self, agent):
+        """Test crushing recipe with minRPM/maxRPM fields"""
+        recipe = {
+            "type": "create:crushing",
+            "ingredient": {"item": "minecraft:iron_ore"},
+            "result": {"item": "minecraft:iron_nugget", "count": 2},
+            "minRPM": 16,
+            "maxRPM": 32,
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="iron_nugget")
+
+        assert result["format_version"] == "1.20.10"
+        assert "minecraft:recipe_shaped" in result
+        assert "RPM: 16-32" in result["minecraft:recipe_shaped"].get("备注", "")
+
+    def test_mixing_with_fluid_ingredients_requires_review(self, agent):
+        """Test mixing recipe with fluid ingredients requires manual review"""
+        recipe = {
+            "type": "create:mixing",
+            "ingredients": [
+                {"tag": "forge:fluids/water", "amount": 500},
+                {"item": "minecraft:gravel", "count": 1},
+            ],
+            "result": {"item": "minecraft:sand", "count": 1},
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="sand")
+
+        assert result["manual_review_required"] is True
+        assert "fluid" in result["reason"].lower()
+
+    def test_parsing_secondary_outputs_from_result_list(self, agent):
+        """Test that _parse_java_recipe correctly extracts secondary outputs"""
+        recipe = {
+            "type": "create:milling",
+            "ingredient": {"item": "create:crushed_iron_ore"},
+            "result": [
+                {"item": "create:iron_dust", "count": 2},
+                {"item": "minecraft:iron_nugget", "count": 1, "chance": 0.15},
+            ],
+        }
+        parsed = agent._parse_java_recipe(recipe)
+
+        assert parsed["result_item"] == "create:iron_dust"
+        assert parsed["result_count"] == 2
+        assert "secondary_outputs" in parsed
+        assert len(parsed["secondary_outputs"]) == 1
+        assert parsed["secondary_outputs"][0]["item"] == "minecraft:iron_nugget"
+
+    def test_splashing_with_rpm_fields(self, agent):
+        """Test splashing recipe with minRPM/maxRPM fields"""
+        recipe = {
+            "type": "create:splashing",
+            "ingredients": [{"item": "minecraft:gravel"}],
+            "result": {"item": "minecraft:flint", "count": 1},
+            "minRPM": 128,
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="flint")
+
+        assert result["format_version"] == "1.20.10"
+        assert "minecraft:recipe_shapeless" in result
+        assert "RPM: 128-" in result["minecraft:recipe_shapeless"].get("备注", "")

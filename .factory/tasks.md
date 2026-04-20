@@ -90,7 +90,15 @@
   - Auto-delete uploaded files after conversion
   - CSP headers for download endpoints
   - ClamAV sidecar added to docker-compose
-- ⏳ Investigate why model coverage dropped (68% vs v5's 82%)
+- ✅ Issue #1136: Create recipe converter coverage improvements (multi-output, forge tags, compacting edge cases)
+  - Added `FORGE_TAG_MAPPINGS` dict for `#forge:tag` → Bedrock item resolution (30+ entries for ingots, nuggets, ores, storage blocks, gems, crops, wood, planks)
+  - Extended `_map_java_item_to_bedrock()` to check forge tag mappings first
+  - Added `secondary_outputs` parsing for multi-output recipes (milling/crushing result arrays)
+  - Added `heatRequirement`, `minRPM`, `maxRPM` field extraction for Create recipe types
+  - Enhanced `_convert_milling/crushing/compacting/splashing_to_bedrock()` to include secondary outputs, heat, and RPM info in 备注
+  - Fixed duplicate `create:mixing` handler to merge into single handler with fluid ingredient detection
+  - Mixing with fluid ingredients still requires manual review (correct behavior)
+  - All 65 tests passing in test_recipe_converter.py
 
 ## Completed
 - ✅ Issue #1068: Error handling for ConvertPage.tsx
