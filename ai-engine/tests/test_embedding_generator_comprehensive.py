@@ -97,7 +97,7 @@ class TestOpenAIEmbeddingGenerator:
         with patch("openai.OpenAI"):
             gen = OpenAIEmbeddingGenerator()
 
-            assert gen.model == "text-embedding-ada-002"
+            assert gen.model == "text-embedding-3-small"
             assert gen._dimensions == 1536
 
     def test_initialization_with_custom_model(self):

@@ -28,7 +28,7 @@ class EmbeddingModel(str, Enum):
     OPENCLIP = "openclip/ViT-B-32"
     CODEBERT = "microsoft/codebert-base"
     SENTENCE_TRANSFORMER = "sentence-transformers/all-MiniLM-L6-v2"
-    OPENAI_ADA = "openai/text-embedding-ada-002"
+    OPENAI_ADA = "openai/text-embedding-3-small"
     FUSED = "fused/multimodal"
 
 
