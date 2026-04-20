@@ -1,0 +1,72 @@
+# Fly.io configuration for PortKit Backend
+# Deploy with: fly deploy
+
+app = "portkit-backend"
+kill_signal = "SIGINT"
+kill_timeout = "5s"
+
+# Build configuration
+build = [
+  "dockerfile=Dockerfile",
+  "build-arg PYTHON_VERSION=3.11"
+]
+
+# Primary region
+primary_region = "iad"
+
+# Runtime configuration
+[build.args]
+PYTHON_VERSION = "3.11"
+
+[deploy]
+  release_command = "alembic upgrade head"
+
+# Health check
+[healthcheck]
+  port = 8000
+  path = "/api/v1/health"
+  interval = "30s"
+  timeout = "10s"
+  retries = 3
+
+# Port configuration
+[ports]
+  internal = 8000
+
+# Process group
+[processes]
+  app = "uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 1 --access-log"
+  worker = "celery -A src.services.celery_config worker --loglevel=info"
+
+# Environment variables
+[env]
+  PYTHONUNBUFFERED = "1"
+
+# Volume for persistent storage
+[mounts]
+  source = "portkit_data"
+  destination = "/app/data"
+  initial_size = "1gb"
+
+# HTTP service
+[[services]]
+  internal_port = 8000
+  protocol = "tcp"
+
+  [services.concurrency]
+    hard_limit = 25
+    soft_limit = 20
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls"]
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.checks]]
+    path = "/api/v1/health"
+    interval = "30s"
+    timeout = "10s"
+    retries = 3
