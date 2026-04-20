@@ -193,13 +193,13 @@ async def submit_pattern(
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
+            detail="An unexpected error occurred.",
         )
     except Exception as e:
         logger.error(f"Error submitting pattern: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to submit pattern: {str(e)}",
+            detail="Failed to submit pattern.",
         )
 
 
@@ -223,7 +223,7 @@ async def get_pending_submissions(
         logger.error(f"Error getting pending submissions: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get pending submissions: {str(e)}",
+            detail="Failed to get pending submissions.",
         )
 
 
@@ -271,13 +271,13 @@ async def review_pattern(
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),
+            detail="An unexpected error occurred.",
         )
     except Exception as e:
         logger.error(f"Error reviewing pattern: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to review pattern: {str(e)}",
+            detail="Failed to review pattern.",
         )
 
 
@@ -323,13 +323,13 @@ async def vote_on_pattern(
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),
+            detail="An unexpected error occurred.",
         )
     except Exception as e:
         logger.error(f"Error voting on pattern: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to vote on pattern: {str(e)}",
+            detail="Failed to vote on pattern.",
         )
 
 
@@ -383,7 +383,7 @@ async def get_pattern_library(
         logger.error(f"Error getting pattern library: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get pattern library: {str(e)}",
+            detail="Failed to get pattern library.",
         )
 
 
@@ -466,7 +466,7 @@ async def get_related_chunks(
         logger.error(f"Error getting related chunks: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get related chunks: {str(e)}",
+            detail="Failed to get related chunks.",
         )
 
 
@@ -510,7 +510,7 @@ async def analyze_chunk_relationships(
         logger.error(f"Error analyzing chunk relationships: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to analyze chunk: {str(e)}",
+            detail="Failed to analyze chunk.",
         )
 
 
@@ -544,7 +544,7 @@ async def build_concept_graph(
         logger.error(f"Error building concept graph: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to build concept graph: {str(e)}",
+            detail="Failed to build concept graph.",
         )
 
 
@@ -705,7 +705,7 @@ async def upload_texture_asset(
         logger.error(f"Error uploading texture asset: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to upload texture: {str(e)}",
+            detail="Failed to upload texture.",
         )
 
 
@@ -793,7 +793,7 @@ async def upload_model_asset(
         logger.error(f"Error uploading model asset: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to upload model: {str(e)}",
+            detail="Failed to upload model.",
         )
 
 
@@ -859,7 +859,7 @@ async def search_multimodal(
         logger.error(f"Error in multi-modal search: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Search failed: {str(e)}",
+            detail="Search failed.",
         )
 
 
@@ -913,5 +913,5 @@ async def get_related_across_modalities(
         logger.error(f"Error finding related modalities: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to find related content: {str(e)}",
+            detail="Failed to find related content.",
         )

@@ -742,7 +742,7 @@ async def evaluate_rag_query(request: RAGEvaluationRequest):
 
     except Exception as e:
         logger.error(f"RAG evaluation failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Evaluation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Evaluation failed.")
 
 
 @app.get("/api/v1/rag/health", tags=["evaluation"], summary="Check RAG evaluation service health")

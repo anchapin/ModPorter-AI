@@ -244,7 +244,7 @@ async def create_checkout_session(
 
     except stripe.error.StripeError as e:
         logger.error(f"Stripe checkout error: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create checkout session: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create checkout session. Please try again later.")
 
 
 @router.post("/portal", response_model=PortalResponse)
@@ -292,7 +292,7 @@ async def create_portal_session(
 
     except stripe.error.StripeError as e:
         logger.error(f"Stripe portal error: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create portal session: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create portal session. Please try again later.")
 
 
 @router.post("/webhook")
