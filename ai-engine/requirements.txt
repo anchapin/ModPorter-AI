@@ -43,7 +43,7 @@ validators>=0.22.0   # For URL validation (BedrockDocsScraper)
 duckduckgo-search>=5.3.0
 
 # Search engine
-rank_bm25>=3.5.0
+rank_bm25>=0.2.0
 
 # Redis for job management - align with backend version
 redis>=7.1.0
