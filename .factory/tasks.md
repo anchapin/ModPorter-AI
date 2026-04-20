@@ -4,6 +4,26 @@
 - 🔄 Issue #1089: Multi-candidate consistency check (DPC-style)
 
 ## Completed
+- ✅ Issue #1141: Split logic_translator.py (143K, 3568 lines) into modular package
+  - ✅ Created `ai-engine/agents/logic_translator/` package with:
+    - `__init__.py` - public API re-exports
+    - `translator.py` - LogicTranslatorAgent class (tree-sitter migrated)
+    - `tools.py` - LogicTranslatorTools with 11 @tool decorated methods
+    - `block_templates.py` - BEDROCK_*_TEMPLATES loaded from JSON
+    - `block_state_mapper.py` - JAVA_TO_BEDROCK_BLOCK_PROPERTIES mappings
+    - `assumptions.py` - SMART_ASSUMPTIONS dict
+  - ✅ Created `ai-engine/data/bedrock_block_templates.json` with template data
+  - ✅ Migrated javalang → tree-sitter in translator.py:
+    - `_get_tree_sitter_parser()`, `_tree_sitter_to_dict()`
+    - `analyze_java_code_ast()` - tree-sitter based AST analysis
+    - `_serialize_ast_for_llm()` - AST serialization for LLM
+    - `generate_nl_summary_from_ast()` - NL summary generation
+  - ✅ Added backwards-compatible @property wrappers on LogicTranslatorAgent
+  - ✅ Added missing core methods: `translate_java_method`, `convert_java_class`, `map_java_apis`, `generate_event_handlers`, `validate_javascript_syntax`, `translate_crafting_recipe_json`, `generate_bedrock_block_json`, `validate_block_json`, `map_block_properties`
+  - ✅ Updated `pyproject.toml` with `agents/logic_translator/` ignores (N806, C901)
+  - ✅ All 5 tests pass in test_logic_translator_comprehensive.py
+
+## Completed
 - ✅ Issue #1103: Split texture_converter.py (57K) and model_converter.py (32K) into subpackages
   - ✅ Created `ai-engine/agents/texture_converter/` package with:
     - `__init__.py` - public API re-exports

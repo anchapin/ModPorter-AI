@@ -1,0 +1,468 @@
+{
+  "block_templates": {
+    "basic": {
+      "format_version": "1.20.10",
+      "minecraft:block": {
+        "description": {
+          "identifier": "{{ namespace }}:{{ block_name }}",
+          "menu_category": { "category": "{{ menu_category }}" }
+        },
+        "components": {
+          "minecraft:destroy_time": 3.0,
+          "minecraft:explosion_resistance": 6.0,
+          "minecraft:unit_cube": {},
+          "minecraft:material_instances": {
+            "*": { "texture": "{{ texture_name }}", "render_method": "opaque" }
+          }
+        }
+      }
+    },
+    "metal": {
+      "format_version": "1.20.10",
+      "minecraft:block": {
+        "description": {
+          "identifier": "{{ namespace }}:{{ block_name }}",
+          "menu_category": { "category": "construction" }
+        },
+        "components": {
+          "minecraft:destroy_time": 5.0,
+          "minecraft:explosion_resistance": 6.0,
+          "minecraft:unit_cube": {},
+          "minecraft:material_instances": {
+            "*": { "texture": "{{ texture_name }}", "render_method": "opaque" }
+          }
+        }
+      }
+    },
+    "stone": {
+      "format_version": "1.20.10",
+      "minecraft:block": {
+        "description": {
+          "identifier": "{{ namespace }}:{{ block_name }}",
+          "menu_category": { "category": "construction" }
+        },
+        "components": {
+          "minecraft:destroy_time": 3.0,
+          "minecraft:explosion_resistance": 6.0,
+          "minecraft:unit_cube": {},
+          "minecraft:material_instances": {
+            "*": { "texture": "{{ texture_name }}", "render_method": "opaque" }
+          }
+        }
+      }
+    },
+    "wood": {
+      "format_version": "1.20.10",
+      "minecraft:block": {
+        "description": {
+          "identifier": "{{ namespace }}:{{ block_name }}",
+          "menu_category": { "category": "construction" }
+        },
+        "components": {
+          "minecraft:destroy_time": 2.0,
+          "minecraft:explosion_resistance": 3.0,
+          "minecraft:unit_cube": {},
+          "minecraft:flammable": { "catch_chance_modifier": 5, "destroy_chance_modifier": 20 },
+          "minecraft:material_instances": {
+            "*": { "texture": "{{ texture_name }}", "render_method": "opaque" }
+          }
+        }
+      }
+    },
+    "glass": {
+      "format_version": "1.20.10",
+      "minecraft:block": {
+        "description": {
+          "identifier": "{{ namespace }}:{{ block_name }}",
+          "menu_category": { "category": "construction" }
+        },
+        "components": {
+          "minecraft:destroy_time": 0.3,
+          "minecraft:explosion_resistance": 0.3,
+          "minecraft:unit_cube": {},
+          "minecraft:material_instances": {
+            "*": { "texture": "{{ texture_name }}", "render_method": "blend" }
+          }
+        }
+      }
+    },
+    "light_emitting": {
+      "format_version": "1.20.10",
+      "minecraft:block": {
+        "description": {
+          "identifier": "{{ namespace }}:{{ block_name }}",
+          "menu_category": { "category": "construction" }
+        },
+        "components": {
+          "minecraft:destroy_time": 3.0,
+          "minecraft:explosion_resistance": 6.0,
+          "minecraft:unit_cube": {},
+          "minecraft:light_emission": 15,
+          "minecraft:material_instances": {
+            "*": { "texture": "{{ texture_name }}", "render_method": "opaque" }
+          }
+        }
+      }
+    }
+  },
+  "item_templates": {
+    "basic": {
+      "format_version": "1.20.10",
+      "minecraft:item": {
+        "description": {
+          "identifier": "namespace:item_name",
+          "menu_category": { "category": "items" }
+        },
+        "components": {
+          "minecraft:icon": { "texture": "item_name" },
+          "minecraft:display_name": { "value": "item_name" }
+        }
+      }
+    },
+    "tool": {
+      "format_version": "1.20.10",
+      "minecraft:item": {
+        "description": {
+          "identifier": "namespace:item_name",
+          "menu_category": { "category": "tools" }
+        },
+        "components": {
+          "minecraft:icon": { "texture": "item_name" },
+          "minecraft:display_name": { "value": "item_name" },
+          "minecraft:max_stack_size": 1,
+          "minecraft:durability": { "max_durability": 250 },
+          "minecraft:repairable": {
+            "repair_items": [{ "items": ["minecraft:iron_ingot"], "repair_amount": 50 }]
+          },
+          "minecraft:hand_equipped": true,
+          "minecraft:allow_off_hand": false,
+          "minecraft:mining_speed": 6.0,
+          "minecraft:damage": 2
+        }
+      }
+    },
+    "sword": {
+      "format_version": "1.20.10",
+      "minecraft:item": {
+        "description": {
+          "identifier": "namespace:item_name",
+          "menu_category": { "category": "combat" }
+        },
+        "components": {
+          "minecraft:icon": { "texture": "item_name" },
+          "minecraft:display_name": { "value": "item_name" },
+          "minecraft:max_stack_size": 1,
+          "minecraft:durability": { "max_durability": 250 },
+          "minecraft:repairable": {
+            "repair_items": [{ "items": ["minecraft:iron_ingot"], "repair_amount": 50 }]
+          },
+          "minecraft:hand_equipped": true,
+          "minecraft:allow_off_hand": true,
+          "minecraft:damage": 7
+        }
+      }
+    },
+    "armor": {
+      "format_version": "1.20.10",
+      "minecraft:item": {
+        "description": {
+          "identifier": "namespace:item_name",
+          "menu_category": { "category": "armor" }
+        },
+        "components": {
+          "minecraft:icon": { "texture": "item_name" },
+          "minecraft:display_name": { "value": "item_name" },
+          "minecraft:max_stack_size": 1,
+          "minecraft:durability": { "max_durability": 166 },
+          "minecraft:repairable": {
+            "repair_items": [{ "items": ["minecraft:iron_ingot"], "repair_amount": 33 }]
+          },
+          "minecraft:armor": { "protection": 2 },
+          "minecraft:equippable": { "slot": "torso" }
+        }
+      }
+    },
+    "food": {
+      "format_version": "1.20.10",
+      "minecraft:item": {
+        "description": {
+          "identifier": "namespace:item_name",
+          "menu_category": { "category": "items" }
+        },
+        "components": {
+          "minecraft:icon": { "texture": "item_name" },
+          "minecraft:display_name": { "value": "item_name" },
+          "minecraft:max_stack_size": 64,
+          "minecraft:food": {
+            "nutrition": 4,
+            "saturation": 2.0,
+            "can_always_eat": false,
+            "effects": []
+          },
+          "minecraft:use_duration": 32,
+          "minecraft:consumable": { "consume_seconds": 1.6, "sound": "game/eat/generic" }
+        }
+      }
+    },
+    "ranged_weapon": {
+      "format_version": "1.20.10",
+      "minecraft:item": {
+        "description": {
+          "identifier": "namespace:item_name",
+          "menu_category": { "category": "combat" }
+        },
+        "components": {
+          "minecraft:icon": { "texture": "item_name" },
+          "minecraft:display_name": { "value": "item_name" },
+          "minecraft:max_stack_size": 1,
+          "minecraft:durability": { "max_durability": 384 },
+          "minecraft:repairable": {
+            "repair_items": [{ "items": ["minecraft:iron_ingot"], "repair_amount": 50 }]
+          },
+          "minecraft:hand_equipped": true,
+          "minecraft:allow_off_hand": false,
+          "minecraft:ranged_weapon": {
+            "charged_projectiles": [{ "item": "minecraft:arrow", "pickup": "allowed" }],
+            "damage": 9.0,
+            "speed": 15.0,
+            "draw_back": { "start_charge_at": 0, "max_charge": 20 }
+          }
+        }
+      }
+    },
+    "book": {
+      "format_version": "1.20.10",
+      "minecraft:item": {
+        "description": {
+          "identifier": "namespace:item_name",
+          "menu_category": { "category": "items" }
+        },
+        "components": {
+          "minecraft:icon": { "texture": "item_name" },
+          "minecraft:display_name": { "value": "item_name" },
+          "minecraft:max_stack_size": 16,
+          "minecraft:book": { "author": "Unknown", "title": "item_name", "pages": [] },
+          "minecraft:writable_book": { "max_pages": 50 }
+        }
+      }
+    },
+    "music_disc": {
+      "format_version": "1.20.10",
+      "minecraft:item": {
+        "description": {
+          "identifier": "namespace:item_name",
+          "menu_category": { "category": "items" }
+        },
+        "components": {
+          "minecraft:icon": { "texture": "item_name" },
+          "minecraft:display_name": { "value": "item_name" },
+          "minecraft:max_stack_size": 1,
+          "minecraft:record": {
+            "sound_id": "music_disc.13",
+            "duration": 180,
+            "comparator_signal": 0
+          }
+        }
+      }
+    }
+  },
+  "entity_templates": {
+    "hostile_mob": {
+      "format_version": "1.20.10",
+      "minecraft:entity": {
+        "description": {
+          "identifier": "namespace:entity_name",
+          "is_spawnable": true,
+          "is_summonable": true,
+          "is_experimental": false
+        },
+        "component_groups": {},
+        "components": {
+          "minecraft:type_family": { "family": ["hostile", "monster", "mob"] },
+          "minecraft:breathable": { "total_supply": 15, "suffocate_time": 0 },
+          "minecraft:collision_box": { "width": 0.8, "height": 1.8 },
+          "minecraft:health": { "value": 20, "max": 20 },
+          "minecraft:attack": { "damage": 3 },
+          "minecraft:movement": { "value": 0.23 },
+          "minecraft:navigation.walk": { "can_path_over_water": false, "avoid_water": false },
+          "minecraft:movement.basic": {},
+          "minecraft:jump.static": {}
+        },
+        "events": {}
+      }
+    },
+    "passive_mob": {
+      "format_version": "1.20.10",
+      "minecraft:entity": {
+        "description": {
+          "identifier": "namespace:entity_name",
+          "is_spawnable": true,
+          "is_summonable": true,
+          "is_experimental": false
+        },
+        "component_groups": {},
+        "components": {
+          "minecraft:type_family": { "family": ["passive", "mob"] },
+          "minecraft:breathable": { "total_supply": 15, "suffocate_time": 0 },
+          "minecraft:collision_box": { "width": 0.6, "height": 1.2 },
+          "minecraft:health": { "value": 10, "max": 10 },
+          "minecraft:movement": { "value": 0.25 },
+          "minecraft:navigation.walk": { "can_path_over_water": true, "avoid_water": false },
+          "minecraft:movement.basic": {},
+          "minecraft:jump.static": {}
+        },
+        "events": {}
+      }
+    },
+    "ambient_mob": {
+      "format_version": "1.20.10",
+      "minecraft:entity": {
+        "description": {
+          "identifier": "namespace:entity_name",
+          "is_spawnable": true,
+          "is_summonable": true,
+          "is_experimental": false
+        },
+        "component_groups": {},
+        "components": {
+          "minecraft:type_family": { "family": ["ambient", "mob"] },
+          "minecraft:breathable": { "total_supply": 15, "suffocate_time": 0 },
+          "minecraft:collision_box": { "width": 0.5, "height": 0.5 },
+          "minecraft:health": { "value": 1, "max": 1 },
+          "minecraft:movement": { "value": 0.15 },
+          "minecraft:navigation.walk": { "can_path_over_water": true, "avoid_water": false },
+          "minecraft:movement.basic": {},
+          "minecraft:jump.static": {}
+        },
+        "events": {}
+      }
+    }
+  },
+  "recipe_templates": {
+    "shaped": {
+      "format_version": "1.20.10",
+      "minecraft:recipe_shaped": {
+        "description": { "identifier": "namespace:recipe_name" },
+        "tags": ["crafting_table"],
+        "pattern": ["   ", "   ", "   "],
+        "key": {},
+        "result": { "item": "minecraft:air", "count": 1 }
+      }
+    },
+    "shapeless": {
+      "format_version": "1.20.10",
+      "minecraft:recipe_shapeless": {
+        "description": { "identifier": "namespace:recipe_name" },
+        "tags": ["crafting_table"],
+        "ingredients": [],
+        "result": { "item": "minecraft:air", "count": 1 }
+      }
+    },
+    "smelting": {
+      "format_version": "1.20.10",
+      "minecraft:recipe_furnace": {
+        "description": { "identifier": "namespace:recipe_name" },
+        "tags": ["furnace", "blast_furnace"],
+        "input": "minecraft:air",
+        "output": "minecraft:air",
+        "experience": 0,
+        "cookingtime": 200
+      }
+    },
+    "blasting": {
+      "format_version": "1.20.10",
+      "minecraft:recipe_furnace_blast": {
+        "description": { "identifier": "namespace:recipe_name" },
+        "tags": ["blast_furnace"],
+        "input": "minecraft:air",
+        "output": "minecraft:air",
+        "experience": 0,
+        "cookingtime": 100
+      }
+    },
+    "smoking": {
+      "format_version": "1.20.10",
+      "minecraft:recipe_furnace_smoke": {
+        "description": { "identifier": "namespace:recipe_name" },
+        "tags": ["smoker"],
+        "input": "minecraft:air",
+        "output": "minecraft:air",
+        "experience": 0,
+        "cookingtime": 100
+      }
+    },
+    "campfire": {
+      "format_version": "1.20.10",
+      "minecraft:recipe_campfire": {
+        "description": { "identifier": "namespace:recipe_name" },
+        "tags": ["campfire"],
+        "input": "minecraft:air",
+        "output": "minecraft:air",
+        "experience": 0,
+        "cookingtime": 600
+      }
+    },
+    "stonecutter": {
+      "format_version": "1.20.10",
+      "minecraft:recipe_stonecutter": {
+        "description": { "identifier": "namespace:recipe_name" },
+        "tags": ["stonecutter"],
+        "input": "minecraft:air",
+        "result": "minecraft:air",
+        "count": 1
+      }
+    },
+    "smithing": {
+      "format_version": "1.20.10",
+      "minecraft:recipe_smithing_transform": {
+        "description": { "identifier": "namespace:recipe_name" },
+        "tags": ["smithing_table"],
+        "base": "minecraft:air",
+        "addition": "minecraft:air",
+        "result": "minecraft:air",
+        "template": "minecraft:air"
+      }
+    }
+  },
+  "java_to_bedrock_item_properties": {
+    "ToolType.PICKAXE": { "template": "tool", "mining_speed": 6.0, "damage": 2 },
+    "ToolType.AXE": { "template": "tool", "mining_speed": 8.0, "damage": 5 },
+    "ToolType.SHOVEL": { "template": "tool", "mining_speed": 6.0, "damage": 1.5 },
+    "ToolType.HOE": { "template": "tool", "mining_speed": 2.0, "damage": 0 },
+    "ToolType.SWORD": { "template": "sword", "damage": 7 },
+    "ArmorType.HELMET": { "template": "armor", "armor_slot": "head", "armor_protection": 2 },
+    "ArmorType.CHESTPLATE": { "template": "armor", "armor_slot": "torso", "armor_protection": 6 },
+    "ArmorType.LEGGINGS": { "template": "armor", "armor_slot": "legs", "armor_protection": 5 },
+    "ArmorType.BOOTS": { "template": "armor", "armor_slot": "feet", "armor_protection": 2 },
+    "Material.WOOD": { "max_durability": 60, "repair_item": "minecraft:planks" },
+    "Material.STONE": { "max_durability": 132, "repair_item": "minecraft:cobblestone" },
+    "Material.IRON": { "max_durability": 251, "repair_item": "minecraft:iron_ingot" },
+    "Material.GOLD": { "max_durability": 33, "repair_item": "minecraft:gold_ingot" },
+    "Material.DIAMOND": { "max_durability": 1562, "repair_item": "minecraft:diamond" },
+    "Material.NETHERITE": { "max_durability": 2032, "repair_item": "minecraft:netherite_ingot" }
+  },
+  "java_item_method_mappings": {
+    "getMaxStackSize": "minecraft:max_stack_size",
+    "getDefaultStackSize": "minecraft:max_stack_size",
+    "getMaxDamage": "minecraft:durability",
+    "getDamage": "minecraft:damage",
+    "getMiningSpeed": "minecraft:mining_speed",
+    "isFireResistant": "minecraft:fire_resistant",
+    "getFoodHealing": "minecraft:food.nutrition",
+    "getSaturation": "minecraft:food.saturation"
+  },
+  "java_to_bedrock_entity_properties": {
+    "EntityType.ZOMBIE": { "template": "hostile_mob", "health": 20, "attack": 3 },
+    "EntityType.SKELETON": { "template": "hostile_mob", "health": 20, "attack": 4 },
+    "EntityType.CREEPER": { "template": "hostile_mob", "health": 20, "attack": 5 },
+    "EntityType.SPIDER": { "template": "hostile_mob", "health": 16, "attack": 2 },
+    "EntityType.PIG_ZOMBIE": { "template": "hostile_mob", "health": 20, "attack": 5 },
+    "EntityType.ENDERMAN": { "template": "hostile_mob", "health": 40, "attack": 7 },
+    "EntityType.COW": { "template": "passive_mob", "health": 10 },
+    "EntityType.PIG": { "template": "passive_mob", "health": 10 },
+    "EntityType.CHICKEN": { "template": "passive_mob", "health": 4 },
+    "EntityType.SHEEP": { "template": "passive_mob", "health": 8 },
+    "EntityType.HORSE": { "template": "passive_mob", "health": 30 },
+    "EntityType.BAT": { "template": "ambient_mob", "health": 6 }
+  }
+}

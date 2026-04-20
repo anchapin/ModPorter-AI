@@ -1,30 +1,21 @@
 """
-Backwards-compatible re-export of LogicTranslatorAgent from logic_translator package.
+Logic Translator package - modular Java to Bedrock logic translation.
 
-This file exists for backwards compatibility. The logic_translator module has been
-split into a package per Issue #1141:
+Provides the same public API as the original logic_translator module
+by re-exporting LogicTranslatorAgent from logic_translator.translator.
 
-    ai-engine/agents/logic_translator/
-        __init__.py              # re-exports from package
-        translator.py            # LogicTranslatorAgent (migrated to tree-sitter)
-        block_templates.py       # BEDROCK_*_TEMPLATES from JSON
-        block_state_mapper.py    # JAVA_TO_BEDROCK_BLOCK_PROPERTIES
-        assumptions.py           # SMART_ASSUMPTIONS
-        tools.py                 # LogicTranslatorTools (CrewAI wrappers)
-
-New code should import from the package:
-
-    from agents.logic_translator import LogicTranslatorAgent
-
-Old code continues to work:
-
-    from agents.logic_translator import LogicTranslatorAgent  # same
-
+Split into submodules per Issue #1141:
+- translator: Core LogicTranslatorAgent class
+- block_templates: BEDROCK_*_TEMPLATES loaded from data/bedrock_block_templates.json
+- block_state_mapper: JAVA_TO_BEDROCK_BLOCK_PROPERTIES and JAVA_BLOCK_METHOD_MAPPINGS
+- assumptions: SMART_ASSUMPTIONS for untranslatable features
+- tools: CrewAI @tool wrappers via LogicTranslatorTools
 """
 
-from agents.logic_translator import (
+from typing import Dict, Any
+
+from agents.logic_translator.translator import (
     LogicTranslatorAgent,
-    LogicTranslatorTools,
     BEDROCK_BLOCK_TEMPLATES,
     BEDROCK_ITEM_TEMPLATES,
     BEDROCK_ENTITY_TEMPLATES,
@@ -35,11 +26,12 @@ from agents.logic_translator import (
     JAVA_ITEM_METHOD_MAPPINGS,
     JAVA_TO_BEDROCK_ENTITY_PROPERTIES,
     SMART_ASSUMPTIONS,
-    get_smart_assumptions,
     TREE_SITTER_AVAILABLE,
     LLM_CODE_TEMPERATURE,
     BlockStateMapper,
 )
+from agents.logic_translator.tools import LogicTranslatorTools
+from agents.logic_translator.assumptions import get_smart_assumptions
 
 LogicTranslator = LogicTranslatorAgent
 
