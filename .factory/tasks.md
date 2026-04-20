@@ -4,6 +4,27 @@
 - 🔄 Issue #1089: Multi-candidate consistency check (DPC-style)
 
 ## Completed
+- ✅ Issue #1103: Split texture_converter.py (57K) and model_converter.py (32K) into subpackages
+  - ✅ Created `ai-engine/agents/texture_converter/` package with:
+    - `__init__.py` - public API re-exports
+    - `atlas.py` - atlas detection, extraction, metadata (9.9K)
+    - `conversion.py` - core conversion logic, batch processing (20K)
+    - `fallback.py` - fallback texture generation (2.2K)
+    - `jar_extractor.py` - JAR texture extraction (6.3K)
+    - `path_mapper.py` - Java→Bedrock path mapping (4K)
+    - `validation.py` - texture validation (3.8K)
+  - ✅ Created `ai-engine/agents/model_converter/` package with:
+    - `__init__.py` - public API re-exports
+    - `blockstate.py` - blockstate parsing and conversion (7.3K)
+    - `geometry.py` - block/item/entity geometry conversion (13K)
+    - `inheritance.py` - parent model resolution (4K)
+    - `item_model.py` - item-specific model handling (3K)
+    - `jar_extractor.py` - JAR model extraction (5.3K)
+  - ✅ Updated legacy `.py` files to re-export from packages (backwards compatible)
+  - ✅ Updated `pyproject.toml` with new directory ignores
+  - ✅ All 19 tests pass (texture + model conversion standalone tests)
+
+## Completed
 - ✅ Issue #1098: Consolidate task queues to Celery (committed 55354192, 08bc495e)
   - ✅ Deleted `task_queue.py` (superseded by enhanced version)
   - ✅ Created `backend/src/services/celery_config.py` with Celery configuration
