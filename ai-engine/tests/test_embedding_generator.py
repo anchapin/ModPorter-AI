@@ -118,7 +118,7 @@ class TestGetEmbeddingConfig:
         config = get_embedding_config()
 
         assert config["provider"] == "auto"
-        assert config["openai_model"] == "text-embedding-ada-002"
+        assert config["openai_model"] == "text-embedding-3-small"
         assert config["local_model"] == "all-MiniLM-L6-v2"
         assert config["dimensions"] == DEFAULT_DIMENSION
         assert config["cache_enabled"] is True
@@ -161,7 +161,7 @@ class TestSupportedDimensions:
 
     def test_supported_dimensions_contains_standard(self):
         """Test that standard dimensions are supported."""
-        assert 1536 in SUPPORTED_DIMENSIONS  # OpenAI ada-002
+        assert 1536 in SUPPORTED_DIMENSIONS  # OpenAI text-embedding-3-small/large
         assert 384 in SUPPORTED_DIMENSIONS  # MiniLM-L6-v2
         assert 768 in SUPPORTED_DIMENSIONS  # BERT base
 

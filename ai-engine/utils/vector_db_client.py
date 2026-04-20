@@ -22,7 +22,7 @@ class VectorDBClient:
 
     Supports:
     - Local embeddings (sentence-transformers/all-MiniLM-L6-v2) - default, no API key needed
-    - OpenAI embeddings (text-embedding-ada-002) - requires OPENAI_API_KEY
+    - OpenAI embeddings (text-embedding-3-small) - requires OPENAI_API_KEY
     - Auto mode: tries OpenAI first, falls back to local
     - Embedding caching for performance
     - Backend /embeddings/generate endpoint as remote fallback
