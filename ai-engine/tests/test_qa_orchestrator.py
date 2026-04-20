@@ -28,11 +28,12 @@ class TestOrchestratorRunsAllAgents:
     @pytest.mark.asyncio
     async def test_orchestrator_runs_all_agents(self, orchestrator, context):
         result = await orchestrator.run_qa_pipeline_async(context)
-        assert len(result.validation_results) == 4
+        assert len(result.validation_results) == 5
         assert "translator" in result.validation_results
         assert "reviewer" in result.validation_results
         assert "tester" in result.validation_results
         assert "semantic_checker" in result.validation_results
+        assert "logic_auditor" in result.validation_results
 
 
 class TestContextPassesBetweenAgents:
@@ -54,6 +55,7 @@ class TestContextPassesBetweenAgents:
             "reviewer",
             "tester",
             "semantic_checker",
+            "logic_auditor",
         ]
 
 
