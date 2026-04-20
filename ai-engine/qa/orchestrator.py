@@ -20,11 +20,17 @@ class QAOrchestrator:
         self.parallel_execution_enabled = parallel_execution_enabled
         self.refinement_enabled: bool = True
         self.max_refinement_iterations: int = 3
-        self.agents: List[str] = ["translator", "reviewer", "tester", "semantic_checker"]
+        self.agents: List[str] = [
+            "translator",
+            "reviewer",
+            "tester",
+            "semantic_checker",
+            "logic_auditor",
+        ]
         self._parallel_groups: List[List[str]] = [
             ["translator"],
             ["reviewer", "tester"],
-            ["semantic_checker"],
+            ["semantic_checker", "logic_auditor"],
         ]
         self._breakers: Dict[str, CircuitBreaker] = {}
         for agent_name in self.agents:
@@ -202,6 +208,22 @@ class QAOrchestrator:
             context.validation_results["semantic_checker"] = {"success": False, "error": str(e)}
 
         execution_times["semantic_checker"] = time.time() - start_time
+
+        context.current_agent = "logic_auditor"
+        start_time = time.time()
+        try:
+            agent_output = await self.run_agent(context, "logic_auditor")
+            validated = validate_agent_output(agent_output)
+            context.validation_results["logic_auditor"] = {
+                "success": validated.success,
+                "result": validated.result,
+                "errors": validated.errors,
+                "execution_time_ms": validated.execution_time_ms,
+            }
+        except Exception as e:
+            context.validation_results["logic_auditor"] = {"success": False, "error": str(e)}
+
+        execution_times["logic_auditor"] = time.time() - start_time
 
         context.metadata["execution_mode"] = (
             "parallel" if self.parallel_execution_enabled else "sequential"
@@ -387,6 +409,12 @@ class QAOrchestrator:
                 "Check API compatibility",
                 "Review state management",
             ],
+            "logic_auditor": [
+                "Check numeric formula accuracy",
+                "Verify probability comparisons",
+                "Confirm event hook mappings",
+                "Validate conditional logic",
+            ],
         }
         return suggestions.get(agent_name, ["Review the error and fix accordingly"])
 
@@ -409,7 +437,13 @@ class QAOrchestrator:
 
     def _calculate_quality_score(self, validation_results: Dict[str, Any]) -> float:
         """Calculate weighted quality score from validation results."""
-        weights = {"translator": 0.25, "reviewer": 0.25, "tester": 0.25, "semantic_checker": 0.25}
+        weights = {
+            "translator": 0.20,
+            "reviewer": 0.20,
+            "tester": 0.20,
+            "semantic_checker": 0.20,
+            "logic_auditor": 0.20,
+        }
         total_score = 0.0
         for agent_name, weight in weights.items():
             result = validation_results.get(agent_name, {})
@@ -542,6 +576,19 @@ class QAOrchestrator:
             }
         except Exception as e:
             context.validation_results["semantic_checker"] = {"success": False, "error": str(e)}
+
+        context.current_agent = "logic_auditor"
+        try:
+            agent_output = self._execute_agent_placeholder(context, "logic_auditor")
+            validated = validate_agent_output(agent_output)
+            context.validation_results["logic_auditor"] = {
+                "success": validated.success,
+                "result": validated.result,
+                "errors": validated.errors,
+                "execution_time_ms": validated.execution_time_ms,
+            }
+        except Exception as e:
+            context.validation_results["logic_auditor"] = {"success": False, "error": str(e)}
 
         context.current_agent = None
         return context

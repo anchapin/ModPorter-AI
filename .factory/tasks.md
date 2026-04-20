@@ -4,6 +4,21 @@
 - 🔄 (none)
 
 ## Completed
+- ✅ Issue #1138: Adversarial Logic Auditor for QA Pipeline (COMPLETED)
+  - ✅ Created `ai-engine/agents/logic_auditor_agent.py`:
+    - `AuditFinding` dataclass with check_type, severity, description, snippets
+    - `AuditReport` dataclass with findings, severity counts, blocked flag, confidence_impact
+    - 5 checkers: FormulaDriftChecker, ProbabilityInversionChecker, EventHookMismatchChecker, ConditionalNegationChecker, ResourceIDMatchChecker
+    - LLMLogicAuditor for deep LLM-powered auditing
+    - Semantic type classification to select relevant checks
+  - ✅ Integrated `logic_auditor` into QAOrchestrator pipeline (after reviewer/tester, parallel with semantic_checker)
+  - ✅ Created regression test suite with 48 test cases covering all check types
+  - ✅ All 53 tests pass (48 logic_auditor + 5 orchestrator)
+  - ✅ Fixed 2 failing regression tests:
+    - Added bare `random` variable pattern to JAVA_RANDOM_PATTERNS
+    - Fixed formula drift detection to handle parenthesized expressions
+    - Updated test expectations to account for 5 agents (was 4)
+
 - ✅ Issue #997: Fine-tune Open-Weights Code LLM for Java→Bedrock Conversion
   - ✅ Created `ai-engine/rl/fine_tuning_export.py`:
     - `FineTuningExporter`: Exports conversion examples to fine-tuning formats
