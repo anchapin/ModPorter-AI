@@ -6,6 +6,16 @@ from qa.translator import TranslatorAgent, translate
 from qa.reviewer import ReviewerAgent, review
 from qa.fixer import FixerAgent, fix
 from qa.semantic_checker import SemanticCheckerAgent, check_semantics
+from qa.multi_candidate import (
+    MultiCandidateConsistencyChecker,
+    CandidateGenerator,
+    ConversionCandidate,
+    ConsistencyResult,
+    CandidateConfig,
+    SelectionStrategy,
+    create_candidate_result,
+    dpc_consistency_check,
+)
 
 __all__ = [
     "QAContext",
@@ -22,4 +32,12 @@ __all__ = [
     "check_semantics",
     "QAIntegrationHook",
     "run_post_conversion_qa",
+    "MultiCandidateConsistencyChecker",
+    "CandidateGenerator",
+    "ConversionCandidate",
+    "ConsistencyResult",
+    "CandidateConfig",
+    "SelectionStrategy",
+    "create_candidate_result",
+    "dpc_consistency_check",
 ]

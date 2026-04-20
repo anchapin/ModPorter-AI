@@ -1,5 +1,8 @@
 # Current Tasks
 
+## In Progress
+- 🔄 Issue #1089: Multi-candidate consistency check (DPC-style)
+
 ## Completed
 - ✅ Issue #1098: Consolidate task queues to Celery (committed 55354192, 08bc495e)
   - ✅ Deleted `task_queue.py` (superseded by enhanced version)
