@@ -1,7 +1,7 @@
 # PortKit — Development Roadmap
 
-**Last Updated:** 2026-04-19 (v15 audit — 7:53pm ET)
-**Status:** M1–M4 ✅ | M5 In Progress (beta launch) | 8/8 PASS ✅ | B2B 66.4%
+**Last Updated:** 2026-04-20 (v16 audit — 1:46am ET)
+**Status:** M1–M4 ✅ | M5 In Progress (beta launch) | 8/8 PASS ✅ | B2B 67.0% 🆕
 **Repo:** [anchapin/ModPorter-AI](https://github.com/anchapin/ModPorter-AI) | Rebranded to PortKit ✅ (#1114)
 **Target:** Public launch at modporter.ai by June 22, 2026
 
@@ -11,7 +11,9 @@
 
 PortKit converts Minecraft Java mods to Bedrock add-ons. Positioned as a **B2B conversion accelerator** targeting Marketplace creators.
 
-**B2B readiness: 66.4%** (v15, 8/8 PASS). M1–M4 all complete. B2B stable for 4 cycles (v12→v15). The pipeline now handles standard and non-standard JAR layouts, Java 17+ mods (tree-sitter), 1,152 item mappings (minecraft-data), per-segment confidence scoring, semantic chunking for large mods, and a modular java_analyzer package. The 66.4% ceiling is structural: Create's 750 custom recipe types (milling/crushing/deploying/splashing, no Bedrock equivalent) and JEI/JourneyMap as GUI-only mods. **#1119 (Create recipe type converters) is the next ceiling-breaker.**
+**B2B readiness: 67.0%** (v16, 8/8 PASS). M1–M4 all complete. The 4-cycle ceiling at 66.4% was broken in v16 by #1119 (Create custom recipe converters): Create recipes 36% → 40%, aggregate recipes 41.7% → 45.0%. ~126 of 750 Create custom recipes now convert (~21% of custom types). Remaining Create recipe coverage (1,661 unconverted) is the top remaining lever for B2B growth.
+
+**Pipeline state**: tree-sitter (Java 17+) ✅ | minecraft-data 1152 items ✅ | confidence scoring ✅ | semantic chunking ✅ | java_analyzer 6-module package ✅ | Celery task queues ✅ | texture/model converter subpackages ✅ | Create recipe converters (milling/crushing/deploying/splashing/compacting) ✅ | DPC multi-candidate consistency selection ✅
 
 ---
 
@@ -30,80 +32,67 @@ PortKit converts Minecraft Java mods to Bedrock add-ons. Positioned as a **B2B c
 | v12 | Apr 18 20:48 | 8/8 ✅ | 54.7% | 82.3% | 41.7% | ~100% | 89.3% | 66.4% 🎯 | Create restored; recipe +509 total |
 | v13 | Apr 19 00:51 | 8/8 ✅ | 54.7% | 82.3% | 41.7% | ~100% | 89.3% | 66.4% | Non-std JAR ✅, rebrand ✅, M4 ✅ |
 | v14 | Apr 19 13:33 | 8/8 ✅ | 54.7% | 82.3% | 41.7% | ~100% | 89.3% | 66.4% | tree-sitter ✅, item map 1152 ✅, confidence scoring ✅ |
-| **v15** | **Apr 19 19:53** | **8/8 ✅** | **54.7%** | **82.3%** | **41.7%** | **~100%** | **89.3%** | **66.4% ✅** | **semantic chunking ✅, java_analyzer split ✅ (6 modules), Celery ✅, #1119 filed** |
+| v15 | Apr 19 19:53 | 8/8 ✅ | 54.7% | 82.3% | 41.7% | ~100% | 89.3% | 66.4% | semantic chunking ✅, java_analyzer split ✅, Celery ✅ |
+| **v16** | **Apr 20 01:46** | **8/8 ✅** | **54.7%** | **82.3%** | **45.0% 🆕** | **~100%** | **89.3%** | **67.0% 🆕** | **Create recipe converters ✅ (+127), DPC consistency ✅, texture/model split ✅** |
 
 \* v11 adjusted (Create excluded due to crash)
 
-**v15 B2B breakdown:**
-| Asset Type | Coverage | Weight | Contribution |
-|------------|----------|--------|-------------|
-| Texture | 54.7% | 25% | 13.7% |
-| Model | 82.3% | 30% | 24.7% |
-| Recipe | 41.7% | 20% | 8.3% |
-| Sound | ~100% | 10% | 10.0% |
-| Localization | 89.3% | 10% | 8.9% |
-| Entity | ~15% | 5% | 0.8% |
-| **Total** | | | **66.4%** |
+**v16 B2B breakdown:**
+| Asset Type | Coverage | Weight | Contribution | Delta v15 |
+|------------|----------|--------|-------------|-----------|
+| Texture | 54.7% | 25% | 13.7% | — |
+| Model | 82.3% | 30% | 24.7% | — |
+| Recipe | **45.0%** | 20% | **9.0%** | **+0.7pp** |
+| Sound | ~100% | 10% | 10.0% | — |
+| Localization | 89.3% | 10% | 8.9% | — |
+| Entity | ~15% | 5% | 0.8% | — |
+| **Total** | | | **67.0%** | **+0.6pp** |
 
 ---
 
-## Structural Ceiling Analysis (Audit-Verified, v12–v15 stable — 4 cycles)
+## Ceiling Analysis (Updated v16)
 
-### Texture — 54.7% ceiling
-- **JEI (0%)**: All textures are GUI sprites packed in atlases — no Bedrock UI equivalent. 0% is correct/expected.
-- **JourneyMap (7%)**: Minimap UI theme images + vanilla entity icons referenced by namespace. 7% is the true ceiling for this mod.
-- **Create (49%)**: Many textures tied to custom block animations/mechanisms that don't have direct Bedrock mappings.
-- **Non-standard JAR mods** (REI, Storage Drawers, etc.): Now supported via #1105 fallback scanner — expected to improve 30-mod aggregate.
-- **Next lever**: Custom entity texture path expansion (FM-001 partial fix) and block state texture coverage.
+### Recipe — 45.0% (was 41.7%; next lever: improve Create recipe converter coverage)
+- **Create ceiling partially broken**: 750 custom recipes → ~126 now convert (milling/crushing/deploying/splashing/compacting mapped to Bedrock shapeless/shaped approximations). Create recipe coverage 36% → 40%.
+- **1,661 Create recipes still unconverted** (~60% of Create's total). Root cause to investigate: edge cases in Create recipe JSON format, `compacting` type coverage, result multi-output handling, and recipes that require machine-specific mechanics with no Bedrock approximation.
+- **ImmersiveEngineering** (8 crusher recipes in Farmer's Delight): not yet covered — similar pattern to Create custom types.
+- **Standard ceiling (excl. Create customs)**: ~47–50% — FD cooking_pot, cutting board, iron chests remain the reference floor.
 
-### Recipe — 41.7% ceiling (NEXT CEILING-BREAKER: #1119)
-- **Create custom types (750 recipes / 27%)**: `create:milling`, `crushing`, `deploying`, `splashing` — zero Bedrock equivalents. Hard ceiling until #1119 Create-specific converters are implemented.
-- **Semantic chunking (#1120) now deployed**: Infrastructure ready to feed Create recipe chunks to type-specific converters. #1119 will leverage this directly.
-- **Standard ceiling without Create customs**: ~47–50% — FD cooking_pot, cutting board, iron chests at ~48–94%.
-- **minecraft-data item map** (#1117): 1,152 items — benefits 30-mod set with diverse non-vanilla items.
+### Texture — 54.7% (structural — unchanged)
+- JEI 0% (GUI-only), JourneyMap 7% (minimap UI): correct, not bugs.
+- Create 49%, Supplementaries 62%: room to grow via expanded block state and entity texture path handling.
 
-### Model — 82.3% ceiling
-- Solid baseline. Drag from Create's custom parent model paths and Iron Chests item models.
-- No active blocker — incremental improvements expected as model converter matures.
+### Model — 82.3% (structural — unchanged)
+- Solid baseline. Minor drag from Create custom parent paths.
 
 ---
 
 ## Milestone Status
 
-### ✅ M1 — Weeks 1-2: Conversion Proof + Pipeline (Complete Apr 10)
-### ✅ M2 — Weeks 3-4: Entity Behaviors + Sound/Lang + B2B UX (Complete Apr 16)
-### ✅ M3 — Weeks 5-6: Infrastructure (Complete Apr 18)
-All 6 infrastructure issues: Stripe (#970), file security (#973), feature flags (#972), usage limits (#977), transactional email (#976), OAuth login (#980).
+### ✅ M1 — M4 Complete
+### 🔄 M5 — Beta Launch
+All prerequisites complete. Beta onboarding, conversion quality tuning, and confidence score UI are active.
 
-### ✅ M4 — Week 7: Landing Page + Legal + Rebrand (Complete Apr 19)
-Landing page (#978), ToS/Privacy (#975), history dashboard (#979), PortKit rebrand (#1043).
-
-### 🔄 M5 — Week 8: Beta Launch
-All prerequisites complete. Key M5 work: beta user onboarding, conversion quality tuning, confidence score UI.
-**Next B2B ceiling break requires #1119 (Create recipe type converters).**
-
-### ⏳ M6-M7 — Weeks 9-11: Beta Feedback + Public Launch (Jun 22)
+### ⏳ M6-M7 — Beta Feedback + Public Launch (Jun 22)
 
 ---
 
-## Open Issues (10 total — 0 open PRs)
+## Open Issues (7 total — 0 open PRs)
 
 ### Conversion Quality / AI Engine
 | Issue | Labels | Priority |
 |-------|--------|----------|
-| [#1119](https://github.com/anchapin/ModPorter-AI/issues/1119) **Create mod: converters for custom recipe types** (milling, crushing, deploying, splashing) | P1, enhancement, component:recipe-conversion | **🥇 #1 — breaks the 66.4% ceiling; semantic chunker (#1120) ready to feed it** |
-| [#1089](https://github.com/anchapin/ModPorter-AI/issues/1089) Multi-candidate consistency check | phase:2, priority:medium | 🥈 #2 — halluci­nation guard for AI-generated Bedrock code; complements confidence scoring |
-| [#994](https://github.com/anchapin/ModPorter-AI/issues/994) Upgrade embedding model ada-002 → text-embedding-3 | post-launch | — |
+| **New** | File: Create recipe converter edge cases + remaining coverage | **🥇 #1 — 1,661 Create recipes still unconverted; converters in but ~21% hit rate** |
+| [#994](https://github.com/anchapin/ModPorter-AI/issues/994) Upgrade embedding model ada-002 → text-embedding-3 | enhancement, ai-engine | 🥉 #3 — quality lever for Java→Bedrock mapping retrieval |
 | [#996](https://github.com/anchapin/ModPorter-AI/issues/996) Diffusion LoRA for texture pairs | post-launch | — |
 | [#997](https://github.com/anchapin/ModPorter-AI/issues/997) Fine-tune open-weights LLM | post-launch | — |
 
 ### Refactor / Tech Debt
 | Issue | Labels | Priority |
 |-------|--------|----------|
-| [#1103](https://github.com/anchapin/ModPorter-AI/issues/1103) Split texture_converter.py (57K) + model_converter.py (32K) | refactor | 🥉 #3 — same pattern as #1099 (java_analyzer now done); improves dev velocity for texture/model improvements |
-| [#1097](https://github.com/anchapin/ModPorter-AI/issues/1097) Consolidate 5 backend error-handling files | refactor | — |
-| [#1101](https://github.com/anchapin/ModPorter-AI/issues/1101) Remove dead BM25 fallback | refactor | — |
-| [#1102](https://github.com/anchapin/ModPorter-AI/issues/1102) Consolidate 4 backend report files | refactor | — |
+| [#1097](https://github.com/anchapin/ModPorter-AI/issues/1097) Consolidate 5 backend error-handling files | backend, refactor | 🥈 #2 — beta stability; last medium-priority open debt |
+| [#1101](https://github.com/anchapin/ModPorter-AI/issues/1101) Remove dead BM25 fallback | ai-engine, refactor | — |
+| [#1102](https://github.com/anchapin/ModPorter-AI/issues/1102) Consolidate 4 backend report files | backend, ai-engine, refactor | — |
 
 ### Post-Launch Enhancements
 | Issue | Note |
@@ -112,25 +101,34 @@ All prerequisites complete. Key M5 work: beta user onboarding, conversion qualit
 
 ---
 
-## Top 3 Priority Issues (Apr 19, 7:53pm — post-v15)
+## Top 3 Priority Issues (Apr 20, 1:46am — post-v16)
 
-### 🥇 #1: [#1119](https://github.com/anchapin/ModPorter-AI/issues/1119) — Create Custom Recipe Type Converters (P1)
+### 🥇 #1: File New Issue — Create Recipe Converter Coverage Improvement
 
-The only remaining lever to move B2B past 66.4% on the canonical 8-mod set. Create's 750 recipes (milling, crushing, deploying, splashing) are the single largest uncovered category. With semantic chunking (#1120) now deployed, the pipeline can isolate each Create recipe type as an individual chunk and pass it to a dedicated converter. Bedrock behavior pack approximations exist for all four types. Implementing converters for these would push Create's recipe coverage from 36% → potentially 60%+, and aggregate recipe coverage from 41.7% → ~50%+, lifting B2B to ~68%.
+**Current state**: #1119 converters shipped and working — Create recipes improved from 36% to 40%. But only ~126 of 750 custom recipes are now converting (~21% hit rate). 1,661 Create recipes remain unconverted (59.7% of Create total). With semantic chunking and the modular java_analyzer in place, the infrastructure is ready for a deeper pass.
 
-### 🥈 #2: [#1089](https://github.com/anchapin/ModPorter-AI/issues/1089) — Multi-Candidate Consistency Check (Phase 2)
+**Investigation areas**:
+- `create:compacting` recipes not in original breakdown — how many exist and what's coverage?
+- Multi-output result handling (Create's milling/crushing often produce multiple outputs with probability weights — Bedrock has no direct equivalent)
+- Tag-based ingredient resolution (`#forge:ingots/iron` → specific item lookup)
+- Recipes that require machine-specific mechanics (e.g., RPM requirements in deploying) may need a fallback/approximation strategy
 
-With per-segment confidence scoring (#1118) already deployed, the next quality layer is a training-free consistency check: generate N candidate Bedrock outputs per Java segment, apply conformal prediction to identify the most reliable one, and flag inconsistent candidates rather than arbitrarily picking one. This reduces hallucination in AI-generated Bedrock entity behaviors and reduces manual review burden for beta users — directly improving the B2B creator experience.
+**Expected impact**: Each 100 additional Create recipes converted adds ~0.4pp to aggregate recipe coverage and ~0.1pp to B2B.
 
-### 🥉 #3: [#1103](https://github.com/anchapin/ModPorter-AI/issues/1103) — Split texture_converter.py (57K) + model_converter.py (32K)
+### 🥈 #2: [#1097](https://github.com/anchapin/ModPorter-AI/issues/1097) — Consolidate 5 Backend Error-Handling Files
 
-Following the pattern of #1099 (java_analyzer, 131K → 6 modules, now complete), texture_converter.py at 57K and model_converter.py at 32K are the next largest single-file bottlenecks. Model coverage is the second highest-weight factor in B2B (30%). Splitting these into focused submodules (e.g., by block/item/entity/animation) enables targeted improvements to specific texture and model types without touching the entire converter on every change.
+The last medium-priority open tech debt. Five separate error-handling modules creates inconsistent error propagation behavior — a stability risk during beta load. Consolidating into an `errors/` package with a unified exception hierarchy improves predictability, makes error telemetry more actionable, and is a natural complement to Celery's retry policies (#1122, already merged).
+
+### 🥉 #3: [#994](https://github.com/anchapin/ModPorter-AI/issues/994) — Upgrade Embedding Model ada-002 → text-embedding-3
+
+The embedding model underlies the hybrid search at the core of Java→Bedrock concept mapping. `text-embedding-3-small` cuts cost by ~5× vs ada-002 while improving retrieval quality, and `text-embedding-3-large` improves accuracy further. Upgrading the embedding model is the highest-leverage ML quality improvement available without changing the model architecture — better embeddings means more accurate Java class→Bedrock behavior mappings, which benefits all asset types but especially entities and recipes.
 
 ---
 
 ## Audit Reports
 
 - [v12 — Apr 18 8:48pm](docs/audit-reports/real-world-scan-v12-20260418.md) — B2B 66.4%, 8/8 PASS, recipe +509
-- [v13 — Apr 19 12:51am](docs/audit-reports/real-world-scan-v13-20260419.md) — B2B 66.4% stable, M4 complete, #1105 non-std JAR validated
-- [v14 — Apr 19 1:33pm](docs/audit-reports/real-world-scan-v14-20260419.md) — B2B 66.4% (3rd cycle), tree-sitter, item map 1152, confidence scoring, ceiling confirmed
-- [**v15 — Apr 19 7:53pm**](docs/audit-reports/real-world-scan-v15-20260419.md) — **B2B 66.4% (4th cycle)**, semantic chunking ✅, java_analyzer split ✅, Celery ✅, #1119 filed as P1 ceiling-breaker
+- [v13 — Apr 19 12:51am](docs/audit-reports/real-world-scan-v13-20260419.md) — B2B 66.4% stable, M4 complete
+- [v14 — Apr 19 1:33pm](docs/audit-reports/real-world-scan-v14-20260419.md) — B2B 66.4% (3rd cycle), ceiling confirmed
+- [v15 — Apr 19 7:53pm](docs/audit-reports/real-world-scan-v15-20260419.md) — B2B 66.4% (4th cycle), semantic chunking ✅
+- [**v16 — Apr 20 1:46am**](docs/audit-reports/real-world-scan-v16-20260420.md) — **B2B 67.0% 🆕**, Create recipe converters ✅ (+127), ceiling partially broken
