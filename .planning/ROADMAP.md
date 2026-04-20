@@ -599,7 +599,7 @@ Phase 21.0 (Coverage Optimization)
 
 | Issue | Paper | Priority |
 |-------|-------|----------|
-| [#TBD — Adversarial Logic Auditor agent for Multi-Agent QA](#) | [ASMR-Bench: Auditing for Sabotage in ML Research](https://arxiv.org/abs/2604.16286v1) | High |
+| [#1138 — Adversarial Logic Auditor agent for Multi-Agent QA](https://github.com/anchapin/ModPorter-AI/issues/1138) | [ASMR-Bench: Auditing for Sabotage in ML Research](https://arxiv.org/abs/2604.16286v1) | High |
 
 ### Roadmap Implications
 
