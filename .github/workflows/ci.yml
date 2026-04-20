@@ -698,7 +698,7 @@ jobs:
           echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v6
         with:
           version: 9
 
@@ -936,7 +936,7 @@ jobs:
           node-version: '20.19.0'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v6
         with:
           version: 9
 
@@ -1073,7 +1073,7 @@ jobs:
           node-version: '20.19.0'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v6
         with:
           version: 9
 
@@ -1177,7 +1177,7 @@ jobs:
           node-version: '20.19.0'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v6
         with:
           version: 9
 
