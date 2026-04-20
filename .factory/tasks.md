@@ -1,7 +1,10 @@
 # Current Tasks
 
 ## In Progress
-- 🔄 Issue #1089: Multi-candidate consistency check (DPC-style)
+- 🔄 (none)
+
+## Completed
+- ✅ Issue #1089: Multi-candidate consistency check (DPC-style)
 
 ## Completed
 - ✅ Issue #1141: Split logic_translator.py (143K, 3568 lines) into modular package
