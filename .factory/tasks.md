@@ -4,6 +4,14 @@
 - 🔄 (none)
 
 ## Completed
+- ✅ Issue #1101: Remove dead BM25 fallback in hybrid_search_engine.py
+  - Added `rank-bm25>=1.0.0` to `ai-engine/pyproject.toml` dependencies
+  - Replaced `try/except ImportError` block with hard import `from rank_bm25 import BM25Okapi`
+  - Removed `BM25_AVAILABLE` flag and all 5 conditional checks throughout the file
+  - Removed 3 `@pytest.mark.skipif` decorators from tests (BM25 tests always run now)
+  - All 18 tests pass
+
+## Completed
 - ✅ Issue #1089: Multi-candidate consistency check (DPC-style)
 
 ## Completed
