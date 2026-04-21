@@ -1,5 +1,6 @@
 """
 Rate limiting utility for OpenAI API calls and LLM interactions
+Supports: OpenAI, Z.AI, Ollama, and OpenAI-compatible providers (OpenRouter, LM Studio, etc.)
 """
 
 import time
@@ -32,6 +33,20 @@ class ZAIConfig:
     api_key: str = ""
     model: str = "glm-4-plus"
     base_url: str = "https://api.z.ai/v1"
+    max_retries: int = 3
+    timeout: int = 300
+    temperature: float = 0.1
+    max_tokens: int = 4000
+
+
+@dataclass
+class OpenAICompatibleConfig:
+    """Configuration for OpenAI-compatible LLM backends (OpenRouter, LM Studio, etc.)"""
+
+    api_key: str = ""
+    model: str = "gpt-4"
+    base_url: str = "https://api.openai.com/v1"
+    provider: str = "openai"  # openai, openrouter, lmstudio, custom
     max_retries: int = 3
     timeout: int = 300
     temperature: float = 0.1
@@ -554,6 +569,177 @@ class RateLimitedZAI:
         logger.info(f"CrewAI mode disabled for Z.AI - model: {self.config.model}")
 
 
+class OpenAICompatibleLLM:
+    """
+    Rate-limited wrapper for OpenAI-compatible LLM backends (OpenRouter, LM Studio, etc.)
+    Uses the OpenAI client with a custom base_url.
+    """
+
+    def __init__(self, config: OpenAICompatibleConfig = None):
+        from utils.config import Config
+
+        cfg = Config()
+
+        if config is None:
+            api_key = cfg.LLM_API_KEY or cfg.OPENAI_API_KEY
+            model = cfg.LLM_MODEL or cfg.OPENAI_MODEL
+            base_url = cfg.LLM_BASE_URL or "https://api.openai.com/v1"
+            provider = cfg.LLM_PROVIDER
+        else:
+            api_key = config.api_key
+            model = config.model
+            base_url = config.base_url
+            provider = config.provider
+
+        self.config = OpenAICompatibleConfig(
+            api_key=api_key or "",
+            model=model or "gpt-4",
+            base_url=base_url or "https://api.openai.com/v1",
+            provider=provider or "openai",
+            max_retries=3,
+            timeout=300,
+            temperature=0.1,
+            max_tokens=4000,
+        )
+
+        self.rate_config = RateLimitConfig(
+            requests_per_minute=50,
+            tokens_per_minute=40000,
+            max_retries=self.config.max_retries,
+            base_delay=1.0,
+            max_delay=60.0,
+            backoff_factor=2.0,
+        )
+
+        self.rate_limiter = RateLimiter(self.rate_config)
+
+        try:
+            from openai import OpenAI
+
+            self._client = OpenAI(
+                api_key=self.config.api_key,
+                base_url=self.config.base_url,
+                timeout=self.config.timeout,
+            )
+        except ImportError:
+            raise ImportError("openai package is required for OpenAI-compatible LLM support")
+
+        logger.info(
+            f"OpenAI-compatible LLM initialized with provider: {self.config.provider}, model: {self.config.model}, base_url: {self.config.base_url}"
+        )
+
+    def invoke(self, input_data, **kwargs):
+        """Invoke the model with rate limiting"""
+        return self._execute_with_rate_limit(self._invoke_internal, input_data, **kwargs)
+
+    def generate(self, messages, **kwargs):
+        """Generate response using the model with rate limiting"""
+        return self._execute_with_rate_limit(self._generate_internal, messages, **kwargs)
+
+    def predict(self, text, **kwargs):
+        """Predict using the model with rate limiting"""
+        return self._execute_with_rate_limit(self._predict_internal, text, **kwargs)
+
+    def _execute_with_rate_limit(self, func, *args, **kwargs):
+        """Execute function with rate limiting and retry logic"""
+        return _execute_with_retry(func, self.rate_limiter, self.rate_config, *args, **kwargs)
+
+    def _invoke_internal(self, input_data, **kwargs):
+        """Internal invoke implementation"""
+        messages = self._convert_to_messages(input_data)
+
+        response = self._client.chat.completions.create(
+            model=self.config.model,
+            messages=messages,
+            temperature=kwargs.get("temperature", self.config.temperature),
+            max_tokens=kwargs.get("max_tokens", self.config.max_tokens),
+            **{k: v for k, v in kwargs.items() if k not in ["temperature", "max_tokens"]},
+        )
+
+        from langchain_core.messages import AIMessage
+
+        return AIMessage(
+            content=response.choices[0].message.content,
+            response_metadata={
+                "model": self.config.model,
+                "finish_reason": response.choices[0].finish_reason,
+                "usage": response.usage.model_dump() if response.usage else {},
+            },
+        )
+
+    def _generate_internal(self, messages, **kwargs):
+        """Internal generate implementation"""
+        if isinstance(messages, str):
+            messages = [{"role": "user", "content": messages}]
+        elif hasattr(messages, "content"):
+            messages = [{"role": "user", "content": messages.content}]
+        elif isinstance(messages, list) and len(messages) > 0:
+            if hasattr(messages[0], "content"):
+                messages = [
+                    {"role": msg.type if hasattr(msg, "type") else "user", "content": msg.content}
+                    for msg in messages
+                ]
+
+        response = self._client.chat.completions.create(
+            model=self.config.model,
+            messages=messages,
+            temperature=kwargs.get("temperature", self.config.temperature),
+            max_tokens=kwargs.get("max_tokens", self.config.max_tokens),
+            **{k: v for k, v in kwargs.items() if k not in ["temperature", "max_tokens"]},
+        )
+
+        from langchain_core.messages import AIMessage
+
+        return AIMessage(
+            content=response.choices[0].message.content,
+            response_metadata={
+                "model": self.config.model,
+                "finish_reason": response.choices[0].finish_reason,
+                "usage": response.usage.model_dump() if response.usage else {},
+            },
+        )
+
+    def _predict_internal(self, text, **kwargs):
+        """Internal predict implementation"""
+        messages = [{"role": "user", "content": text}]
+
+        response = self._client.chat.completions.create(
+            model=self.config.model,
+            messages=messages,
+            temperature=kwargs.get("temperature", self.config.temperature),
+            max_tokens=kwargs.get("max_tokens", self.config.max_tokens),
+            **{k: v for k, v in kwargs.items() if k not in ["temperature", "max_tokens"]},
+        )
+
+        return response.choices[0].message.content
+
+    def _convert_to_messages(self, input_data):
+        """Convert various input formats to messages list"""
+        if isinstance(input_data, str):
+            return [{"role": "user", "content": input_data}]
+        elif hasattr(input_data, "content"):
+            return [{"role": "user", "content": input_data.content}]
+        elif isinstance(input_data, list) and len(input_data) > 0:
+            if hasattr(input_data[0], "content"):
+                return [
+                    {"role": msg.type if hasattr(msg, "type") else "user", "content": msg.content}
+                    for msg in input_data
+                ]
+        return [{"role": "user", "content": str(input_data)}]
+
+    def __call__(self, *args, **kwargs):
+        """Make the instance callable"""
+        return self.invoke(*args, **kwargs)
+
+    def enable_crew_mode(self):
+        """Enable CrewAI compatibility mode"""
+        logger.info(f"CrewAI mode enabled for {self.config.provider} - model: {self.config.model}")
+
+    def disable_crew_mode(self):
+        """Disable CrewAI compatibility mode"""
+        logger.info(f"CrewAI mode disabled for {self.config.provider} - model: {self.config.model}")
+
+
 def create_z_ai_llm(config: ZAIConfig = None):
     """
     Factory function to create a rate-limited Z.AI LLM instance
@@ -567,14 +753,45 @@ def create_z_ai_llm(config: ZAIConfig = None):
     return RateLimitedZAI(config)
 
 
+def create_openai_compatible_llm(config: OpenAICompatibleConfig = None):
+    """
+    Factory function to create a rate-limited OpenAI-compatible LLM instance
+    Supports OpenRouter, LM Studio, and any OpenAI-compatible API
+
+    Args:
+        config: OpenAICompatibleConfig instance. If None, loads from environment variables.
+
+    Returns:
+        OpenAICompatibleLLM instance
+    """
+    return OpenAICompatibleLLM(config)
+
+
 def get_llm_backend():
     """
     Get the best available LLM backend based on configuration and availability
-    Priority order: Z.AI > Ollama > OpenAI
+    Priority order: OpenAI-compatible (if LLM_BASE_URL set) > Z.AI > Ollama > OpenAI
 
     Returns:
         LLM instance for use with CrewAI
     """
+    # Check if OpenAI-compatible provider is configured (OpenRouter, LM Studio, etc.)
+    # Enabled when LLM_BASE_URL is set
+    from utils.config import Config
+
+    cfg = Config()
+
+    if cfg.LLM_BASE_URL:
+        try:
+            logger.info(
+                f"Attempting to initialize OpenAI-compatible LLM backend (provider: {cfg.LLM_PROVIDER})..."
+            )
+            compatible_llm = create_openai_compatible_llm()
+            logger.info(f"OpenAI-compatible LLM backend initialized successfully")
+            return compatible_llm
+        except Exception as e:
+            logger.warning(f"Failed to initialize OpenAI-compatible backend: {e}")
+
     # Check if Z.AI is enabled and configured
     if os.getenv("USE_Z_AI", "false").lower() == "true":
         try:
@@ -607,6 +824,7 @@ def get_llm_backend():
     # If all backends fail, raise an error
     raise RuntimeError(
         "No LLM backend available. Please configure one of the following:\n"
+        "- OpenAI-compatible: Set LLM_BASE_URL (and optionally LLM_API_KEY, LLM_MODEL, LLM_PROVIDER)\n"
         "- Z.AI: Set USE_Z_AI=true and Z_AI_API_KEY environment variable\n"
         "- Ollama: Set USE_OLLAMA=true and ensure Ollama service is running\n"
         "- OpenAI: Set OPENAI_API_KEY environment variable"
