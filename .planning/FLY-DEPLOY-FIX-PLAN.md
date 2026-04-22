@@ -100,8 +100,20 @@ Update `fly.toml` or use `--env` flags to set:
 1. [x] **Remove cache-to configuration** from workflow
 2. [x] **Remove Docker build/push step** entirely
 3. [x] **Simplify flyctl deploy command** to let Fly.io handle builds
-4. [ ] **Test staging deployment** (pending - requires manual trigger)
-5. [ ] **Verify production deployment** (manual trigger only)
+4. [x] **Update flyctl action to new API format** (use `args` instead of `app`/`command`)
+5. [x] **Remove invalid flags** (`--nowait` not supported)
+6. [x] **Fix langchain dependency** — Changed `langchain` to `langchain-core`
+7. [ ] **Verify FLY_API_TOKEN secret** — User reports secret is added but still gets "unauthorized"
+
+**Workflow Fixes: COMPLETE ✅**
+- Cache export removed
+- Docker build step removed  
+- Action API format updated
+- Invalid flags removed
+- Dependency conflict resolved
+
+**Remaining Blocker:**
+The FLY_API_TOKEN secret exists but returns "unauthorized". The token needs to be regenerated and re-added.
 
 ---
 
@@ -138,3 +150,25 @@ If the simplified approach fails:
 1. Restore Docker build/push step
 2. Keep Option A (Buildx builder setup) for cache support
 3. Revert to original deployment command
+
+---
+
+## Additional Issues Found (Post-Implementation)
+
+### 4. Missing FLY_API_TOKEN Secret (BLOCKING)
+**Error:** `Error: unauthorized (Request ID: 01KPV1SQ9WFYNSZEQ4XY07THYQ-ord)`
+**Impact:** Staging deployment cannot authenticate with Fly.io
+
+**Fix Required:** Add `FLY_API_TOKEN` secret to GitHub repository settings
+1. Get token: `flyctl auth token`
+2. Add to: GitHub Settings → Secrets and variables → Actions → New repository secret
+
+---
+
+### 5. Python Dependency Conflict (BLOCKING)
+**Error:** `Cannot install -r /tmp/ai-engine-requirements.txt (line 9) and langchain<1.0.0 and >=0.3.0 because these package versions have conflicting dependencies.`
+**Impact:** Production build fails during pip install
+
+**Root Cause:** Conflicting langchain version constraints in `ai-engine/requirements.txt`
+
+**Fix Required:** Resolve version constraints in `ai-engine/requirements.txt`

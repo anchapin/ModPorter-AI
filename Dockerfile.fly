@@ -14,7 +14,9 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build
 
 # Python dependencies build stage (consolidates all Python deps)
-FROM python:3.14-slim AS python-builder
+# Note: Using Python 3.12 instead of 3.14 because tiktoken has no prebuilt wheels for 3.14
+# Also matches Alpine's default python3 (3.12.13) to avoid version mismatch
+FROM python:3.12-slim AS python-builder
 WORKDIR /tmp
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc g++ curl libmagic1 ffmpeg && \
@@ -38,7 +40,7 @@ RUN apk add --no-cache python3 py3-pip curl postgresql-client redis \
     && ln -sf python3 /usr/bin/python
 
 # Copy Python packages from consolidated builder
-COPY --from=python-builder /usr/local/lib/python3.14/site-packages /usr/local/lib/python3.14/site-packages
+COPY --from=python-builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=python-builder /usr/local/bin /usr/local/bin
 
 # Copy application code
