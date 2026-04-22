@@ -301,6 +301,13 @@ async def health_check():
     )
 
 
+# Simple health endpoint for load balancers
+@app.get("/health")
+async def simple_health_check():
+    """Simple health check for load balancers and monitoring"""
+    return {"status": "healthy"}
+
+
 async def check_redis_health() -> DependencyHealth:
     """
     Check Redis connectivity and return health status.

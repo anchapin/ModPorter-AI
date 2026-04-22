@@ -45,6 +45,7 @@ rank_bm25>=0.2.0
 
 # Redis for job management - align with backend version
 redis>=7.1.0
+async-timeout>=4.0.0
 
 # Configuration Management - align with backend version
 pydantic~=2.13.2

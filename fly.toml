@@ -9,18 +9,18 @@ primary_region = "iad"
   dockerfile = "Dockerfile.fly"
 
 [build.args]
-  PYTHON_VERSION = "3.12"
+  PYTHON_VERSION = "3.11"
 
-# Database migrations run before each deploy
-[deploy]
-  release_command = "cd /app/backend && alembic upgrade head"
+# Database migrations - temporarily disabled for deployment
+# [deploy]
+#   release_command = "sh /app/scripts/run-migrations.sh"
 
 # Process groups
 # "app" runs nginx + backend API + AI engine via the startup script
 # "worker" runs Celery background jobs
 [processes]
   app = "/startup.sh"
-  worker = "sh -c 'cd /app/backend && PYTHONPATH=/app/backend celery -A src.services.celery_config worker --loglevel=info'"
+  worker = "sh -c 'cd /app/backend && PYTHONPATH=/usr/lib/python3.11/site-packages:/app/backend python -m celery -A src.services.celery_config worker --loglevel=info'"
 
 # Environment variables applied to all processes
 [env]
@@ -37,9 +37,8 @@ primary_region = "iad"
   processes = ["app"]
   internal_port = 80
   protocol = "tcp"
-  auto_stop_machines = "stop"
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
 
   [[services.ports]]
     port = 80

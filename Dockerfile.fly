@@ -14,9 +14,9 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build
 
 # Python dependencies build stage (consolidates all Python deps)
-# Note: Using Python 3.12 instead of 3.14 because tiktoken has no prebuilt wheels for 3.14
-# Also matches Alpine's default python3 (3.12.13) to avoid version mismatch
-FROM python:3.12-slim AS python-builder
+# Note: Using Python 3.11 to match Debian bookworm's Python version
+# Debian bookworm-slim ships with Python 3.11.2, so we must build packages for 3.11
+FROM python:3.11-slim AS python-builder
 WORKDIR /tmp
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc g++ curl libmagic1 ffmpeg && \
@@ -32,28 +32,31 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r /tmp/ai-engine-requirements.txt
 
 # Production stage - Nginx + Python services
-FROM nginx:alpine
+FROM debian:bookworm-slim
 WORKDIR /app
 
-# Install Python and dependencies
-RUN apk add --no-cache python3 py3-pip curl postgresql-client redis \
+# Install Nginx, Python, and build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    nginx curl postgresql-client redis python3 python3-pip python3-dev gcc g++ \
+    && rm -rf /var/lib/apt/lists/* \
     && ln -sf python3 /usr/bin/python
 
-# Copy Python packages from consolidated builder
-COPY --from=python-builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=python-builder /usr/local/bin /usr/local/bin
+# Copy Python packages from consolidated builder (NOT binaries - use production stage's Python)
+# Debian system Python looks in /usr/lib/python3.X, not /usr/local/lib/python3.X
+COPY --from=python-builder /usr/local/lib/python3.11/site-packages /usr/lib/python3.11/site-packages
 
 # Copy application code
 COPY backend/ /app/backend/
 COPY ai-engine/ /app/ai-engine/
+COPY backend/src/alembic.ini /app/backend/alembic.ini
 COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
 
 # Copy nginx configuration
 COPY nginx-fly.conf /etc/nginx/nginx.conf
 
 # Create non-root user and symlink app data directories to mounted volume
-RUN addgroup -g 1001 -S appuser && \
-    adduser -S appuser -u 1001 -G appuser && \
+RUN groupadd -g 1001 appuser && \
+    useradd -u 1001 -g appuser -m appuser && \
     mkdir -p /data/cache /data/temp_uploads /data/conversion_outputs /data/logs /data/db && \
     ln -s /data/cache /app/cache && \
     ln -s /data/temp_uploads /app/temp_uploads && \
@@ -66,9 +69,10 @@ RUN addgroup -g 1001 -S appuser && \
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost/health || exit 1
 
-# Copy startup script
+# Copy startup and migration scripts
 COPY scripts/fly-startup.sh /startup.sh
-RUN chmod +x /startup.sh
+COPY scripts/run-migrations.sh /app/scripts/run-migrations.sh
+RUN chmod +x /startup.sh /app/scripts/run-migrations.sh
 
 EXPOSE 80 443 8000 8001
 

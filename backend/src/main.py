@@ -322,6 +322,13 @@ async def health_check():
     )
 
 
+# Simple health endpoint for load balancers
+@app.get("/health")
+async def simple_health_check():
+    """Simple health check for load balancers and monitoring"""
+    return {"status": "healthy"}
+
+
 # File upload endpoint
 @app.post("/api/v1/upload", response_model=UploadResponse, tags=["files"])
 async def upload_file(file: UploadFile = File(...)):
