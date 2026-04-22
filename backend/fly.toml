@@ -1,9 +1,8 @@
-# Fly.io configuration for PortKit Backend
+# Fly.io configuration for Portkit
 # Deploy with: fly deploy
 
 app = "portkit-backend"
-kill_signal = "SIGINT"
-kill_timeout = "5s"
+primary_region = "iad"
 
 # Build configuration
 [build]
@@ -12,59 +11,47 @@ kill_timeout = "5s"
 [build.args]
   PYTHON_VERSION = "3.11"
 
-# Primary region
-primary_region = "iad"
-
-# Runtime configuration
+# Database migrations run before each deploy
 [deploy]
-  release_command = "alembic upgrade head"
+  release_command = "cd /app/backend && alembic upgrade head"
 
-# Health check
-[healthcheck]
-  port = 8000
-  path = "/api/v1/health"
-  interval = "30s"
-  timeout = "10s"
-  retries = 3
-
-# Port configuration
-[ports]
-  internal = 8000
-
-# Process group
+# Process groups
+# "app" runs nginx + backend API + AI engine via the startup script
+# "worker" runs Celery background jobs
 [processes]
-  app = "uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 1 --access-log"
-  worker = "celery -A src.services.celery_config worker --loglevel=info"
+  app = "/startup.sh"
+  worker = "sh -c 'cd /app/backend && PYTHONPATH=/app/backend celery -A src.services.celery_config worker --loglevel=info'"
 
-# Environment variables
+# Environment variables applied to all processes
 [env]
   PYTHONUNBUFFERED = "1"
 
-# Volume for persistent storage
+# Persistent volume for uploads, conversions, and SQLite fallback
 [mounts]
   source = "portkit_data"
   destination = "/app/data"
   initial_size = "1gb"
 
-# HTTP service
+# HTTP service: Fly terminates TLS and forwards plain HTTP to nginx on port 80
 [[services]]
-  internal_port = 8000
+  processes = ["app"]
+  internal_port = 80
   protocol = "tcp"
-
-  [services.concurrency]
-    hard_limit = 25
-    soft_limit = 20
-
-  [[services.ports]]
-    port = 443
-    handlers = ["tls"]
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
 
   [[services.ports]]
     port = 80
     handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
 
   [[services.checks]]
-    path = "/api/v1/health"
+    path = "/health"
     interval = "30s"
     timeout = "10s"
     retries = 3
