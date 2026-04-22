@@ -695,6 +695,6 @@ async function uploadFile(file: File, token: string) {
 
 ## Support
 
-- **Documentation**: [docs.modporter.ai](https://docs.modporter.ai)
+- **Documentation**: [docs.portkit.cloud](https://docs.portkit.cloud)
 - **Discord**: [discord.gg/modporter](https://discord.gg/modporter)
-- **GitHub Issues**: [github.com/modporter-ai/issues](https://github.com/modporter-ai/issues)
+- **GitHub Issues**: [github.com/anchapin/portkit/issues](https://github.com/anchapin/portkit/issues)

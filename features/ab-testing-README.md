@@ -1,6 +1,6 @@
 # A/B Testing Infrastructure
 
-This directory contains the implementation of the A/B testing infrastructure for ModPorter AI agent strategy optimization.
+This directory contains the implementation of the A/B testing infrastructure for Portkit agent strategy optimization.
 
 ## Components
 

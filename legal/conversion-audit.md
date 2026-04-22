@@ -29,7 +29,7 @@ This document tracks mods used for conversion testing and their license complian
 
 ### Biomes O' Plenty (REMOVED)
 - **Reason:** CC BY-NC-ND 4.0 license violation
-- **Issue:** [#1021](https://github.com/anchapin/ModPorter-AI/issues/1021)
+- **Issue:** [#1021](https://github.com/anchapin/portkit/issues/1021)
 - **Removal Date:** 2026-04-09
 - **Impact:** Cannot legally produce derivative works from this mod
 - **Replacement:** Terralith (MIT licensed)
@@ -69,4 +69,4 @@ Before adding a mod to the test shortlist:
 
 ## Related Issues
 
-- [#1021](https://github.com/anchapin/ModPorter-AI/issues/1021) - Biomes O' Plenty license violation
+- [#1021](https://github.com/anchapin/portkit/issues/1021) - Biomes O' Plenty license violation

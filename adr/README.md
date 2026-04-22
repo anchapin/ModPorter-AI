@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADR)
 
-This directory contains Architecture Decision Records for ModPorter-AI.
+This directory contains Architecture Decision Records for portkit.
 
 ## Index
 

@@ -1,4 +1,4 @@
-# ModPorter-AI Gap Analysis - Milestone v2.5
+# portkit Gap Analysis - Milestone v2.5
 
 **Document Version:** 1.0  
 **Created:** 2026-03-31  

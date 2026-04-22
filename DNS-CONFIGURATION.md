@@ -2,7 +2,7 @@
 
 This document provides DNS record configurations for various DNS providers.
 
-## Domain: modporter.ai
+## Domain: portkit.cloud
 
 ## Required DNS Records
 
@@ -10,7 +10,7 @@ This document provides DNS record configurations for various DNS providers.
 
 | Type | Name | Value | TTL | Description |
 |------|------|-------|-----|-------------|
-| A | @ (modporter.ai) | `<PRODUCTION_SERVER_IP>` | 3600 | Main domain |
+| A | @ (portkit.cloud) | `<PRODUCTION_SERVER_IP>` | 3600 | Main domain |
 | A | www | `<PRODUCTION_SERVER_IP>` | 3600 | WWW subdomain |
 | A | api | `<PRODUCTION_SERVER_IP>` | 3600 | API subdomain |
 | A | grafana | `<PRODUCTION_SERVER_IP>` | 3600 | Grafana subdomain |
@@ -27,8 +27,8 @@ This document provides DNS record configurations for various DNS providers.
 | Type | Name | Value | TTL | Description |
 |------|------|-------|-----|-------------|
 | TXT | @ | `"v=spf1 include:sendgrid.net ~all"` | 3600 | SPF for email |
-| TXT | modporter.ai._domainkey | `<DKIM_KEY_FROM_SENDGRID>` | 3600 | DKIM signing |
-| TXT | @ | `"v=DMARC1; p=none; rua=mailto:dmarc@modporter.ai"` | 3600 | DMARC policy |
+| TXT | portkit.cloud._domainkey | `<DKIM_KEY_FROM_SENDGRID>` | 3600 | DKIM signing |
+| TXT | @ | `"v=DMARC1; p=none; rua=mailto:dmarc@portkit.cloud"` | 3600 | DMARC policy |
 
 ### CNAME Records (Canonical Name)
 
@@ -43,7 +43,7 @@ This document provides DNS record configurations for various DNS providers.
 ### Cloudflare
 
 1. Log in to Cloudflare Dashboard
-2. Select your domain (modporter.ai)
+2. Select your domain (portkit.cloud)
 3. Go to DNS settings
 4. Add records as above
 5. **Important**: Disable proxy (orange cloud) for initial SSL setup
@@ -59,7 +59,7 @@ This document provides DNS record configurations for various DNS providers.
 ### Namecheap
 
 1. Log in to Namecheap Dashboard
-2. Select Domain List → Manage for modporter.ai
+2. Select Domain List → Manage for portkit.cloud
 3. Go to Advanced DNS tab
 4. Add records as above
 
@@ -70,7 +70,7 @@ This document provides DNS record configurations for various DNS providers.
 ### GoDaddy
 
 1. Log in to GoDaddy DNS Management
-2. Select modporter.ai
+2. Select portkit.cloud
 3. Add records as above
 
 **GoDaddy-specific settings:**
@@ -80,7 +80,7 @@ This document provides DNS record configurations for various DNS providers.
 ### Route53 (AWS)
 
 1. Log in to AWS Route53 Console
-2. Select Hosted Zone for modporter.ai
+2. Select Hosted Zone for portkit.cloud
 3. Create Record Sets as above
 
 **Route53-specific settings:**
@@ -95,18 +95,18 @@ This document provides DNS record configurations for various DNS providers.
 
 ```bash
 # Check A records
-dig modporter.ai +short
-dig www.modporter.ai +short
-dig api.modporter.ai +short
+dig portkit.cloud +short
+dig www.portkit.cloud +short
+dig api.portkit.cloud +short
 
 # Check MX records
-dig modporter.ai MX +short
+dig portkit.cloud MX +short
 
 # Check TXT records
-dig modporter.ai TXT +short
+dig portkit.cloud TXT +short
 
 # Check all records
-dig modporter.ai ANY
+dig portkit.cloud ANY
 ```
 
 ### Online Tools
@@ -150,7 +150,7 @@ DKIM adds a digital signature to emails.
 DMARC tells receiving servers what to do if SPF or DKIM fails.
 
 ```
-v=DMARC1; p=none; rua=mailto:dmarc@modporter.ai
+v=DMARC1; p=none; rua=mailto:dmarc@portkit.cloud
 ```
 
 **Policy Options:**
@@ -160,7 +160,7 @@ v=DMARC1; p=none; rua=mailto:dmarc@modporter.ai
 
 **After monitoring period (1-2 weeks), update to:**
 ```
-v=DMARC1; p=quarantine; rua=mailto:dmarc@modporter.ai; pct=100
+v=DMARC1; p=quarantine; rua=mailto:dmarc@portkit.cloud; pct=100
 ```
 
 ---
@@ -171,13 +171,13 @@ After DNS is configured and SSL certificates are installed:
 
 ```bash
 # Check SSL certificate
-openssl s_client -connect modporter.ai:443 -servername modporter.ai
+openssl s_client -connect portkit.cloud:443 -servername portkit.cloud
 
 # Check certificate expiry
-echo | openssl s_client -connect modporter.ai:443 -servername modporter.ai 2>/dev/null | openssl x509 -noout -dates
+echo | openssl s_client -connect portkit.cloud:443 -servername portkit.cloud 2>/dev/null | openssl x509 -noout -dates
 
 # Check SSL Labs rating
-# Visit: https://www.ssllabs.com/ssltest/analyze.html?d=modporter.ai
+# Visit: https://www.ssllabs.com/ssltest/analyze.html?d=portkit.cloud
 ```
 
 ---
@@ -187,7 +187,7 @@ echo | openssl s_client -connect modporter.ai:443 -servername modporter.ai 2>/de
 ### DNS Not Propagating
 
 1. Wait up to 48 hours for full propagation
-2. Check with multiple DNS servers: `dig @8.8.8.8 modporter.ai`
+2. Check with multiple DNS servers: `dig @8.8.8.8 portkit.cloud`
 3. Clear local DNS cache: `sudo systemd-resolve --flush-caches`
 
 ### SSL Certificate Issues
@@ -198,7 +198,7 @@ echo | openssl s_client -connect modporter.ai:443 -servername modporter.ai 2>/de
 
 ### Email Deliverability Issues
 
-1. Verify SPF record: `dig modporter.ai TXT`
+1. Verify SPF record: `dig portkit.cloud TXT`
 2. Check DKIM setup in SendGrid
 3. Verify DMARC policy is correct
 4. Check IP reputation: https://talosintelligence.com/

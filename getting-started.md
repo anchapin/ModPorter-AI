@@ -1,10 +1,10 @@
-# Getting Started with ModPorter AI
+# Getting Started with Portkit
 
-Welcome to ModPorter AI - the first AI-powered tool that converts Minecraft Java Edition mods to Bedrock Edition add-ons.
+Welcome to Portkit - the first AI-powered tool that converts Minecraft Java Edition mods to Bedrock Edition add-ons.
 
-## What is ModPorter AI?
+## What is Portkit?
 
-ModPorter AI automates 60-80% of the work required to convert Java mods to Bedrock add-ons, saving you months of manual rewriting. Our multi-agent AI system:
+Portkit automates 60-80% of the work required to convert Java mods to Bedrock add-ons, saving you months of manual rewriting. Our multi-agent AI system:
 
 - Analyzes Java code structure and dependencies
 - Translates Java logic to JavaScript (Bedrock Script API)
@@ -37,8 +37,8 @@ Before setting up locally, ensure you have:
 
 ```bash
 # Clone the repository
-git clone https://github.com/anchapin/ModPorter-AI.git
-cd ModPorter-AI
+git clone https://github.com/anchapin/portkit.git
+cd portkit
 
 # Copy environment variables
 cp .env.example .env
@@ -198,9 +198,9 @@ docker compose ps
 
 ## Getting Help
 
-- **Documentation**: [docs.modporter.ai](https://docs.modporter.ai)
+- **Documentation**: [docs.portkit.cloud](https://docs.portkit.cloud)
 - **Discord**: [discord.gg/modporter](https://discord.gg/modporter)
-- **Email**: support@modporter.ai
-- **GitHub Issues**: [github.com/modporter-ai/issues](https://github.com/modporter-ai/issues)
+- **Email**: support@portkit.cloud
+- **GitHub Issues**: [github.com/anchapin/portkit/issues](https://github.com/anchapin/portkit/issues)
 
 Happy converting!

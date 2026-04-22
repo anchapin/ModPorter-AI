@@ -95,7 +95,7 @@ Convert multiple mods simultaneously with centralized tracking.
 ```python
 # Start batch conversion
 response = requests.post(
-    "https://api.modporter.ai/api/v1/batch/convert",
+    "https://api.portkit.cloud/api/v1/batch/convert",
     headers={"Authorization": f"Bearer {token}"},
     json={
         "files": [
@@ -111,13 +111,13 @@ batch_id = response.json()["batch_id"]
 
 # Check status
 status = requests.get(
-    f"https://api.modporter.ai/api/v1/batch/{batch_id}/status",
+    f"https://api.portkit.cloud/api/v1/batch/{batch_id}/status",
     headers={"Authorization": f"Bearer {token}"}
 )
 
 # Download results
 results = requests.get(
-    f"https://api.modporter.ai/api/v1/batch/{batch_id}/results",
+    f"https://api.portkit.cloud/api/v1/batch/{batch_id}/results",
     headers={"Authorization": f"Bearer {token}"}
 )
 ```

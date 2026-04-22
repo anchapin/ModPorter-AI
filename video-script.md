@@ -1,6 +1,6 @@
-# ModPorter AI - 5-Minute Overview Video Script
+# Portkit - 5-Minute Overview Video Script
 
-**Video Title**: "Convert Java Mods to Bedrock in Minutes with ModPorter AI"
+**Video Title**: "Convert Java Mods to Bedrock in Minutes with Portkit"
 **Duration**: 5 minutes
 **Target Audience**: Minecraft modders, Java developers, Bedrock creators
 **Style**: Professional, friendly, tutorial-focused
@@ -23,7 +23,7 @@
 - Text: "3x More Players on Bedrock"
 
 **Audio**:
-> "I'm Alex, and today I'm showing you ModPorter AI - the first tool that automates Java to Bedrock conversion. In just 5 minutes, you'll see how to convert a mod in minutes instead of months."
+> "I'm Alex, and today I'm showing you Portkit - the first tool that automates Java to Bedrock conversion. In just 5 minutes, you'll see how to convert a mod in minutes instead of months."
 
 ---
 
@@ -53,12 +53,12 @@
 ### [1:30-2:30] The Solution
 
 **Visual**:
-- Screen: ModPorter AI website (modporter.ai)
+- Screen: Portkit website (portkit.cloud)
 - Logo animation
 - Clean, modern UI
 
 **Audio**:
-> "ModPorter AI uses advanced AI to automate 60 to 80 percent of this work. It's not just a code translator - it actually understands your mod's logic and generates Bedrock-equivalent code."
+> "Portkit uses advanced AI to automate 60 to 80 percent of this work. It's not just a code translator - it actually understands your mod's logic and generates Bedrock-equivalent code."
 
 **Visual**:
 - Animated diagram: Multi-agent AI system
@@ -85,7 +85,7 @@
 ### [2:30-4:00] Live Demo
 
 **Visual**:
-- Screen recording: modporter.ai
+- Screen recording: portkit.cloud
 - Cursor movement: Natural, confident
 
 **Audio**:
@@ -162,26 +162,26 @@
 ### [4:30-5:00] Call to Action
 
 **Visual**:
-- Screen: modporter.ai/pricing
+- Screen: portkit.cloud/pricing
 - Pricing table:
   - Free: 5 conversions/month
   - Pro: $9.99/month, unlimited
   - Studio: $29.99/month, teams
 
 **Audio**:
-> "Ready to convert your own mods? ModPorter AI has a free tier with 5 conversions per month - perfect for testing it out. Pro is just $9.99 a month for unlimited conversions, priority support, and advanced features like batch processing and API access."
+> "Ready to convert your own mods? Portkit has a free tier with 5 conversions per month - perfect for testing it out. Pro is just $9.99 a month for unlimited conversions, priority support, and advanced features like batch processing and API access."
 
 **Visual**:
-- Text overlay: "modporter.ai"
+- Text overlay: "portkit.cloud"
 - Discord logo: "discord.gg/modporter"
-- GitHub logo: "github.com/modporter-ai"
+- GitHub logo: "github.com/portkit"
 
 **Audio**:
-> "Visit modporter.ai to get started, join our Discord community for help, and check out the GitHub repo if you're interested in contributing. I'll see you there!"
+> "Visit portkit.cloud to get started, join our Discord community for help, and check out the GitHub repo if you're interested in contributing. I'll see you there!"
 
 **Visual**:
 - Fade to black
-- Logo: ModPorter AI
+- Logo: Portkit
 - Text: "Empowering every modder to reach every player"
 
 ---
@@ -236,7 +236,7 @@
 ### Graphics & Assets
 
 **Needed**:
-- ModPorter AI logo (SVG)
+- Portkit logo (SVG)
 - Java vs Bedrock comparison graphic
 - Multi-agent AI diagram (animated)
 - Before/after code comparison
@@ -303,7 +303,7 @@
 - Detailed description with links
 - Timestamps for chapters
 - Closed captions (auto-generate + edit)
-- Playlist: "ModPorter AI Tutorials"
+- Playlist: "Portkit Tutorials"
 
 ---
 
@@ -410,4 +410,4 @@
 - [Troubleshooting Guide](troubleshooting.md)
 - [API Documentation](api.md)
 
-**Need help?** Contact video@modporter.ai
+**Need help?** Contact video@portkit.cloud

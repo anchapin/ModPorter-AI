@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-This guide helps you resolve common issues when using ModPorter AI to convert Java mods to Bedrock add-ons.
+This guide helps you resolve common issues when using Portkit to convert Java mods to Bedrock add-ons.
 
 ## Table of Contents
 
@@ -386,7 +386,7 @@ Use our diagnostic tool:
 
 ```bash
 # Upload your .mcaddon for analysis
-curl -X POST https://api.modporter.ai/diagnose \
+curl -X POST https://api.portkit.cloud/diagnose \
   -F "file=@addon.mcaddon" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
@@ -400,14 +400,14 @@ curl -X POST https://api.modporter.ai/diagnose \
 4. Console logs from Content Logger
 
 **Support Channels**:
-- Email: support@modporter.ai
+- Email: support@portkit.cloud
 - Discord: [discord.gg/modporter](https://discord.gg/modporter)
-- GitHub Issues: [github.com/modporter-ai/issues](https://github.com/modporter-ai/issues)
+- GitHub Issues: [github.com/anchapin/portkit/issues](https://github.com/anchapin/portkit/issues)
 
 ### Community Help
 
-- **Forum**: [community.modporter.ai](https://community.modporter.ai)
-- **Wiki**: [docs.modporter.ai](https://docs.modporter.ai)
+- **Forum**: [community.portkit.cloud](https://community.portkit.cloud)
+- **Wiki**: [docs.portkit.cloud](https://docs.portkit.cloud)
 - **YouTube**: [youtube.com/@modporter](https://youtube.com/@modporter)
 
 ---
@@ -451,4 +451,4 @@ curl -X POST https://api.modporter.ai/diagnose \
 
 ---
 
-Still stuck? Our AI-powered chatbot can help 24/7 at [modporter.ai/support](https://modporter.ai/support).
+Still stuck? Our AI-powered chatbot can help 24/7 at [portkit.cloud/support](https://portkit.cloud/support).

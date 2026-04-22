@@ -1,8 +1,8 @@
-# ModPorter AI v0.1.0-MVP Release Notes
+# Portkit v0.1.0-MVP Release Notes
 
 ## 🎉 Initial MVP Release
 
-This is the first major release of ModPorter AI, focusing on the core functionality of converting simple Java block mods to Bedrock Edition add-ons.
+This is the first major release of Portkit, focusing on the core functionality of converting simple Java block mods to Bedrock Edition add-ons.
 
 ## 🚀 What's New
 
@@ -73,8 +73,8 @@ This is the first major release of ModPorter AI, focusing on the core functional
 
 ### Quick Start with Docker
 ```bash
-git clone https://github.com/anchapin/ModPorter-AI.git
-cd ModPorter-AI
+git clone https://github.com/anchapin/portkit.git
+cd portkit
 cp .env.example .env
 # Add your API keys to .env
 docker compose up -d
@@ -122,12 +122,12 @@ Special thanks to:
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/anchapin/ModPorter-AI/issues)
+- **Issues**: [GitHub Issues](https://github.com/anchapin/portkit/issues)
 - **Documentation**: Project README and PRD
 - **Community**: GitHub Discussions
 
 ---
 
-**Full Changelog**: https://github.com/anchapin/ModPorter-AI/commits/v0.1.0-mvp
+**Full Changelog**: https://github.com/anchapin/portkit/commits/v0.1.0-mvp
 
-Made with ❤️ by the ModPorter AI team
+Made with ❤️ by the Portkit team

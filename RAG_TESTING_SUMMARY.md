@@ -6,7 +6,7 @@ This document summarizes the documentation updates made to reflect the new RAG (
 ## Files Updated
 
 ### 1. Main README.md
-**Location**: `/home/anchapin/ModPorter-AI/README.md`
+**Location**: `/home/anchapin/portkit/README.md`
 
 **Updates Made**:
 - Added RAG-Enhanced Knowledge to the Features section
@@ -16,7 +16,7 @@ This document summarizes the documentation updates made to reflect the new RAG (
 - Added Docker testing commands for ai-engine
 
 ### 2. RAG Testing Documentation (New)
-**Location**: `/home/anchapin/ModPorter-AI/docs/RAG_TESTING.md`
+**Location**: `/home/anchapin/portkit/docs/RAG_TESTING.md`
 
 **Content Created**:
 - Comprehensive RAG testing suite documentation
@@ -29,7 +29,7 @@ This document summarizes the documentation updates made to reflect the new RAG (
 - Future enhancement roadmap
 
 ### 3. AI Engine README (New)
-**Location**: `/home/anchapin/ModPorter-AI/ai-engine/README.md`
+**Location**: `/home/anchapin/portkit/ai-engine/README.md`
 
 **Content Created**:
 - AI Engine architecture overview
@@ -41,7 +41,7 @@ This document summarizes the documentation updates made to reflect the new RAG (
 - Documentation references
 
 ### 4. Project Documentation Updates
-**Location**: `/home/anchapin/ModPorter-AI/docs/project-docs.md`
+**Location**: `/home/anchapin/portkit/docs/project-docs.md`
 
 **Updates Made**:
 - Enhanced AI Engine Tests section

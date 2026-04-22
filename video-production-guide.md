@@ -50,7 +50,7 @@ Complete guide for recording and producing ModPorter AI tutorial videos.
 6. Set display to 4K resolution (if available)
 
 **Browser Setup**:
-1. Open modporter.ai
+1. Open portkit.cloud
 2. Log in to your account
 3. Open DevTools (F12) for demos
 4. Set zoom to 100%
@@ -124,7 +124,7 @@ project/
 - Show timeline graphic (use Figma prototype)
 
 **Scene 3: Solution (60 seconds)**
-- Record modporter.ai homepage
+- Record portkit.cloud homepage
 - Animate multi-agent diagram (After Effects)
 - Show before/after code comparison
 
@@ -480,4 +480,4 @@ Track 5: Sound effects
 
 ---
 
-**Need help?** Contact video@modporter.ai or join our Discord community.
+**Need help?** Contact video@portkit.cloud or join our Discord community.

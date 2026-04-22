@@ -1,6 +1,6 @@
 # Feature Request System
 
-**ModPorter AI Beta Program**
+**Portkit Beta Program**
 
 ---
 
@@ -64,7 +64,7 @@
 - Community reacts with 👍 to vote
 - Product team reviews weekly
 
-### Email (features@modporter.ai)
+### Email (features@portkit.cloud)
 
 **Subject:** `[Feature Request] Brief description`
 
@@ -252,7 +252,7 @@ What happens next:
 2. Community votes and comments
 3. We update you on the status
 
-Track your request: https://modporter.ai/features/FEAT-12345
+Track your request: https://portkit.cloud/features/FEAT-12345
 
 Thanks for helping us improve!
 ```
@@ -271,7 +271,7 @@ Our product team is now reviewing your request. We'll evaluate:
 
 Expected decision: [Date]
 
-Track progress: https://modporter.ai/features/FEAT-12345
+Track progress: https://portkit.cloud/features/FEAT-12345
 ```
 
 ### Planned
@@ -302,9 +302,9 @@ Request: FEAT-12345
 What's new:
 [Brief description of the feature]
 
-Try it now: https://modporter.ai/[relevant-page]
+Try it now: https://portkit.cloud/[relevant-page]
 
-Thanks for your feedback - it helped make ModPorter AI better!
+Thanks for your feedback - it helped make Portkit better!
 ```
 
 ### Won't Do
@@ -321,7 +321,7 @@ Reason:
 
 We appreciate you taking the time to share your idea. Please continue submitting requests - your feedback helps shape our product!
 
-View our roadmap: https://modporter.ai/roadmap
+View our roadmap: https://portkit.cloud/roadmap
 ```
 
 ---

@@ -1,10 +1,10 @@
 # Database Backup and Restore Guide
 
-This document describes backup and restore procedures for ModPorter-AI's PostgreSQL database.
+This document describes backup and restore procedures for portkit's PostgreSQL database.
 
 ## Overview
 
-ModPorter-AI uses PostgreSQL with pgvector extension for:
+portkit uses PostgreSQL with pgvector extension for:
 - Conversion job metadata
 - User feedback and analytics
 - Document embeddings for RAG
