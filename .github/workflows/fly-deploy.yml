@@ -20,8 +20,6 @@ on:
         type: boolean
         default: false
 
-env:
-
 jobs:
   # ============================================
   # DEPLOY TO FLY.IO - Parallel environments
