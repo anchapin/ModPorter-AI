@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from services.error_handlers import (
     is_debug_mode,
     ErrorResponse,
-    ModPorterException,
+    PortkitException,
     ConversionException,
     FileProcessingException,
     ValidationException,
@@ -71,13 +71,13 @@ class TestErrorResponse:
 
 class TestCustomExceptions:
     def test_mod_porter_exception(self):
-        exc = ModPorterException("Test error", error_type="test_error")
+        exc = PortkitException("Test error", error_type="test_error")
         assert str(exc) == "Test error"
         assert exc.error_type == "test_error"
 
     def test_conversion_exception(self):
         exc = ConversionException("Conversion failed")
-        assert isinstance(exc, ModPorterException)
+        assert isinstance(exc, PortkitException)
 
     def test_file_processing_exception(self):
         exc = FileProcessingException("File not found")
@@ -85,7 +85,7 @@ class TestCustomExceptions:
 
     def test_validation_exception(self):
         exc = ValidationException("Invalid input")
-        assert isinstance(exc, ModPorterException)
+        assert isinstance(exc, PortkitException)
 
     def test_not_found_exception(self):
         exc = NotFoundException("Not found", resource_id="123")
@@ -98,19 +98,19 @@ class TestCustomExceptions:
 
     def test_parse_error(self):
         exc = ParseError("Failed to parse JSON")
-        assert isinstance(exc, ModPorterException)
+        assert isinstance(exc, PortkitException)
 
     def test_asset_error(self):
         exc = AssetError("Invalid asset")
-        assert isinstance(exc, ModPorterException)
+        assert isinstance(exc, PortkitException)
 
     def test_logic_error(self):
         exc = LogicError("Invalid state")
-        assert isinstance(exc, ModPorterException)
+        assert isinstance(exc, PortkitException)
 
     def test_package_error(self):
         exc = PackageError("Packaging failed")
-        assert isinstance(exc, ModPorterException)
+        assert isinstance(exc, PortkitException)
 
 
 class TestCategorizeError:
@@ -126,7 +126,7 @@ class TestCategorizeError:
 
     @pytest.mark.serial
     def test_create_error_response_from_exception(self):
-        exc = ModPorterException("Test error")
+        exc = PortkitException("Test error")
         mock_request = MagicMock(spec=Request)
         mock_request.url.path = "/test"
         mock_request.method = "GET"

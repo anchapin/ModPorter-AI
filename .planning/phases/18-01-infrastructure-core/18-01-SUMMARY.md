@@ -49,7 +49,7 @@ decisions:
 # Phase 18-01 Plan: Infrastructure Core Summary
 
 ## Overview
-Set up core infrastructure including Docker Compose, PostgreSQL with pgvector, Redis, and basic monitoring for ModPorter-AI.
+Set up core infrastructure including Docker Compose, PostgreSQL with pgvector, Redis, and basic monitoring for portkit.
 
 ## Tasks Completed
 

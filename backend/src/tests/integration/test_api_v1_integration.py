@@ -1,5 +1,5 @@
 """
-Integration tests for the ModPorter AI Backend API v1 endpoints.
+Integration tests for the Portkit Backend API v1 endpoints.
 
 These tests verify the new /api/v1/* endpoints including file upload,
 conversion processing, status tracking, and error handling.

@@ -155,7 +155,7 @@ export const PrivacyPage: React.FC = () => {
         <h3 className={styles.sectionTitle}>Access</h3>
         <p>
           You can request a copy of your personal data by contacting us at
-          privacy@modporter.ai. We will provide your data in a portable format
+          privacy@portkit.cloud. We will provide your data in a portable format
           within 30 days.
         </p>
         <h3 className={styles.sectionTitle}>Correction</h3>
@@ -166,7 +166,7 @@ export const PrivacyPage: React.FC = () => {
         <h3 className={styles.sectionTitle}>Deletion</h3>
         <p>
           You can delete your account and request deletion of your personal data
-          by contacting us at privacy@modporter.ai. We will process deletion
+          by contacting us at privacy@portkit.cloud. We will process deletion
           requests within 30 days.
         </p>
         <h3 className={styles.sectionTitle}>Data Export</h3>
@@ -212,7 +212,7 @@ export const PrivacyPage: React.FC = () => {
         </p>
         <p>
           For GDPR/CCPA requests, contact our Data Protection Officer at
-          privacy@modporter.ai.
+          privacy@portkit.cloud.
         </p>
       </section>
 
@@ -237,9 +237,9 @@ export const PrivacyPage: React.FC = () => {
           practices, please contact us:
         </p>
         <p>
-          <strong>Email:</strong> privacy@modporter.ai
+          <strong>Email:</strong> privacy@portkit.cloud
           <br />
-          <strong>Data Protection Officer:</strong> dpo@modporter.ai
+          <strong>Data Protection Officer:</strong> dpo@portkit.cloud
           <br />
           <strong>Address:</strong> ModPorter AI, [Address]
         </p>

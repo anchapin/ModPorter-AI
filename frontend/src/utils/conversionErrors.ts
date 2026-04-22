@@ -179,7 +179,7 @@ export function getUserFriendlyError(
         'Our AI conversion service is currently down or overloaded. Please try again in a few minutes.',
       userTips: [
         'Wait a few minutes and try again',
-        'Check our status page at status.modporter.ai',
+        'Check our status page at status.portkit.cloud',
         'Try with fewer files in batch mode',
       ],
       retryable: true,

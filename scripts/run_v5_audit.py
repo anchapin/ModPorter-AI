@@ -23,7 +23,7 @@ MODRINTH_API_BASE = "https://api.modrinth.com/v2"
 
 CONVERT_MOD_IMPORT_ERROR = None
 try:
-    from modporter.cli.main import convert_mod
+    from portkit.cli.main import convert_mod
 except ImportError as e:
     convert_mod = None
     CONVERT_MOD_IMPORT_ERROR = str(e)
@@ -170,7 +170,7 @@ class V5AuditRunner:
         try:
             response = httpx.get(
                 f"{MODRINTH_API_BASE}/project/{slug}/version",
-                headers={"User-Agent": "ModPorter-AI/1.0"},
+                headers={"User-Agent": "portkit/1.0"},
                 timeout=30.0,
             )
             response.raise_for_status()

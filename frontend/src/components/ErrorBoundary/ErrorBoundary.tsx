@@ -127,7 +127,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
     const errorDetails = `Error: ${errorMessage}\nStack: ${errorStack}`;
 
-    const githubUrl = `https://github.com/anchapin/ModPorter-AI/issues/new?title=Frontend Error&body=${encodeURIComponent(errorDetails)}`;
+    const githubUrl = `https://github.com/anchapin/portkit/issues/new?title=Frontend Error&body=${encodeURIComponent(errorDetails)}`;
     window.open(githubUrl, '_blank');
   };
 

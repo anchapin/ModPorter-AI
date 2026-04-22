@@ -1,5 +1,5 @@
 /**
- * API client for ModPorter-AI web interface
+ * API client for portkit web interface
  * Handles file uploads, job tracking, and result retrieval
  */
 

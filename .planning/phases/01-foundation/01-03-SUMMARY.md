@@ -30,7 +30,7 @@ Implement secure file upload, storage, and retrieval system with user quota mana
 
 ### Existing Features (Verified Working)
 
-The ModPorter-AI codebase already has comprehensive file upload functionality:
+The portkit codebase already has comprehensive file upload functionality:
 
 **File Upload (`POST /api/v1/conversions`):**
 - ✅ Drag-and-drop support (frontend)

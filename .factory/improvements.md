@@ -1,4 +1,4 @@
-# ModPorter-AI Codebase Improvement Opportunities
+# portkit Codebase Improvement Opportunities
 
 ## Summary by Category
 
@@ -93,8 +93,8 @@
 - **Priority:** Medium
 
 ### 11. TODO References Without Issue Numbers
-- **Files:** Multiple files reference `https://github.com/anchapin/ModPorter-AI/issues/TODO`
-- **Description:** References like `# See https://github.com/anchapin/ModPorter-AI/issues/TODO for tracking` point to a literal TODO issue placeholder, not specific tracked issues.
+- **Files:** Multiple files reference `https://github.com/anchapin/portkit/issues/TODO`
+- **Description:** References like `# See https://github.com/anchapin/portkit/issues/TODO for tracking` point to a literal TODO issue placeholder, not specific tracked issues.
 - **Impact:** No way to follow up on these items. Dead links. Technical debt invisible in issue tracker.
 - **Suggested Fix:** Replace all TODO references with specific issue numbers or create tracked issues for each placeholder.
 - **Priority:** Medium

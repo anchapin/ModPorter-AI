@@ -1,5 +1,5 @@
 """
-Rate Limiting Middleware for ModPorter AI Backend
+Rate Limiting Middleware for Portkit Backend
 
 Provides per-user and global rate limiting for API endpoints.
 Implements token bucket algorithm for smooth rate limiting.

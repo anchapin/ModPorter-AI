@@ -1,5 +1,5 @@
 """
-Job Manager Service for ModPorter-AI.
+Job Manager Service for portkit.
 
 This module provides:
 - Job creation and tracking

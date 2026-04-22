@@ -6,7 +6,7 @@ from services import tracing
 
 def test_get_service_name_default():
     with patch.dict(os.environ, {}, clear=True):
-        assert tracing.get_service_name() == "modporter-backend"
+        assert tracing.get_service_name() == "portkit-backend"
 
 
 def test_get_service_name_env():

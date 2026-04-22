@@ -1,5 +1,5 @@
 """
-Feedback API Endpoints for ModPorter AI
+Feedback API Endpoints for Portkit
 
 Collect and manage user feedback on conversions.
 """

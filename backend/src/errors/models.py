@@ -1,5 +1,5 @@
 """
-Error Patterns Library for ModPorter AI Backend
+Error Patterns Library for Portkit Backend
 
 Provides a known error pattern library with recovery strategies and
 pattern-to-solution mappings for the Enhanced Auto-Recovery system.

@@ -122,7 +122,7 @@ export const Dashboard: React.FC = () => {
         <div className="header-content">
           <h1>
             <span className="header-icon">🎛️</span>
-            ModPorter AI Dashboard
+            Portkit Dashboard
           </h1>
           <p className="header-subtitle">
             Convert, manage, and track your Minecraft mod conversions

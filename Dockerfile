@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile for ModPorter AI
+# Multi-stage Dockerfile for Portkit
 # This builds all components: backend, ai-engine, and frontend
 
 # ============================================
@@ -59,17 +59,17 @@ COPY --from=backend-builder /usr/local/lib/python3.14/site-packages /usr/local/l
 COPY --from=backend-builder /usr/local/bin /usr/local/bin
 
 # Create non-root user
-RUN groupadd -r modporter && useradd -r -g modporter modporter
+RUN groupadd -r portkit && useradd -r -g portkit portkit
 
 # Copy backend source
 WORKDIR /app/backend
-COPY --chown=modporter:modporter backend/ .
+COPY --chown=portkit:portkit backend/ .
 
 # Create required directories
 RUN mkdir -p /app/backend/temp_uploads /app/backend/conversion_outputs && \
-    chown -R modporter:modporter /app/backend/temp_uploads /app/backend/conversion_outputs
+    chown -R portkit:portkit /app/backend/temp_uploads /app/backend/conversion_outputs
 
-USER modporter
+USER portkit
 
 # Health check for backend
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \

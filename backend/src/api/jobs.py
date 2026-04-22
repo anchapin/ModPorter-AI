@@ -1,5 +1,5 @@
 """
-Jobs API for ModPorter-AI.
+Jobs API for portkit.
 
 This module provides REST endpoints for job management:
 - GET /api/v1/jobs - List jobs for current user

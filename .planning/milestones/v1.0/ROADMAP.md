@@ -9,7 +9,7 @@
 
 ## Milestone Goal
 
-Complete the remaining work to launch ModPorter-AI as a production-ready product with proven 60-80% conversion accuracy.
+Complete the remaining work to launch portkit as a production-ready product with proven 60-80% conversion accuracy.
 
 ---
 
@@ -94,7 +94,7 @@ Phase 1.10 (Beta Launch)
 | **GPU (Modal)** | $0 | $150-300 | For model inference |
 | **Cloud (VPS)** | $0 | $100-200 | Production deployment |
 | **Email (SendGrid)** | $0 | $50 | Transactional emails |
-| **Domain/SSL** | $0 | $20 | modporter.ai |
+| **Domain/SSL** | $0 | $20 | portkit.cloud |
 | **Total** | $0 | $520-1,070/month | |
 
 ### Team Capacity

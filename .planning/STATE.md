@@ -11,7 +11,7 @@ progress:
   completed_plans: 0
 ---
 
-# ModPorter-AI Project State
+# portkit Project State
 
 **Version**: 1.0
 **Created**: 2026-03-13
@@ -21,7 +21,7 @@ progress:
 
 ## Project Overview
 
-**Name**: ModPorter-AI
+**Name**: portkit
 **Vision**: First AI-powered Java→Bedrock Minecraft mod converter
 **Status**: Active Development
 **Workflow Mode**: Interactive

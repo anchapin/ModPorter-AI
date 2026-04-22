@@ -249,7 +249,7 @@
   - ✅ PR #1115 updated with detailed description
   - ✅ 5 commits: 91428d53, afce1b6d, fb1f1dc0, f4ea4456, e8c2ea78
 
-- ✅ Issue #978: Marketing landing page for ModPorter-AI
+- ✅ Issue #978: Marketing landing page for portkit
   - ✅ Landing page with B2B conversion accelerator positioning
   - ✅ Hero section: "Get Your Java Mods on the Marketplace Faster"
   - ✅ Conversion benchmarks section (68% avg coverage, 30+ mods tested)

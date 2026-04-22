@@ -13,8 +13,8 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-class TestModPorterConversionCrew:
-    """Test ModPorterConversionCrew class"""
+class TestPortkitConversionCrew:
+    """Test PortkitConversionCrew class"""
 
     def test_module_exists(self):
         """Test module can be imported"""
@@ -24,22 +24,22 @@ class TestModPorterConversionCrew:
 
     def test_class_exists(self):
         """Test class can be imported"""
-        from crew.conversion_crew import ModPorterConversionCrew
+        from crew.conversion_crew import PortkitConversionCrew
 
-        assert ModPorterConversionCrew is not None
+        assert PortkitConversionCrew is not None
 
     def test_class_has_init(self):
         """Test class has __init__ method"""
-        from crew.conversion_crew import ModPorterConversionCrew
+        from crew.conversion_crew import PortkitConversionCrew
 
-        assert hasattr(ModPorterConversionCrew, "__init__")
+        assert hasattr(PortkitConversionCrew, "__init__")
 
     def test_class_has_kickoff(self):
         """Test class has kickoff method"""
-        from crew.conversion_crew import ModPorterConversionCrew
+        from crew.conversion_crew import PortkitConversionCrew
 
         # Just check the method exists (may require API key at runtime)
-        assert hasattr(ModPorterConversionCrew, "kickoff") or True
+        assert hasattr(PortkitConversionCrew, "kickoff") or True
 
 
 class TestVariantConstants:

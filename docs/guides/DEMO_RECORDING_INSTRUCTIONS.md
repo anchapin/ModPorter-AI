@@ -13,7 +13,7 @@
 
 #### Scene 1: Application Launch (5 seconds)
 1. Open browser to `http://localhost:3000`
-2. Show the ModPorter AI landing page with upload interface
+2. Show the Portkit landing page with upload interface
 3. Highlight the "Drag & Drop Java Mod" area
 
 #### Scene 2: File Upload (8 seconds)

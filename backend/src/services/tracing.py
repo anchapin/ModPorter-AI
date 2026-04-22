@@ -1,7 +1,7 @@
 """
 Distributed Tracing Service using OpenTelemetry.
 
-This module provides tracing capabilities for the ModPorter AI application,
+This module provides tracing capabilities for the Portkit application,
 including trace context propagation between services.
 """
 
@@ -71,7 +71,7 @@ _initialized: bool = False
 
 def get_service_name() -> str:
     """Get the service name from environment or default."""
-    return os.getenv("SERVICE_NAME", "modporter-backend")
+    return os.getenv("SERVICE_NAME", "portkit-backend")
 
 
 def get_service_version() -> str:

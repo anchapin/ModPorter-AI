@@ -85,13 +85,13 @@ async def lifespan(app: FastAPI):
 
 # FastAPI app with OpenAPI configuration
 app = FastAPI(
-    title="ModPorter AI Backend",
+    title="Portkit Backend",
     description="AI-powered tool for converting Minecraft Java Edition mods to Bedrock Edition add-ons",
     version="1.0.0",
     contact={
-        "name": "ModPorter AI Team",
-        "url": "https://github.com/anchapin/ModPorter-AI",
-        "email": "support@modporter-ai.com",
+        "name": "Portkit Team",
+        "url": "https://github.com/anchapin/portkit",
+        "email": "support@portkit.com",
     },
     license_info={
         "name": "MIT License",
@@ -114,11 +114,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware - Restrict to modporter.ai domains in production
+# CORS middleware - Restrict to portkit.cloud domains in production
 # Use ALLOWED_ORIGINS env var (Fly.io secrets) for production
 _cors_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000")
 if os.getenv("ENVIRONMENT") == "production":
-    _cors_origins = os.getenv("ALLOWED_ORIGINS", "https://modporter.ai,https://www.modporter.ai")
+    _cors_origins = os.getenv("ALLOWED_ORIGINS", "https://portkit.cloud,https://www.portkit.cloud")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins.split(","),

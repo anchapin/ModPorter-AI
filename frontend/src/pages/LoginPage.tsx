@@ -70,7 +70,7 @@ export const LoginPage: React.FC = () => {
       <div className="login-container">
         <div className="login-header">
           <h1>Welcome Back</h1>
-          <p>Sign in to continue to ModPorter AI</p>
+          <p>Sign in to continue to Portkit</p>
         </div>
 
         {error && <div className="login-error">{error}</div>}

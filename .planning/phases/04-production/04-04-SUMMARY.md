@@ -191,7 +191,7 @@ print(f"Pass Rate: {results['pass_rate'] * 100:.1f}%")
 
 1. **Deploy to Production**
    - SSL/TLS configuration
-   - Domain setup (modporter.ai)
+   - Domain setup (portkit.cloud)
    - Environment variables
 
 2. **Beta User Onboarding**

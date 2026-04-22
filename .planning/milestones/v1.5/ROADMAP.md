@@ -9,14 +9,14 @@
 
 ## Milestone Goal
 
-Deploy ModPorter-AI to production, onboard beta users, and collect feedback for iterative improvement.
+Deploy portkit to production, onboard beta users, and collect feedback for iterative improvement.
 
 ---
 
 ## Success Criteria
 
 - [ ] Production deployment with SSL/TLS
-- [ ] Domain configured (modporter.ai)
+- [ ] Domain configured (portkit.cloud)
 - [ ] Email service operational
 - [ ] 50+ beta users onboarded
 - [ ] 100+ conversions completed
@@ -83,7 +83,7 @@ Phase 2.6 (Scale Preparation)
 | **GPU (Modal)** | $0 | $150-300 | For model inference |
 | **Cloud (VPS)** | $0 | $100-200 | Production deployment |
 | **Email (SendGrid)** | $0 | $50 | Transactional emails |
-| **Domain/SSL** | $0 | $20 | modporter.ai |
+| **Domain/SSL** | $0 | $20 | portkit.cloud |
 | **Total** | $0 | $520-1,070/month | |
 
 ### Team Capacity

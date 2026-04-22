@@ -1,5 +1,5 @@
 """
-Email Service for ModPorter AI
+Email Service for Portkit
 
 SendGrid integration for transactional emails.
 """
@@ -12,7 +12,7 @@ from dataclasses import dataclass
 logger = logging.getLogger(__name__)
 
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "https://modporter.ai")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://portkit.cloud")
 
 
 @dataclass
@@ -23,7 +23,7 @@ class EmailMessage:
     subject: str
     template: str
     context: Dict[str, Any]
-    from_email: str = "noreply@modporter.ai"
+    from_email: str = "noreply@portkit.cloud"
     cc: Optional[List[str]] = None
     bcc: Optional[List[str]] = None
 
@@ -34,8 +34,8 @@ class SendGridEmailService:
     def __init__(
         self,
         api_key: str,
-        from_email: str = "noreply@modporter.ai",
-        from_name: str = "ModPorter AI",
+        from_email: str = "noreply@portkit.cloud",
+        from_name: str = "Portkit",
     ):
         self.api_key = api_key
         self.from_email = from_email
@@ -148,7 +148,7 @@ class SendGridEmailService:
     ) -> str:
         """Email verification plain text template."""
         return f"""
-Welcome to ModPorter AI!
+Welcome to Portkit!
 
 Please verify your email address by clicking the link below:
 
@@ -159,11 +159,11 @@ This link will expire in {expiry_hours} hours.
 If you didn't create this account, please ignore this email.
 
 Thanks,
-The ModPorter AI Team
+The Portkit Team
 
 ---
-ModPorter AI - Java to Bedrock Mod Converter
-https://modporter.ai
+Portkit - Java to Bedrock Mod Converter
+https://portkit.cloud
 """
 
     def _email_verification_html(
@@ -182,7 +182,7 @@ https://modporter.ai
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #2c3e50;">ModPorter AI</h1>
+        <h1 style="color: #2c3e50;">Portkit</h1>
         <p style="color: #7f8c8d;">Java to Bedrock Mod Converter</p>
     </div>
     
@@ -201,8 +201,8 @@ https://modporter.ai
     
     <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
     <p style="font-size: 12px; color: #95a5a6; text-align: center;">
-        ModPorter AI - Java to Bedrock Mod Converter<br>
-        <a href="https://modporter.ai" style="color: #3498db;">https://modporter.ai</a>
+        Portkit - Java to Bedrock Mod Converter<br>
+        <a href="https://portkit.cloud" style="color: #3498db;">https://portkit.cloud</a>
     </p>
 </body>
 </html>
@@ -219,7 +219,7 @@ https://modporter.ai
         return f"""
 Password Reset Request
 
-You requested a password reset for your ModPorter AI account.
+You requested a password reset for your Portkit account.
 
 Click the link below to reset your password:
 
@@ -232,11 +232,11 @@ If you didn't request this, please ignore this email and your password will rema
 Unsubscribe: {unsubscribe}
 
 Thanks,
-The ModPorter AI Team
+The Portkit Team
 
 ---
-ModPorter AI - Java to Bedrock Mod Converter
-https://modporter.ai
+Portkit - Java to Bedrock Mod Converter
+https://portkit.cloud
 """
 
     def _password_reset_html(
@@ -257,13 +257,13 @@ https://modporter.ai
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #2c3e50;">ModPorter AI</h1>
+        <h1 style="color: #2c3e50;">Portkit</h1>
         <p style="color: #7f8c8d;">Java to Bedrock Mod Converter</p>
     </div>
     
     <div style="background: #f9f9f9; border-radius: 8px; padding: 30px; margin-bottom: 20px;">
         <h2 style="color: #e74c3c; margin-top: 0;">Password Reset Request</h2>
-        <p>You requested a password reset for your ModPorter AI account.</p>
+        <p>You requested a password reset for your Portkit account.</p>
         <p>Click the button below to reset your password:</p>
         <div style="text-align: center; margin: 30px 0;">
             <a href="{reset_url}" style="background: #e74c3c; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
@@ -278,8 +278,8 @@ https://modporter.ai
     <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
     <p style="font-size: 12px; color: #95a5a6; text-align: center;">
         <a href="{unsubscribe}" style="color: #95a5a6;">Unsubscribe from notifications</a><br>
-        ModPorter AI - Java to Bedrock Mod Converter<br>
-        <a href="https://modporter.ai" style="color: #3498db;">https://modporter.ai</a>
+        Portkit - Java to Bedrock Mod Converter<br>
+        <a href="https://portkit.cloud" style="color: #3498db;">https://portkit.cloud</a>
     </p>
 </body>
 </html>
@@ -293,9 +293,9 @@ https://modporter.ai
         """Welcome plain text template."""
         unsubscribe = self._unsubscribe_url(email)
         return f"""
-Welcome to ModPorter AI, {user_name}!
+Welcome to Portkit, {user_name}!
 
-We're excited to have you on board. ModPorter AI makes it easy to convert your Java mods to Bedrock add-ons.
+We're excited to have you on board. Portkit makes it easy to convert your Java mods to Bedrock add-ons.
 
 Getting Started:
 1. Upload your Java mod file (.jar or .zip)
@@ -304,19 +304,19 @@ Getting Started:
 4. Install and enjoy!
 
 Need help? Check out our documentation:
-https://docs.modporter.ai
+https://docs.portkit.cloud
 
 Have questions? Join our Discord:
-https://discord.gg/modporter-ai
+https://discord.gg/portkit
 
 Happy modding!
-The ModPorter AI Team
+The Portkit Team
 
 Unsubscribe: {unsubscribe}
 
 ---
-ModPorter AI - Java to Bedrock Mod Converter
-https://modporter.ai
+Portkit - Java to Bedrock Mod Converter
+https://portkit.cloud
 """
 
     def _welcome_html(
@@ -332,17 +332,17 @@ https://modporter.ai
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to ModPorter AI</title>
+    <title>Welcome to Portkit</title>
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #2c3e50;">ModPorter AI</h1>
+        <h1 style="color: #2c3e50;">Portkit</h1>
         <p style="color: #7f8c8d;">Java to Bedrock Mod Converter</p>
     </div>
     
     <div style="background: #f9f9f9; border-radius: 8px; padding: 30px; margin-bottom: 20px;">
         <h2 style="color: #27ae60; margin-top: 0;">Welcome, {user_name}!</h2>
-        <p>We're excited to have you on board. ModPorter AI makes it easy to convert your Java mods to Bedrock add-ons.</p>
+        <p>We're excited to have you on board. Portkit makes it easy to convert your Java mods to Bedrock add-ons.</p>
         
         <h3 style="color: #2c3e50;">Getting Started:</h3>
         <ol style="color: #555;">
@@ -359,14 +359,14 @@ https://modporter.ai
     
     <div style="background: #ecf0f1; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
         <h3 style="color: #2c3e50; margin-top: 0;">Need Help?</h3>
-        <p>Check out our <a href="https://docs.modporter.ai" style="color: #3498db;">documentation</a> or join our <a href="https://discord.gg/modporter-ai" style="color: #3498db;">Discord</a> community.</p>
+        <p>Check out our <a href="https://docs.portkit.cloud" style="color: #3498db;">documentation</a> or join our <a href="https://discord.gg/portkit" style="color: #3498db;">Discord</a> community.</p>
     </div>
     
     <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
     <p style="font-size: 12px; color: #95a5a6; text-align: center;">
         <a href="{unsubscribe}" style="color: #95a5a6;">Unsubscribe from notifications</a><br>
-        ModPorter AI - Java to Bedrock Mod Converter<br>
-        <a href="https://modporter.ai" style="color: #3498db;">https://modporter.ai</a>
+        Portkit - Java to Bedrock Mod Converter<br>
+        <a href="https://portkit.cloud" style="color: #3498db;">https://portkit.cloud</a>
     </p>
 </body>
 </html>
@@ -414,7 +414,7 @@ Issues found:
 
 Please review the issues and try again with a different mod file, or contact support for assistance.
 
-Support: support@modporter.ai
+Support: support@portkit.cloud
 """
 
         return f"""
@@ -428,11 +428,11 @@ View conversion details:
 Unsubscribe: {unsubscribe}
 
 Thanks,
-The ModPorter AI Team
+The Portkit Team
 
 ---
-ModPorter AI - Java to Bedrock Mod Converter
-https://modporter.ai
+Portkit - Java to Bedrock Mod Converter
+https://portkit.cloud
 """
 
     def _conversion_complete_html(
@@ -479,7 +479,7 @@ https://modporter.ai
                 {issues_html}
             </ul>
             <p>Please review the issues and try again with a different mod file, or contact support for assistance.</p>
-            <p>Support: <a href="mailto:support@modporter.ai" style="color: #3498db;">support@modporter.ai</a></p>
+            <p>Support: <a href="mailto:support@portkit.cloud" style="color: #3498db;">support@portkit.cloud</a></p>
 """
 
         return f"""
@@ -492,7 +492,7 @@ https://modporter.ai
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #2c3e50;">ModPorter AI</h1>
+        <h1 style="color: #2c3e50;">Portkit</h1>
         <p style="color: #7f8c8d;">Java to Bedrock Mod Converter</p>
     </div>
     
@@ -505,8 +505,8 @@ https://modporter.ai
     <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
     <p style="font-size: 12px; color: #95a5a6; text-align: center;">
         <a href="{unsubscribe}" style="color: #95a5a6;">Unsubscribe from notifications</a><br>
-        ModPorter AI - Java to Bedrock Mod Converter<br>
-        <a href="https://modporter.ai" style="color: #3498db;">https://modporter.ai</a>
+        Portkit - Java to Bedrock Mod Converter<br>
+        <a href="https://portkit.cloud" style="color: #3498db;">https://portkit.cloud</a>
     </p>
 </body>
 </html>
@@ -519,7 +519,7 @@ _email_service = None
 
 def get_email_service(
     api_key: Optional[str] = None,
-    from_email: str = "noreply@modporter.ai",
+    from_email: str = "noreply@portkit.cloud",
 ) -> SendGridEmailService:
     """Get or create email service singleton."""
     global _email_service
@@ -555,13 +555,13 @@ async def send_verification_email(
     """
     import os
 
-    frontend_url = os.getenv("FRONTEND_URL", "https://modporter.ai")
+    frontend_url = os.getenv("FRONTEND_URL", "https://portkit.cloud")
     verification_url = f"{frontend_url}/auth/verify-email/{verification_token}"
 
     service = get_email_service()
     message = EmailMessage(
         to=email,
-        subject="Verify Your ModPorter AI Email",
+        subject="Verify Your Portkit Email",
         template="email_verification",
         context={
             "verification_url": verification_url,
@@ -589,13 +589,13 @@ async def send_password_reset_email(
     """
     import os
 
-    frontend_url = os.getenv("FRONTEND_URL", "https://modporter.ai")
+    frontend_url = os.getenv("FRONTEND_URL", "https://portkit.cloud")
     reset_url = f"{frontend_url}/auth/reset-password/{reset_token}"
 
     service = get_email_service()
     message = EmailMessage(
         to=email,
-        subject="Reset Your ModPorter AI Password",
+        subject="Reset Your Portkit Password",
         template="password_reset",
         context={
             "reset_url": reset_url,
@@ -623,7 +623,7 @@ async def send_welcome_email(
     service = get_email_service()
     message = EmailMessage(
         to=email,
-        subject="Welcome to ModPorter AI!",
+        subject="Welcome to Portkit!",
         template="welcome",
         context={
             "user_name": user_name,
@@ -656,7 +656,7 @@ async def send_conversion_notification(
     service = get_email_service()
     message = EmailMessage(
         to=email,
-        subject="Your ModPorter AI Conversion is Complete",
+        subject="Your Portkit Conversion is Complete",
         template="conversion_complete",
         context={
             "conversion_id": conversion_id,

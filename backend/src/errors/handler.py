@@ -279,8 +279,8 @@ class ErrorResponse(BaseModel):
     correlation_id: Optional[str] = None
 
 
-class ModPorterException(Exception):
-    """Base exception for ModPorter-specific errors"""
+class PortkitException(Exception):
+    """Base exception for Portkit-specific errors"""
 
     def __init__(
         self,
@@ -298,7 +298,7 @@ class ModPorterException(Exception):
         super().__init__(self.message)
 
 
-class ConversionException(ModPorterException):
+class ConversionException(PortkitException):
     """Exception raised during mod conversion"""
 
     def __init__(
@@ -316,7 +316,7 @@ class ConversionException(ModPorterException):
         )
 
 
-class FileProcessingException(ModPorterException):
+class FileProcessingException(PortkitException):
     """Exception raised during file processing"""
 
     def __init__(
@@ -334,7 +334,7 @@ class FileProcessingException(ModPorterException):
         )
 
 
-class ValidationException(ModPorterException):
+class ValidationException(PortkitException):
     """Exception raised during validation"""
 
     def __init__(
@@ -352,7 +352,7 @@ class ValidationException(ModPorterException):
         )
 
 
-class NotFoundException(ModPorterException):
+class NotFoundException(PortkitException):
     """Exception raised when a resource is not found"""
 
     def __init__(self, resource: str, resource_id: str, user_message: Optional[str] = None):
@@ -415,7 +415,7 @@ NON_RETRYABLE_ERROR_CATEGORIES = {
 }
 
 
-class RateLimitException(ModPorterException):
+class RateLimitException(PortkitException):
     """Exception raised when rate limit is exceeded"""
 
     def __init__(
@@ -434,7 +434,7 @@ class RateLimitException(ModPorterException):
         )
 
 
-class ParseError(ModPorterException):
+class ParseError(PortkitException):
     """Error during file parsing"""
 
     def __init__(
@@ -452,7 +452,7 @@ class ParseError(ModPorterException):
         )
 
 
-class AssetError(ModPorterException):
+class AssetError(PortkitException):
     """Error with asset processing"""
 
     def __init__(
@@ -470,7 +470,7 @@ class AssetError(ModPorterException):
         )
 
 
-class LogicError(ModPorterException):
+class LogicError(PortkitException):
     """Error in conversion logic"""
 
     def __init__(
@@ -488,7 +488,7 @@ class LogicError(ModPorterException):
         )
 
 
-class PackageError(ModPorterException):
+class PackageError(PortkitException):
     """Error during packaging"""
 
     def __init__(
@@ -559,7 +559,7 @@ def create_error_response(
     if not correlation_id:
         correlation_id = set_correlation_id()
 
-    if isinstance(error, ModPorterException):
+    if isinstance(error, PortkitException):
         error_type = error.error_type
         error_category = _categorize_error(error)
         user_message = error.user_message
@@ -617,8 +617,8 @@ def _record_error_metric(error_category: str, error_type: str, source: str = "ap
             pass
 
 
-async def modporter_exception_handler(request: Request, exc: ModPorterException) -> JSONResponse:
-    """Handler for ModPorter-specific exceptions"""
+async def portkit_exception_handler(request: Request, exc: PortkitException) -> JSONResponse:
+    """Handler for Portkit-specific exceptions"""
     error_response = create_error_response(exc, request)
     logger.error(
         f"[{error_response.error_id}] {error_response.error_type}: {error_response.message}"
@@ -682,7 +682,7 @@ def register_exception_handlers(app):
     import inspect
 
     handlers_to_register = [
-        (ModPorterException, modporter_exception_handler, "ModPorterException"),
+        (PortkitException, portkit_exception_handler, "PortkitException"),
         (HTTPException, http_exception_handler, "HTTPException"),
         (RequestValidationError, validation_exception_handler, "RequestValidationError"),
         (Exception, generic_exception_handler, "Exception"),
@@ -713,7 +713,7 @@ def register_exception_handlers(app):
 def verify_exception_handlers(app) -> Dict[str, bool]:
     """Verify that exception handlers are properly registered."""
     handlers_to_check = [
-        ("ModPorterException", ModPorterException),
+        ("PortkitException", PortkitException),
         ("HTTPException", HTTPException),
         ("RequestValidationError", RequestValidationError),
         ("Generic Exception", Exception),

@@ -34,7 +34,7 @@ class TempFileConfig:
     base_dir: Optional[Path] = None
 
     # Prefix for temp directories
-    directory_prefix: str = "modporter_"
+    directory_prefix: str = "portkit_"
 
     # Maximum age of temp files before cleanup (in hours)
     max_file_age_hours: int = 24
@@ -93,7 +93,7 @@ class SecureTempFileManager:
         if self.config.base_dir:
             self._base_dir = Path(self.config.base_dir)
         else:
-            self._base_dir = Path(tempfile.gettempdir()) / "modporter_conversions"
+            self._base_dir = Path(tempfile.gettempdir()) / "portkit_conversions"
 
         # Ensure base directory exists
         self._base_dir.mkdir(parents=True, exist_ok=True)

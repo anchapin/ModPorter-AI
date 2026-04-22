@@ -1,4 +1,4 @@
-# ModPorter-AI Roadmap
+# portkit Roadmap
 
 **Version**: 1.2
 **Created**: 2026-03-13
@@ -9,7 +9,7 @@
 
 ## Roadmap Overview
 
-This roadmap defines the phased delivery plan for ModPorter-AI, organized into milestones and phases. Each phase contains detailed plans linked to requirements (REQ-IDs).
+This roadmap defines the phased delivery plan for portkit, organized into milestones and phases. Each phase contains detailed plans linked to requirements (REQ-IDs).
 
 ### Timeline Summary
 
@@ -564,9 +564,9 @@ Phase 21.0 (Coverage Optimization)
 
 | Issue | Paper | Priority |
 |-------|-------|----------|
-| [#1091 — Conformal reliability scoring](https://github.com/anchapin/ModPorter-AI/issues/1091) | [Diagnosing LLM Judge Reliability](https://arxiv.org/abs/2604.15302v1) | High |
-| [#1089 — Training-free multi-candidate selection (DPC)](https://github.com/anchapin/ModPorter-AI/issues/1089) | [Dual-Paradigm Consistency](https://arxiv.org/abs/2604.15163v1) | Medium |
-| [#1090 — Semantic chunking for large mods](https://github.com/anchapin/ModPorter-AI/issues/1090) | [LLM Length Generalization](https://arxiv.org/abs/2604.15306v1) | Medium |
+| [#1091 — Conformal reliability scoring](https://github.com/anchapin/portkit/issues/1091) | [Diagnosing LLM Judge Reliability](https://arxiv.org/abs/2604.15302v1) | High |
+| [#1089 — Training-free multi-candidate selection (DPC)](https://github.com/anchapin/portkit/issues/1089) | [Dual-Paradigm Consistency](https://arxiv.org/abs/2604.15163v1) | Medium |
+| [#1090 — Semantic chunking for large mods](https://github.com/anchapin/portkit/issues/1090) | [LLM Length Generalization](https://arxiv.org/abs/2604.15306v1) | Medium |
 
 ### Roadmap Implications
 
@@ -599,7 +599,7 @@ Phase 21.0 (Coverage Optimization)
 
 | Issue | Paper | Priority |
 |-------|-------|----------|
-| [#1138 — Adversarial Logic Auditor agent for Multi-Agent QA](https://github.com/anchapin/ModPorter-AI/issues/1138) | [ASMR-Bench: Auditing for Sabotage in ML Research](https://arxiv.org/abs/2604.16286v1) | High |
+| [#1138 — Adversarial Logic Auditor agent for Multi-Agent QA](https://github.com/anchapin/portkit/issues/1138) | [ASMR-Bench: Auditing for Sabotage in ML Research](https://arxiv.org/abs/2604.16286v1) | High |
 
 ### Roadmap Implications
 

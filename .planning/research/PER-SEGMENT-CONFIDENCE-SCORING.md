@@ -1,6 +1,6 @@
 # Per-Segment Conversion Confidence Scoring
 
-**Issue**: [#1091](https://github.com/anchapin/ModPorter-AI/issues/1091)
+**Issue**: [#1091](https://github.com/anchapin/portkit/issues/1091)
 **Status**: Implemented
 
 ## Overview

@@ -29,7 +29,7 @@ Generated: 2026-03-29T20:51:29.882902
 - **Location**: `src/file1.py:2`
 - **Category**: reliability
 - **Severity**: critical
-- **GitHub Issue**: https://github.com/anchapin/modporter-ai/issues/123
+- **GitHub Issue**: https://github.com/anchapin/portkit/issues/123
 - **Context**:
 ```
     1: 
@@ -43,7 +43,7 @@ Generated: 2026-03-29T20:51:29.882902
 - **Location**: `src/file2.py:2`
 - **Category**: other
 - **Severity**: high
-- **GitHub Issue**: https://github.com/anchapin/modporter-ai/issues/123
+- **GitHub Issue**: https://github.com/anchapin/portkit/issues/123
 - **Context**:
 ```
     1: 
@@ -56,7 +56,7 @@ Generated: 2026-03-29T20:51:29.882902
 - **Location**: `src/file1.py:4`
 - **Category**: maintainability
 - **Severity**: low
-- **GitHub Issue**: https://github.com/anchapin/modporter-ai/issues/456
+- **GitHub Issue**: https://github.com/anchapin/portkit/issues/456
 - **Context**:
 ```
     2: # TODO(#123): Fix this bug [critical/reliability]

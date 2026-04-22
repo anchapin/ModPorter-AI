@@ -1,5 +1,5 @@
 """
-Secrets management module for ModPorter-AI.
+Secrets management module for portkit.
 
 This module provides a unified secrets management solution using pydantic-settings,
 with support for multiple backends:
@@ -66,7 +66,7 @@ class SecretsManagerSettings(BaseSettings):
         description="AWS region for Secrets Manager",
     )
     aws_secret_name: str = Field(
-        default="modporter/production",
+        default="portkit/production",
         alias="AWS_SECRET_NAME",
         description="AWS Secrets Manager secret name",
     )
@@ -83,14 +83,14 @@ class SecretsManagerSettings(BaseSettings):
         description="HashiCorp Vault token",
     )
     vault_secret_path: str = Field(
-        default="secret/data/modporter",
+        default="secret/data/portkit",
         alias="VAULT_SECRET_PATH",
         description="Vault secret path",
     )
 
     # Doppler settings
     doppler_project: str = Field(
-        default="modporter-ai",
+        default="portkit",
         alias="DOPPLER_PROJECT",
         description="Doppler project name",
     )

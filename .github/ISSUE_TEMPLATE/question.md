@@ -1,6 +1,6 @@
 ---
 name: Question
-about: Ask a question or start a discussion about ModPorter AI
+about: Ask a question or start a discussion about Portkit
 title: '[QUESTION] '
 labels: question
 assignees: ''

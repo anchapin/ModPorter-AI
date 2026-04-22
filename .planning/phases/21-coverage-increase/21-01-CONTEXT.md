@@ -1,7 +1,7 @@
 # Phase 21: Coverage Optimization Context
 
 ## Vision
-The goal of this phase is to increase the overall test coverage of ModPorter-AI from approximately 57% to over 80%. This involves adding tests for approximately 19,000 lines of code, focusing on high-impact, low-coverage areas in both the `backend` and `ai-engine` services.
+The goal of this phase is to increase the overall test coverage of portkit from approximately 57% to over 80%. This involves adding tests for approximately 19,000 lines of code, focusing on high-impact, low-coverage areas in both the `backend` and `ai-engine` services.
 
 ## Scope
 - **Target services**: `backend/src` and `ai-engine/`

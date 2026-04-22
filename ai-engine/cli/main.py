@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ModPorter AI CLI - Simple command-line interface for converting Java mods to Bedrock
+Portkit CLI - Simple command-line interface for converting Java mods to Bedrock
 """
 
 import argparse
@@ -197,7 +197,7 @@ def main():
 
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
 
-    parser.add_argument("--version", action="version", version="ModPorter AI v0.1.0 (MVP)")
+    parser.add_argument("--version", action="version", version="Portkit v0.1.0 (MVP)")
 
     args = parser.parse_args()
 

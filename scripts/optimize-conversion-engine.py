@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Conversion Engine Performance Optimizer for ModPorter AI
+Conversion Engine Performance Optimizer for Portkit
 
 This script optimizes the conversion engine performance by:
 - Implementing parallel processing

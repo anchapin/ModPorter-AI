@@ -1,6 +1,6 @@
 # High Availability Configuration
 
-**ModPorter AI - Production HA Setup**
+**Portkit - Production HA Setup**
 
 ---
 
@@ -81,7 +81,7 @@ defaults
 
 frontend http_front
     bind *:80
-    bind *:443 ssl crt /etc/ssl/certs/modporter.ai.pem
+    bind *:443 ssl crt /etc/ssl/certs/portkit.cloud.pem
     http-request redirect scheme https unless { ssl_fc }
     
     # Health check endpoint
@@ -228,7 +228,7 @@ version: '3.8'
 
 services:
   backend:
-    image: modporter-ai-backend:latest
+    image: portkit-backend:latest
     deploy:
       replicas: 3
       update_config:

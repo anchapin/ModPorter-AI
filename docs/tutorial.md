@@ -38,7 +38,7 @@ rubysword.jar
 
 ## Step 2: Upload to ModPorter AI
 
-1. **Navigate to [modporter.ai](https://modporter.ai)**
+1. **Navigate to [portkit.cloud](https://portkit.cloud)**
 2. **Click "Upload Mod"** or drag-and-drop your .jar file
 3. **Wait for analysis** (30-60 seconds)
 
@@ -341,4 +341,4 @@ Congratulations! You've successfully converted your first mod. Now:
 - [API Documentation](api.md) - For developers
 - [Community Discord](https://discord.gg/modporter)
 
-Need help? Contact us at support@modporter.ai
+Need help? Contact us at support@portkit.cloud

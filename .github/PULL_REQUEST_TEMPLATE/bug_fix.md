@@ -1,6 +1,6 @@
 ---
 name: Bug Fix
-about: Fix a bug in ModPorter AI
+about: Fix a bug in Portkit
 title: '[FIX] '
 labels: bug
 assignees: ''
@@ -25,7 +25,7 @@ Please describe in detail how you tested your changes.
 **Test Configuration:**
 - OS: [e.g. Windows 11, macOS, Linux]
 - Browser: [e.g. Chrome 120]
-- ModPorter AI version: [e.g. v1.0.0]
+- Portkit version: [e.g. v1.0.0]
 
 ## Screenshots (if applicable)
 Add screenshots to help explain the bug fix.

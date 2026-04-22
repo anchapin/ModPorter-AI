@@ -13,7 +13,7 @@ This guide helps you quickly test the new WebSocket and Conversion API implement
 ### Using Docker (Recommended)
 
 ```bash
-cd /home/alexc/Projects/ModPorter-AI
+cd /home/alexc/Projects/portkit
 
 # Start with hot reload
 docker compose -f docker compose.dev.yml up -d backend
@@ -276,7 +276,7 @@ Both Terminal 1 and Terminal 2 should receive identical progress updates.
 curl http://localhost:8080/api/v1/health
 
 # If connection refused, start backend:
-cd /home/alexc/Projects/ModPorter-AI
+cd /home/alexc/Projects/portkit
 docker compose -f docker compose.dev.yml up -d backend
 ```
 

@@ -78,7 +78,7 @@ def sanitize_file(file_path):
 
 
 # Process all files
-api_dir = Path("/home/alex/Projects/ModPorter-AI/backend/src/api")
+api_dir = Path("/home/alex/Projects/portkit/backend/src/api")
 files_to_process = [
     "analytics.py",
     "behavioral_testing.py",

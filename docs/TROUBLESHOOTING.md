@@ -1,6 +1,6 @@
-# ModPorter AI Troubleshooting Guide
+# Portkit Troubleshooting Guide
 
-This guide covers common issues, error messages, and solutions for ModPorter AI.
+This guide covers common issues, error messages, and solutions for Portkit.
 
 ## Table of Contents
 
@@ -21,7 +21,7 @@ This guide covers common issues, error messages, and solutions for ModPorter AI.
 
 **Error:**
 ```
-ERROR: Package 'modporter-ai' requires Python >=3.10 but you have Python 3.9.x
+ERROR: Package 'portkit' requires Python >=3.10 but you have Python 3.9.x
 ```
 
 **Solution:**
@@ -371,7 +371,7 @@ export PYTHONMALLOC=malloc
 
 # Or use a machine with more RAM
 # For Docker, increase container memory:
-docker run --memory=4g modporter-ai
+docker run --memory=4g portkit
 ```
 
 ---
@@ -388,10 +388,10 @@ Error: container exited immediately
 **Solution:**
 ```bash
 # Check container logs
-docker logs modporter-ai
+docker logs portkit
 
 # Check for missing environment variables
-docker inspect modporter-ai | grep -A 10 "Env"
+docker inspect portkit | grep -A 10 "Env"
 
 # Rebuild container
 docker-compose build --no-cache
@@ -432,7 +432,7 @@ PermissionError: Cannot write to mounted volume
 sudo chown -R $USER:$USER ./output
 
 # Or use Docker user mapping
-docker run --user $(id -u):$(id -g) modporter-ai
+docker run --user $(id -u):$(id -g) portkit
 ```
 
 ---
@@ -571,7 +571,7 @@ If you continue to experience issues:
    ```
 
 2. **Search existing issues:**
-   - [GitHub Issues](https://github.com/anchapin/ModPorter-AI/issues)
+   - [GitHub Issues](https://github.com/anchapin/portkit/issues)
 
 3. **Create a new issue:**
    - Include error messages

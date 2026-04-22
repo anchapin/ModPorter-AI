@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive Performance Analysis for ModPorter AI
+Comprehensive Performance Analysis for Portkit
 
 This script analyzes system performance across multiple dimensions:
 - Conversion pipeline bottlenecks
@@ -177,7 +177,7 @@ class PerformanceAnalyzer:
                 response = requests.get(
                     f"{self.api_base_url}{endpoint}",
                     timeout=10,
-                    headers={"User-Agent": "ModPorter-Performance-Analysis/1.0"},
+                    headers={"User-Agent": "Portkit-Performance-Analysis/1.0"},
                     verify=False,  # Handle SSL issues gracefully
                 )
 
@@ -611,7 +611,7 @@ class PerformanceAnalyzer:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ModPorter AI Performance Report</title>
+    <title>Portkit Performance Report</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -625,7 +625,7 @@ class PerformanceAnalyzer:
 <body class="bg-gray-50">
     <div class="container mx-auto px-4 py-8 max-w-7xl">
         <header class="mb-8">
-            <h1 class="text-4xl font-bold text-gray-900 mb-2">ModPorter AI Performance Report</h1>
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">Portkit Performance Report</h1>
             <p class="text-gray-600">Generated on {timestamp}</p>
         </header>
 

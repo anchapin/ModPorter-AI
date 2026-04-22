@@ -85,7 +85,7 @@ Weighted score estimate:
 - #989, #994, #996, #997 — RL, embeddings, LoRA textures, code LLM
 
 ### New
-- **#1043**: Rebrand ModPorter-AI → PortKit (open, unscheduled)
+- **#1043**: Rebrand portkit → PortKit (open, unscheduled)
 
 ### Open PRs (3)
 - #1047: aria-expanded UI fix (open)

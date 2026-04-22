@@ -1,12 +1,12 @@
 # Prometheus Production Configuration
-# ModPorter AI - Production Monitoring
+# Portkit - Production Monitoring
 
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
   external_labels:
     environment: production
-    project: modporter-ai
+    project: portkit
 
 # Alertmanager configuration
 alerting:
@@ -29,15 +29,15 @@ scrape_configs:
     scrape_interval: 15s
 
   # ModPorter Backend API
-  - job_name: 'modporter-backend'
+  - job_name: 'portkit-backend'
     static_configs:
       - targets: ['backend:8000']
     metrics_path: '/api/v1/metrics'
     scrape_interval: 10s
     scrape_timeout: 5s
 
-  # ModPorter AI Engine
-  - job_name: 'modporter-ai-engine'
+  # Portkit Engine
+  - job_name: 'portkit-engine'
     static_configs:
       - targets: ['ai-engine:8001']
     metrics_path: '/api/v1/metrics'

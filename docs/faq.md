@@ -1,12 +1,12 @@
 # Frequently Asked Questions
 
-Everything you need to know about ModPorter AI, from basic usage to advanced features.
+Everything you need to know about Portkit, from basic usage to advanced features.
 
 ## General Questions
 
-### 1. What is ModPorter AI?
+### 1. What is Portkit?
 
-ModPorter AI is the first AI-powered tool that converts Minecraft Java Edition mods to Bedrock Edition add-ons automatically. It uses advanced multi-agent AI systems to analyze Java code, translate it to JavaScript (Bedrock Script API), convert assets, and package everything into a ready-to-use .mcaddon file.
+Portkit is the first AI-powered tool that converts Minecraft Java Edition mods to Bedrock Edition add-ons automatically. It uses advanced multi-agent AI systems to analyze Java code, translate it to JavaScript (Bedrock Script API), convert assets, and package everything into a ready-to-use .mcaddon file.
 
 **Key benefits**:
 - Saves 3-6 months of manual rewriting
@@ -62,7 +62,7 @@ The AI improves with each conversion, learning from manual corrections.
 
 ### 5. Is this against Minecraft EULA?
 
-No. ModPorter AI:
+No. Portkit:
 - Does not modify Minecraft's code
 - Creates original add-on content
 - Respects Mojang's Terms of Use
@@ -72,7 +72,7 @@ No. ModPorter AI:
 
 ## Pricing and Limits
 
-### 6. Is ModPorter AI free?
+### 6. Is Portkit free?
 
 We have a **freemium model**:
 
@@ -202,7 +202,7 @@ Yes! The .mcaddon file is just a ZIP archive:
 
 ### 14. What Java version is required?
 
-None! ModPorter AI:
+None! Portkit:
 - Accepts compiled .jar files
 - No Java installation needed
 - Works on any device with a browser
@@ -221,13 +221,13 @@ None! ModPorter AI:
 | .mcpack | Single pack | Behavior OR resource pack |
 | .zip | Archive | Any files |
 
-**ModPorter AI exports**: .mcaddon (complete add-on)
+**Portkit exports**: .mcaddon (complete add-on)
 
 **For distribution**: .mcaddon is recommended (auto-installs)
 
 ### 16. Can I convert Fabric mods to Forge?
 
-No. ModPorter AI only converts:
+No. Portkit only converts:
 - Java Edition → Bedrock Edition
 - Forge/Fabric → Bedrock Script API
 
@@ -346,7 +346,7 @@ No. ModPorter AI only converts:
 
 ```bash
 # Convert a mod
-curl -X POST https://api.modporter.ai/v1/convert \
+curl -X POST https://api.portkit.cloud/v1/convert \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -F "file=@mod.jar" \
   -F "options={\"complexity\":\"high\"}"
@@ -358,7 +358,7 @@ curl -X POST https://api.modporter.ai/v1/convert \
 - Studio: 10,000 calls/month
 - Enterprise: Unlimited
 
-**Documentation**: [docs.modporter.ai/api](https://docs.modporter.ai/api)
+**Documentation**: [docs.portkit.cloud/api](https://docs.portkit.cloud/api)
 
 ### 23. Can I batch convert multiple mods?
 
@@ -375,7 +375,7 @@ import requests
 mods = ["mod1.jar", "mod2.jar", "mod3.jar"]
 for mod in mods:
   requests.post(
-    "https://api.modporter.ai/v1/convert",
+    "https://api.portkit.cloud/v1/convert",
     files={"file": open(mod, "rb")},
     headers={"Authorization": f"Bearer {API_KEY}"}
   )
@@ -394,7 +394,7 @@ for mod in mods:
 - Migrating entire projects
 - Testing compatibility
 
-### 25. Can I integrate ModPorter AI into my workflow?
+### 25. Can I integrate Portkit into my workflow?
 
 **Enterprise feature**:
 - CI/CD integration
@@ -405,7 +405,7 @@ for mod in mods:
 **Example GitHub Action**:
 ```yaml
 - name: Convert to Bedrock
-  uses: modporter-ai/action@v1
+  uses: portkit/action@v1
   with:
     api-key: ${{ secrets.MODPORTER_KEY }}
     input: build/java-mod.jar
@@ -457,7 +457,7 @@ Yes! Earn 20% commission:
 - Paid out monthly via PayPal
 - Real-time analytics dashboard
 
-**Sign up**: [modporter.ai/affiliates](https://modporter.ai/affiliates)
+**Sign up**: [portkit.cloud/affiliates](https://portkit.cloud/affiliates)
 
 ## Legal and Licensing
 
@@ -493,9 +493,9 @@ Yes! Earn 20% commission:
 
 ## Still Have Questions?
 
-- **Documentation**: [docs.modporter.ai](https://docs.modporter.ai)
+- **Documentation**: [docs.portkit.cloud](https://docs.portkit.cloud)
 - **Discord**: [discord.gg/modporter](https://discord.gg/modporter)
-- **Email**: support@modporter.ai
+- **Email**: support@portkit.cloud
 - **Twitter**: [@modporterai](https://twitter.com/modporterai)
 
 We typically respond within 1 hour on Discord, 24 hours via email (Pro users get priority).

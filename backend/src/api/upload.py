@@ -1,5 +1,5 @@
 """
-File Upload API for ModPorter-AI.
+File Upload API for portkit.
 
 Provides endpoints for:
 - JAR file upload with validation

@@ -1,13 +1,13 @@
-# Alert Rules for ModPorter AI
+# Alert Rules for Portkit
 # Issue: #457 - Monitoring Dashboards with Grafana/Prometheus (Phase 3)
 
 groups:
-  - name: modporter_conversion_alerts
+  - name: portkit_conversion_alerts
     interval: 30s
     rules:
       # Conversion success rate alert
       - alert: ConversionSuccessRateLow
-        expr: modporter_conversion_success_rate < 80
+        expr: portkit_conversion_success_rate < 80
         for: 5m
         labels:
           severity: warning
@@ -17,7 +17,7 @@ groups:
 
       # High error rate alert
       - alert: HighConversionErrorRate
-        expr: rate(modporter_conversion_jobs_total{status="failed"}[5m]) > 0.1
+        expr: rate(portkit_conversion_jobs_total{status="failed"}[5m]) > 0.1
         for: 3m
         labels:
           severity: critical
@@ -27,7 +27,7 @@ groups:
 
       # Conversion timeout alert
       - alert: ConversionTimeout
-        expr: modporter_conversion_duration_seconds > 180
+        expr: portkit_conversion_duration_seconds > 180
         for: 5m
         labels:
           severity: warning
@@ -35,12 +35,12 @@ groups:
           summary: "Conversion taking too long"
           description: "Conversion duration exceeds 3 minutes"
 
-  - name: modporter_performance_alerts
+  - name: portkit_performance_alerts
     interval: 30s
     rules:
       # API response time alert
       - alert: HighAPIResponseTime
-        expr: histogram_quantile(0.95, rate(modporter_http_request_duration_seconds_bucket[5m])) > 0.2
+        expr: histogram_quantile(0.95, rate(portkit_http_request_duration_seconds_bucket[5m])) > 0.2
         for: 3m
         labels:
           severity: warning
@@ -50,7 +50,7 @@ groups:
 
       # Queue size alert
       - alert: ConversionQueueBacklog
-        expr: modporter_conversion_queue_size > 50
+        expr: portkit_conversion_queue_size > 50
         for: 5m
         labels:
           severity: warning
@@ -58,12 +58,12 @@ groups:
           summary: "Conversion queue has a large backlog"
           description: "Queue size: {{ $value }}"
 
-  - name: modporter_llm_alerts
+  - name: portkit_llm_alerts
     interval: 60s
     rules:
       # High LLM cost alert (converted to hourly rate)
       - alert: HighLLMCost
-        expr: rate(modporter_llm_cost_dollars[1h]) * 3600 > 10
+        expr: rate(portkit_llm_cost_dollars[1h]) * 3600 > 10
         for: 10m
         labels:
           severity: warning
@@ -73,7 +73,7 @@ groups:
 
       # Token usage alert (converted to per-minute rate)
       - alert: HighTokenUsage
-        expr: rate(modporter_llm_tokens_total[5m]) * 60 > 100000
+        expr: rate(portkit_llm_tokens_total[5m]) * 60 > 100000
         for: 10m
         labels:
           severity: info
@@ -81,12 +81,12 @@ groups:
           summary: "High token usage detected"
           description: "Token usage rate: {{ $value | printf \"%.0f\" }}/min"
 
-  - name: modporter_system_alerts
+  - name: portkit_system_alerts
     interval: 30s
     rules:
       # Active conversions limit
       - alert: TooManyActiveConversions
-        expr: modporter_active_conversions > 10
+        expr: portkit_active_conversions > 10
         for: 3m
         labels:
           severity: warning
@@ -96,7 +96,7 @@ groups:
 
       # Database performance
       - alert: HighDatabaseLatency
-        expr: histogram_quantile(0.95, rate(modporter_db_operation_duration_seconds_bucket[5m])) > 0.5
+        expr: histogram_quantile(0.95, rate(portkit_db_operation_duration_seconds_bucket[5m])) > 0.5
         for: 5m
         labels:
           severity: warning
@@ -106,7 +106,7 @@ groups:
 
       # Cache hit rate (multiplied by 100 for percentage)
       - alert: LowCacheHitRate
-        expr: (rate(modporter_cache_operations_total{operation="hit"}[5m]) / rate(modporter_cache_operations_total[5m])) * 100 < 50
+        expr: (rate(portkit_cache_operations_total{operation="hit"}[5m]) / rate(portkit_cache_operations_total[5m])) * 100 < 50
         for: 10m
         labels:
           severity: info

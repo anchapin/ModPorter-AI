@@ -1,5 +1,5 @@
 """
-Comprehensive Report Generator for ModPorter AI
+Comprehensive Report Generator for Portkit
 Implements Issue #10 - Conversion Report Generation System
 
 This module provides enhanced report generation capabilities with:

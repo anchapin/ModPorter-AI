@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 CONVERT_MOD_IMPORT_ERROR = None
 try:
-    from modporter.cli.main import convert_mod
+    from portkit.cli.main import convert_mod
 except ImportError as e:
     convert_mod = None
     CONVERT_MOD_IMPORT_ERROR = str(e)

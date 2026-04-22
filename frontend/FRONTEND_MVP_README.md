@@ -1,6 +1,6 @@
 # Frontend MVP Implementation
 
-This document describes the complete frontend MVP implementation for ModPorter AI's upload-to-download flow.
+This document describes the complete frontend MVP implementation for Portkit's upload-to-download flow.
 
 ## Overview
 
@@ -461,6 +461,6 @@ docker run -p 3000:80 modporter-frontend
 
 For issues or questions:
 
-- GitHub Issues: https://github.com/your-org/modporter-ai/issues
+- GitHub Issues: https://github.com/anchapin/portkit/issues
 - Documentation: /docs
 - API Reference: /docs/api

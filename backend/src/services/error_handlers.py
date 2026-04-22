@@ -6,7 +6,7 @@ This module now imports from errors.handler.
 
 from errors.handler import (
     ErrorResponse,
-    ModPorterException,
+    PortkitException,
     ConversionException,
     FileProcessingException,
     ValidationException,
@@ -24,7 +24,7 @@ from errors.handler import (
     create_error_response,
     register_exception_handlers,
     verify_exception_handlers,
-    modporter_exception_handler,
+    portkit_exception_handler,
     http_exception_handler,
     validation_exception_handler,
     generic_exception_handler,
@@ -34,7 +34,7 @@ from errors.handler import (
 
 __all__ = [
     "ErrorResponse",
-    "ModPorterException",
+    "PortkitException",
     "ConversionException",
     "FileProcessingException",
     "ValidationException",
@@ -52,7 +52,7 @@ __all__ = [
     "create_error_response",
     "register_exception_handlers",
     "verify_exception_handlers",
-    "modporter_exception_handler",
+    "portkit_exception_handler",
     "http_exception_handler",
     "validation_exception_handler",
     "generic_exception_handler",

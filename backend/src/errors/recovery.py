@@ -1,5 +1,5 @@
 """
-Error Recovery System for ModPorter AI Backend
+Error Recovery System for Portkit Backend
 
 Implements the Supervisor + Fallback pattern for automatic error recovery
 with intelligent fallback and escalation mechanisms.

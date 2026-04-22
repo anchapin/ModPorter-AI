@@ -194,7 +194,7 @@ export const CookiesPage: React.FC = () => {
         <h3 className={styles.sectionTitle}>Opt-Out Links</h3>
         <p>
           To opt out of analytics tracking, you can contact us at
-          privacy@modporter.ai. Some analytics tools also provide opt-out
+          privacy@portkit.cloud. Some analytics tools also provide opt-out
           mechanisms through their respective websites.
         </p>
       </section>
@@ -218,7 +218,7 @@ export const CookiesPage: React.FC = () => {
           If you have any questions about our use of cookies, please contact us:
         </p>
         <p>
-          <strong>Email:</strong> privacy@modporter.ai
+          <strong>Email:</strong> privacy@portkit.cloud
           <br />
           <strong>Address:</strong> ModPorter AI, [Address]
         </p>

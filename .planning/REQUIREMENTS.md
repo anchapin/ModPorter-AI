@@ -1,4 +1,4 @@
-# ModPorter-AI Requirements
+# portkit Requirements
 
 **Version**: 1.0  
 **Created**: 2026-03-13  
@@ -9,7 +9,7 @@
 
 ## Requirements Overview
 
-This document defines scoped requirements for ModPorter-AI across three releases:
+This document defines scoped requirements for portkit across three releases:
 - **v1.0 (MVP)** — Core conversion pipeline, 60%+ automation
 - **v2.0 (Enhanced)** — Advanced features, 80%+ automation
 - **Out of Scope** — Explicitly excluded features

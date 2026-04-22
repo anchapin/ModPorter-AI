@@ -1,5 +1,5 @@
 """
-Storage Configuration for ModPorter-AI.
+Storage Configuration for portkit.
 
 Provides:
 - Local file storage (development)
@@ -75,7 +75,7 @@ class StorageManager:
         self.backend = backend
 
         # Local storage config
-        self.base_path = base_path or os.getenv("STORAGE_PATH", "/tmp/modporter-uploads")
+        self.base_path = base_path or os.getenv("STORAGE_PATH", "/tmp/portkit-uploads")
 
         # S3 config
         self.s3_bucket = s3_bucket or os.getenv("S3_BUCKET", "")

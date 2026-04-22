@@ -1,4 +1,4 @@
-# ModPorter-AI Project Vision
+# portkit Project Vision
 
 **Version**: 1.0
 **Created**: 2026-03-13
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-**ModPorter-AI** is an AI-powered platform that automates the conversion of Minecraft Java Edition mods to Bedrock Edition add-ons, filling a critical gap in the Minecraft modding ecosystem. Using advanced multi-agent AI systems (CrewAI + LangChain) with semantic code understanding, ModPorter-AI enables mod creators to reach Bedrock's 3x larger player base without manual code rewriting.
+**portkit** is an AI-powered platform that automates the conversion of Minecraft Java Edition mods to Bedrock Edition add-ons, filling a critical gap in the Minecraft modding ecosystem. Using advanced multi-agent AI systems (CrewAI + LangChain) with semantic code understanding, portkit enables mod creators to reach Bedrock's 3x larger player base without manual code rewriting.
 
 ### Unique Value Proposition
 
@@ -75,11 +75,11 @@
 
 ## Solution Overview
 
-### ModPorter-AI Conversion Pipeline
+### portkit Conversion Pipeline
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    ModPorter-AI Architecture                     │
+│                    portkit Architecture                     │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐       │
@@ -384,7 +384,7 @@
 
 **"Empower every Minecraft mod creator to reach every player, regardless of platform."**
 
-ModPorter-AI eliminates the technical barriers between Java and Bedrock editions, enabling creators to focus on creativity rather than conversion drudgery. By automating 60-80% of the conversion work with AI, we reduce months of manual rewriting to minutes of automated processing.
+portkit eliminates the technical barriers between Java and Bedrock editions, enabling creators to focus on creativity rather than conversion drudgery. By automating 60-80% of the conversion work with AI, we reduce months of manual rewriting to minutes of automated processing.
 
 ### Long-Term Vision (3-5 Years)
 

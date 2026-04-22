@@ -1,6 +1,6 @@
 # AI Agent Commits
 
-This document describes the AI-friendly commit conventions and workflows configured for the ModPorter-AI project.
+This document describes the AI-friendly commit conventions and workflows configured for the portkit project.
 
 ## Overview
 

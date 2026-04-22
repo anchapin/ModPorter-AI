@@ -1,5 +1,5 @@
 """
-Comprehensive report data types for the ModPorter AI conversion report system.
+Comprehensive report data types for the Portkit conversion report system.
 Implements Issue #10 - Conversion Report Generation System
 """
 

@@ -1,5 +1,5 @@
 """
-Integration tests for the ModPorter AI Backend API.
+Integration tests for the Portkit Backend API.
 
 These tests verify that the entire API workflow functions correctly,
 including file uploads, conversion processing, and result retrieval.

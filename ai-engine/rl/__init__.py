@@ -1,5 +1,5 @@
 """
-ModPorter AI Reinforcement Learning System
+Portkit Reinforcement Learning System
 
 This module implements a comprehensive RL feedback loop for improving AI agent performance
 in mod conversion tasks. It includes:
@@ -58,7 +58,7 @@ from .fine_tuning_export import (
 )
 
 __version__ = "1.0.0"
-__author__ = "ModPorter AI Team"
+__author__ = "Portkit Team"
 
 
 # Main factory functions for easy initialization

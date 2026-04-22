@@ -1,5 +1,5 @@
 """
-ModPorter AI Engine
+Portkit Engine
 FastAPI service for AI-powered mod conversion using CrewAI
 """
 
@@ -37,7 +37,7 @@ setup_logging(
 
 logger = get_agent_logger("main")
 
-from crew.conversion_crew import ModPorterConversionCrew
+from crew.conversion_crew import PortkitConversionCrew
 from models.smart_assumptions import SmartAssumptionEngine
 from utils.gpu_config import get_gpu_config, print_gpu_info, optimize_for_inference
 
@@ -83,13 +83,13 @@ class ConversionStatusEnum(str, Enum):
 
 # FastAPI app configuration
 app = FastAPI(
-    title="ModPorter AI Engine",
+    title="Portkit Engine",
     description="AI-powered conversion engine for Minecraft Java to Bedrock mod conversion",
     version="1.0.0",
     contact={
-        "name": "ModPorter AI Team",
-        "url": "https://github.com/anchapin/ModPorter-AI",
-        "email": "support@modporter-ai.com",
+        "name": "Portkit Team",
+        "url": "https://github.com/anchapin/portkit",
+        "email": "support@portkit.com",
     },
     license_info={
         "name": "MIT License",
@@ -97,11 +97,11 @@ app = FastAPI(
     },
 )
 
-# CORS middleware - Restrict to modporter.ai domains in production
+# CORS middleware - Restrict to portkit.cloud domains in production
 # Use ALLOWED_ORIGINS env var (Fly.io secrets) for production
 if os.getenv("ENVIRONMENT") == "production":
     allowed_origins = os.getenv(
-        "ALLOWED_ORIGINS", "https://modporter.ai,https://www.modporter.ai"
+        "ALLOWED_ORIGINS", "https://portkit.cloud,https://www.portkit.cloud"
     ).split(",")
 else:
     allowed_origins = os.getenv(
@@ -255,7 +255,7 @@ async def startup_event():
     """Initialize services on startup"""
     global conversion_crew, assumption_engine, redis_client, job_manager
 
-    logger.info("Starting ModPorter AI Engine...")
+    logger.info("Starting Portkit Engine...")
 
     try:
         # Initialize Redis connection
@@ -277,7 +277,7 @@ async def startup_event():
         # Note: We now initialize the conversion crew per request to support variants
         # The global conversion_crew will remain None
 
-        logger.info("ModPorter AI Engine startup complete")
+        logger.info("Portkit Engine startup complete")
 
     except Exception as e:
         logger.error(f"Failed to initialize AI Engine: {e}", exc_info=True)
@@ -504,10 +504,10 @@ async def process_conversion(
 
         try:
             # Initialize conversion crew with variant if specified and pass progress callback
-            crew = ModPorterConversionCrew(
+            crew = PortkitConversionCrew(
                 variant_id=experiment_variant, progress_callback=progress_callback
             )
-            logger.info(f"ModPorterConversionCrew initialized with variant: {experiment_variant}")
+            logger.info(f"PortkitConversionCrew initialized with variant: {experiment_variant}")
 
             # Update status for analysis stage
             job_status = await job_manager.get_job_status(job_id)

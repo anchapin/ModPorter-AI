@@ -2,7 +2,7 @@
 
 This document describes the fine-tuning infrastructure for training a specialized code LLM on Java mod to Bedrock addon conversion tasks.
 
-**Issue**: [#997](https://github.com/anchapin/ModPorter-AI/issues/997)
+**Issue**: [#997](https://github.com/anchapin/portkit/issues/997)
 
 ---
 

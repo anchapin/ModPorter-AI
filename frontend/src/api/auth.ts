@@ -1,5 +1,5 @@
 /**
- * Auth API client for ModPorter-AI
+ * Auth API client for portkit
  * Handles authentication including OAuth
  */
 

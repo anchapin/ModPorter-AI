@@ -11,7 +11,7 @@
 
 **Goal**: Enhanced conversion capabilities and platform features to drive user engagement and monetization
 
-**Vision**: Transform ModPorter-AI from a basic conversion tool into a comprehensive platform with advanced features that power users need and are willing to pay for.
+**Vision**: Transform portkit from a basic conversion tool into a comprehensive platform with advanced features that power users need and are willing to pay for.
 
 **Success Criteria**:
 - [ ] 200+ paying subscribers

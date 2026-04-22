@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide helps you migrate your ModPorter-AI installation from Ollama/OpenAI backends to Z.AI for better performance and cost efficiency.
+This guide helps you migrate your portkit installation from Ollama/OpenAI backends to Z.AI for better performance and cost efficiency.
 
 ## Quick Migration Steps
 
@@ -264,7 +264,7 @@ print(f"Backend: {type(llm).__name__}")  # Should show "RateLimitedZAI"
 
 - **Z.AI Documentation**: [docs.z.ai](https://docs.z.ai)
 - **API Reference**: [api.z.ai/docs](https://api.z.ai/docs)
-- **ModPorter-AI Issues**: [GitHub Issues](https://github.com/anchapin/ModPorter-AI/issues)
+- **portkit Issues**: [GitHub Issues](https://github.com/anchapin/portkit/issues)
 - **Community**: [Discord/Slack channels]
 
 ## FAQ

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Frontend Performance Optimizer for ModPorter AI
+Frontend Performance Optimizer for Portkit
 
 This script analyzes and optimizes frontend performance by:
 - Analyzing bundle size and dependencies
@@ -327,8 +327,8 @@ export default defineConfig({
     def create_service_worker(self) -> str:
         """Create optimized service worker"""
         service_worker_content = """
-// Service Worker for ModPorter AI
-const CACHE_NAME = 'modporter-ai-v1';
+// Service Worker for Portkit
+const CACHE_NAME = 'portkit-v1';
 const urlsToCache = [
   '/',
   '/static/js/bundle.js',
@@ -557,7 +557,7 @@ export const usePerformanceTracking = () => {
         """Create optimized build script"""
         build_script_content = """
 #!/bin/bash
-# Optimized build script for ModPorter AI frontend
+# Optimized build script for Portkit frontend
 
 echo "🚀 Starting optimized frontend build..."
 

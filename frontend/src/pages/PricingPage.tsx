@@ -119,7 +119,7 @@ const faqs = [
   {
     question: 'Do you offer discounts for education or non-profits?',
     answer:
-      'Yes! We offer 50% off for educational institutions and registered non-profits. Contact sales@modporter.ai with your documentation.',
+      'Yes! We offer 50% off for educational institutions and registered non-profits. Contact sales@portkit.cloud with your documentation.',
   },
 ];
 
@@ -199,7 +199,7 @@ export const PricingPage: React.FC = () => {
       window.location.assign('/signup');
     } else if (tier.name === 'Enterprise') {
       window.location.assign(
-        'mailto:sales@modporter.ai?subject=Enterprise%20or%20Studio%20Plan%20Inquiry'
+        'mailto:sales@portkit.cloud?subject=Enterprise%20or%20Studio%20Plan%20Inquiry'
       );
     } else if (!isAuthenticated()) {
       window.location.assign(`/signup?plan=${tier.tierKey}&trial=14`);
@@ -215,7 +215,7 @@ export const PricingPage: React.FC = () => {
       } catch (error) {
         console.error('Failed to create checkout session:', error);
         window.location.assign(
-          'mailto:sales@modporter.ai?subject=Billing%20Error'
+          'mailto:sales@portkit.cloud?subject=Billing%20Error'
         );
       } finally {
         setLoadingTier(null);
@@ -395,7 +395,7 @@ export const PricingPage: React.FC = () => {
       <section className="pricing-cta">
         <div className="container">
           <h2>Ready to convert your mods?</h2>
-          <p>Join thousands of modders already using ModPorter AI</p>
+          <p>Join thousands of modders already using Portkit</p>
           <div className="cta-buttons">
             <button
               className="cta-button primary"

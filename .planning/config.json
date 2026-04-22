@@ -60,9 +60,9 @@
     }
   },
   "project": {
-    "name": "ModPorter-AI",
+    "name": "portkit",
     "description": "AI-powered Java to Bedrock Minecraft mod converter",
-    "repository": "/home/alex/Projects/ModPorter-AI",
+    "repository": "/home/alex/Projects/portkit",
     "planningDirectory": ".planning",
     "phasesDirectory": ".planning/phases",
     "milestonesDirectory": ".planning/milestones",

@@ -1,5 +1,5 @@
 """
-Authentication API endpoints for ModPorter AI
+Authentication API endpoints for Portkit
 
 Endpoints:
 - POST /api/v1/auth/register - Register new user

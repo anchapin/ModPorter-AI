@@ -34,7 +34,7 @@ export class ConversionWebSocket {
     let apiBase: string;
 
     if (import.meta.env.VITE_API_BASE_URL) {
-      // Explicit base URL provided (e.g., https://api.modporter.ai)
+      // Explicit base URL provided (e.g., https://api.portkit.cloud)
       apiBase = import.meta.env.VITE_API_BASE_URL;
     } else if (import.meta.env.VITE_API_URL) {
       // Derive from full API URL (e.g., http://localhost:8000/api/v1 -> http://localhost:8000)

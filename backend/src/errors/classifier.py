@@ -1,5 +1,5 @@
 """
-Error Classifier for ModPorter AI Backend
+Error Classifier for Portkit Backend
 
 Provides error type classification with severity levels and pattern matching
 to enable intelligent error recovery strategies.
@@ -431,7 +431,7 @@ class ErrorClassifier:
 
         # Check handler module
         try:
-            from errors.handler import ModPorterException, RateLimitException
+            from errors.handler import PortkitException, RateLimitException
 
             if isinstance(error, RateLimitException):
                 return ErrorClassification(
@@ -441,7 +441,7 @@ class ErrorClassifier:
                     matched_pattern="RateLimitException",
                 )
 
-            if isinstance(error, ModPorterException):
+            if isinstance(error, PortkitException):
                 error_type_field = getattr(error, "error_type", None)
                 if error_type_field:
                     type_mapping = {
@@ -462,7 +462,7 @@ class ErrorClassifier:
                             error_type=mapped_type,
                             severity=ERROR_SEVERITY[mapped_type],
                             confidence=1.0,
-                            matched_pattern=f"ModPorterException:{error_type_field}",
+                            matched_pattern=f"PortkitException:{error_type_field}",
                         )
 
         except ImportError:

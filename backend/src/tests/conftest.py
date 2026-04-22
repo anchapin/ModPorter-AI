@@ -102,7 +102,7 @@ if not db_url.startswith("sqlite"):
             "pool_recycle": 3600,
             "connect_args": {
                 "server_settings": {
-                    "application_name": "modporter_test",
+                    "application_name": "portkit_test",
                 }
             },
         }

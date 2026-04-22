@@ -478,7 +478,7 @@ describe('EnhancedConversionReport Component', () => {
     render(<EnhancedConversionReport reportData={mockInteractiveReport} />);
 
     expect(
-      screen.getByText('ModPorter AI Conversion Report')
+      screen.getByText('Portkit Conversion Report')
     ).toBeInTheDocument();
     expect(
       screen.getByText('Conversion Completed Successfully')
@@ -561,8 +561,8 @@ describe('EnhancedConversionReport Component', () => {
 
     await waitFor(() => {
       expect(navigator.share).toHaveBeenCalledWith({
-        title: 'ModPorter AI Conversion Report',
-        text: 'Check out this conversion report from ModPorter AI',
+        title: 'Portkit Conversion Report',
+        text: 'Check out this conversion report from Portkit',
         url: expect.stringContaining('report_test_123'),
       });
     });
@@ -624,7 +624,7 @@ describe('Integration Tests', () => {
 
     // 1. User sees the report
     expect(
-      screen.getByText('ModPorter AI Conversion Report')
+      screen.getByText('Portkit Conversion Report')
     ).toBeInTheDocument();
 
     // 2. User expands feature analysis
@@ -661,7 +661,7 @@ describe('Integration Tests', () => {
 
     // Verify the workflow completed without errors
     expect(
-      screen.getByText('ModPorter AI Conversion Report')
+      screen.getByText('Portkit Conversion Report')
     ).toBeInTheDocument();
     expect(global.URL.createObjectURL).toHaveBeenCalled();
     expect(global.URL.revokeObjectURL).toHaveBeenCalled();

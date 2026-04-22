@@ -1,8 +1,8 @@
 {
   "dashboard": {
     "id": null,
-    "title": "ModPorter AI - Production Overview",
-    "tags": ["modporter", "production"],
+    "title": "Portkit - Production Overview",
+    "tags": ["portkit", "production"],
     "timezone": "browser",
     "refresh": "30s",
     "time": {
@@ -16,7 +16,7 @@
         "type": "stat",
         "targets": [
           {
-            "expr": "up{job=~\"modporter.*\"}",
+            "expr": "up{job=~\"portkit.*\"}",
             "legendFormat": "{{job}} Status"
           }
         ],
@@ -28,7 +28,7 @@
         "type": "stat",
         "targets": [
           {
-            "expr": "modporter_active_conversions",
+            "expr": "portkit_active_conversions",
             "legendFormat": "Active"
           }
         ],
@@ -40,7 +40,7 @@
         "type": "gauge",
         "targets": [
           {
-            "expr": "modporter_conversion_success_rate",
+            "expr": "portkit_conversion_success_rate",
             "legendFormat": "Success Rate %"
           }
         ],
@@ -65,7 +65,7 @@
         "type": "stat",
         "targets": [
           {
-            "expr": "modporter_average_conversion_time_seconds",
+            "expr": "portkit_average_conversion_time_seconds",
             "legendFormat": "Avg Time (s)"
           }
         ],
@@ -77,15 +77,15 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "histogram_quantile(0.95, rate(modporter_http_request_duration_seconds_bucket[5m]))",
+            "expr": "histogram_quantile(0.95, rate(portkit_http_request_duration_seconds_bucket[5m]))",
             "legendFormat": "95th percentile"
           },
           {
-            "expr": "histogram_quantile(0.50, rate(modporter_http_request_duration_seconds_bucket[5m]))",
+            "expr": "histogram_quantile(0.50, rate(portkit_http_request_duration_seconds_bucket[5m]))",
             "legendFormat": "50th percentile"
           },
           {
-            "expr": "histogram_quantile(0.25, rate(modporter_http_request_duration_seconds_bucket[5m]))",
+            "expr": "histogram_quantile(0.25, rate(portkit_http_request_duration_seconds_bucket[5m]))",
             "legendFormat": "25th percentile"
           }
         ],
@@ -97,7 +97,7 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "modporter_conversion_queue_size",
+            "expr": "portkit_conversion_queue_size",
             "legendFormat": "Queue Size"
           }
         ],
@@ -109,7 +109,7 @@
         "type": "bargauge",
         "targets": [
           {
-            "expr": "sum(rate(modporter_conversion_jobs_total[5m])) by (status, mod_type)",
+            "expr": "sum(rate(portkit_conversion_jobs_total[5m])) by (status, mod_type)",
             "legendFormat": "{{status}} - {{mod_type}}"
           }
         ],
@@ -126,7 +126,7 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "rate(container_cpu_usage_seconds_total{name=~\"modporter.*\"}[5m]) * 100",
+            "expr": "rate(container_cpu_usage_seconds_total{name=~\"portkit.*\"}[5m]) * 100",
             "legendFormat": "{{name}} CPU %"
           }
         ],
@@ -138,7 +138,7 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "rate(modporter_llm_tokens_total[5m]) * 60",
+            "expr": "rate(portkit_llm_tokens_total[5m]) * 60",
             "legendFormat": "{{model}} - {{prompt_completion}}"
           }
         ],
@@ -150,7 +150,7 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "rate(modporter_llm_cost_dollars[1h])",
+            "expr": "rate(portkit_llm_cost_dollars[1h])",
             "legendFormat": "{{model}}"
           }
         ],
@@ -162,7 +162,7 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "sum(rate(modporter_errors_total[5m])) by (error_category) * 60",
+            "expr": "sum(rate(portkit_errors_total[5m])) by (error_category) * 60",
             "legendFormat": "{{error_category}}"
           }
         ],
@@ -174,7 +174,7 @@
         "type": "gauge",
         "targets": [
           {
-            "expr": "(rate(modporter_cache_operations_total{operation=\"hit\"}[5m]) / rate(modporter_cache_operations_total[5m])) * 100",
+            "expr": "(rate(portkit_cache_operations_total{operation=\"hit\"}[5m]) / rate(portkit_cache_operations_total[5m])) * 100",
             "legendFormat": "Hit Rate %"
           }
         ],
@@ -199,7 +199,7 @@
         "type": "piechart",
         "targets": [
           {
-            "expr": "sum(rate(modporter_conversion_jobs_total[1h])) by (target_version)",
+            "expr": "sum(rate(portkit_conversion_jobs_total[1h])) by (target_version)",
             "legendFormat": "{{target_version}}"
           }
         ],
@@ -211,7 +211,7 @@
         "type": "table",
         "targets": [
           {
-            "expr": "modporter_average_conversion_time_by_mod_type_seconds",
+            "expr": "portkit_average_conversion_time_by_mod_type_seconds",
             "format": "table",
             "legendFormat": "{{target_version}} - {{mod_type}}"
           }
@@ -224,7 +224,7 @@
         "type": "piechart",
         "targets": [
           {
-            "expr": "sum(rate(modporter_conversion_jobs_total[1h])) by (mod_type)",
+            "expr": "sum(rate(portkit_conversion_jobs_total[1h])) by (mod_type)",
             "legendFormat": "{{mod_type}}"
           }
         ],
@@ -236,7 +236,7 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "histogram_quantile(0.95, rate(modporter_db_operation_duration_seconds_bucket[5m]))",
+            "expr": "histogram_quantile(0.95, rate(portkit_db_operation_duration_seconds_bucket[5m]))",
             "legendFormat": "{{operation}} - {{table}}"
           }
         ],
@@ -248,7 +248,7 @@
         "type": "heatmap",
         "targets": [
           {
-            "expr": "rate(modporter_conversion_duration_seconds_bucket[5m])",
+            "expr": "rate(portkit_conversion_duration_seconds_bucket[5m])",
             "legendFormat": "{{target_version}} - {{mod_type}}"
           }
         ],
@@ -260,7 +260,7 @@
         "type": "table",
         "targets": [
           {
-            "expr": "sum(rate(modporter_agent_executions_total[5m])) by (agent_name, status)",
+            "expr": "sum(rate(portkit_agent_executions_total[5m])) by (agent_name, status)",
             "format": "table",
             "legendFormat": "{{agent_name}} - {{status}}"
           }

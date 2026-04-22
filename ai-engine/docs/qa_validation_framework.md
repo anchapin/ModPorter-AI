@@ -6,8 +6,8 @@ The QA Validation Framework provides comprehensive validation of Bedrock .mcaddo
 
 ## Implementation Location
 
-- **File**: `/home/alexc/Projects/ModPorter-AI/ai-engine/agents/qa_validator.py`
-- **Tests**: `/home/alexc/Projects/ModPorter-AI/ai-engine/tests/test_qa_validator_standalone.py`
+- **File**: `/home/alex/Projects/portkit/ai-engine/agents/qa_validator.py`
+- **Tests**: `/home/alex/Projects/portkit/ai-engine/tests/test_qa_validator_standalone.py`
 
 ## Features Implemented
 

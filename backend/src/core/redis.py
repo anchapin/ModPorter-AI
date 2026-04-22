@@ -1,5 +1,5 @@
 """
-Redis configuration and client management for ModPorter-AI.
+Redis configuration and client management for portkit.
 
 This module provides:
 - Connection pooling for Redis

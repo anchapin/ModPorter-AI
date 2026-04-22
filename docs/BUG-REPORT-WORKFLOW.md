@@ -138,7 +138,7 @@
 
 **Response:** Auto-ticket created, email confirmation sent
 
-### Email (beta@modporter.ai)
+### Email (beta@portkit.cloud)
 
 **Subject Format:** `[Bug] [Severity] Brief description`
 
@@ -217,7 +217,7 @@ Expected Response: [timeframe based on severity]
 Our team will review your report and get back to you soon.
 
 In the meantime:
-- Check status: https://modporter.ai/bugs/BUG-12345
+- Check status: https://portkit.cloud/bugs/BUG-12345
 - Add more info: Reply to this email
 
 Thanks for helping us improve!
@@ -234,7 +234,7 @@ Expected fix: [date]
 
 [Optional: Additional details about progress]
 
-Track progress: https://modporter.ai/bugs/BUG-12345
+Track progress: https://portkit.cloud/bugs/BUG-12345
 ```
 
 ### Fix Notification

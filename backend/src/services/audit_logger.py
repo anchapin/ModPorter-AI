@@ -1,5 +1,5 @@
 """
-Audit Logging Service for ModPorter-AI.
+Audit Logging Service for portkit.
 
 Provides structured audit logging for security-relevant events:
 - File uploads (start, complete, fail)
@@ -363,7 +363,7 @@ def get_audit_logger() -> AuditLogger:
         import os
         from config import settings
 
-        log_file = os.getenv("AUDIT_LOG_FILE", "/var/log/modporter/audit.log")
+        log_file = os.getenv("AUDIT_LOG_FILE", "/var/log/portkit/audit.log")
         _audit_logger = AuditLogger(log_file=log_file, log_to_console=True)
     return _audit_logger
 

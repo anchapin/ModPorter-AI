@@ -6,7 +6,7 @@
 
 ## Context
 
-We needed to choose a backend framework for the ModPorter-AI service that could handle:
+We needed to choose a backend framework for the portkit service that could handle:
 - High-concurrency async request processing
 - Automatic OpenAPI documentation
 - Type safety with Python type hints

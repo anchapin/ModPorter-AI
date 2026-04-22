@@ -1,6 +1,6 @@
 # Asset Management Implementation
 
-This document describes the implementation of the asset management system for the ModPorter-AI addon editor.
+This document describes the implementation of the asset management system for the portkit addon editor.
 
 ## Overview
 

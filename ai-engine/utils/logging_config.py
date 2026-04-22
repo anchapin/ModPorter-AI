@@ -289,7 +289,7 @@ def setup_logging(
     if enable_file_logging:
         if log_file is None:
             # Default log file location
-            log_dir = Path(os.getenv("LOG_DIR", "/tmp/modporter-ai/logs"))
+            log_dir = Path(os.getenv("LOG_DIR", "/tmp/portkit-ai/logs"))
             log_dir.mkdir(parents=True, exist_ok=True)
             log_file = log_dir / "ai-engine.log"
 
@@ -854,7 +854,7 @@ def export_log_analysis(filepath: str = None):
         filepath: Path to export file (optional, defaults to log directory)
     """
     if filepath is None:
-        log_dir = Path(os.getenv("LOG_DIR", "/tmp/modporter-ai/logs"))
+        log_dir = Path(os.getenv("LOG_DIR", "/tmp/portkit-ai/logs"))
         log_dir.mkdir(parents=True, exist_ok=True)
         filepath = log_dir / f"agent_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
 

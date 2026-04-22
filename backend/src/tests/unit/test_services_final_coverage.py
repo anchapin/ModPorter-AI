@@ -395,10 +395,10 @@ class TestErrorHandlersExtraCoverage:
         assert response.error_type == "test_error"
 
     def test_mod_porter_exception_defaults(self):
-        """Test ModPorterException with default values."""
-        from services.error_handlers import ModPorterException
+        """Test PortkitException with default values."""
+        from services.error_handlers import PortkitException
 
-        exc = ModPorterException("Test message")
+        exc = PortkitException("Test message")
         assert exc.message == "Test message"
         assert exc.user_message == "An error occurred. Please try again."
         assert exc.status_code == 500

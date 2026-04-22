@@ -1,5 +1,5 @@
 """
-Logging Middleware for ModPorter AI Backend
+Logging Middleware for Portkit Backend
 Provides request/response logging with structured logging.
 
 Issue: #695 - Add structured logging

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the comprehensive implementation of an advanced Retrieval-Augmented Generation (RAG) system for ModPorter-AI, as outlined in issue #158. The implementation follows a phased approach and includes multi-modal support, hybrid search capabilities, query expansion, result re-ranking, and comprehensive evaluation framework.
+This document describes the comprehensive implementation of an advanced Retrieval-Augmented Generation (RAG) system for portkit, as outlined in issue #158. The implementation follows a phased approach and includes multi-modal support, hybrid search capabilities, query expansion, result re-ranking, and comprehensive evaluation framework.
 
 ## Implementation Summary
 

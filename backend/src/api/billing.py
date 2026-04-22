@@ -1,5 +1,5 @@
 """
-Stripe Billing API endpoints for ModPorter AI (Issue #970)
+Stripe Billing API endpoints for Portkit (Issue #970)
 
 Endpoints:
 - POST /api/v1/billing/checkout - Create Stripe Checkout session

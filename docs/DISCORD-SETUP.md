@@ -1,6 +1,6 @@
 # Discord Server Setup Guide
 
-**ModPorter AI Beta Community**
+**Portkit Beta Community**
 
 ---
 
@@ -96,7 +96,7 @@
 ## Welcome Message
 
 ```
-👋 Welcome to ModPorter AI, {user}!
+👋 Welcome to Portkit, {user}!
 
 We're excited to have you in our beta program!
 
@@ -271,7 +271,7 @@ Enjoy your stay! 🚀
 
 ---
 
-**Discord Invite Link:** https://discord.gg/modporter-ai
+**Discord Invite Link:** https://discord.gg/portkit
 
 *Server Setup Version: 1.0*
 *Last Updated: 2026-03-14*

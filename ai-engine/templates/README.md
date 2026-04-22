@@ -2,7 +2,7 @@
 
 ## Overview
 
-The ModPorter-AI enhanced template system provides dynamic template selection, inheritance, and extensible template categories for converting Java mods to Bedrock add-ons. This system replaces the simple hard-coded block template with a comprehensive solution supporting items, entities, recipes, and more.
+The portkit enhanced template system provides dynamic template selection, inheritance, and extensible template categories for converting Java mods to Bedrock add-ons. This system replaces the simple hard-coded block template with a comprehensive solution supporting items, entities, recipes, and more.
 
 ## Architecture
 
@@ -381,4 +381,4 @@ When contributing new templates:
 4. Write tests for new functionality
 5. Update this documentation
 
-For questions or issues, refer to the ModPorter-AI project documentation or create an issue on GitHub.
+For questions or issues, refer to the portkit project documentation or create an issue on GitHub.

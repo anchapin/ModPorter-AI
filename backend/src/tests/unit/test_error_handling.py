@@ -38,7 +38,7 @@ class TestErrorCategories:
     def test_custom_exceptions(self):
         """Test custom exception classes"""
         from services.error_handlers import (
-            ModPorterException,
+            PortkitException,
             ParseError,
             AssetError,
             LogicError,

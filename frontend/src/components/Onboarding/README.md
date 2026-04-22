@@ -1,6 +1,6 @@
 # Onboarding Component
 
-Interactive onboarding flow for new ModPorter AI users.
+Interactive onboarding flow for new Portkit users.
 
 ## Features
 

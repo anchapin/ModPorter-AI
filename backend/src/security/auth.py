@@ -1,5 +1,5 @@
 """
-Security utilities for ModPorter AI
+Security utilities for Portkit
 
 Provides:
 - Password hashing and verification using bcrypt

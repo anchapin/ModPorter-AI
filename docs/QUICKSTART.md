@@ -1,4 +1,4 @@
-# ModPorter AI - Quick Start Guide
+# Portkit - Quick Start Guide
 
 **Convert your first Java mod to Bedrock in 5 minutes!**
 
@@ -8,7 +8,7 @@
 
 - [ ] Minecraft Java Edition mod (.jar or .zip file)
 - [ ] Minecraft Bedrock Edition (any platform)
-- [ ] ModPorter AI account (sign up at https://modporter.ai)
+- [ ] Portkit account (sign up at https://portkit.cloud)
 
 ---
 
@@ -17,7 +17,7 @@
 ### 1. Login (1 minute)
 
 ```
-1. Visit https://modporter.ai
+1. Visit https://portkit.cloud
 2. Click "Login"
 3. Enter your credentials
 4. You're in!
@@ -96,15 +96,15 @@
 ## Need Help?
 
 **Quick Support:**
-- Discord: https://discord.gg/modporter-ai
+- Discord: https://discord.gg/portkit
 - #beta-support channel
 
 **Documentation:**
-- Full guide: https://docs.modporter.ai
-- Video tutorials: https://youtube.com/modporter-ai
+- Full guide: https://docs.portkit.cloud
+- Video tutorials: https://youtube.com/portkit
 
 **Report Issues:**
-- GitHub: https://github.com/modporter-ai/issues
+- GitHub: https://github.com/anchapin/portkit/issues
 - Include: Conversion ID, mod file, error
 
 ---
@@ -120,4 +120,4 @@
 
 **Happy Converting! 🚀**
 
-*ModPorter AI Team*
+*Portkit Team*

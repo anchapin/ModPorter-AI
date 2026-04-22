@@ -71,7 +71,7 @@ class DebtItem:
         """Convert to dictionary for JSON serialization."""
         return asdict(self)
 
-    def github_issue_link(self, repo: str = "anchapin/modporter-ai") -> str:
+    def github_issue_link(self, repo: str = "anchapin/portkit") -> str:
         """Generate GitHub issue link."""
         return f"https://github.com/{repo}/issues/{self.issue_number}"
 

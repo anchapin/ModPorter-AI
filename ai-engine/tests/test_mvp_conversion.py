@@ -1,5 +1,5 @@
 """
-Comprehensive End-to-End Integration Testing Framework for ModPorter AI
+Comprehensive End-to-End Integration Testing Framework for Portkit
 
 This module implements the testing framework for Issue #324:
 - End-to-End Integration Testing Framework
@@ -173,7 +173,7 @@ class TestMVPEndToEndConversion:
                     os.makedirs(meta_dir, exist_ok=True)
                     with open(os.path.join(meta_dir, "MANIFEST.MF"), "w") as f:
                         f.write("""Manifest-Version: 1.0
-Created-By: ModPorter AI Test Suite
+Created-By: Portkit Test Suite
 Specification-Title: Simple Copper Block
 Specification-Version: 1.0.0
 Implementation-Title: simple_copper
@@ -197,7 +197,7 @@ Implementation-Version: 1.0.0
                         "version": "1.0.0",
                         "name": "Simple Copper Block",
                         "description": "A simple mod that adds a polished copper block",
-                        "authors": ["ModPorter AI"],
+                        "authors": ["Portkit"],
                         "license": "MIT",
                         "environment": "*",
                         "entrypoints": {"main": ["com.example.simple_copper.SimpleCopperMod"]},
@@ -215,7 +215,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
 import net.minecraft.world.level.material.Material;
 
 /**
- * Simple polished copper block for testing ModPorter AI conversion.
+ * Simple polished copper block for testing Portkit conversion.
  * Registry name should be extracted as "polished_copper"
  */
 public class PolishedCopperBlock extends Block {

@@ -1,13 +1,13 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "ModPorter AI API",
+    "title": "Portkit API",
     "description": "AI-powered Java to Bedrock Minecraft mod conversion API",
     "version": "1.0.0",
     "contact": {
-      "name": "ModPorter AI Support",
-      "email": "api-support@modporter.ai",
-      "url": "https://modporter.ai"
+      "name": "Portkit Support",
+      "email": "api-support@portkit.cloud",
+      "url": "https://portkit.cloud"
     },
     "license": {
       "name": "MIT",
@@ -16,11 +16,11 @@
   },
   "servers": [
     {
-      "url": "https://api.modporter.ai/v1",
+      "url": "https://api.portkit.cloud/v1",
       "description": "Production server"
     },
     {
-      "url": "https://api-staging.modporter.ai/v1",
+      "url": "https://api-staging.portkit.cloud/v1",
       "description": "Staging server"
     },
     {

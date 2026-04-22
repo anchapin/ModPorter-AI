@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-The Multi-Agent QA System for ModPorter-AI requires minimal **new** stack additions because the foundation (CrewAI + LangChain) already exists. The primary work involves **extending existing capabilities** through custom agent tools, validation frameworks, and specialized testing infrastructure for Bedrock output.
+The Multi-Agent QA System for portkit requires minimal **new** stack additions because the foundation (CrewAI + LangChain) already exists. The primary work involves **extending existing capabilities** through custom agent tools, validation frameworks, and specialized testing infrastructure for Bedrock output.
 
 **Key Finding:** The existing CrewAI framework already provides the multi-agent orchestration, role-based agents, task delegation, and inter-agent communication patterns needed. What remains is adding specialized validation tools, test execution environments, and semantic analysis capabilities specific to Java→Bedrock conversion validation.
 

@@ -1,6 +1,6 @@
 # Enterprise Feature Planning
 
-**ModPorter AI - Enterprise Roadmap**
+**Portkit - Enterprise Roadmap**
 
 ---
 
@@ -265,7 +265,7 @@ async def convert_mod(request):
 
 ### Positioning
 
-**ModPorter AI:**
+**Portkit:**
 - Only AI-powered Java→Bedrock converter
 - 60-80% automation
 - Enterprise-grade security

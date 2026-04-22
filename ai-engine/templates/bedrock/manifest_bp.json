@@ -2,7 +2,7 @@
   "format_version": 2,
   "header": {
     "name": "{{ pack_name | default('ModPorter Behavior Pack') }}",
-    "description": "{{ pack_description | default('Auto-converted behavior pack from ModPorter AI') }}",
+    "description": "{{ pack_description | default('Auto-converted behavior pack from Portkit') }}",
     "uuid": "{{ pack_uuid }}",
     "version": {{ pack_version | default([1, 0, 0]) | tojson }},
     "min_engine_version": {{ min_engine_version | default([1, 20, 0]) | tojson }}

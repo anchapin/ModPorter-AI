@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-This document maps the feature requirements for the Multi-Agent QA System in ModPorter-AI. The system consists of four specialized agents (Translator, Reviewer, Tester, Semantic Checker) that work in concert to validate and improve Java→Bedrock conversion quality.
+This document maps the feature requirements for the Multi-Agent QA System in portkit. The system consists of four specialized agents (Translator, Reviewer, Tester, Semantic Checker) that work in concert to validate and improve Java→Bedrock conversion quality.
 
 **Key Insight:** The multi-agent QA approach follows the software engineering "review cycle" pattern used in production codebases—generation → review → test → semantic validation—with each agent having distinct responsibilities and success criteria.
 
@@ -216,7 +216,7 @@ For v4.7 milestone, prioritize in this order:
 
 ## Integration with Existing Features
 
-The Multi-Agent QA system builds on existing ModPorter-AI components:
+The Multi-Agent QA system builds on existing portkit components:
 
 | Existing Feature | How QA Uses It |
 |-----------------|----------------|

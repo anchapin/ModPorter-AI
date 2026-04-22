@@ -138,7 +138,7 @@ const footerLinks = {
     { label: 'Cookie Policy', href: '/cookies' },
   ],
   social: [
-    { label: 'GitHub', href: 'https://github.com/anchapin/ModPorter-AI' },
+    { label: 'GitHub', href: 'https://github.com/anchapin/portkit' },
     { label: 'Discord', href: 'https://discord.gg/modporter' },
     { label: 'Twitter', href: 'https://twitter.com/modporterai' },
   ],
@@ -151,14 +151,14 @@ const LandingPage: React.FC = () => {
     <div className="landing-page">
       {/* SEO Meta Tags - these would be set via react-helmet or similar in production */}
       <head>
-        <title>ModPorter AI — Java to Bedrock Conversion Accelerator</title>
+        <title>Portkit — Java to Bedrock Conversion Accelerator</title>
         <meta
           name="description"
           content="Convert Minecraft Java Edition mods to Bedrock Edition 60-80% automatically. Detailed conversion reports, professional-grade output for Marketplace creators."
         />
         <meta
           property="og:title"
-          content="ModPorter AI — Conversion Accelerator"
+          content="Portkit — Conversion Accelerator"
         />
         <meta
           property="og:description"
@@ -173,7 +173,7 @@ const LandingPage: React.FC = () => {
         <div className="nav-container">
           <div className="nav-logo">
             <span className="logo-icon">🎮</span>
-            <span className="logo-text">ModPorter AI</span>
+            <span className="logo-text">Portkit</span>
           </div>
           <div className="nav-links">
             <a href="#features">Features</a>
@@ -203,7 +203,7 @@ const LandingPage: React.FC = () => {
             <span className="hero-highlight">Marketplace Faster</span>
           </h1>
           <p className="hero-subtitle">
-            ModPorter AI handles 60-80% of Java→Bedrock conversion
+            Portkit handles 60-80% of Java→Bedrock conversion
             automatically. Detailed reports show exactly what needs manual work
             — no guesswork.
           </p>
@@ -362,7 +362,7 @@ const LandingPage: React.FC = () => {
                 <li>Custom integrations</li>
                 <li>SLA guarantee</li>
               </ul>
-              <a href="mailto:sales@modporter.ai" className="pricing-cta">
+              <a href="mailto:sales@portkit.cloud" className="pricing-cta">
                 Contact Sales
               </a>
             </div>
@@ -407,7 +407,7 @@ const LandingPage: React.FC = () => {
           <div className="footer-brand">
             <div className="footer-logo">
               <span className="logo-icon">🎮</span>
-              <span className="logo-text">ModPorter AI</span>
+              <span className="logo-text">Portkit</span>
             </div>
             <p className="footer-tagline">
               Java to Bedrock conversion for the Minecraft community.
@@ -462,7 +462,7 @@ const LandingPage: React.FC = () => {
             </div>
           </div>
           <div className="footer-bottom">
-            <p>© 2026 ModPorter AI. All rights reserved.</p>
+            <p>© 2026 Portkit. All rights reserved.</p>
           </div>
         </div>
       </footer>

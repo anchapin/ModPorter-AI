@@ -121,14 +121,14 @@ report_generator = ConversionReportGenerator()
 
 # FastAPI app with OpenAPI configuration
 app = FastAPI(
-    title="ModPorter AI Backend",
+    title="Portkit Backend",
     description="AI-powered tool for converting Minecraft Java Edition mods to Bedrock Edition add-ons",
     version="1.0.0",
     lifespan=lifespan,
     contact={
-        "name": "ModPorter AI Team",
-        "url": "https://github.com/anchapin/ModPorter-AI",
-        "email": "support@modporter-ai.com",
+        "name": "Portkit Team",
+        "url": "https://github.com/anchapin/portkit",
+        "email": "support@portkit.com",
     },
     license_info={
         "name": "MIT License",

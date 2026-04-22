@@ -9,9 +9,9 @@ export const DocumentationSimple: React.FC = () => {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>ModPorter AI - Documentation</h1>
+        <h1 className={styles.title}>Portkit - Documentation</h1>
         <p className={styles.subtitle}>
-          Learn how to use ModPorter AI to convert Minecraft Java Edition mods
+          Learn how to use Portkit to convert Minecraft Java Edition mods
           to Bedrock Edition add-ons.
         </p>
       </header>
@@ -151,7 +151,7 @@ export const DocumentationSimple: React.FC = () => {
       <section className={styles.helpSection}>
         <h2 className={styles.helpTitle}>Need Help?</h2>
         <p className={styles.helpDescription}>
-          ModPorter AI is designed to be intuitive, but if you encounter issues
+          Portkit is designed to be intuitive, but if you encounter issues
           or have questions:
         </p>
         <div className={styles.helpButtons}>

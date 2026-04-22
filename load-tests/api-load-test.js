@@ -1,5 +1,5 @@
 /**
- * ModPorter-AI Load Test Suite
+ * portkit Load Test Suite
  * Uses k6 for API load testing
  *
  * Installation:

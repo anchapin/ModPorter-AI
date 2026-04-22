@@ -3,7 +3,7 @@ End-to-end integration test for mod conversion workflow.
 
 Tests the complete pipeline: upload JAR -> start conversion -> wait for completion -> download .mcaddon
 
-Issue #170: https://github.com/anchapin/ModPorter-AI/issues/170
+Issue #170: https://github.com/anchapin/portkit/issues/170
 """
 
 import os

@@ -1,20 +1,20 @@
 # Beta User Onboarding Guide
 
-**ModPorter AI - Beta Program**  
+**Portkit - Beta Program**  
 **Version**: 1.0  
 **Last Updated**: 2026-03-14  
 
 ---
 
-## Welcome to ModPorter AI Beta!
+## Welcome to Portkit Beta!
 
 Thank you for joining our beta program! This guide will help you get started with converting your Java mods to Bedrock add-ons.
 
 ---
 
-## What is ModPorter AI?
+## What is Portkit?
 
-ModPorter AI is an AI-powered platform that automatically converts Minecraft Java Edition mods to Bedrock Edition add-ons. Our goal is to help mod creators reach Bedrock's 3x larger player base without manual code rewriting.
+Portkit is an AI-powered platform that automatically converts Minecraft Java Edition mods to Bedrock Edition add-ons. Our goal is to help mod creators reach Bedrock's 3x larger player base without manual code rewriting.
 
 ### What You Can Expect
 
@@ -35,7 +35,7 @@ ModPorter AI is an AI-powered platform that automatically converts Minecraft Jav
 
 ### Step 1: Create Your Account
 
-1. Visit https://modporter.ai
+1. Visit https://portkit.cloud
 2. Click "Sign Up"
 3. Enter your email and password
 4. Check your email for verification link
@@ -43,7 +43,7 @@ ModPorter AI is an AI-powered platform that automatically converts Minecraft Jav
 
 ### Step 2: Join Our Discord
 
-1. Visit https://discord.gg/modporter-ai
+1. Visit https://discord.gg/portkit
 2. Introduce yourself in #introductions
 3. Read the #beta-guidelines channel
 4. Ask questions in #beta-support
@@ -71,7 +71,7 @@ ModPorter AI is an AI-powered platform that automatically converts Minecraft Jav
 
 ### Upload Process
 
-1. **Login** to your account at https://modporter.ai
+1. **Login** to your account at https://portkit.cloud
 2. **Click "New Conversion"** on the dashboard
 3. **Upload your mod file** (.jar or .zip)
    - Drag and drop or click to browse
@@ -169,16 +169,16 @@ Once conversion is complete:
 ### Getting Help
 
 **Discord Support:**
-- Join: https://discord.gg/modporter-ai
+- Join: https://discord.gg/portkit
 - Channel: #beta-support
 - Response time: Usually within 24 hours
 
 **Email Support:**
-- Email: beta@modporter.ai
+- Email: beta@portkit.cloud
 - Response time: 24-48 hours
 
 **Bug Reports:**
-- GitHub Issues: https://github.com/modporter-ai/modporter-ai/issues
+- GitHub Issues: https://github.com/portkit/portkit/issues
 - Include: Conversion ID, mod file, error message
 
 ---
@@ -289,14 +289,14 @@ A: You can delete your account anytime in account settings. We'd love to hear yo
 ## Contact Us
 
 **General Inquiries:**
-- Email: hello@modporter.ai
+- Email: hello@portkit.cloud
 
 **Beta Support:**
-- Discord: https://discord.gg/modporter-ai
-- Email: beta@modporter.ai
+- Discord: https://discord.gg/portkit
+- Email: beta@portkit.cloud
 
 **Business Inquiries:**
-- Email: business@modporter.ai
+- Email: business@portkit.cloud
 
 **Social Media:**
 - Twitter: @ModPorterAI
@@ -310,7 +310,7 @@ We're excited to have you in our beta program. Your feedback is invaluable in he
 
 Happy converting! 🚀
 
-**The ModPorter AI Team**
+**The Portkit Team**
 
 ---
 

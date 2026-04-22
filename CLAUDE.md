@@ -1,4 +1,4 @@
-# CLAUDE.md - ModPorter-AI Agent Handbook
+# CLAUDE.md - portkit Agent Handbook
 
 **Version:** 1.0
 **Updated:** 2026-03-31
@@ -7,7 +7,7 @@
 
 ## Project Overview
 
-**ModPorter-AI** is an AI-powered Java to Bedrock Minecraft mod converter.
+**portkit** is an AI-powered Java to Bedrock Minecraft mod converter.
 
 - **Backend:** FastAPI (Python 3.11+)
 - **AI Engine:** Multi-agent conversion pipeline with RAG
@@ -56,7 +56,7 @@
 ## Project Structure
 
 ```
-ModPorter-AI/
+portkit/
 ├── backend/
 │   ├── src/
 │   │   ├── api/              # FastAPI endpoints

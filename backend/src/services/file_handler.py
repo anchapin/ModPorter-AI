@@ -1,5 +1,5 @@
 """
-File Handler Service for ModPorter-AI.
+File Handler Service for portkit.
 
 Provides:
 - JAR/ZIP file validation

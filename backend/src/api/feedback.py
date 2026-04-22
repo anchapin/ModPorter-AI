@@ -264,7 +264,7 @@ async def trigger_rl_training():
             raise HTTPException(status_code=503, detail="RL training system is not available")
 
         # Fetch training data
-        backend_url = os.getenv("MODPORTER_BACKEND_URL", "http://localhost:8000")
+        backend_url = os.getenv("PORTKIT_BACKEND_URL", "http://localhost:8000")
         logger.info(f"Fetching training data from {backend_url}")
 
         training_data = await fetch_training_data_from_backend(backend_url, skip=0, limit=50)

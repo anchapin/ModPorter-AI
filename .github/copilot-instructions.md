@@ -1,7 +1,7 @@
-# ModPorter AI - AI Coding Agent Instructions
+# Portkit - AI Coding Agent Instructions
 
 ## 🎯 Project Overview
-ModPorter AI is a **multi-agent AI system** that converts Minecraft Java Edition mods to Bedrock Edition add-ons using CrewAI, RAG (Retrieval Augmented Generation), and smart assumptions to bridge technical gaps.
+Portkit is a **multi-agent AI system** that converts Minecraft Java Edition mods to Bedrock Edition add-ons using CrewAI, RAG (Retrieval Augmented Generation), and smart assumptions to bridge technical gaps.
 
 ## 🏗️ Architecture (3-Service + Multi-Agent Pattern)
 

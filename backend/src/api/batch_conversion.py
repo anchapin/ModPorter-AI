@@ -294,7 +294,7 @@ async def download_all_batch(
     return {
         "batch_id": batch_id,
         "message": "ZIP download would start here",
-        "filename": f"modporter_batch_{batch_id}.zip",
+        "filename": f"portkit_batch_{batch_id}.zip",
     }
 
 

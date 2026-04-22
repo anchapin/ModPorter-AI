@@ -113,10 +113,10 @@ class TestEmailVerificationIntegration:
         """Test EmailMessage creation for verification email."""
         from services.email_service import EmailMessage
 
-        verification_url = "https://modporter.ai/verify-email/test_token"
+        verification_url = "https://portkit.cloud/verify-email/test_token"
         message = EmailMessage(
             to="user@example.com",
-            subject="Verify your ModPorter AI account",
+            subject="Verify your Portkit account",
             template="email_verification",
             context={
                 "verification_url": verification_url,
@@ -125,7 +125,7 @@ class TestEmailVerificationIntegration:
         )
 
         assert message.to == "user@example.com"
-        assert message.subject == "Verify your ModPorter AI account"
+        assert message.subject == "Verify your Portkit account"
         assert message.template == "email_verification"
         assert message.context["verification_url"] == verification_url
         assert message.context["expiry_hours"] == 24

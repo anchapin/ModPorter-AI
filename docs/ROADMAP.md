@@ -2,8 +2,8 @@
 
 **Last Updated:** 2026-04-20 (v16 audit — 1:46am ET)
 **Status:** M1–M4 ✅ | M5 In Progress (beta launch) | 8/8 PASS ✅ | B2B 67.0% 🆕
-**Repo:** [anchapin/ModPorter-AI](https://github.com/anchapin/ModPorter-AI) | Rebranded to PortKit ✅ (#1114)
-**Target:** Public launch at modporter.ai by June 22, 2026
+**Repo:** [anchapin/portkit](https://github.com/anchapin/portkit) | Rebranded to PortKit ✅ (#1114)
+**Target:** Public launch at portkit.cloud by June 22, 2026
 
 ---
 
@@ -83,21 +83,21 @@ All prerequisites complete. Beta onboarding, conversion quality tuning, and conf
 | Issue | Labels | Priority |
 |-------|--------|----------|
 | **New** | File: Create recipe converter edge cases + remaining coverage | **🥇 #1 — 1,661 Create recipes still unconverted; converters in but ~21% hit rate** |
-| [#994](https://github.com/anchapin/ModPorter-AI/issues/994) Upgrade embedding model ada-002 → text-embedding-3 | enhancement, ai-engine | 🥉 #3 — quality lever for Java→Bedrock mapping retrieval |
-| [#996](https://github.com/anchapin/ModPorter-AI/issues/996) Diffusion LoRA for texture pairs | post-launch | — |
-| [#997](https://github.com/anchapin/ModPorter-AI/issues/997) Fine-tune open-weights LLM | post-launch | — |
+| [#994](https://github.com/anchapin/portkit/issues/994) Upgrade embedding model ada-002 → text-embedding-3 | enhancement, ai-engine | 🥉 #3 — quality lever for Java→Bedrock mapping retrieval |
+| [#996](https://github.com/anchapin/portkit/issues/996) Diffusion LoRA for texture pairs | post-launch | — |
+| [#997](https://github.com/anchapin/portkit/issues/997) Fine-tune open-weights LLM | post-launch | — |
 
 ### Refactor / Tech Debt
 | Issue | Labels | Priority |
 |-------|--------|----------|
-| [#1097](https://github.com/anchapin/ModPorter-AI/issues/1097) Consolidate 5 backend error-handling files | backend, refactor | 🥈 #2 — beta stability; last medium-priority open debt |
-| [#1101](https://github.com/anchapin/ModPorter-AI/issues/1101) Remove dead BM25 fallback | ai-engine, refactor | — |
-| [#1102](https://github.com/anchapin/ModPorter-AI/issues/1102) Consolidate 4 backend report files | backend, ai-engine, refactor | — |
+| [#1097](https://github.com/anchapin/portkit/issues/1097) Consolidate 5 backend error-handling files | backend, refactor | 🥈 #2 — beta stability; last medium-priority open debt |
+| [#1101](https://github.com/anchapin/portkit/issues/1101) Remove dead BM25 fallback | ai-engine, refactor | — |
+| [#1102](https://github.com/anchapin/portkit/issues/1102) Consolidate 4 backend report files | backend, ai-engine, refactor | — |
 
 ### Post-Launch Enhancements
 | Issue | Note |
 |-------|------|
-| [#1048](https://github.com/anchapin/ModPorter-AI/issues/1048) IDE/Plugin ecosystem (bridge., Blockbench, VS Code) | post-launch |
+| [#1048](https://github.com/anchapin/portkit/issues/1048) IDE/Plugin ecosystem (bridge., Blockbench, VS Code) | post-launch |
 
 ---
 
@@ -115,11 +115,11 @@ All prerequisites complete. Beta onboarding, conversion quality tuning, and conf
 
 **Expected impact**: Each 100 additional Create recipes converted adds ~0.4pp to aggregate recipe coverage and ~0.1pp to B2B.
 
-### 🥈 #2: [#1097](https://github.com/anchapin/ModPorter-AI/issues/1097) — Consolidate 5 Backend Error-Handling Files
+### 🥈 #2: [#1097](https://github.com/anchapin/portkit/issues/1097) — Consolidate 5 Backend Error-Handling Files
 
 The last medium-priority open tech debt. Five separate error-handling modules creates inconsistent error propagation behavior — a stability risk during beta load. Consolidating into an `errors/` package with a unified exception hierarchy improves predictability, makes error telemetry more actionable, and is a natural complement to Celery's retry policies (#1122, already merged).
 
-### 🥉 #3: [#994](https://github.com/anchapin/ModPorter-AI/issues/994) — Upgrade Embedding Model ada-002 → text-embedding-3
+### 🥉 #3: [#994](https://github.com/anchapin/portkit/issues/994) — Upgrade Embedding Model ada-002 → text-embedding-3
 
 The embedding model underlies the hybrid search at the core of Java→Bedrock concept mapping. `text-embedding-3-small` cuts cost by ~5× vs ada-002 while improving retrieval quality, and `text-embedding-3-large` improves accuracy further. Upgrading the embedding model is the highest-leverage ML quality improvement available without changing the model architecture — better embeddings means more accurate Java class→Bedrock behavior mappings, which benefits all asset types but especially entities and recipes.
 

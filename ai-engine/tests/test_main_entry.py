@@ -154,7 +154,7 @@ class TestAppConfiguration:
     """Test FastAPI app configuration"""
 
     def test_app_title(self):
-        assert app.title == "ModPorter AI Engine"
+        assert app.title == "Portkit Engine"
 
     def test_app_description(self):
         assert "AI-powered conversion engine" in app.description

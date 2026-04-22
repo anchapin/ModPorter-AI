@@ -1,5 +1,5 @@
 """
-Enhanced Template Engine for ModPorter-AI
+Enhanced Template Engine for portkit
 Supports dynamic template selection, inheritance, and extensible template categories.
 """
 

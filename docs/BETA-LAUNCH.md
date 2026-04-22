@@ -1,6 +1,6 @@
 # Beta Launch Announcement
 
-**ModPorter AI Beta Program is Now Open!**
+**Portkit Beta Program is Now Open!**
 
 ---
 
@@ -8,9 +8,9 @@
 
 **FOR IMMEDIATE RELEASE**
 
-### ModPorter AI Launches Beta Program for AI-Powered Minecraft Mod Converter
+### Portkit Launches Beta Program for AI-Powered Minecraft Mod Converter
 
-**[City, Date]** - ModPorter AI today announced the launch of its beta program for the industry's first AI-powered Minecraft Java to Bedrock mod conversion platform. The beta program invites 50 Minecraft mod creators to test the platform and provide feedback before the public launch.
+**[City, Date]** - Portkit today announced the launch of its beta program for the industry's first AI-powered Minecraft Java to Bedrock mod conversion platform. The beta program invites 50 Minecraft mod creators to test the platform and provide feedback before the public launch.
 
 **Key Highlights:**
 - First AI-powered Java to Bedrock mod converter
@@ -28,10 +28,10 @@
 - Requirements: Active Minecraft Java modder
 
 **Call to Action:**
-Interested beta testers can apply at https://modporter.ai/beta
+Interested beta testers can apply at https://portkit.cloud/beta
 
-**About ModPorter AI:**
-ModPorter AI is developing the first AI-powered platform for converting Minecraft Java Edition mods to Bedrock Edition add-ons. Founded in 2025, the company is based in [Location] and is backed by [Investors/Bootstrapped].
+**About Portkit:**
+Portkit is developing the first AI-powered platform for converting Minecraft Java Edition mods to Bedrock Edition add-ons. Founded in 2025, the company is based in [Location] and is backed by [Investors/Bootstrapped].
 
 **Media Contact:**
 [Name]
@@ -45,7 +45,7 @@ ModPorter AI is developing the first AI-powered platform for converting Minecraf
 ### Twitter Thread
 
 **Tweet 1/5:**
-🎉 Exciting news! ModPorter AI Beta is NOW OPEN! 🎉
+🎉 Exciting news! Portkit Beta is NOW OPEN! 🎉
 
 Convert your Java mods to Bedrock Edition with AI-powered automation.
 
@@ -53,12 +53,12 @@ Convert your Java mods to Bedrock Edition with AI-powered automation.
 ✅ Free during beta
 ✅ Direct dev access
 
-Apply now: https://modporter.ai/beta
+Apply now: https://portkit.cloud/beta
 
 #Minecraft #Modding #Beta
 
 **Tweet 2/5:**
-What is ModPorter AI?
+What is Portkit?
 
 It's the first AI-powered tool that automatically converts Minecraft Java mods to Bedrock add-ons.
 
@@ -91,8 +91,8 @@ What doesn't convert:
 
 **Tweet 5/5:**
 Join our community:
-💬 Discord: https://discord.gg/modporter-ai
-📚 Docs: https://docs.modporter.ai
+💬 Discord: https://discord.gg/portkit
+📚 Docs: https://docs.portkit.cloud
 🐦 Twitter: @ModPorterAI
 
 Questions? Drop them below! 👇
@@ -101,13 +101,13 @@ Questions? Drop them below! 👇
 
 ### Reddit Post (r/MinecraftModding)
 
-**Title:** [Beta] ModPorter AI - AI-Powered Java to Bedrock Mod Converter (50 Spots)
+**Title:** [Beta] Portkit - AI-Powered Java to Bedrock Mod Converter (50 Spots)
 
 **Body:**
 
 Hey r/MinecraftModding!
 
-I'm excited to share **ModPorter AI**, a tool I've been working on that uses AI to automatically convert Java mods to Bedrock add-ons.
+I'm excited to share **Portkit**, a tool I've been working on that uses AI to automatically convert Java mods to Bedrock add-ons.
 
 **What it does:**
 - Upload your Java mod (.jar/.zip)
@@ -129,9 +129,9 @@ I'm excited to share **ModPorter AI**, a tool I've been working on that uses AI 
 - Help shape the product
 
 **Interested?**
-- Apply: https://modporter.ai/beta
-- Discord: https://discord.gg/modporter-ai
-- Docs: https://docs.modporter.ai
+- Apply: https://portkit.cloud/beta
+- Discord: https://discord.gg/portkit
+- Docs: https://docs.portkit.cloud
 
 **AMA!** I'll be around to answer questions about the tech, conversion accuracy, or anything else!
 
@@ -144,9 +144,9 @@ I'm excited to share **ModPorter AI**, a tool I've been working on that uses AI 
 
 🎉 **BETA LAUNCH ANNOUNCEMENT** 🎉
 
-The ModPorter AI Beta Program is NOW OPEN!
+The Portkit Beta Program is NOW OPEN!
 
-**What is ModPorter AI?**
+**What is Portkit?**
 AI-powered Java to Bedrock mod conversion
 
 **Beta Benefits:**
@@ -157,7 +157,7 @@ AI-powered Java to Bedrock mod conversion
 
 **Getting Started:**
 1. Read #beta-guidelines
-2. Apply at https://modporter.ai/beta
+2. Apply at https://portkit.cloud/beta
 3. Join #introductions
 4. Start converting!
 
@@ -174,16 +174,16 @@ Questions? Ask in #beta-support!
 
 ### Announcement Email
 
-**Subject:** 🎉 ModPorter AI Beta is Open - Apply Now!
+**Subject:** 🎉 Portkit Beta is Open - Apply Now!
 
 **Body:**
 
 Hi {name},
 
-Great news! The ModPorter AI Beta Program is now open for applications.
+Great news! The Portkit Beta Program is now open for applications.
 
-**What is ModPorter AI?**
-ModPorter AI automatically converts your Java mods to Bedrock add-ons using advanced AI. Reach Bedrock's 3x larger player base without manual rewriting.
+**What is Portkit?**
+Portkit automatically converts your Java mods to Bedrock add-ons using advanced AI. Reach Bedrock's 3x larger player base without manual rewriting.
 
 **Beta Program Benefits:**
 - Free unlimited conversions (normally $9.99/month)
@@ -200,16 +200,16 @@ ModPorter AI automatically converts your Java mods to Bedrock add-ons using adva
 
 **Limited Spots:** We're accepting only 50 beta testers to ensure quality support.
 
-**[Apply Now →](https://modporter.ai/beta)**
+**[Apply Now →](https://portkit.cloud/beta)**
 
 **Questions?**
-- Join our Discord: https://discord.gg/modporter-ai
-- Read docs: https://docs.modporter.ai
+- Join our Discord: https://discord.gg/portkit
+- Read docs: https://docs.portkit.cloud
 - Reply to this email
 
 Happy modding!
 
-The ModPorter AI Team
+The Portkit Team
 
 ---
 
@@ -277,16 +277,16 @@ The ModPorter AI Team
 ## Contact Information
 
 **Press Inquiries:**
-press@modporter.ai
+press@portkit.cloud
 
 **Beta Support:**
-beta@modporter.ai
+beta@portkit.cloud
 
 **Discord:**
-https://discord.gg/modporter-ai
+https://discord.gg/portkit
 
 **Website:**
-https://modporter.ai
+https://portkit.cloud
 
 ---
 

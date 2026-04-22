@@ -1,4 +1,4 @@
-# Prometheus Configuration for ModPorter AI
+# Prometheus Configuration for Portkit
 # Day 6: Production monitoring setup
 
 global:
@@ -21,14 +21,14 @@ scrape_configs:
       - targets: ['localhost:9090']
 
   # ModPorter Backend API
-  - job_name: 'modporter-backend'
+  - job_name: 'portkit-backend'
     static_configs:
       - targets: ['backend:8000']
     metrics_path: '/api/v1/metrics'
     scrape_interval: 10s
 
-  # ModPorter AI Engine
-  - job_name: 'modporter-ai-engine'
+  # Portkit Engine
+  - job_name: 'portkit-engine'
     static_configs:
       - targets: ['ai-engine:8001']
     metrics_path: '/api/v1/metrics'

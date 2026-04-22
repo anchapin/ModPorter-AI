@@ -1,6 +1,6 @@
 # Build Performance Tracking
 
-This document explains how build performance is tracked and analyzed in ModPorter-AI's CI pipeline.
+This document explains how build performance is tracked and analyzed in portkit's CI pipeline.
 
 ## Overview
 

@@ -1,5 +1,5 @@
 /**
- * Progress Page for ModPorter-AI Beta
+ * Progress Page for portkit Beta
  * Real-time conversion progress tracking
  */
 

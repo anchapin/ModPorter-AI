@@ -1,5 +1,5 @@
 """
-Schemas module for ModPorter-AI.
+Schemas module for portkit.
 """
 
 from schemas.multimodal_schema import (

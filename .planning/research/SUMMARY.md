@@ -1,13 +1,13 @@
 # Project Research Summary
 
-**Project:** ModPorter-AI v4.7 — Multi-Agent QA System
+**Project:** portkit v4.7 — Multi-Agent QA System
 **Domain:** AI-powered Multi-Agent Code Conversion Validation
 **Researched:** 2026-03-27
 **Confidence:** HIGH
 
 ## Executive Summary
 
-The Multi-Agent QA System adds four specialized agents (Translator, Reviewer, Tester, Semantic Checker) to the existing ModPorter-AI conversion pipeline for validating Java→Bedrock Minecraft mod conversions. Research confirms this follows the software engineering "review cycle" pattern used in production codebases—generation → review → test → semantic validation—with each agent having distinct responsibilities. The existing CrewAI + LangChain stack already provides the multi-agent orchestration foundation; the primary work involves extending existing agents and adding specialized validation tools for Bedrock output. Key risks include agent coordination failures (circular dependencies), non-deterministic validation results, and integration conflicts with the existing conversion pipeline. The recommended approach is to implement QA as a post-conversion layer that runs asynchronously after packaging completes, ensuring QA doesn't block or disrupt existing conversion workflows.
+The Multi-Agent QA System adds four specialized agents (Translator, Reviewer, Tester, Semantic Checker) to the existing portkit conversion pipeline for validating Java→Bedrock Minecraft mod conversions. Research confirms this follows the software engineering "review cycle" pattern used in production codebases—generation → review → test → semantic validation—with each agent having distinct responsibilities. The existing CrewAI + LangChain stack already provides the multi-agent orchestration foundation; the primary work involves extending existing agents and adding specialized validation tools for Bedrock output. Key risks include agent coordination failures (circular dependencies), non-deterministic validation results, and integration conflicts with the existing conversion pipeline. The recommended approach is to implement QA as a post-conversion layer that runs asynchronously after packaging completes, ensuring QA doesn't block or disrupt existing conversion workflows.
 
 ## Key Findings
 

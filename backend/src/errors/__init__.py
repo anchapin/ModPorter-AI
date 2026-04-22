@@ -1,5 +1,5 @@
 """
-Error Handling Package for ModPorter AI Backend
+Error Handling Package for Portkit Backend
 
 This package consolidates all error handling code into a single location:
 - classifier.py: Error type classification and severity
@@ -46,7 +46,7 @@ from .handler import (
     ErrorHandler,
     get_error_handler,
     ErrorResponse,
-    ModPorterException,
+    PortkitException,
     ConversionException,
     FileProcessingException,
     ValidationException,
@@ -64,7 +64,7 @@ from .handler import (
     create_error_response,
     register_exception_handlers,
     verify_exception_handlers,
-    modporter_exception_handler,
+    portkit_exception_handler,
     http_exception_handler,
     validation_exception_handler,
     generic_exception_handler,
@@ -118,7 +118,7 @@ __all__ = [
     "get_error_handler",
     # handler (error_handlers.py)
     "ErrorResponse",
-    "ModPorterException",
+    "PortkitException",
     "ConversionException",
     "FileProcessingException",
     "ValidationException",
@@ -136,7 +136,7 @@ __all__ = [
     "create_error_response",
     "register_exception_handlers",
     "verify_exception_handlers",
-    "modporter_exception_handler",
+    "portkit_exception_handler",
     "http_exception_handler",
     "validation_exception_handler",
     "generic_exception_handler",

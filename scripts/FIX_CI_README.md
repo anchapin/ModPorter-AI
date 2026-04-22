@@ -4,7 +4,7 @@ This directory contains the `fix-failing-ci-checks` command for automatically de
 
 ## Installation
 
-The command is automatically available as part of the ModPorter AI CLI.
+The command is automatically available as part of the Portkit CLI.
 
 ## Usage
 
@@ -20,10 +20,10 @@ The command is automatically available as part of the ModPorter AI CLI.
 scripts\fix-failing-ci-checks.bat
 ```
 
-### As part of the ModPorter CLI:
+### As part of the Portkit CLI:
 
 ```bash
-python -m modporter.cli fix-ci
+python -m portkit.cli fix-ci
 ```
 
 ## Prerequisites
@@ -185,4 +185,4 @@ To extend the command with additional fix types:
 
 ## License
 
-This command is part of the ModPorter AI project and follows the same license terms.
+This command is part of the Portkit project and follows the same license terms.

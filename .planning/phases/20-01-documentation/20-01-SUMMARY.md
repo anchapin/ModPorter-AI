@@ -22,7 +22,7 @@ Create comprehensive documentation including getting started guide, API referenc
 
 ## One-Liner
 
-Comprehensive developer documentation with getting started guide, API reference, and conversion guide for ModPorter AI.
+Comprehensive developer documentation with getting started guide, API reference, and conversion guide for Portkit.
 
 ## Tasks Completed
 

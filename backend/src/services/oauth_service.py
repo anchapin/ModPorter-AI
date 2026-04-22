@@ -1,5 +1,5 @@
 """
-OAuth Service for ModPorter AI
+OAuth Service for Portkit
 
 Provides OAuth2 authentication for Discord, GitHub, and Google.
 Issue #980: Add OAuth login (Discord, GitHub, Google)
@@ -17,8 +17,8 @@ from core.secrets import get_secret
 
 logger = logging.getLogger(__name__)
 
-FRONTEND_URL = get_secret("FRONTEND_URL") or "https://modporter.ai"
-API_BASE_URL = get_secret("API_BASE_URL") or "https://modporter.ai"
+FRONTEND_URL = get_secret("FRONTEND_URL") or "https://portkit.cloud"
+API_BASE_URL = get_secret("API_BASE_URL") or "https://portkit.cloud"
 
 DISCORD_SCOPES = ["identify", "email"]
 GITHUB_SCOPES = ["read:user", "user:email"]

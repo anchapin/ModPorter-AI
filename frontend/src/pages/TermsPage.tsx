@@ -44,12 +44,12 @@ export const TermsPage: React.FC = () => {
       <section id="acceptance" className={styles.section}>
         <h2 className={styles.sectionTitle}>1. Acceptance of Terms</h2>
         <p>
-          By accessing or using ModPorter AI (&quot;the Service&quot;), you
+          By accessing or using Portkit (&quot;the Service&quot;), you
           agree to be bound by these Terms of Service (&quot;Terms&quot;). If
           you do not agree to these Terms, do not use the Service.
         </p>
         <p>
-          ModPorter AI is a SaaS platform that converts Minecraft Java Edition
+          Portkit is a SaaS platform that converts Minecraft Java Edition
           mods to Bedrock Edition add-ons. The Service is provided to you
           subject to these Terms and our Privacy Policy.
         </p>
@@ -105,14 +105,14 @@ export const TermsPage: React.FC = () => {
         </p>
         <p>
           <strong>
-            ModPorter AI does not claim ownership of Your Content.
+            Portkit does not claim ownership of Your Content.
           </strong>{' '}
           We do not assert any ownership rights over the mods you convert.
         </p>
         <h3 className={styles.sectionTitle}>Service Content</h3>
         <p>
           The Service, including all software, designs, text, graphics, and
-          other content (excluding Your Content), are owned by ModPorter AI or
+          other content (excluding Your Content), are owned by Portkit or
           its licensors and are protected by intellectual property laws.
         </p>
         <p>
@@ -198,9 +198,9 @@ export const TermsPage: React.FC = () => {
           us at:
         </p>
         <p>
-          <strong>Email:</strong> legal@modporter.ai
+          <strong>Email:</strong> legal@portkit.cloud
           <br />
-          <strong>Address:</strong> ModPorter AI, [Address]
+          <strong>Address:</strong> Portkit, [Address]
         </p>
       </section>
     </div>

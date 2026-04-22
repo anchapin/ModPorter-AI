@@ -96,11 +96,11 @@ async def register_with_verification(
 
     # Send verification email
     email_service = get_email_service()
-    verification_url = f"https://modporter.ai/verify-email/{verification_token}"
+    verification_url = f"https://portkit.cloud/verify-email/{verification_token}"
 
     message = EmailMessage(
         to=request.email,
-        subject="Verify your ModPorter AI account",
+        subject="Verify your Portkit account",
         template="email_verification",
         context={
             "verification_url": verification_url,
@@ -211,11 +211,11 @@ async def resend_verification(
 
     # Send verification email
     email_service = get_email_service()
-    verification_url = f"https://modporter.ai/verify-email/{verification_token}"
+    verification_url = f"https://portkit.cloud/verify-email/{verification_token}"
 
     message = EmailMessage(
         to=request.email,
-        subject="Verify your ModPorter AI account",
+        subject="Verify your Portkit account",
         template="email_verification",
         context={
             "verification_url": verification_url,

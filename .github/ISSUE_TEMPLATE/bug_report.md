@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Create a report to help us improve ModPorter AI
+about: Create a report to help us improve Portkit
 title: '[BUG] '
 labels: bug
 assignees: ''
@@ -46,7 +46,7 @@ If applicable, add screenshots to help explain your problem.
 **Environment:**
 - OS: [e.g. Windows 11]
 - Browser: [e.g. Chrome 120]
-- ModPorter AI version: [e.g. v1.0.0]
+- Portkit version: [e.g. v1.0.0]
 
 **Conversion Log**
 If available, paste the conversion log or error message:

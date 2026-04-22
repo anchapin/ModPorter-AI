@@ -61,7 +61,7 @@ except ImportError:
 logger = get_crew_logger()
 
 
-class ModPorterConversionCrew:
+class PortkitConversionCrew:
     """
     Multi-agent crew for converting Java mods to Bedrock add-ons
     Following PRD Section 3.0.3: CrewAI framework implementation
@@ -1077,7 +1077,7 @@ class ModPorterConversionCrew:
 
     def _log_pipeline_progress(
         self,
-        stage: "ModPorterConversionCrew.PipelineStage",
+        stage: "PortkitConversionCrew.PipelineStage",
         status: Literal["pending", "in_progress", "completed", "failed"],
         message: str,
         details: Dict[str, Any] = None,

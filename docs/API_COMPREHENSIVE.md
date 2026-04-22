@@ -8,12 +8,12 @@ ModPorter AI provides a RESTful API for converting Minecraft Java Edition mods t
 
 ### Environments
 - **Development**: `http://localhost:8000/api/v1`
-- **Staging**: `https://staging-api.modporter.ai/v1`
-- **Production**: `https://api.modporter.ai/v1`
+- **Staging**: `https://staging-api.portkit.cloud/v1`
+- **Production**: `https://api.portkit.cloud/v1`
 
 ### WebSocket Endpoints
 - **Conversion Progress**: `ws://localhost:8000/ws/conversions/{conversion_id}`
-- **Real-time Updates**: `wss://api.modporter.ai/ws/conversions/{conversion_id}`
+- **Real-time Updates**: `wss://api.portkit.cloud/ws/conversions/{conversion_id}`
 
 ## 🔐 Authentication & Security
 
@@ -715,11 +715,11 @@ ws.onclose = function() {
 ### JavaScript/TypeScript
 
 ```javascript
-// npm install @modporter-ai/client
-import { ModPorterClient } from '@modporter-ai/client';
+// npm install @portkit/client
+import { PortkitClient } from '@portkit/client';
 
-const client = new ModPorterClient({
-  baseURL: 'https://api.modporter.ai/v1',
+const client = new PortkitClient({
+  baseURL: 'https://api.portkit.cloud/v1',
   apiKey: 'your-api-key' // optional for now
 });
 
@@ -742,10 +742,10 @@ const results = await client.conversions.get(conversion.conversionId);
 ### Python
 
 ```python
-# pip install modporter-ai-client
-from modporter_ai import ModPorterClient
+# pip install portkit-client
+from portkit import PortkitClient
 
-client = ModPorterClient(base_url='https://api.modporter.ai/v1')
+client = PortkitClient(base_url='https://api.portkit.cloud/v1')
 
 # Start conversion
 conversion = client.conversions.create(
@@ -770,12 +770,12 @@ results = client.conversions.get(conversion.conversion_id)
 
 ```jsx
 import React, { useState, useEffect } from 'react';
-import { ModPorterClient } from '@modporter-ai/client';
+import { PortkitClient } from '@portkit/client';
 
 function ConversionManager() {
   const [conversion, setConversion] = useState(null);
   const [progress, setProgress] = useState(0);
-  const client = new ModPorterClient();
+  const client = new PortkitClient();
 
   const startConversion = async (file) => {
     const result = await client.conversions.create({
@@ -821,11 +821,11 @@ function ConversionManager() {
 ### Node.js Script
 
 ```javascript
-const ModPorterClient = require('@modporter-ai/client');
+const PortkitClient = require('@portkit/client');
 const fs = require('fs');
 
 async function batchConvert(modFiles) {
-  const client = new ModPorterClient();
+  const client = new PortkitClient();
   
   for (const file of modFiles) {
     console.log(`Converting ${file}...`);
@@ -973,10 +973,10 @@ Monitor these metrics for optimal performance:
 
 ### Getting Help
 - **Documentation**: Check this comprehensive guide first
-- **Status Page**: https://status.modporter.ai
+- **Status Page**: https://status.portkit.cloud
 - **GitHub Issues**: Report bugs and feature requests
 - **Discord Community**: Real-time support and discussions
-- **Email Support**: support@modporter.ai
+- **Email Support**: support@portkit.cloud
 
 ### Reporting Issues
 When reporting issues, include:
@@ -1003,4 +1003,4 @@ When reporting issues, include:
 - Advanced batch processing
 - Mobile API optimizations
 
-For the latest updates and announcements, follow our [GitHub Repository](https://github.com/anchapin/ModPorter-AI) and [Discord Server](https://discord.gg/modporter).
+For the latest updates and announcements, follow our [GitHub Repository](https://github.com/anchapin/portkit) and [Discord Server](https://discord.gg/modporter).

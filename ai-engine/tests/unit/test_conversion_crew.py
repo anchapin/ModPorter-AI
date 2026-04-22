@@ -3,9 +3,9 @@ import pytest
 import json
 from unittest.mock import MagicMock, patch, PropertyMock
 from pathlib import Path
-from crew.conversion_crew import ModPorterConversionCrew
+from crew.conversion_crew import PortkitConversionCrew
 
-class TestModPorterConversionCrew:
+class TestPortkitConversionCrew:
     @pytest.fixture
     def mock_crewai(self):
         with patch('crew.conversion_crew.Agent') as mock_agent, \
@@ -43,13 +43,13 @@ class TestModPorterConversionCrew:
             }
 
     def test_initialization(self, mock_crewai, mock_agents):
-        crew = ModPorterConversionCrew()
+        crew = PortkitConversionCrew()
         assert crew.llm is not None
         assert mock_agents['JavaAnalyzerAgent'].called
         assert mock_agents['BedrockArchitectAgent'].called
         
     def test_should_use_enhanced_orchestration(self, mock_crewai, mock_agents):
-        crew = ModPorterConversionCrew()
+        crew = PortkitConversionCrew()
         
         # Test default
         assert crew._should_use_enhanced_orchestration(None) is True
@@ -67,14 +67,14 @@ class TestModPorterConversionCrew:
         mock_enhanced = mock_enhanced_cls.return_value
         mock_enhanced.convert_mod.return_value = {"status": "completed"}
         
-        crew = ModPorterConversionCrew(variant_id="parallel_basic")
+        crew = PortkitConversionCrew(variant_id="parallel_basic")
         res = crew.convert_mod(Path("test.jar"), Path("out/"))
         
         assert res["status"] == "completed"
         assert mock_enhanced.convert_mod.called
 
     def test_convert_block_mvp_success(self, mock_crewai, mock_agents):
-        crew = ModPorterConversionCrew()
+        crew = PortkitConversionCrew()
         
         # Mock agent methods
         crew.java_analyzer_agent.analyze_jar_for_mvp.return_value = {
@@ -101,7 +101,7 @@ class TestModPorterConversionCrew:
     def test_initialization_ollama(self, mock_crewai, mock_agents):
         """Test initialization with Ollama enabled."""
         with patch.dict('os.environ', {'USE_OLLAMA': 'true', 'OLLAMA_MODEL': 'llama3'}):
-            crew = ModPorterConversionCrew()
+            crew = PortkitConversionCrew()
             assert mock_crewai['create_ollama_llm'].called
             # Check if ollama_model was passed correctly
             args, kwargs = mock_crewai['create_ollama_llm'].call_args
@@ -110,7 +110,7 @@ class TestModPorterConversionCrew:
     def test_convert_mod_original_path(self, mock_crewai, mock_agents):
         """Test convert_mod falling back to original crew."""
         with patch.dict('os.environ', {'USE_ENHANCED_ORCHESTRATION': 'false'}):
-            crew = ModPorterConversionCrew()
+            crew = PortkitConversionCrew()
             
             # Mock original crew kickoff
             mock_crew_instance = mock_crewai['Crew'].return_value
@@ -133,7 +133,7 @@ class TestModPorterConversionCrew:
     def test_convert_mod_file_not_found(self, mock_crewai, mock_agents):
         """Test convert_mod with missing file."""
         with patch.dict('os.environ', {'USE_ENHANCED_ORCHESTRATION': 'false'}):
-            crew = ModPorterConversionCrew()
+            crew = PortkitConversionCrew()
             with patch('pathlib.Path.exists', return_value=False):
                 res = crew.convert_mod(Path("missing.jar"), Path("out"))
                 assert res["status"] == "failed"
@@ -141,7 +141,7 @@ class TestModPorterConversionCrew:
 
     def test_extract_plan_components(self, mock_crewai, mock_agents):
         """Test plan component extraction from crew result."""
-        crew = ModPorterConversionCrew()
+        crew = PortkitConversionCrew()
         
         # Mock crew result with tasks_output
         mock_result = MagicMock()
@@ -166,7 +166,7 @@ class TestModPorterConversionCrew:
 
     def test_format_conversion_report(self, mock_crewai, mock_agents):
         """Test conversion report formatting."""
-        crew = ModPorterConversionCrew()
+        crew = PortkitConversionCrew()
         mock_result = MagicMock()
         mock_task_output = MagicMock()
         mock_task_output.raw = "Success result"
@@ -191,7 +191,7 @@ class TestModPorterConversionCrew:
 
     def test_get_conversion_crew_status(self, mock_crewai, mock_agents):
         """Test status retrieval."""
-        crew = ModPorterConversionCrew()
+        crew = PortkitConversionCrew()
         crew.smart_assumption_engine = MagicMock()
         status = crew.get_conversion_crew_status()
         assert status["agents_initialized"]["java_analyzer"] is True
@@ -199,7 +199,7 @@ class TestModPorterConversionCrew:
 
     def test_convert_blocks_batch_mvp(self, mock_crewai, mock_agents):
         """Test batch conversion MVP."""
-        crew = ModPorterConversionCrew()
+        crew = PortkitConversionCrew()
         with patch.object(crew, 'convert_block_mvp') as mock_convert:
             mock_convert.return_value = {"status": "completed", "output_path": "out.json"}
             
@@ -210,7 +210,7 @@ class TestModPorterConversionCrew:
 
     def test_get_pipeline_status(self, mock_crewai, mock_agents):
         """Test pipeline status retrieval."""
-        crew = ModPorterConversionCrew()
+        crew = PortkitConversionCrew()
         status = crew.get_pipeline_status()
         assert status["pipeline_type"] == "mvp_block_conversion"
         assert "stages" in status
@@ -220,7 +220,7 @@ class TestModPorterConversionCrew:
         """Test progress reporting."""
         mock_callback = MagicMock()
         mock_callback.send_progress = AsyncMock()
-        crew = ModPorterConversionCrew(progress_callback=mock_callback)
+        crew = PortkitConversionCrew(progress_callback=mock_callback)
         
         await crew._report_progress("agent", "status", 50, "msg")
         mock_callback.send_progress.assert_called_once_with(

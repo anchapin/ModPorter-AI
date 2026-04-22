@@ -3,7 +3,7 @@
 **Domain:** AI-powered Multi-Agent Code Conversion Validation
 **Researched:** 2026-03-27
 **Confidence:** HIGH
-**Context:** v4.7 Multi-Agent QA Review milestone — Adding 4 specialized QA agents to existing ModPorter-AI
+**Context:** v4.7 Multi-Agent QA Review milestone — Adding 4 specialized QA agents to existing portkit
 
 ---
 
@@ -21,7 +21,7 @@ This document specifies how the Multi-Agent QA system (Translator, Reviewer, Tes
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                        ModPorter-AI Full Architecture                            │
+│                        portkit Full Architecture                            │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                  │
 │  ┌─────────────────────────────────────────────────────────────────────────┐   │

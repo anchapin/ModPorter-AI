@@ -173,7 +173,7 @@
 
 ### T4: Hardcoded Paths
 - **File**: `tests/test_backend_core_services.py`
-- **Issue**: `/home/alex/Projects/ModPorter-AI/...` hardcoded
+- **Issue**: `/home/alex/Projects/portkit/...` hardcoded
 - **Impact**: Not portable across machines
 - **Status**: ✅ Fixed (2026-04-01)
 - **Fix**: Replaced hardcoded paths with relative Path() construction and proper Python imports.

@@ -1,5 +1,5 @@
 """
-Conversion Worker for ModPorter-AI.
+Conversion Worker for portkit.
 
 This module provides:
 - Background job processing from Redis queue

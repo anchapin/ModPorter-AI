@@ -1,6 +1,6 @@
 # Cost Optimization at Scale
 
-**ModPorter AI - Cost Efficiency Strategy**
+**Portkit - Cost Efficiency Strategy**
 
 ---
 

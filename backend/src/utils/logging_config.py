@@ -1,5 +1,5 @@
 """
-Structured Logging Configuration for ModPorter AI
+Structured Logging Configuration for Portkit
 
 Uses structlog for structured JSON logging with:
 - Correlation IDs for request tracing

@@ -23,7 +23,7 @@ class TestTempFileConfig:
 
         config = TempFileConfig()
 
-        assert config.directory_prefix == "modporter_"
+        assert config.directory_prefix == "portkit_"
         assert config.max_file_age_hours == 24
         assert config.cleanup_interval_minutes == 30
         assert config.max_total_size_mb == 1024

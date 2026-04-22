@@ -78,7 +78,7 @@ export const ConversionDashboard: React.FC = () => {
   return (
     <div className={styles.dashboard}>
       <div className={styles.header}>
-        <h1>ModPorter AI - Java to Bedrock Converter</h1>
+        <h1>Portkit - Java to Bedrock Converter</h1>
         <p>
           Convert your Java Edition mods to Bedrock Edition add-ons with
           AI-powered smart assumptions

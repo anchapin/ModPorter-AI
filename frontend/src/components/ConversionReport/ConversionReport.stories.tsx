@@ -66,7 +66,7 @@ const successfulConversion: InteractiveReport = {
     failed_features: 1,
     assumptions_applied_count: 1,
     processing_time_seconds: 45.2,
-    download_url: 'https://api.modporter.ai/download/success-123.mcaddon',
+    download_url: 'https://api.portkit.cloud/download/success-123.mcaddon',
     quick_statistics: { files_processed: 150, output_size_mb: 12.5 },
   },
   converted_mods: [
@@ -177,7 +177,7 @@ const partialConversion: InteractiveReport = {
     failed_features: 10,
     assumptions_applied_count: 3,
     processing_time_seconds: 120.8,
-    download_url: 'https://api.modporter.ai/download/partial-456.mcaddon',
+    download_url: 'https://api.portkit.cloud/download/partial-456.mcaddon',
     quick_statistics: {
       files_processed: 250,
       output_size_mb: 22.5,

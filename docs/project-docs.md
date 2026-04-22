@@ -1,6 +1,6 @@
 # Contributing Guidelines
 
-Thank you for your interest in contributing to ModPorter AI! This document provides guidelines for contributing to the project.
+Thank you for your interest in contributing to Portkit! This document provides guidelines for contributing to the project.
 
 ## Development Setup
 
@@ -13,8 +13,8 @@ Thank you for your interest in contributing to ModPorter AI! This document provi
 ### Quick Start
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/ModPorter-AI.git
-cd ModPorter-AI
+git clone https://github.com/YOUR_USERNAME/portkit.git
+cd portkit
 
 # Install all dependencies
 pnpm run install-all
@@ -29,7 +29,7 @@ pnpm run dev
 ## Project Structure
 
 ```
-ModPorter-AI/
+portkit/
 ├── frontend/          # React TypeScript frontend
 ├── backend/           # Python FastAPI backend  
 ├── ai-engine/         # CrewAI conversion engine

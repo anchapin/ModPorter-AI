@@ -1,5 +1,5 @@
 """
-Syntax Validation Service for ModPorter AI
+Syntax Validation Service for Portkit
 
 Provides:
 - JavaScript/TypeScript syntax validation using tree-sitter

@@ -1,7 +1,7 @@
 # AI Agent Software Development Best Practices
 
 **Research Date:** 2026-03-31  
-**Purpose:** Research for ModPorter-AI v2.5 automation improvements
+**Purpose:** Research for portkit v2.5 automation improvements
 
 ---
 
@@ -59,7 +59,7 @@ From Claude Code subagent documentation:
 | **Pipeline** | Output of one agent feeds next | Transformations, refinement |
 | **Hierarchical** | Manager agents delegate to workers | Large-scale feature development |
 
-### 2.2 ModPorter-AI Relevance
+### 2.2 portkit Relevance
 
 The v2.5 Mode Classification system could use:
 - **Pipeline pattern** for classification: Extract → Classify → Route → Process
@@ -131,7 +131,7 @@ Recommended AI Quality Gates:
 
 ### 5.1 TODO Management Patterns
 
-**Recommended Pattern (implemented in ModPorter-AI):**
+**Recommended Pattern (implemented in portkit):**
 ```markdown
 # Current Tasks
 ## In Progress
@@ -185,9 +185,9 @@ CORRECT APPROACH:
 
 ---
 
-## 7. ModPorter-AI v2.5 Specific Recommendations
+## 7. portkit v2.5 Specific Recommendations
 
-Based on research, here's how ModPorter-AI should implement v2.5:
+Based on research, here's how portkit should implement v2.5:
 
 ### 7.1 Mode Classification (GAP-2.5-01)
 

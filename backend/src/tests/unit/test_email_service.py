@@ -55,7 +55,7 @@ async def test_send_email_success(email_service):
 
 def test_render_template_welcome(email_service):
     plain_text, html_content = email_service._render_template("welcome", {"user_name": "Alex"})
-    assert "Welcome to ModPorter AI, Alex!" in plain_text
+    assert "Welcome to Portkit, Alex!" in plain_text
 
 
 def test_render_template_verification(email_service):

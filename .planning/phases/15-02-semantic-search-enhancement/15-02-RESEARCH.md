@@ -6,7 +6,7 @@
 
 ## Summary
 
-Phase 15-02 enhances the ModPorter AI's RAG (Retrieval Augmented Generation) system by implementing hybrid search that combines semantic vector similarity with keyword-based BM25 matching, cross-encoder re-ranking for improved result quality, and intelligent query expansion for better recall. The phase builds directly on Phase 15-01's improved document indexing (smart chunking, metadata extraction, hierarchical structure).
+Phase 15-02 enhances the Portkit's RAG (Retrieval Augmented Generation) system by implementing hybrid search that combines semantic vector similarity with keyword-based BM25 matching, cross-encoder re-ranking for improved result quality, and intelligent query expansion for better recall. The phase builds directly on Phase 15-01's improved document indexing (smart chunking, metadata extraction, hierarchical structure).
 
 **Current State Analysis:** The codebase already has substantial search infrastructure in place:
 - `ai-engine/search/hybrid_search_engine.py` (990 lines) - Complete hybrid search with BM25, keyword matching, RRF

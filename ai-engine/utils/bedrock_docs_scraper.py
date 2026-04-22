@@ -123,7 +123,7 @@ class BedrockDocsScraper:
             robots_parser = self.robots_cache[domain]
             try:
                 allowed = robots_parser.is_allowed(
-                    "ModPorter-AI Bedrock Documentation Scraper v2.1.0", url
+                    "portkit Bedrock Documentation Scraper v2.1.0", url
                 )
                 if not allowed:
                     logger.debug(f"URL blocked by robots.txt: {url}")
@@ -141,7 +141,7 @@ class BedrockDocsScraper:
             robots_parser = self.robots_cache[domain]
             try:
                 allowed = robots_parser.is_allowed(
-                    "ModPorter-AI Bedrock Documentation Scraper v2.1.0", url
+                    "portkit Bedrock Documentation Scraper v2.1.0", url
                 )
                 if not allowed:
                     logger.debug(f"URL blocked by robots.txt: {url}")
@@ -175,7 +175,7 @@ class BedrockDocsScraper:
 
                 # Extract crawl-delay if present
                 crawl_delay = robots_parser.get_crawl_delay(
-                    "ModPorter-AI Bedrock Documentation Scraper v2.1.0"
+                    "portkit Bedrock Documentation Scraper v2.1.0"
                 )
                 if crawl_delay:
                     self.crawl_delays[domain] = crawl_delay

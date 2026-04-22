@@ -1,4 +1,4 @@
-# ModPorter-AI Development Setup Guide
+# portkit Development Setup Guide
 
 **Version**: 1.0  
 **Last Updated**: 2026-03-13
@@ -11,8 +11,8 @@ Get up and running in 5 minutes:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-org/modporter-ai.git
-cd modporter-ai
+git clone https://github.com/your-org/portkit.git
+cd portkit
 
 # 2. Copy environment file
 cp .env.example .env
@@ -522,6 +522,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
 
 ## Support
 
-- **Documentation**: https://docs.modporter.ai
-- **Discord**: https://discord.gg/modporter-ai
-- **GitHub Issues**: https://github.com/your-org/modporter-ai/issues
+- **Documentation**: https://docs.portkit.cloud
+- **Discord**: https://discord.gg/portkit
+- **GitHub Issues**: https://github.com/your-org/portkit/issues

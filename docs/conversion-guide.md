@@ -4,7 +4,7 @@ This guide covers the conversion process, supported features, and best practices
 
 ## Understanding the Conversion Process
 
-ModPorter AI uses a multi-agent AI system to analyze Java mod code and translate it to Bedrock-compatible formats. The conversion process involves:
+Portkit uses a multi-agent AI system to analyze Java mod code and translate it to Bedrock-compatible formats. The conversion process involves:
 
 1. **Analysis**: Extracting mod structure, dependencies, and components
 2. **Translation**: Converting Java code to Bedrock Script API
@@ -418,9 +418,9 @@ Receive real-time updates on conversion progress:
 
 ## Getting Help
 
-- **Documentation**: [docs.modporter.ai](https://docs.modporter.ai)
+- **Documentation**: [docs.portkit.cloud](https://docs.portkit.cloud)
 - **Discord**: [discord.gg/modporter](https://discord.gg/modporter)
-- **GitHub Issues**: [github.com/modporter-ai/issues](https://github.com/modporter-ai/issues)
+- **GitHub Issues**: [github.com/portkit/issues](https://github.com/portkit/issues)
 - **FAQ**: [faq.md](faq.md)
 
 ---

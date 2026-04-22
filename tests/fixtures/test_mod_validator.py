@@ -338,7 +338,7 @@ class TestModValidator:
         """
         report_lines = [
             "=" * 80,
-            "MODPORTER AI TEST MOD VALIDATION REPORT",
+            "PORTKIT TEST MOD VALIDATION REPORT",
             "=" * 80,
             ""
         ]

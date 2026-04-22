@@ -833,9 +833,9 @@ class PatternValidator:
 ## Sources
 
 ### Primary (HIGH confidence)
-- **Existing codebase**: `/home/alex/Projects/ModPorter-AI/backend/src/api/embeddings.py` - Current RAG implementation
-- **Existing codebase**: `/home/alex/Projects/ModPorter-AI/ai-engine/indexing/` - Chunking and metadata extraction (Phase 15-01)
-- **Existing codebase**: `/home/alex/Projects/ModPorter-AI/backend/tests/integration/test_document_indexing.py` - Test patterns
+- **Existing codebase**: `/home/alex/Projects/portkit/backend/src/api/embeddings.py` - Current RAG implementation
+- **Existing codebase**: `/home/alex/Projects/portkit/ai-engine/indexing/` - Chunking and metadata extraction (Phase 15-01)
+- **Existing codebase**: `/home/alex/Projects/portkit/backend/tests/integration/test_document_indexing.py` - Test patterns
 - **Official docs**: PostgreSQL pgvector documentation - Vector storage patterns
 - **Official docs**: FastAPI documentation - Background tasks, async patterns
 

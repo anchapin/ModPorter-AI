@@ -1,17 +1,17 @@
 # GitHub Project Board Setup Guide
 
-This guide explains how to set up a GitHub Project (v2) board for ModPorter-AI with proper columns, labels, and automation.
+This guide explains how to set up a GitHub Project (v2) board for portkit with proper columns, labels, and automation.
 
 ## Overview
 
-GitHub Projects (v2) is a flexible project management tool that integrates with issues and pull requests. This setup provides a Kanban-style workflow for tracking work on the ModPorter-AI project.
+GitHub Projects (v2) is a flexible project management tool that integrates with issues and pull requests. This setup provides a Kanban-style workflow for tracking work on the portkit project.
 
 ## Step 1: Create a New GitHub Project
 
 1. Navigate to the [GitHub Projects page](https://github.com/orgs/anchapin/projects) or go to the repository's Projects tab
 2. Click "New Project"
 3. Select "New project" (not "New project (classic)")
-4. Name the project: **ModPorter-AI Development**
+4. Name the project: **portkit Development**
 5. Choose "Board" as the template (this gives us a Kanban-style layout)
 6. Click "Create"
 
@@ -88,10 +88,10 @@ Add these custom fields to enhance project tracking:
 
 ```bash
 # List all open issues and add them to the project
-gh issue list --repo anchapin/ModPorter-AI --state open --limit 1000 --json number,title,labels | \
+gh issue list --repo anchapin/portkit --state open --limit 1000 --json number,title,labels | \
   jq -r '.[] | .number' | \
   while read issue; do
-    gh project item-add <PROJECT_NUMBER> --owner anchapin --url "https://github.com/anchapin/ModPorter-AI/issues/$issue"
+    gh project item-add <PROJECT_NUMBER> --owner anchapin --url "https://github.com/anchapin/portkit/issues/$issue"
   done
 ```
 
@@ -257,13 +257,13 @@ gh project item-edit --project-id <PROJECT_ID> --id <ITEM_ID> --field-id <STATUS
 
 ```bash
 # List open issues
-gh issue list --repo anchapin/ModPorter-AI --state open
+gh issue list --repo anchapin/portkit --state open
 
 # Create issue with labels and project
-gh issue create --repo anchapin/ModPorter-AI --title "Title" --body "Description" --label "bug,priority-2" --project "ModPorter-AI Development"
+gh issue create --repo anchapin/portkit --title "Title" --body "Description" --label "bug,priority-2" --project "portkit Development"
 
 # Add issue to project
-gh issue edit <ISSUE_NUMBER> --repo anchapin/ModPorter-AI --add-project "ModPorter-AI Development"
+gh issue edit <ISSUE_NUMBER> --repo anchapin/portkit --add-project "portkit Development"
 ```
 
 ## Best Practices

@@ -1,12 +1,12 @@
-# ModPorter AI API Documentation
+# Portkit API Documentation
 
-Complete REST API reference for ModPorter AI conversion services.
+Complete REST API reference for Portkit conversion services.
 
 ## Base URL
 
 ```
-Production: https://api.modporter.ai/v1
-Staging: https://api-staging.modporter.ai/v1
+Production: https://api.portkit.cloud/v1
+Staging: https://api-staging.portkit.cloud/v1
 Development: http://localhost:8080/api/v1
 ```
 
@@ -16,17 +16,17 @@ Most endpoints require API key authentication:
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  https://api.modporter.ai/v1/conversions
+  https://api.portkit.cloud/v1/conversions
 ```
 
-**Get your API key**: [modporter.ai/dashboard/settings](https://modporter.ai/dashboard/settings)
+**Get your API key**: [portkit.cloud/dashboard/settings](https://portkit.cloud/dashboard/settings)
 
 ## API Status
 
 Check current API status and uptime:
 
 ```bash
-curl https://status.modporter.ai
+curl https://status.portkit.cloud
 ```
 
 ---
@@ -46,7 +46,7 @@ Convert a Java mod to Bedrock add-on.
 **Request**:
 
 ```bash
-curl -X POST https://api.modporter.ai/v1/conversions \
+curl -X POST https://api.portkit.cloud/v1/conversions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -F "file=@mod.jar" \
   -F "options={\"complexity\":\"high\",\"optimize_assets\":true}"
@@ -109,7 +109,7 @@ Get list of user's conversions with pagination.
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://api.modporter.ai/v1/conversions?page=1&limit=20&status=completed"
+  "https://api.portkit.cloud/v1/conversions?page=1&limit=20&status=completed"
 ```
 
 **Parameters**:
@@ -156,7 +156,7 @@ Get detailed status of a conversion.
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  https://api.modporter.ai/v1/conversions/550e8400-e29b-41d4-a716-446655440000
+  https://api.portkit.cloud/v1/conversions/550e8400-e29b-41d4-a716-446655440000
 ```
 
 **Response**:
@@ -210,7 +210,7 @@ Download the converted .mcaddon file.
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  -O https://api.modporter.ai/v1/conversions/550e8400.../download
+  -O https://api.portkit.cloud/v1/conversions/550e8400.../download
 ```
 
 **Response**:
@@ -232,7 +232,7 @@ Cancel or delete a conversion.
 ```bash
 curl -X DELETE \
   -H "Authorization: Bearer YOUR_API_KEY" \
-  https://api.modporter.ai/v1/conversions/550e8400...
+  https://api.portkit.cloud/v1/conversions/550e8400...
 ```
 
 **Response**:
@@ -259,7 +259,7 @@ Connect to WebSocket for real-time conversion progress.
 
 ```javascript
 const ws = new WebSocket(
-  `wss://api.modporter.ai/v1/conversions/${id}/ws?api_key=YOUR_API_KEY`
+  `wss://api.portkit.cloud/v1/conversions/${id}/ws?api_key=YOUR_API_KEY`
 );
 
 ws.onmessage = (event) => {
@@ -304,7 +304,7 @@ Get detailed conversion report with assumptions and manual steps.
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  https://api.modporter.ai/v1/conversions/550e8400.../report
+  https://api.portkit.cloud/v1/conversions/550e8400.../report
 ```
 
 **Response**:
@@ -357,7 +357,7 @@ Convert multiple mods at once (Pro feature).
 **Request**:
 
 ```bash
-curl -X POST https://api.modporter.ai/v1/conversions/batch \
+curl -X POST https://api.portkit.cloud/v1/conversions/batch \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -F "files=@mod1.jar" \
   -F "files=@mod2.jar" \
@@ -396,7 +396,7 @@ Get API usage statistics for current billing period.
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  https://api.modporter.ai/v1/analytics/usage
+  https://api.portkit.cloud/v1/analytics/usage
 ```
 
 **Response**:
@@ -437,7 +437,7 @@ Check API health status.
 **Request**:
 
 ```bash
-curl https://api.modporter.ai/v1/health
+curl https://api.portkit.cloud/v1/health
 ```
 
 **Response**:
@@ -472,7 +472,7 @@ All errors follow this format:
       "received_type": "exe",
       "allowed_types": [".jar", ".zip"]
     },
-    "documentation_url": "https://docs.modporter.ai/errors/invalid-file-type"
+    "documentation_url": "https://docs.portkit.cloud/errors/invalid-file-type"
   }
 }
 ```
@@ -519,7 +519,7 @@ X-RateLimit-Reset: 1648380000
 import requests
 
 API_KEY = "your_api_key"
-BASE_URL = "https://api.modporter.ai/v1"
+BASE_URL = "https://api.portkit.cloud/v1"
 
 # Start conversion
 with open("mod.jar", "rb") as f:
@@ -559,7 +559,7 @@ const axios = require('axios');
 const fs = require('fs');
 
 const API_KEY = 'your_api_key';
-const BASE_URL = 'https://api.modporter.ai/v1';
+const BASE_URL = 'https://api.portkit.cloud/v1';
 
 // Start conversion
 const form = new FormData();
@@ -611,17 +611,17 @@ while (true) {
 
 ```bash
 # Start conversion
-curl -X POST https://api.modporter.ai/v1/conversions \
+curl -X POST https://api.portkit.cloud/v1/conversions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -F "file=@mod.jar" \
   -F 'options={"optimize_assets":true}'
 
 # Check status
-curl https://api.modporter.ai/v1/conversions/CONVERSION_ID \
+curl https://api.portkit.cloud/v1/conversions/CONVERSION_ID \
   -H "Authorization: Bearer YOUR_API_KEY"
 
 # Download
-curl -O https://api.modporter.ai/v1/conversions/CONVERSION_ID/download \
+curl -O https://api.portkit.cloud/v1/conversions/CONVERSION_ID/download \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -631,7 +631,7 @@ curl -O https://api.modporter.ai/v1/conversions/CONVERSION_ID/download \
 
 ### Official SDKs
 
-- **Python**: `pip install modporter-ai`
+- **Python**: `pip install portkit`
 - **JavaScript**: `npm install @modporter/sdk`
 - **Go**: `go get github.com/modporter/go-sdk`
 - **Rust**: `cargo add modporter-rs`
@@ -652,7 +652,7 @@ Test your integration without using production credits:
 
 ```bash
 # Use sandbox URL
-SANDBOX_URL="https://api-sandbox.modporter.ai/v1"
+SANDBOX_URL="https://api-sandbox.portkit.cloud/v1"
 
 # Sandbox API key (free testing)
 SANDBOX_KEY="sandbox_test_key"
@@ -684,12 +684,12 @@ curl -X POST $SANDBOX_URL/conversions \
 
 ## Support
 
-- **Documentation**: [docs.modporter.ai](https://docs.modporter.ai)
-- **API Reference**: [api.modporter.ai/docs](https://api.modporter.ai/docs) (Swagger UI)
-- **Support Email**: api-support@modporter.ai
-- **GitHub Issues**: [github.com/modporter-ai/issues](https://github.com/modporter-ai/issues)
+- **Documentation**: [docs.portkit.cloud](https://docs.portkit.cloud)
+- **API Reference**: [api.portkit.cloud/docs](https://api.portkit.cloud/docs) (Swagger UI)
+- **Support Email**: api-support@portkit.cloud
+- **GitHub Issues**: [github.com/portkit/issues](https://github.com/portkit/issues)
 - **Discord**: [discord.gg/modporter](https://discord.gg/modporter)
 
 ---
 
-**Need help?** Join our API Discord channel or contact api-support@modporter.ai
+**Need help?** Join our API Discord channel or contact api-support@portkit.cloud

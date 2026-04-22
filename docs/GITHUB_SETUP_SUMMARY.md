@@ -18,37 +18,37 @@
 
 ### Issues Created (Priority 1 - Critical Path)
 
-#### [#148 Documentation: Update PRD.md with Clear MVP Definition](https://github.com/anchapin/ModPorter-AI/issues/148)
+#### [#148 Documentation: Update PRD.md with Clear MVP Definition](https://github.com/anchapin/portkit/issues/148)
 **Labels**: `priority-1`, `documentation`, `epic`
 - Define MVP scope: Simple Java block → Bedrock JSON conversion
 - Document expected input/output formats
 - Add measurable success criteria
 
-#### [#149 Testing: Create End-to-End MVP Test Case](https://github.com/anchapin/ModPorter-AI/issues/149)  
+#### [#149 Testing: Create End-to-End MVP Test Case](https://github.com/anchapin/portkit/issues/149)  
 **Labels**: `priority-1`, `testing`, `good-first-issue`
 - Create simple Java block test fixture
 - Write complete pipeline test
 - Define validation criteria
 
-#### [#150 Agent Enhancement: Improve Java Analyzer for Simple Blocks](https://github.com/anchapin/ModPorter-AI/issues/150)
+#### [#150 Agent Enhancement: Improve Java Analyzer for Simple Blocks](https://github.com/anchapin/portkit/issues/150)
 **Labels**: `priority-1`, `agent-improvement`, `can-be-parallelized`
 - Add robust block property parsing
 - Handle common Java block patterns
 - Add comprehensive error handling and logging
 
-#### [#151 Agent Enhancement: Improve Code Translator for Block Generation](https://github.com/anchapin/ModPorter-AI/issues/151)
+#### [#151 Agent Enhancement: Improve Code Translator for Block Generation](https://github.com/anchapin/portkit/issues/151)
 **Labels**: `priority-1`, `agent-improvement`, `can-be-parallelized`  
 - Create Bedrock block JSON templates
 - Map Java properties to Bedrock equivalents
 - Use RAG tool for accurate translations
 
-#### [#152 Integration: Connect Agents for MVP Pipeline](https://github.com/anchapin/ModPorter-AI/issues/152)
+#### [#152 Integration: Connect Agents for MVP Pipeline](https://github.com/anchapin/portkit/issues/152)
 **Labels**: `priority-1`, `epic`
 - Update ConversionCrew for block-focused workflow
 - Add proper data flow between agents
 - Add pipeline error handling
 
-#### [#153 Logging: Add Comprehensive Agent Logging](https://github.com/anchapin/ModPorter-AI/issues/153)
+#### [#153 Logging: Add Comprehensive Agent Logging](https://github.com/anchapin/portkit/issues/153)
 **Labels**: `priority-2`, `agent-improvement`, `can-be-parallelized`
 - Add structured logging to all agents
 - Log agent decisions and reasoning
@@ -97,12 +97,12 @@ gh auth refresh -s project
 gh project create --title "ModPorter AI - MVP Development"
 
 # Add issues to project (replace PROJECT_ID)
-gh project item-add PROJECT_ID --url https://github.com/anchapin/ModPorter-AI/issues/148
-gh project item-add PROJECT_ID --url https://github.com/anchapin/ModPorter-AI/issues/149
-gh project item-add PROJECT_ID --url https://github.com/anchapin/ModPorter-AI/issues/150
-gh project item-add PROJECT_ID --url https://github.com/anchapin/ModPorter-AI/issues/151
-gh project item-add PROJECT_ID --url https://github.com/anchapin/ModPorter-AI/issues/152
-gh project item-add PROJECT_ID --url https://github.com/anchapin/ModPorter-AI/issues/153
+gh project item-add PROJECT_ID --url https://github.com/anchapin/portkit/issues/148
+gh project item-add PROJECT_ID --url https://github.com/anchapin/portkit/issues/149
+gh project item-add PROJECT_ID --url https://github.com/anchapin/portkit/issues/150
+gh project item-add PROJECT_ID --url https://github.com/anchapin/portkit/issues/151
+gh project item-add PROJECT_ID --url https://github.com/anchapin/portkit/issues/152
+gh project item-add PROJECT_ID --url https://github.com/anchapin/portkit/issues/153
 ```
 
 ## 🎯 **MVP Success Criteria**

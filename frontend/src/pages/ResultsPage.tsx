@@ -1,5 +1,5 @@
 /**
- * Results Page for ModPorter-AI Beta
+ * Results Page for portkit Beta
  * Display conversion results and download options
  */
 

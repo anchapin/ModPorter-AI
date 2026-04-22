@@ -1,5 +1,5 @@
 /**
- * Upload Page for ModPorter-AI Beta
+ * Upload Page for portkit Beta
  * Drag-and-drop file upload with conversion options
  */
 

@@ -44,7 +44,7 @@ DEBUG=true|false  # Default: false
 
 # File logging
 ENABLE_FILE_LOGGING=true|false  # Default: true
-LOG_DIR=/path/to/logs  # Default: /tmp/modporter-ai/logs
+LOG_DIR=/path/to/logs  # Default: /tmp/portkit/logs
 
 # Log file rotation
 LOG_MAX_SIZE=10485760  # 10MB default
@@ -197,10 +197,10 @@ python main.py
 # Enable file logging with rotation
 export ENABLE_FILE_LOGGING=true
 export LOG_LEVEL=INFO
-export LOG_DIR=/var/log/modporter-ai
+export LOG_DIR=/var/log/portkit
 
 # Monitor logs
-tail -f /var/log/modporter-ai/ai-engine.log
+tail -f /var/log/portkit/ai-engine.log
 ```
 
 ### Performance Analysis
@@ -209,7 +209,7 @@ tail -f /var/log/modporter-ai/ai-engine.log
 export DEBUG=true
 
 # Filter performance logs
-grep "Duration:" /var/log/modporter-ai/ai-engine.log | sort -k6 -n
+grep "Duration:" /var/log/portkit/ai-engine.log | sort -k6 -n
 ```
 
 ## Testing
@@ -278,7 +278,7 @@ python -c "from utils.logging_config import setup_logging; setup_logging(debug_m
 python -c "from utils.logging_config import get_agent_logger; logger = get_agent_logger('test'); logger.info('Test')"
 
 # Verify log files
-ls -la /tmp/modporter-ai/logs/
+ls -la /tmp/portkit/logs/
 ```
 
 ## Future Enhancements
