@@ -56,10 +56,10 @@ jobs:
 
       - name: Deploy to Fly.io
         uses: superfly/flyctl-actions@master
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         with:
-          app: ${{ matrix.app_name }}
-          command: deploy
-          args: "--remote-only --detach --nowait"
+          args: "deploy --app ${{ matrix.app_name }} --detach --nowait"
 
       - name: Wait for deployment to complete
         run: |
