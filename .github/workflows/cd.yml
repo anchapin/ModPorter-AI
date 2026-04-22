@@ -1,5 +1,10 @@
 name: CD
 
+# Cancel in-progress builds for same branch (saves CI costs)
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 'on':
   push:
     branches: [main]
@@ -49,6 +54,10 @@ jobs:
             dockerfile: ./frontend/Dockerfile
             tag-suffix: frontend
     steps:
+      - name: Initialize build metrics
+        id: build_start
+        run: echo "BUILD_START=$(date +%s)" >> $GITHUB_ENV
+
       - name: Checkout code
         uses: actions/checkout@v6
 
@@ -94,6 +103,19 @@ jobs:
           platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           build-args: |
             BUILDKIT_INLINE_CACHE=1
+
+      - name: Record build time
+        if: always()
+        run: |
+          BUILD_END=$(date +%s)
+          BUILD_START=${{ env.BUILD_START }}
+          if [ -n "$BUILD_START" ]; then
+            DURATION=$((BUILD_END - BUILD_START))
+            echo "📊 Build ${{ matrix.service }} completed in ${DURATION}s"
+            echo "## Build Metrics" >> $GITHUB_STEP_SUMMARY
+            echo "- Service: ${{ matrix.service }}" >> $GITHUB_STEP_SUMMARY
+            echo "- Duration: ${DURATION}s" >> $GITHUB_STEP_SUMMARY
+          fi
 
       # Generate artifact attestation disabled - causing failures
       # - name: Generate artifact attestation

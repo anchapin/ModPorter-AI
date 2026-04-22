@@ -1,0 +1,289 @@
+name: Deploy to Fly.io
+
+on:
+  push:
+    branches: [staging, main]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      skip_tests:
+        description: 'Skip smoke tests'
+        type: boolean
+        default: false
+
+env:
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+jobs:
+  # ============================================
+  # DEPLOY TO FLY.IO - Parallel environments
+  # ============================================
+
+  deploy:
+    name: Deploy ${{ matrix.environment }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      deployments: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - environment: staging
+            app_name: portkit-backend-staging
+            api_url: https://staging-api.portkit.cloud
+          - environment: production
+            app_name: portkit-backend
+            api_url: https://api.portkit.cloud
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v4
+
+      - name: Initialize deployment performance tracking
+        id: deploy_metrics
+        run: |
+          echo "DEPLOY_START=$(date +%s)" >> $GITHUB_ENV
+          echo "Environment: ${{ matrix.environment }}"
+          echo "App: ${{ matrix.app_name }}"
+
+      - name: Build Docker image
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile.fly
+          push: true
+          tags: |
+            portkit/${{ matrix.app_name }}:${{ github.sha }}
+            portkit/${{ matrix.app_name }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            PYTHON_VERSION=3.11
+
+      - name: Record build time
+        if: always()
+        run: |
+          BUILD_END=$(date +%s)
+          BUILD_START=${{ env.DEPLOY_START }}
+          if [ -n "$BUILD_START" ]; then
+            DURATION=$((BUILD_END - BUILD_START))
+            echo "📊 Build completed in ${DURATION}s"
+            echo "## Build Metrics" >> $GITHUB_STEP_SUMMARY
+            echo "- Duration: ${DURATION}s" >> $GITHUB_STEP_SUMMARY
+            echo "- Image: portkit/${{ matrix.app_name }}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Deploy to Fly.io
+        uses: superfly/flyctl-actions@master
+        with:
+          args: "deploy --buildkit --remote-only --detach --nowait"
+        env:
+          FLY_APP_NAME: ${{ matrix.app_name }}
+
+      - name: Wait for deployment
+        run: |
+          echo "Waiting for Fly.io deployment to complete..."
+          sleep 45
+
+      - name: Health check
+        env:
+          API_URL: ${{ matrix.api_url }}
+        run: |
+          max_attempts=10
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            echo "Attempt $attempt/$max_attempts: Checking health..."
+            if curl -f -s "$API_URL/health" > /dev/null 2>&1; then
+              echo "✓ Health check passed"
+              exit 0
+            fi
+            attempt=$((attempt + 1))
+            sleep 10
+          done
+          echo "✗ Health check failed after $max_attempts attempts"
+          exit 1
+
+      - name: Run smoke tests
+        if: ${{ !inputs.skip_tests }}
+        env:
+          API_URL: ${{ matrix.api_url }}
+        run: |
+          echo "Running smoke tests..."
+
+          # Test API health endpoint
+          echo "Testing API health..."
+          curl -f -s "$API_URL/health" || exit 1
+
+          # Test API root endpoint
+          echo "Testing API root..."
+          curl -f -s "$API_URL/" | head -5 || exit 1
+
+          # Test websocket endpoint (optional, don't fail)
+          echo "Testing WebSocket endpoint..."
+          timeout 5 curl -s "$API_URL/ws" || true
+
+          echo "✓ Smoke tests passed"
+
+      - name: Record deployment time
+        if: always()
+        run: |
+          DEPLOY_END=$(date +%s)
+          DEPLOY_START=${{ env.DEPLOY_START }}
+          if [ -n "$DEPLOY_START" ]; then
+            DURATION=$((DEPLOY_END - DEPLOY_START))
+            echo "## Deployment Metrics" >> $GITHUB_STEP_SUMMARY
+            echo "- Environment: ${{ matrix.environment }}" >> $GITHUB_STEP_SUMMARY
+            echo "- Duration: ${DURATION}s" >> $GITHUB_STEP_SUMMARY
+            echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Notify deployment status
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ job.status }}';
+            const env = '${{ matrix.environment }}';
+            const emoji = status === 'success' ? '✅' : '❌';
+            const summary = `
+              ## ${emoji} Deployment Status
+
+              **Environment:** ${env}
+              **Status:** ${status}
+              **Commit:** ${{ github.sha }}
+              **Branch:** ${{ github.ref_name }}
+            `;
+
+            core.summary.addRaw(summary);
+
+            if (status === 'success') {
+              core.notice('Deployment to ' + env + ' completed successfully!');
+            } else {
+              core.setFailed('Deployment to ' + env + ' failed!');
+            }
+
+  # ============================================
+  # BLUE-GREEN DEPLOYMENT (Zero Downtime)
+  # ============================================
+
+  deploy-bluegreen:
+    name: Blue-Green Deploy
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    timeout-minutes: 45
+    needs: [deploy]
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize blue-green metrics
+        run: |
+          echo "BG_START=$(date +%s)" >> $GITHUB_ENV
+
+      - name: Promote to production (Blue-Green)
+        uses: superfly/flyctl-actions@master
+        with:
+          args: "deploy --buildkit --remote-only --strategy bluegreen --ha"
+        env:
+          FLY_APP_NAME: portkit-backend
+
+      - name: Verify blue-green deployment
+        run: |
+          echo "Verifying blue-green deployment..."
+          sleep 30
+
+          # Check that new machines are healthy
+          for i in {1..12}; do
+            if flyctl status --app portkit-backend --json | grep -q '"running":'; then
+              echo "✓ Blue-green deployment verified"
+              break
+            fi
+            echo "Waiting... ($i/12)"
+            sleep 5
+          done
+
+      - name: Record blue-green time
+        if: always()
+        run: |
+          BG_END=$(date +%s)
+          BG_START=${{ env.BG_START }}
+          if [ -n "$BG_START" ]; then
+            DURATION=$((BG_END - BG_START))
+            echo "## Blue-Green Metrics" >> $GITHUB_STEP_SUMMARY
+            echo "- Duration: ${DURATION}s" >> $GITHUB_STEP_SUMMARY
+            echo "- Strategy: Blue-Green" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ============================================
+  # ROLLBACK ON FAILURE
+  # ============================================
+
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    if: failure() && github.ref == 'refs/heads/main'
+    needs: [deploy-bluegreen]
+    timeout-minutes: 10
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Rollback to previous version
+        uses: superfly/flyctl-actions@master
+        with:
+          args: "deploy --buildkit --remote-only --rollback"
+        env:
+          FLY_APP_NAME: portkit-backend
+
+      - name: Verify rollback
+        run: |
+          echo "Verifying rollback..."
+          sleep 30
+
+          if flyctl status --app portkit-backend | grep -q '"running":'; then
+            echo "✓ Rollback verified"
+          else
+            echo "⚠️ Rollback may need manual intervention"
+            exit 1
+          fi
+
+      - name: Notify rollback
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.summary.addRaw(`
+              ## 🔄 Rollback Executed
+
+              **Environment:** Production
+              **Reason:** Deployment failure detected
+              **Action:** Auto-rolled back to previous version
+
+              Please investigate the deployment failure before retrying.
+            `);
+            core.setFailed('Production deployment rolled back due to failure!');

@@ -1,130 +1,91 @@
-# context-mode — MANDATORY routing rules
+# Repository Guidelines
 
-You have context-mode MCP tools available. These rules are NOT optional — they protect your context window from flooding. A single unrouted command can dump 56 KB into context and waste the entire session.
+portkit is an AI-powered Java to Bedrock Minecraft mod converter.
 
-## Think in Code — MANDATORY
+## Project Structure & Module Organization
 
-When you need to analyze, count, filter, compare, search, parse, transform, or process data: **write code** that does the work via `context-mode_ctx_execute(language, code)` and `console.log()` only the answer. Do NOT read raw data into context to process mentally. Your role is to PROGRAM the analysis, not to COMPUTE it. Write robust, pure JavaScript — no npm dependencies, only Node.js built-ins (`fs`, `path`, `child_process`). Always use `try/catch`, handle `null`/`undefined`, and ensure compatibility with both Node.js and Bun. One script replaces ten tool calls and saves 100x context.
+```
+backend/src/
+├── api/              # FastAPI endpoints
+├── services/         # Business logic, conversion pipelines, background workers
+├── models/           # Pydantic models
+├── db/               # Database models, CRUD, connections
+├── security/          # File security, rate limiting, resource limits
+└── tests/
+    ├── unit/         # Test modules per feature
+    └── integration/  # E2E workflows
+frontend/src/
+├── api/             # API client functions
+├── components/       # React components
+├── pages/           # Route pages
+└── services/        # Frontend business logic
+ai-engine/           # Multi-agent conversion system (separate service)
+```
 
-## BLOCKED commands — do NOT attempt these
+Docker services: frontend, backend, postgres, redis, ai-engine, clamav, jaeger, prometheus.
 
-### curl / wget — BLOCKED
-Any shell command containing `curl` or `wget` will be intercepted and blocked by the context-mode plugin. Do NOT retry.
-Instead use:
-- `context-mode_ctx_fetch_and_index(url, source)` to fetch and index web pages
-- `context-mode_ctx_execute(language: "javascript", code: "const r = await fetch(...)")` to run HTTP calls in sandbox
+## Build, Test, and Development Commands
 
-### Inline HTTP — BLOCKED
-Any shell command containing `fetch('http`, `requests.get(`, `requests.post(`, `http.get(`, or `http.request(` will be intercepted and blocked. Do NOT retry with shell.
-Instead use:
-- `context-mode_ctx_execute(language, code)` to run HTTP calls in sandbox — only stdout enters context
+```bash
+# Development
+pnpm run dev                    # Start both frontend (3000) and backend (8080)
+pnpm run dev:frontend          # Frontend only (Next.js + Vite)
+pnpm run dev:backend           # Backend only (uvicorn --reload)
 
-### Direct web fetching — BLOCKED
-Do NOT use any direct URL fetching tool. Use the sandbox equivalent.
-Instead use:
-- `context-mode_ctx_fetch_and_index(url, source)` then `context-mode_ctx_search(queries)` to query the indexed content
+# Docker
+docker compose up -d           # Production mode
+docker compose -f docker-compose.dev.yml up -d  # Development with hot reload
 
-## REDIRECTED tools — use sandbox equivalents
+# Testing
+pnpm run test                 # All tests
+pnpm run test:backend         # pytest on backend
+cd backend && python3 -m pytest src/tests/unit/ -q --tb=no  # Fast unit tests
+cd backend && python3 -m pytest src/tests/unit/ -v  # Verbose output
 
-### Shell (>20 lines output)
-Shell is ONLY for: `git`, `mkdir`, `rm`, `mv`, `cd`, `ls`, `npm install`, `pip install`, and other short-output commands.
-For everything else, use:
-- `context-mode_ctx_batch_execute(commands, queries)` — run multiple commands + search in ONE call
-- `context-mode_ctx_execute(language: "shell", code: "...")` — run in sandbox, only stdout enters context
+# Code Quality
+pnpm run lint                 # Check all
+pnpm run format               # Format all (ruff format, prettier)
+pnpm run format:backend       # Ruff format + lint --fix
+```
 
-### File reading (for analysis)
-If you are reading a file to **edit** it → reading is correct (edit needs content in context).
-If you are reading to **analyze, explore, or summarize** → use `context-mode_ctx_execute_file(path, language, code)` instead. Only your printed summary enters context.
+## Coding Style & Naming Conventions
 
-### grep / search (large results)
-Search results can flood context. Use `context-mode_ctx_execute(language: "shell", code: "grep ...")` to run searches in sandbox. Only your printed summary enters context.
+**Python (Backend)**
+- **Linter/Formatter**: ruff (line-length: 100, target: py311)
+- **Enabled rules**: E, F, W, I, Q, N, D, UP, C901, SIM, T20
+- **Async first**: All I/O operations must be async (`async def`, `async with`)
+- **Pydantic V2**: Use `model_config = ConfigDict(from_attributes=True)`
+- **Dependency injection**: Use `Depends(get_db)` for shared resources
+- **Type hints**: Required on all function signatures
+- **Forbidden**: `time.sleep()`, `requests.get()`, `json.loads()`, global state
 
-## Tool selection hierarchy
+**Test Naming**: `test_<feature>_<scenario>_<expected>`
 
-1. **GATHER**: `context-mode_ctx_batch_execute(commands, queries)` — Primary tool. Runs all commands, auto-indexes output, returns search results. ONE call replaces 30+ individual calls. Each command: `{label: "descriptive header", command: "..."}`. Label becomes FTS5 chunk title — descriptive labels improve search.
-2. **FOLLOW-UP**: `context-mode_ctx_search(queries: ["q1", "q2", ...])` — Query indexed content. Pass ALL questions as array in ONE call.
-3. **PROCESSING**: `context-mode_ctx_execute(language, code)` | `context-mode_ctx_execute_file(path, language, code)` — Sandbox execution. Only stdout enters context.
-4. **WEB**: `context-mode_ctx_fetch_and_index(url, source)` then `context-mode_ctx_search(queries)` — Fetch, chunk, index, query. Raw HTML never enters context.
-5. **INDEX**: `context-mode_ctx_index(content, source)` — Store content in FTS5 knowledge base for later search.
+**Test Markers**: `@pytest.mark.unit`, `@pytest.mark.integration`, `@pytest.mark.real_service` (requires USE_REAL_SERVICES=1), `@pytest.mark.asyncio`
 
-## Output constraints
+## Testing Guidelines
 
-- Keep responses under 500 words.
-- Write artifacts (code, configs, PRDs) to FILES — never return them as inline text. Return only: file path + 1-line description.
-- When indexing content, use descriptive source labels so others can `search(source: "label")` later.
+**Framework**: pytest with pytest-asyncio
 
-## ctx commands
+**Coverage**: 80%+ required for PR merges
 
-| Command | Action |
-|---------|--------|
-| `ctx stats` | Call the `stats` MCP tool and display the full output verbatim |
-| `ctx doctor` | Call the `doctor` MCP tool, run the returned shell command, display as checklist |
-| `ctx upgrade` | Call the `upgrade` MCP tool, run the returned shell command, display as checklist |
-| `ctx purge` | Call the `purge` MCP tool with confirm: true. Warns before wiping the knowledge base. |
+**Test Database**: Use `./scripts/test-db.sh {start|stop|reset}`
 
-After /clear or /compact: knowledge base and session stats are preserved. Use `ctx purge` if you want to start fresh.
-# context-mode — MANDATORY routing rules
+**Run single test**: `pytest path/to/test_file.py::TestClass::test_method -v`
 
-You have context-mode MCP tools available. These rules are NOT optional — they protect your context window from flooding. A single unrouted command can dump 56 KB into context and waste the entire session.
+## Commit & Pull Request Guidelines
 
-## Think in Code — MANDATORY
+**Commit Format**: `<type>(<scope>): <description>`
 
-When you need to analyze, count, filter, compare, search, parse, transform, or process data: **write code** that does the work via `context-mode_ctx_execute(language, code)` and `console.log()` only the answer. Do NOT read raw data into context to process mentally. Your role is to PROGRAM the analysis, not to COMPUTE it. Write robust, pure JavaScript — no npm dependencies, only Node.js built-ins (`fs`, `path`, `child_process`). Always use `try/catch`, handle `null`/`undefined`, and ensure compatibility with both Node.js and Bun. One script replaces ten tool calls and saves 100x context.
+Types: `feat|fix|docs|style|refactor|test|chore|ci`
+Scopes: `api|backend|ai-engine|tests|docs|ci|frontend`
 
-## BLOCKED commands — do NOT attempt these
+**Branch Naming**: `feature/<ticket>-<desc>` or `bugfix/<ticket>-<desc>`
 
-### curl / wget — BLOCKED
-Any shell command containing `curl` or `wget` will be intercepted and blocked by the context-mode plugin. Do NOT retry.
-Instead use:
-- `context-mode_ctx_fetch_and_index(url, source)` to fetch and index web pages
-- `context-mode_ctx_execute(language: "javascript", code: "const r = await fetch(...)")` to run HTTP calls in sandbox
+**PR Checklist**:
+- Tests pass (`pytest src/tests/unit/ -q`)
+- Coverage maintained/improved
+- No linting errors (`ruff check`)
+- PR description explains WHY, not just WHAT
 
-### Inline HTTP — BLOCKED
-Any shell command containing `fetch('http`, `requests.get(`, `requests.post(`, `http.get(`, or `http.request(` will be intercepted and blocked. Do NOT retry with shell.
-Instead use:
-- `context-mode_ctx_execute(language, code)` to run HTTP calls in sandbox — only stdout enters context
-
-### Direct web fetching — BLOCKED
-Do NOT use any direct URL fetching tool. Use the sandbox equivalent.
-Instead use:
-- `context-mode_ctx_fetch_and_index(url, source)` then `context-mode_ctx_search(queries)` to query the indexed content
-
-## REDIRECTED tools — use sandbox equivalents
-
-### Shell (>20 lines output)
-Shell is ONLY for: `git`, `mkdir`, `rm`, `mv`, `cd`, `ls`, `npm install`, `pip install`, and other short-output commands.
-For everything else, use:
-- `context-mode_ctx_batch_execute(commands, queries)` — run multiple commands + search in ONE call
-- `context-mode_ctx_execute(language: "shell", code: "...")` — run in sandbox, only stdout enters context
-
-### File reading (for analysis)
-If you are reading a file to **edit** it → reading is correct (edit needs content in context).
-If you are reading to **analyze, explore, or summarize** → use `context-mode_ctx_execute_file(path, language, code)` instead. Only your printed summary enters context.
-
-### grep / search (large results)
-Search results can flood context. Use `context-mode_ctx_execute(language: "shell", code: "grep ...")` to run searches in sandbox. Only your printed summary enters context.
-
-## Tool selection hierarchy
-
-1. **GATHER**: `context-mode_ctx_batch_execute(commands, queries)` — Primary tool. Runs all commands, auto-indexes output, returns search results. ONE call replaces 30+ individual calls. Each command: `{label: "descriptive header", command: "..."}`. Label becomes FTS5 chunk title — descriptive labels improve search.
-2. **FOLLOW-UP**: `context-mode_ctx_search(queries: ["q1", "q2", ...])` — Query indexed content. Pass ALL questions as array in ONE call.
-3. **PROCESSING**: `context-mode_ctx_execute(language, code)` | `context-mode_ctx_execute_file(path, language, code)` — Sandbox execution. Only stdout enters context.
-4. **WEB**: `context-mode_ctx_fetch_and_index(url, source)` then `context-mode_ctx_search(queries)` — Fetch, chunk, index, query. Raw HTML never enters context.
-5. **INDEX**: `context-mode_ctx_index(content, source)` — Store content in FTS5 knowledge base for later search.
-
-## Output constraints
-
-- Keep responses under 500 words.
-- Write artifacts (code, configs, PRDs) to FILES — never return them as inline text. Return only: file path + 1-line description.
-- When indexing content, use descriptive source labels so others can `search(source: "label")` later.
-
-## ctx commands
-
-| Command | Action |
-|---------|--------|
-| `ctx stats` | Call the `stats` MCP tool and display the full output verbatim |
-| `ctx doctor` | Call the `doctor` MCP tool, run the returned shell command, display as checklist |
-| `ctx upgrade` | Call the `upgrade` MCP tool, run the returned shell command, display as checklist |
-| `ctx purge` | Call the `purge` MCP tool with confirm: true. Warns before wiping the knowledge base. |
-
-After /clear or /compact: knowledge base and session stats are preserved. Use `ctx purge` if you want to start fresh.
+**Pre-commit**: ruff format, ruff lint, Bandit security scan, Gitleaks secrets detection

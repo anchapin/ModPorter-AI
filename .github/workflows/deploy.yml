@@ -1,7 +1,12 @@
 # GitHub Actions CI/CD Pipeline for PortKit
-# Optimized for parallel execution
+# Optimized for parallel execution with concurrency and metrics
 
 name: Deploy PortKit
+
+# Cancel in-progress builds for same branch (saves CI costs)
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 'on':
   push:
@@ -363,13 +368,39 @@ jobs:
             ./scripts/deploy.sh production
           EOF
 
-      - name: Run health checks
+      - name: Run smoke tests
         run: |
-          sleep 60
+          echo "Waiting for services to be ready..."
+          sleep 45
 
-          curl -f http://${{ secrets.SERVER_HOST }}/api/v1/health
-          curl -f http://${{ secrets.SERVER_HOST }}:8001/api/v1/health
-          curl -f http://${{ secrets.SERVER_HOST }}/health
+          # Test API health endpoint with retries
+          echo "Testing API health endpoint..."
+          max_attempts=5
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            echo "Attempt $attempt/$max_attempts: Checking API health..."
+            if curl -f -s http://${{ secrets.SERVER_HOST }}/api/v1/health > /dev/null 2>&1; then
+              echo "✓ API health check passed"
+              break
+            fi
+            attempt=$((attempt + 1))
+            sleep 10
+          done
+
+          if [ $attempt -gt $max_attempts ]; then
+            echo "✗ API health check failed after $max_attempts attempts"
+            exit 1
+          fi
+
+          # Test root endpoint
+          echo "Testing root endpoint..."
+          curl -f -s http://${{ secrets.SERVER_HOST }}/health > /dev/null || exit 1
+
+          # Test AI engine endpoint
+          echo "Testing AI engine endpoint..."
+          curl -f -s http://${{ secrets.SERVER_HOST }}:8001/api/v1/health > /dev/null || exit 1
+
+          echo "✓ All smoke tests passed"
 
       - name: Notify deployment status
         uses: 8398a7/action-slack@v3

@@ -43,6 +43,8 @@ ai-engine/.mypy_cache/
 ai-engine/htmlcov/
 ai-engine/tests/
 ai-engine/.pytest_cache/
+ai-engine/mutants/
+ai-engine/__pycache__/
 
 # ---- Backend Specific -------------------------------------------------------
 backend/.venv/
