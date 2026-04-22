@@ -3,12 +3,12 @@
 
 set -e
 
-echo "🚀 Starting ModPorter AI on Fly.io..."
+echo "🚀 Starting Portkit on Fly.io..."
 
 # Start PostgreSQL if needed (or connect to external)
 if [ "$DATABASE_URL" = "" ]; then
     echo "⚠️  No DATABASE_URL set, using local SQLite"
-    export DATABASE_URL="sqlite:///data/db/modporter.db"
+    export DATABASE_URL="sqlite:///data/db/portkit.db"
     mkdir -p /data/db
 fi
 
@@ -62,7 +62,7 @@ echo "🌐 Starting Nginx..."
 nginx -g "daemon off;" &
 NGINX_PID=$!
 
-echo "🎉 ModPorter AI is running!"
+echo "🎉 Portkit is running!"
 echo "Frontend: http://localhost"
 echo "Backend: http://localhost:8000"
 echo "AI Engine: http://localhost:8001"
