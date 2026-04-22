@@ -23,6 +23,15 @@ class Config:
     OPENAI_MAX_TOKENS: int = int(os.getenv("OPENAI_MAX_TOKENS", "2000"))
     OPENAI_TEMPERATURE: float = float(os.getenv("OPENAI_TEMPERATURE", "0.7"))
 
+    # OpenAI-Compatible Provider Configuration (OpenRouter, LM Studio, etc.)
+    # When LLM_BASE_URL is set, OPENAI_API_KEY is used as the bearer token
+    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "openai")  # openai, openrouter, lmstudio, custom
+    LLM_BASE_URL: Optional[str] = os.getenv("LLM_BASE_URL")  # e.g., https://openrouter.ai/api/v1
+    LLM_MODEL: Optional[str] = os.getenv(
+        "LLM_MODEL"
+    )  # e.g., anthropic/claude-3.5-sonnet, will fallback to OPENAI_MODEL
+    LLM_API_KEY: Optional[str] = os.getenv("LLM_API_KEY")  # Will fallback to OPENAI_API_KEY
+
     # Vector DB Configuration
     VECTOR_DB_URL: str = os.getenv("VECTOR_DB_URL", "http://localhost:19530")
     VECTOR_DB_API_KEY: Optional[str] = os.getenv("VECTOR_DB_API_KEY", "your_vector_db_api_key")
