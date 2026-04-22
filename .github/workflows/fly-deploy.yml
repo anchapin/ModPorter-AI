@@ -21,8 +21,6 @@ on:
         default: false
 
 env:
-  DOCKER_BUILDKIT: 1
-  COMPOSE_DOCKER_CLI_BUILD: 1
 
 jobs:
   # ============================================
@@ -58,41 +56,12 @@ jobs:
           echo "Environment: ${{ matrix.environment }}"
           echo "App: ${{ matrix.app_name }}"
 
-      - name: Build Docker image
-        id: build
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: ./Dockerfile.fly
-          push: true
-          tags: |
-            portkit/${{ matrix.app_name }}:${{ github.sha }}
-            portkit/${{ matrix.app_name }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
-            PYTHON_VERSION=3.11
-
-      - name: Record build time
-        if: always()
-        run: |
-          BUILD_END=$(date +%s)
-          BUILD_START=${{ env.DEPLOY_START }}
-          if [ -n "$BUILD_START" ]; then
-            DURATION=$((BUILD_END - BUILD_START))
-            echo "📊 Build completed in ${DURATION}s"
-            echo "## Build Metrics" >> $GITHUB_STEP_SUMMARY
-            echo "- Duration: ${DURATION}s" >> $GITHUB_STEP_SUMMARY
-            echo "- Image: portkit/${{ matrix.app_name }}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          fi
-
       - name: Deploy to Fly.io
         uses: superfly/flyctl-actions@master
         with:
           app: ${{ matrix.app_name }}
           command: deploy
-          args: "--buildkit --remote-only --detach --nowait"
+          args: "--remote-only --detach --nowait"
 
       - name: Wait for deployment to complete
         run: |
