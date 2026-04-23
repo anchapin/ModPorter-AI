@@ -100,7 +100,7 @@ jobs:
           TOTAL=$(jq '.total_tests' "$REPORT_FILE")
           PASSED=$(jq '.passed' "$REPORT_FILE")
           FAILED=$(jq '.failed' "$REPORT_FILE")
-          PERCENTAGE=$(jq '.percentage' "$REPORT_FILE")
+          PERCENTAGE=$(jq '.percentage | floor' "$REPORT_FILE")
 
           echo "total=$TOTAL" >> $GITHUB_OUTPUT
           echo "passed=$PASSED" >> $GITHUB_OUTPUT
