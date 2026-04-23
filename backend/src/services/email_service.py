@@ -43,12 +43,13 @@ class ResendEmailService:
         self._client = None
 
     def _get_client(self):
-        """Lazy-load Resend client."""
+        """Lazy-initialize Resend API key."""
         if self._client is None:
             try:
                 import resend
 
-                self._client = resend.Resend(api_key=self.api_key)
+                resend.api_key = self.api_key
+                self._client = True
                 logger.info("Resend client initialized")
             except ImportError:
                 logger.warning("resend package not installed. Emails will be logged only.")
@@ -90,7 +91,8 @@ class ResendEmailService:
             if message.bcc:
                 params["bcc"] = message.bcc
 
-            response = client.email.send(params)
+            import resend
+            response = resend.Emails.send(params)
 
             logger.info(f"Email sent successfully. ID: {response.get('id', 'unknown')}")
             return True
