@@ -10,8 +10,6 @@ concurrency:
     branches: [main]
     tags:
       - 'v*'
-  pull_request:
-    branches: [main]
   workflow_dispatch:
     inputs:
       environment:
@@ -34,7 +32,6 @@ jobs:
     name: Build ${{ matrix.service }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    if: github.event_name != 'pull_request'
     permissions:
       packages: write
       contents: read
