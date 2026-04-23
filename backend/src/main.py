@@ -394,7 +394,7 @@ async def upload_file(file: UploadFile = File(...)):
 
 # Simulated AI Conversion Engine (DB + Redis + mirror)
 async def simulate_ai_conversion(job_id: str):
-    from websocket.progress_handler import ProgressHandler
+    from src.websocket.progress_handler import ProgressHandler
 
     logger.info(f"Starting AI simulation for job_id: {job_id}")
 
