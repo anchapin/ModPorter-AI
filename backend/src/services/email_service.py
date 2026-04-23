@@ -92,6 +92,7 @@ class ResendEmailService:
                 params["bcc"] = message.bcc
 
             import resend
+
             response = resend.Emails.send(params)
 
             logger.info(f"Email sent successfully. ID: {response.get('id', 'unknown')}")

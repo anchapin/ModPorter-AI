@@ -23,20 +23,12 @@ async def test_send_email_no_client(email_service):
 
 @pytest.mark.asyncio
 async def test_send_email_success(email_service):
-    mock_client = MagicMock()
     mock_response = {"id": "test-email-id"}
-    mock_client.email = MagicMock()
-    mock_client.email.send.return_value = mock_response
+    mock_emails = MagicMock()
+    mock_emails.send.return_value = mock_response
 
-    mock_resend = MagicMock()
-
-    with patch.dict(
-        "sys.modules",
-        {
-            "resend": mock_resend,
-        },
-    ):
-        with patch.object(email_service, "_get_client", return_value=mock_client):
+    with patch.object(email_service, "_get_client", return_value=True):
+        with patch.dict("sys.modules", {"resend": MagicMock(Emails=mock_emails)}):
             msg = EmailMessage(
                 to="test@example.com",
                 subject="Test",
@@ -45,7 +37,7 @@ async def test_send_email_success(email_service):
             )
             result = await email_service.send(msg)
             assert result is True
-            mock_client.email.send.assert_called_once()
+            mock_emails.send.assert_called_once()
 
 
 def test_render_template_welcome(email_service):
