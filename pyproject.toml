@@ -12,6 +12,7 @@ exclude = [
     "mutants/",  # mutation testing generates code with odd names
     "node_modules/",
     "frontend/",  # Frontend is TypeScript/JS
+    "ai-engine/", # AI engine has separate linting config
     "docker/",    # Docker files
     "docs/",      # Documentation
     "temp_init.py",  # UTF-16 encoded file
