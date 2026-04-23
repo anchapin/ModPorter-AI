@@ -33,7 +33,7 @@ class BetaSmokeTest:
         self.api_key = api_key
         self.verbose = verbose
         self.results = []
-        self.test_user_email = f"beta_test_{int(time.time())}@portkit.ai"
+        self.test_user_email = f"beta_test_{int(time.time())}@portkit.cloud"
         self.test_user_password = "TestPass123!@#"
         self.access_token = None
         self.refresh_token = None
@@ -567,8 +567,13 @@ async def main():
         base_url = args.url
     else:
         env_urls = {
+<<<<<<< HEAD
             "production": "https://portkit.ai",
             "staging": "https://staging.portkit.ai",
+=======
+            "production": "https://portkit.cloud",
+            "staging": "https://staging.portkit.cloud",
+>>>>>>> 0bc17858 (fix(ci): correct domain from portkit.ai to portkit.cloud in smoke test)
             "local": "http://localhost:8000",
         }
         base_url = env_urls.get(args.env, "http://localhost:8000")
