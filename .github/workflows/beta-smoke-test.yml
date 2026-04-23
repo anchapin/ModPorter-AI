@@ -28,7 +28,6 @@ jobs:
     name: Run Beta Smoke Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: github.event_name != 'pull_request'
 
     steps:
       - name: Checkout code
@@ -173,7 +172,6 @@ jobs:
     name: Quick Health Check
     runs-on: ubuntu-latest
     timeout-minutes: 2
-    if: github.event_name != 'pull_request'
 
     steps:
       - name: Check staging health
