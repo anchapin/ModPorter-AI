@@ -27,6 +27,8 @@ COPY backend/requirements.txt /tmp/backend-requirements.txt
 COPY ai-engine/requirements.txt /tmp/ai-engine-requirements.txt
 
 # Install all Python dependencies in one go to avoid conflicts
+# Build arg to force cache bust when dependencies change
+ARG CACHE_BUST=20250422_ssl
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r /tmp/backend-requirements.txt && \
     pip install --no-cache-dir -r /tmp/ai-engine-requirements.txt

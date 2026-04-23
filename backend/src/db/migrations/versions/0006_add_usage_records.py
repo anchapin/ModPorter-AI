@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "0006_add_usage_records"
-down_revision = "0005"
+down_revision = "0005_add_subscription_fields"
 branch_labels = None
 depends_on = None
 
