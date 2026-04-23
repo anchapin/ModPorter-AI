@@ -38,7 +38,7 @@ echo "🔧 Starting Backend API..."
 cd /app/backend
 export PYTHONPATH=/usr/local/lib/python3.11/dist-packages:/app/backend:/app/backend/src
 echo "PYTHONPATH=$PYTHONPATH"
-python -m uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1 2>&1 | sed 's/^/[BACKEND] /' &
+python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 1 2>&1 | sed 's/^/[BACKEND] /' &
 BACKEND_PID=$!
 echo "Backend PID: $BACKEND_PID"
 
