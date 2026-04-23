@@ -3,14 +3,14 @@ Metrics Dashboard for aggregating and exporting metrics
 """
 
 import json
-from datetime import datetime
-from typing import Dict, Any
 import logging
+from datetime import datetime
+from typing import Any, Dict
 
-from .performance_monitor import performance_tracker
+from .alerts import alert_manager
 from .llm_usage_tracker import llm_tracker
 from .memory_monitor import memory_monitor
-from .alerts import alert_manager
+from .performance_monitor import performance_tracker
 
 logger = logging.getLogger(__name__)
 
@@ -235,11 +235,11 @@ class MetricsDashboard:
         # Alert metrics
         lines.append("# Alert Metrics")
         alert_summary = alert_manager.get_alert_summary()
-        lines.append(f"# HELP alerts_total Total alerts")
-        lines.append(f"# TYPE alerts_total counter")
+        lines.append("# HELP alerts_total Total alerts")
+        lines.append("# TYPE alerts_total counter")
         lines.append(f"alerts_total {alert_summary.get('total_alerts', 0)}")
-        lines.append(f"# HELP alerts_unacknowledged Unacknowledged alerts")
-        lines.append(f"# TYPE alerts_unacknowledged gauge")
+        lines.append("# HELP alerts_unacknowledged Unacknowledged alerts")
+        lines.append("# TYPE alerts_unacknowledged gauge")
         lines.append(f"alerts_unacknowledged {alert_summary.get('unacknowledged', 0)}")
 
         return "\n".join(lines)

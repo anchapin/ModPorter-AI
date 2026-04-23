@@ -2,9 +2,10 @@
 
 import json
 from datetime import datetime
-from typing import Dict, Any
-from qa.report.models import QAReport, Issue, AgentResult
+from typing import Any, Dict
+
 from qa.report.exporters.base import BaseExporter, ExportFormat
+from qa.report.models import AgentResult, Issue, QAReport
 
 
 class JSONExporter(BaseExporter):

@@ -12,26 +12,26 @@ Split into submodules per Issue #1141:
 - tools: CrewAI @tool wrappers via LogicTranslatorTools
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
 
+from agents.logic_translator.assumptions import get_smart_assumptions
+from agents.logic_translator.tools import LogicTranslatorTools
 from agents.logic_translator.translator import (
-    LogicTranslatorAgent,
     BEDROCK_BLOCK_TEMPLATES,
-    BEDROCK_ITEM_TEMPLATES,
     BEDROCK_ENTITY_TEMPLATES,
+    BEDROCK_ITEM_TEMPLATES,
     BEDROCK_RECIPE_TEMPLATES,
-    JAVA_TO_BEDROCK_BLOCK_PROPERTIES,
     JAVA_BLOCK_METHOD_MAPPINGS,
-    JAVA_TO_BEDROCK_ITEM_PROPERTIES,
     JAVA_ITEM_METHOD_MAPPINGS,
+    JAVA_TO_BEDROCK_BLOCK_PROPERTIES,
     JAVA_TO_BEDROCK_ENTITY_PROPERTIES,
+    JAVA_TO_BEDROCK_ITEM_PROPERTIES,
+    LLM_CODE_TEMPERATURE,
     SMART_ASSUMPTIONS,
     TREE_SITTER_AVAILABLE,
-    LLM_CODE_TEMPERATURE,
     BlockStateMapper,
+    LogicTranslatorAgent,
 )
-from agents.logic_translator.tools import LogicTranslatorTools
-from agents.logic_translator.assumptions import get_smart_assumptions
 
 LogicTranslator = LogicTranslatorAgent
 

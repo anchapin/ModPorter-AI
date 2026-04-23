@@ -6,12 +6,12 @@ Provides extraction of:
 - Chunk-level metadata (heading context, position, references)
 """
 
-import re
 import hashlib
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Optional, Dict, Any
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
 
 class DocumentType(Enum):

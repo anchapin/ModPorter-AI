@@ -11,10 +11,10 @@ Validation Rules:
 """
 
 import json
-from pathlib import Path
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 
 class ValidationStatus(Enum):
@@ -543,7 +543,7 @@ class QAValidator:
                     ValidationResult(
                         check_name=f"texture_{texture_file.stem}_dimensions",
                         status=ValidationStatus.SKIP,
-                        message=f"Cannot validate dimensions - Pillow not installed",
+                        message="Cannot validate dimensions - Pillow not installed",
                         file_path=str(texture_file),
                     )
                 )

@@ -11,6 +11,7 @@ import logging
 from typing import Any, Dict, List
 
 from crewai.tools import tool
+
 from models.smart_assumptions import (
     AssumptionResult,
     FeatureContext,

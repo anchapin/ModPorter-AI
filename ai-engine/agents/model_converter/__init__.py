@@ -11,22 +11,22 @@ from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
+from agents.model_converter.blockstate import (
+    convert_blockstate,
+    parse_blockstate,
+)
 from agents.model_converter.geometry import (
-    _convert_single_model,
     _analyze_model,
+    _convert_single_model,
     _generate_model_structure,
 )
-from agents.model_converter.blockstate import (
-    parse_blockstate,
-    convert_blockstate,
+from agents.model_converter.inheritance import (
+    _resolve_parent_path,
+    get_model_elements_with_inheritance,
+    resolve_parent_model,
 )
 from agents.model_converter.item_model import (
     _handle_item_model_special_cases,
-)
-from agents.model_converter.inheritance import (
-    resolve_parent_model,
-    get_model_elements_with_inheritance,
-    _resolve_parent_path,
 )
 from agents.model_converter.jar_extractor import (
     extract_models_from_jar,

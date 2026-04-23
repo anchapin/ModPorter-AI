@@ -1,6 +1,7 @@
 import asyncio
-from typing import Dict, Any, List
 import time
+from typing import Any, Dict, List
+
 import structlog
 
 from qa.context import QAContext, RefinementHistory

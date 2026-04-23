@@ -3,8 +3,8 @@ Feature-based re-ranker using multiple relevance signals.
 """
 
 import logging
-from typing import List, Dict, Any, Optional, Tuple, Callable
 from datetime import datetime, timedelta, timezone
+from typing import Callable, Dict, List, Optional, Tuple
 
 from schemas.multimodal_schema import SearchQuery, SearchResult
 

@@ -3,9 +3,8 @@ Logic Translator Agent for Java to JavaScript code conversion
 Enhanced for Issue #546: Block Generation from Java block analysis
 """
 
-from typing import List, Dict, Any, Optional
-
 import json
+from typing import Any, Dict, List
 
 try:
     import tree_sitter_java as ts_java
@@ -16,27 +15,17 @@ except ImportError:
     TREE_SITTER_AVAILABLE = False
     ts_java = None
     Parser = None
+from agents.java_analyzer import JavaAnalyzerAgent
+from agents.logic_translator.block_state_mapper import (
+    JAVA_TO_BEDROCK_BLOCK_PROPERTIES,
+)
+from agents.logic_translator.block_templates import (
+    BEDROCK_BLOCK_TEMPLATES,
+)
 from models.smart_assumptions import (
     SmartAssumptionEngine,
 )
-from agents.java_analyzer import JavaAnalyzerAgent
-from utils.logging_config import get_agent_logger, log_performance
-
-from agents.logic_translator.block_templates import (
-    BEDROCK_BLOCK_TEMPLATES,
-    BEDROCK_ITEM_TEMPLATES,
-    BEDROCK_ENTITY_TEMPLATES,
-    BEDROCK_RECIPE_TEMPLATES,
-    JAVA_TO_BEDROCK_ITEM_PROPERTIES,
-    JAVA_ITEM_METHOD_MAPPINGS,
-    JAVA_TO_BEDROCK_ENTITY_PROPERTIES,
-)
-from agents.logic_translator.block_state_mapper import (
-    JAVA_TO_BEDROCK_BLOCK_PROPERTIES,
-    JAVA_BLOCK_METHOD_MAPPINGS,
-    BlockStateMapper,
-)
-from agents.logic_translator.assumptions import SMART_ASSUMPTIONS, get_smart_assumptions
+from utils.logging_config import get_agent_logger
 
 # Use enhanced agent logger
 logger = get_agent_logger("logic_translator")
@@ -270,7 +259,6 @@ class LogicTranslatorAgent:
             "block.isSolid()": "// Block solidity check not directly supported",
             "block.getLightLevel()": "block.getLight()",
             # Block physics
-            "block.breakNaturally(": "block.destroy()",
             "block.breakNaturally(": "block.destroy()",
             "BlockPosition": "BlockLocation",
             # Material
@@ -581,7 +569,7 @@ class LogicTranslatorAgent:
             if not ast_dict:
                 return "No AST found in analysis result"
 
-            serialized = self._serialize_ast_for_llm(ast_dict)
+            self._serialize_ast_for_llm(ast_dict)
 
             class_decl = None
             method_sigs = []
@@ -691,7 +679,7 @@ class LogicTranslatorAgent:
         try:
             data = json.loads(class_data)
             class_name = data.get("class_name", "UnknownClass")
-            methods = data.get("methods", [])
+            data.get("methods", [])
             feature_type = data.get("feature_type", "unknown")
 
             rag_context = ""

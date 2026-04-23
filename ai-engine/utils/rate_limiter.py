@@ -3,12 +3,13 @@ Rate limiting utility for OpenAI API calls and LLM interactions
 Supports: OpenAI, Z.AI, Ollama, and OpenAI-compatible providers (OpenRouter, LM Studio, etc.)
 """
 
-import time
 import logging
-from typing import Any, Callable
-from functools import wraps
-from dataclasses import dataclass
 import os
+import time
+from dataclasses import dataclass
+from functools import wraps
+from typing import Any, Callable
+
 from langchain_openai import ChatOpenAI
 
 logger = logging.getLogger(__name__)
@@ -787,7 +788,7 @@ def get_llm_backend():
                 f"Attempting to initialize OpenAI-compatible LLM backend (provider: {cfg.LLM_PROVIDER})..."
             )
             compatible_llm = create_openai_compatible_llm()
-            logger.info(f"OpenAI-compatible LLM backend initialized successfully")
+            logger.info("OpenAI-compatible LLM backend initialized successfully")
             return compatible_llm
         except Exception as e:
             logger.warning(f"Failed to initialize OpenAI-compatible backend: {e}")

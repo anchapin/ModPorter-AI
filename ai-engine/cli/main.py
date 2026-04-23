@@ -8,17 +8,17 @@ import logging
 import sys
 import tempfile
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 # Import our agents
 
 # Add the parent directory to the path so we can import from src
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from agents.java_analyzer import JavaAnalyzerAgent
 from agents.bedrock_builder import BedrockBuilderAgent
-from agents.packaging_agent import PackagingAgent
 from agents.entity_converter import EntityConverter
+from agents.java_analyzer import JavaAnalyzerAgent
+from agents.packaging_agent import PackagingAgent
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")

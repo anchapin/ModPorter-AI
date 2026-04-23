@@ -2,10 +2,10 @@
 Smart Assumption Engine implementing PRD Table of Smart Assumptions
 """
 
-from typing import Dict, List, Any, Optional
+import logging
 from dataclasses import dataclass
 from enum import Enum
-import logging
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -781,7 +781,7 @@ class SmartAssumptionEngine:
             "dimension" in feature_type_lower
             and "custom dimensions" in assumption.java_feature.lower()
         ):
-            logger.debug(f"Applying dimension conversion logic")
+            logger.debug("Applying dimension conversion logic")
             conversion_details_dict = self._convert_custom_dimension(
                 feature_context, assumption, analysis_result
             )
@@ -789,14 +789,14 @@ class SmartAssumptionEngine:
             "machinery" in feature_type_lower
             and "complex machinery" in assumption.java_feature.lower()
         ):
-            logger.debug(f"Applying machinery simplification logic")
+            logger.debug("Applying machinery simplification logic")
             conversion_details_dict = self._convert_complex_machinery(
                 feature_context, assumption, analysis_result
             )
         elif (
             "gui" in feature_type_lower or "hud" in feature_type_lower
         ) and "custom gui/hud" in assumption.java_feature.lower():
-            logger.debug(f"Applying GUI to book conversion logic")
+            logger.debug("Applying GUI to book conversion logic")
             conversion_details_dict = self._convert_custom_gui(
                 feature_context, assumption, analysis_result
             )

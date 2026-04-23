@@ -5,12 +5,12 @@ Provides validation logic to ensure corrections meet quality criteria
 before being approved and applied to the knowledge base.
 """
 
-import uuid
 import json
 import re
 import sys
-from typing import List, Optional, Tuple
+import uuid
 from pathlib import Path
+from typing import List, Optional, Tuple
 
 ai_engine_path = str(Path(__file__).parent.parent.parent)
 if ai_engine_path not in sys.path:

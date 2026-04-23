@@ -6,8 +6,8 @@ model definitions, texture mappings, and animation conversion patterns.
 """
 
 from dataclasses import dataclass
-from typing import List, Dict, Optional
 from enum import Enum
+from typing import Dict, List, Optional
 
 
 class RenderingPatternCategory(Enum):

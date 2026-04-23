@@ -9,10 +9,10 @@ Issue: #498 - Implement Mod Dependency Analysis & Resolution (Phase 5c)
 """
 
 import logging
+from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
-from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 

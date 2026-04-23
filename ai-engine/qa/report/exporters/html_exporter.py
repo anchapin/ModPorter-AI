@@ -2,9 +2,11 @@
 
 from pathlib import Path
 from typing import Optional
+
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from qa.report.models import QAReport, IssueSeverity
+
 from qa.report.exporters.base import BaseExporter, ExportFormat
+from qa.report.models import IssueSeverity, QAReport
 
 
 class HTMLExporter(BaseExporter):

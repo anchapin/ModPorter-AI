@@ -70,11 +70,11 @@ except ImportError:
 
 try:
     from .validation_agent import (
-        ValidationAgent,
-        LLMSemanticAnalyzer,
-        BehaviorAnalysisEngine,
         AssetIntegrityChecker,
+        BehaviorAnalysisEngine,
+        LLMSemanticAnalyzer,
         ManifestValidator,
+        ValidationAgent,
     )
 
     __all__.extend(

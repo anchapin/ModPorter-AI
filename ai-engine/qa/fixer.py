@@ -6,12 +6,12 @@ This is the third QA agent (QA-04) in the multi-agent pipeline.
 """
 
 import json
-import subprocess
-import time
 import re
 import shutil
+import subprocess
+import time
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import structlog
 

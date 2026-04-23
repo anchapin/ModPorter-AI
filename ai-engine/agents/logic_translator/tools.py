@@ -3,12 +3,12 @@ CrewAI tool wrappers for Logic Translator Agent.
 """
 
 import json
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
 
 from crewai.tools import tool
-from utils.logging_config import get_agent_logger
 
 from agents.logic_translator.translator import LogicTranslatorAgent
+from utils.logging_config import get_agent_logger
 
 logger = get_agent_logger("logic_translator.tools")
 
@@ -816,7 +816,6 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {{
             "Float": "number",
             "Boolean": "boolean",
             "Object": "object",
-            "Integer": "number",
         }
 
         return type_mapping.get(generic_type, generic_type)
@@ -1014,7 +1013,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {{
                 desc = mc_block["description"]
                 if "identifier" not in desc:
                     errors.append("Missing 'identifier' in description")
-                elif not ":" in desc["identifier"]:
+                elif ":" not in desc["identifier"]:
                     warnings.append(
                         "Identifier should include namespace (e.g., 'namespace:block_name')"
                     )

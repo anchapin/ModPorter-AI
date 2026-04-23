@@ -1,20 +1,20 @@
 import asyncio
-import httpx
-import logging
-import json
-import re
-from typing import List, Dict, Optional, Set, Union
-from urllib.parse import urljoin, urlparse
-from bs4 import BeautifulSoup, Tag
-import validators  # For URL validation
-from datetime import datetime
 import hashlib
+import json
+import logging
+import re
+from datetime import datetime
+from typing import Dict, List, Optional, Set, Union
+from urllib import robotparser
+from urllib.parse import urljoin, urlparse
 
 # Aiofiles might be needed if we save intermediate results to files asynchronously
 import aiofiles
+import httpx
+import validators  # For URL validation
+from bs4 import BeautifulSoup, Tag
 
 from models.document import Document
-from urllib import robotparser
 
 logger = logging.getLogger(__name__)
 

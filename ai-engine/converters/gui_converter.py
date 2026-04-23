@@ -7,10 +7,10 @@ to Bedrock's UI JSON files, custom forms, and inventory definitions.
 
 import json
 import logging
-from typing import Dict, List, Any, Optional
-from pathlib import Path
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

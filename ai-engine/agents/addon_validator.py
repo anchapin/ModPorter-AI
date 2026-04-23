@@ -5,11 +5,12 @@ Part of the Bedrock Add-on Generation System (Issue #6)
 
 import json
 import logging
+import uuid
 import zipfile
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict, List
+
 import jsonschema
-import uuid
 
 logger = logging.getLogger(__name__)
 

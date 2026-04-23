@@ -5,12 +5,12 @@ This module implements re-ranking based on user correction patterns,
 allowing the search system to learn from user feedback.
 """
 
-import uuid
 import sys
-from typing import List, Optional, Dict
+import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, List, Optional
 
 ai_engine_path = str(Path(__file__).parent.parent.parent)
 if ai_engine_path not in sys.path:

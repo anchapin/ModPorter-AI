@@ -50,13 +50,13 @@ def validate_texture(agent, texture_path: str, metadata: Dict = None) -> Dict:
                 result["warnings"].append(f"Width {width} is not a power of 2")
                 if agent.texture_constraints.get("must_be_power_of_2", True):
                     result["valid"] = False
-                    result["errors"].append(f"Width must be power of 2 for Bedrock")
+                    result["errors"].append("Width must be power of 2 for Bedrock")
 
             if not agent._is_power_of_2(height):
                 result["warnings"].append(f"Height {height} is not a power of 2")
                 if agent.texture_constraints.get("must_be_power_of_2", True):
                     result["valid"] = False
-                    result["errors"].append(f"Height must be power of 2 for Bedrock")
+                    result["errors"].append("Height must be power of 2 for Bedrock")
 
             max_res = agent.texture_constraints.get("max_resolution", 1024)
             if width > max_res or height > max_res:

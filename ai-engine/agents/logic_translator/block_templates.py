@@ -5,9 +5,8 @@ Loads templates from ai-engine/data/bedrock_block_templates.json.
 """
 
 import json
-import os
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 try:
     import tree_sitter_java as ts_java

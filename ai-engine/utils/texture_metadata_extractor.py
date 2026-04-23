@@ -6,9 +6,9 @@ including dimensions, format, transparency detection, color palette extraction,
 category classification, tileability detection, and animation frame analysis.
 """
 
-import os
 import logging
-from typing import Optional, List
+import os
+from typing import List, Optional
 
 # Try to import PIL for image processing
 try:

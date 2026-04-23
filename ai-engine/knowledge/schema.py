@@ -7,20 +7,20 @@ relationships in the knowledge base cross-reference system.
 
 import uuid
 from datetime import datetime
-from typing import Optional, List
 from enum import Enum
+from typing import List, Optional
 
 from sqlalchemy import (
-    String,
-    ForeignKey,
     DateTime,
-    func,
-    Text,
     Float,
+    ForeignKey,
     Index,
+    String,
+    Text,
+    func,
 )
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 class ConceptType(str, Enum):

@@ -6,11 +6,11 @@ concepts across the knowledge base, enabling semantic linking and discovery
 of related content.
 """
 
+import logging
 import re
 import uuid
-import logging
-from typing import List, Optional, Dict, Any, Tuple
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 

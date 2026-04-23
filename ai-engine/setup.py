@@ -14,7 +14,7 @@ For full GPU support (all platforms), use:
     pip install -e .[gpu-all]
 """
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 
 # Read requirements from pyproject.toml for consistency

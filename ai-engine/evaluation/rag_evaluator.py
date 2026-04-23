@@ -7,16 +7,17 @@ the performance of the advanced RAG system across multiple dimensions.
 
 import json
 import logging
-from typing import List, Dict, Any, Optional
-from dataclasses import dataclass, asdict
-from enum import Enum
-import numpy as np
-from collections import defaultdict
 import math
+from collections import defaultdict
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
-from schemas.multimodal_schema import SearchResult, ContentType
+import numpy as np
+
 from agents.advanced_rag_agent import RAGResponse
+from schemas.multimodal_schema import ContentType, SearchResult
 
 logger = logging.getLogger(__name__)
 

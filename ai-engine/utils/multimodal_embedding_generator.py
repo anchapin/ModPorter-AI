@@ -6,15 +6,17 @@ content types including text, code, images, and multi-modal combinations.
 """
 
 import logging
-from typing import List, Dict, Any, Optional, Union, Tuple
 from dataclasses import dataclass
 from enum import Enum
-import numpy as np
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+
+from utils.advanced_chunker import Chunk, ChunkType
 
 # Import the existing embedding generator as base
 from utils.embedding_generator import LocalEmbeddingGenerator
-from utils.advanced_chunker import Chunk, ChunkType
 
 logger = logging.getLogger(__name__)
 
@@ -161,9 +163,9 @@ class CodeAwareEmbeddingGenerator:
         Returns:
             Enhanced embedding result with code-specific metadata
         """
-        import time
         import asyncio
         import inspect
+        import time
 
         start_time = time.time()
 

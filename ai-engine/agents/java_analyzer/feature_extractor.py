@@ -4,7 +4,7 @@ AST-based and bytecode-based feature extraction for Java mods
 
 import re
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 
 from utils.logging_config import get_agent_logger
 

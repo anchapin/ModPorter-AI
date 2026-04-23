@@ -7,12 +7,12 @@ Provides three strategies:
 - RecursiveChunking: Hierarchical splitting using separators
 """
 
-import re
 import hashlib
+import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 
 class ChunkingStrategy(Enum):

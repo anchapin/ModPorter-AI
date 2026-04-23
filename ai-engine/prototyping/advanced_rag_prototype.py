@@ -5,27 +5,27 @@ This module provides a prototyping environment for testing and developing
 the advanced multi-modal RAG system without impacting the main application.
 """
 
+import asyncio
+import hashlib
+import logging
 import os
 import sys
-import asyncio
-import logging
-from typing import List, Dict, Any
-from pathlib import Path
-import hashlib
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List
 
 # Add the ai-engine directory to Python path for imports
 sys.path.append(str(Path(__file__).parent.parent))
 
 from schemas.multimodal_schema import (
-    MultiModalDocument,
-    EmbeddingVector,
-    SearchQuery,
-    SearchResult,
     ContentType,
     EmbeddingModel,
-    ProcessingStatus,
+    EmbeddingVector,
     HybridSearchConfig,
+    MultiModalDocument,
+    ProcessingStatus,
+    SearchQuery,
+    SearchResult,
 )
 
 # Set up logging
@@ -330,7 +330,7 @@ class AdvancedRAGPrototype:
         java_code = """
         public class BlockRegistry {
             public static final Block COPPER_BLOCK = new Block(Material.METAL);
-            
+
             public static void registerBlocks() {
                 GameRegistry.registerBlock(COPPER_BLOCK, "copper_block");
             }

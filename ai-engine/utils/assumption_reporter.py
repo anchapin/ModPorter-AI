@@ -5,23 +5,23 @@ Generates comprehensive reports about smart assumptions applied during conversio
 Provides user-friendly explanations and technical details for transparency.
 """
 
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass
-from enum import Enum
 import json
 import logging
-from datetime import datetime, timezone
+import os
 
 # Import from the smart_assumptions module
 import sys
-import os
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.smart_assumptions import (
-    AssumptionImpact,
-    FeatureContext,
-    ConversionPlanComponent,
     AppliedAssumptionReportItem,
+    AssumptionImpact,
+    ConversionPlanComponent,
+    FeatureContext,
     SmartAssumptionEngine,
 )
 
@@ -335,23 +335,23 @@ class AssumptionReporter:
     def _format_markdown(self, report: DetailedAssumptionReport) -> str:
         """Format report as Markdown"""
         lines = [
-            f"# Smart Assumptions Report",
-            f"",
+            "# Smart Assumptions Report",
+            "",
             f"**Job ID:** {report.job_id}",
             f"**Generated:** {report.timestamp}",
-            f"",
-            f"## Summary",
-            f"",
-            f"| Metric | Count |",
-            f"|--------|-------|",
+            "",
+            "## Summary",
+            "",
+            "| Metric | Count |",
+            "|--------|-------|",
             f"| Total Assumptions Applied | {report.summary.total_assumptions} |",
             f"| High Impact Changes | {report.summary.high_impact_count} |",
             f"| Medium Impact Changes | {report.summary.medium_impact_count} |",
             f"| Low Impact Changes | {report.summary.low_impact_count} |",
             f"| Features Analyzed | {report.summary.features_analyzed} |",
-            f"",
-            f"## Assumptions Applied",
-            f"",
+            "",
+            "## Assumptions Applied",
+            "",
         ]
 
         if not report.assumptions_applied:
@@ -364,20 +364,20 @@ class AssumptionReporter:
                 lines.extend(
                     [
                         f"### {i}. {assumption.original_feature}",
-                        f"",
+                        "",
                         f"**Impact:** {impact_emoji} {assumption.impact_level.upper()}",
-                        f"",
+                        "",
                         f"**Assumption Type:** `{assumption.assumption_type}`",
-                        f"",
+                        "",
                         f"**Bedrock Equivalent:** {assumption.bedrock_equivalent}",
-                        f"",
+                        "",
                         f"**Explanation:** {assumption.user_explanation}",
-                        f"",
+                        "",
                     ]
                 )
 
         if report.recommendations:
-            lines.extend([f"## Recommendations", f""])
+            lines.extend(["## Recommendations", ""])
             for rec in report.recommendations:
                 lines.append(f"- {rec}")
             lines.append("")
@@ -413,7 +413,7 @@ class AssumptionReporter:
     <h1>Smart Assumptions Report</h1>
     <p><strong>Job ID:</strong> {report.job_id}<br>
     <strong>Generated:</strong> {report.timestamp}</p>
-    
+
     <div class="summary-grid">
         <div class="summary-card">
             <div class="value">{report.summary.total_assumptions}</div>
@@ -432,7 +432,7 @@ class AssumptionReporter:
             <div class="label">Low Impact</div>
         </div>
     </div>
-    
+
     <h2>Assumptions Applied</h2>
 """
 

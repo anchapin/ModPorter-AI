@@ -5,13 +5,12 @@ Provides context trimming, prompt caching, and cost tracking for LLM API calls.
 Issue: #385 - LLM token optimization (Phase 3)
 """
 
-import json
 import hashlib
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, field
+import json
 from collections import OrderedDict
-from datetime import datetime, timezone, timedelta
-
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
 
 # Token pricing (approximate, in dollars per 1M tokens)
 TOKEN_PRICING = {

@@ -9,12 +9,12 @@ Usage:
     python demonstrate_packaging_validation.py
 """
 
+import json
 import sys
 import tempfile
-import json
+import uuid
 import zipfile
 from pathlib import Path
-import uuid
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))

@@ -3,12 +3,12 @@ File Packager for creating .mcaddon packages from Bedrock add-on components
 Part of the Bedrock Add-on Generation System (Issue #6)
 """
 
-import zipfile
 import logging
 import shutil
-from pathlib import Path
-from typing import Dict, List, Any, Optional
 import tempfile
+import zipfile
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 try:
     import magic

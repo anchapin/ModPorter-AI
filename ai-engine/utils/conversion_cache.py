@@ -9,7 +9,7 @@ import hashlib
 import json
 import logging
 import time
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from functools import wraps
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, TypeVar

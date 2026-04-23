@@ -4,9 +4,9 @@ Benchmarking script for document indexing throughput.
 Measures chunks/second performance for different chunking strategies.
 """
 
-import time
-import sys
 import os
+import sys
+import time
 
 # Add ai-engine to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -124,7 +124,7 @@ def run_benchmarks():
     print("-" * 40)
 
     meta_result = benchmark_metadata_extraction(document, iterations=50)
-    print(f"\nMetadata Extraction:")
+    print("\nMetadata Extraction:")
     print(f"  Avg time: {meta_result['avg_time_seconds'] * 1000:.2f} ms")
     print(f"  Throughput: {meta_result['extractions_per_second']:.1f} extractions/second")
 

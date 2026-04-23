@@ -9,22 +9,23 @@ Issue #695: Add structured logging
 - Correlation ID support for request tracing
 """
 
+import json
 import logging
 import logging.handlers
-import structlog
 import os
 import sys
-import time
 import threading
+import time
 import traceback
 import uuid
+from collections import defaultdict
+from contextvars import ContextVar
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any, List
-from contextvars import ContextVar
-from dataclasses import dataclass, field, asdict
-from collections import defaultdict
-import json
+from typing import Any, Dict, List, Optional
+
+import structlog
 
 # Context variable for correlation ID
 correlation_id_var: ContextVar[Optional[str]] = ContextVar("correlation_id", default=None)

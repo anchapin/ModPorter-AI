@@ -9,14 +9,13 @@ Based on: "Diagnosing LLM Judge Reliability: Conformal Prediction Sets and Trans
 (Gupta & Kumar, 2026) - arxiv.org/abs/2604.15302v1
 """
 
-import json
 import hashlib
-from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple
 
 import structlog
 
-from qa.report.models import SegmentConfidence, ConfidenceDistribution
+from qa.report.models import ConfidenceDistribution, SegmentConfidence
 
 logger = structlog.get_logger(__name__)
 
@@ -98,7 +97,7 @@ class ConformalScorer:
         semantic_score = candidate.semantic_score
         confidence = assertion_score * 0.4 + semantic_score * 0.6
         review_flag = confidence < self.high_threshold
-        reasons = [f"Single candidate mode", f"Assertion pass rate: {assertion_score:.0%}"]
+        reasons = ["Single candidate mode", f"Assertion pass rate: {assertion_score:.0%}"]
 
         if semantic_score >= 0.8:
             reasons.append("High semantic equivalence score")

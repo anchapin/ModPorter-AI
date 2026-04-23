@@ -19,10 +19,10 @@ Issue: #997 - Fine-tune Open-Weights Code LLM for Java→Bedrock Conversion
 import json
 import logging
 import sqlite3
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 

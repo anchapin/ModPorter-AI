@@ -8,14 +8,14 @@ Features:
 - Graceful degradation
 """
 
-import time
 import logging
 import random
-from typing import Callable, Any, Optional, Dict, List, Type
-from functools import wraps
+import threading
+import time
 from dataclasses import dataclass, field
 from enum import Enum
-import threading
+from functools import wraps
+from typing import Any, Callable, Dict, List, Optional, Type
 
 logger = logging.getLogger(__name__)
 

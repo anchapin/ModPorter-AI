@@ -7,13 +7,14 @@ Issue #325: Validate and Fix Packaging Agent Structure
 
 import json
 import logging
-import zipfile
 import uuid
-from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
-import jsonschema
+import zipfile
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+import jsonschema
 
 logger = logging.getLogger(__name__)
 

@@ -6,13 +6,13 @@ of features at runtime. Supports boolean flags, percentage rollouts, and
 environment-based configuration.
 """
 
-import os
+import hashlib
 import json
 import logging
-from typing import Optional, Dict, Any, Callable
+import os
 from enum import Enum
 from functools import wraps
-import hashlib
+from typing import Any, Callable, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -268,7 +268,7 @@ class FeatureFlagManager:
             return hash_value < rollout_percentage
 
         elif flag.flag_type == FeatureFlagType.VARIANT:
-            logger.warning(f"Use get_variant() for VARIANT type flags, not is_enabled()")
+            logger.warning("Use get_variant() for VARIANT type flags, not is_enabled()")
             return flag.enabled
 
         return flag.enabled

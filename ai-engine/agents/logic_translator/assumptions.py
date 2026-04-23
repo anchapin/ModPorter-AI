@@ -6,7 +6,7 @@ translated to Bedrock equivalents.
 """
 
 import json
-from typing import Dict, Any
+from typing import Dict
 
 SMART_ASSUMPTIONS: Dict[str, Dict[str, str]] = {
     "item_custom_model_data": {

@@ -9,15 +9,15 @@ Provides a unified interface for retrieving context during conversion by combini
 This module implements issue #992: Wire RAG Pipeline into Conversion Loop.
 """
 
-import logging
-from typing import List, Dict, Any, Optional, TYPE_CHECKING
-from dataclasses import dataclass, field
 import asyncio
+import logging
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 if TYPE_CHECKING:
-    from search.rag_pipeline import RAGPipeline
+    from knowledge.patterns.mappings import PatternMapping, PatternMappingRegistry
     from search.hybrid_search_engine import HybridSearchEngine
-    from knowledge.patterns.mappings import PatternMappingRegistry, PatternMapping
+    from search.rag_pipeline import RAGPipeline
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +109,7 @@ class ConversionRAGPipeline:
     def _create_rag_pipeline(self) -> "RAGPipeline":
         """Create RAG pipeline with search engine."""
         try:
-            from search.rag_pipeline import RAGPipeline, PipelineConfig
+            from search.rag_pipeline import PipelineConfig, RAGPipeline
 
             config = PipelineConfig(
                 enable_query_expansion=True,

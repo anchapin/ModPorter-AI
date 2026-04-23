@@ -6,9 +6,9 @@ and improve search result quality.
 """
 
 import logging
-from typing import Dict, Any, Optional
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 

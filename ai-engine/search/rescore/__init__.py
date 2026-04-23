@@ -11,8 +11,8 @@ This module provides various re-ranking strategies including:
 
 from .reranking import (
     EnsembleReRanker,
-    ReRankingEngine,
     RerankingConfig,
+    ReRankingEngine,
     RerankingStrategy,
     SearchQuery,
     SearchResult,
