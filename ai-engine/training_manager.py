@@ -1,8 +1,9 @@
-import httpx
-import os
 import json
 import logging
+import os
 from typing import List, Optional, TypedDict
+
+import httpx
 
 # Configure basic logging
 logging.basicConfig(
@@ -83,9 +84,9 @@ async def train_model_with_feedback(training_data: List[AITrainingDataItem]):
 
     try:
         # Import RL components
-        from .rl.training_loop import create_training_loop
         from .rl.quality_scorer import create_quality_scorer
         from .rl.reward_system import create_reward_generator
+        from .rl.training_loop import create_training_loop
 
         # Initialize RL training components
         training_loop = await create_training_loop()

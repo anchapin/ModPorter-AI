@@ -7,9 +7,9 @@ villager entities, profession components, and trade tables.
 
 import json
 import logging
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

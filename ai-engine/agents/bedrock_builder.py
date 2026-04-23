@@ -3,26 +3,26 @@ Bedrock Builder Agent for generating Bedrock add-on files from Java mod analysis
 Enhanced for MVP functionality as specified in Issue #168.
 """
 
-import os
-import zipfile
 import json
+import logging
+import os
 import tempfile
 import uuid
+import zipfile
 from pathlib import Path
-from typing import Dict, List, Any, Optional
-from PIL import Image
-import logging
-from jinja2 import Environment, FileSystemLoader
+from typing import Any, Dict, List
+
 from crewai.tools import tool
+from jinja2 import Environment, FileSystemLoader
+from PIL import Image
 
 from models.smart_assumptions import SmartAssumptionEngine
 from templates.template_engine import TemplateEngine
 from utils.atlas_descriptor_parser import (
-    parse_atlas_descriptor,
+    extract_sprites_from_atlas,
     find_atlas_descriptors_in_jar,
     find_atlas_textures_in_jar,
-    extract_sprites_from_atlas,
-    AtlasSpriteInfo,
+    parse_atlas_descriptor,
 )
 
 logger = logging.getLogger(__name__)
@@ -653,7 +653,7 @@ class BedrockBuilderAgent:
 
         try:
             with zipfile.ZipFile(jar_path, "r") as jar:
-                file_list = jar.namelist()
+                jar.namelist()
 
                 # Find all potential atlas textures
                 atlases = find_atlas_textures_in_jar(jar, namespace)
@@ -688,7 +688,7 @@ class BedrockBuilderAgent:
                             # Parse the JSON descriptor
                             try:
                                 desc_data = jar.read(descriptor_path)
-                                desc_json = json.loads(desc_data.decode("utf-8"))
+                                json.loads(desc_data.decode("utf-8"))
                                 sprites = parse_atlas_descriptor(descriptor_path, atlas_path)
                                 logger.info(
                                     f"Found atlas descriptor for {atlas_path}: "

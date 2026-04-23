@@ -1,7 +1,7 @@
 """
 Email Service for Portkit
 
-SendGrid integration for transactional emails.
+Resend integration for transactional emails.
 """
 
 import logging
@@ -28,8 +28,8 @@ class EmailMessage:
     bcc: Optional[List[str]] = None
 
 
-class SendGridEmailService:
-    """SendGrid email service."""
+class ResendEmailService:
+    """Resend email service."""
 
     def __init__(
         self,
@@ -43,16 +43,16 @@ class SendGridEmailService:
         self._client = None
 
     def _get_client(self):
-        """Lazy-load SendGrid client."""
+        """Lazy-initialize Resend API key."""
         if self._client is None:
             try:
-                import sendgrid
-                from sendgrid.helpers.mail import Mail
+                import resend
 
-                self._client = sendgrid.SendGridAPIClient(api_key=self.api_key)
-                logger.info("SendGrid client initialized")
+                resend.api_key = self.api_key
+                self._client = True
+                logger.info("Resend client initialized")
             except ImportError:
-                logger.warning("sendgrid package not installed. Emails will be logged only.")
+                logger.warning("resend package not installed. Emails will be logged only.")
                 self._client = None
 
         return self._client
@@ -72,25 +72,30 @@ class SendGridEmailService:
 
         client = self._get_client()
         if client is None:
-            logger.warning(f"SendGrid not available. Email logged only: {message.subject}")
+            logger.warning(f"Resend not available. Email logged only: {message.subject}")
             return True
 
         try:
             plain_text, html_content = self._render_template(message.template, message.context)
 
-            from sendgrid.helpers.mail import Mail, To, From, Subject
+            params = {
+                "from": f"{self.from_name} <{self.from_email}>",
+                "to": [message.to],
+                "subject": message.subject,
+                "text": plain_text,
+                "html": html_content,
+            }
 
-            mail = Mail(
-                from_email=From(self.from_email, self.from_name),
-                to_emails=To(message.to),
-                subject=Subject(message.subject),
-                plain_text_content=plain_text,
-                html_content=html_content,
-            )
+            if message.cc:
+                params["cc"] = message.cc
+            if message.bcc:
+                params["bcc"] = message.bcc
 
-            response = client.send(mail)
+            import resend
 
-            logger.info(f"Email sent successfully. Status code: {response.status_code}")
+            response = resend.Emails.send(params)
+
+            logger.info(f"Email sent successfully. ID: {response.get('id', 'unknown')}")
             return True
 
         except Exception as e:
@@ -129,10 +134,6 @@ class SendGridEmailService:
         except Exception as e:
             logger.error(f"Error rendering template {template}: {e}")
             return (str(e), f"<p>Error rendering template: {e}</p>")
-
-    # ============================================
-    # Email Templates
-    # ============================================
 
     def _unsubscribe_url(self, email: str) -> str:
         """Generate unsubscribe URL."""
@@ -185,7 +186,7 @@ https://portkit.cloud
         <h1 style="color: #2c3e50;">Portkit</h1>
         <p style="color: #7f8c8d;">Java to Bedrock Mod Converter</p>
     </div>
-    
+
     <div style="background: #f9f9f9; border-radius: 8px; padding: 30px; margin-bottom: 20px;">
         <h2 style="color: #27ae60; margin-top: 0;">Verify Your Email Address</h2>
         <p>Thank you for signing up! Please verify your email address by clicking the button below:</p>
@@ -196,9 +197,9 @@ https://portkit.cloud
         <p style="font-size: 14px; color: #7f8c8d;">Or copy and paste this URL into your browser:</p>
         <p style="font-size: 12px; word-break: break-all; color: #3498db;">{verification_url}</p>
     </div>
-    
+
     <p style="font-size: 14px; color: #7f8c8d;">If you didn't create this account, please ignore this email.</p>
-    
+
     <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
     <p style="font-size: 12px; color: #95a5a6; text-align: center;">
         Portkit - Java to Bedrock Mod Converter<br>
@@ -260,7 +261,7 @@ https://portkit.cloud
         <h1 style="color: #2c3e50;">Portkit</h1>
         <p style="color: #7f8c8d;">Java to Bedrock Mod Converter</p>
     </div>
-    
+
     <div style="background: #f9f9f9; border-radius: 8px; padding: 30px; margin-bottom: 20px;">
         <h2 style="color: #e74c3c; margin-top: 0;">Password Reset Request</h2>
         <p>You requested a password reset for your Portkit account.</p>
@@ -272,9 +273,9 @@ https://portkit.cloud
         <p style="font-size: 14px; color: #7f8c8d;">Or copy and paste this URL into your browser:</p>
         <p style="font-size: 12px; word-break: break-all; color: #3498db;">{reset_url}</p>
     </div>
-    
+
     <p style="font-size: 14px; color: #7f8c8d;">If you didn't request this, please ignore this email and your password will remain unchanged.</p>
-    
+
     <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
     <p style="font-size: 12px; color: #95a5a6; text-align: center;">
         <a href="{unsubscribe}" style="color: #95a5a6;">Unsubscribe from notifications</a><br>
@@ -339,11 +340,11 @@ https://portkit.cloud
         <h1 style="color: #2c3e50;">Portkit</h1>
         <p style="color: #7f8c8d;">Java to Bedrock Mod Converter</p>
     </div>
-    
+
     <div style="background: #f9f9f9; border-radius: 8px; padding: 30px; margin-bottom: 20px;">
         <h2 style="color: #27ae60; margin-top: 0;">Welcome, {user_name}!</h2>
         <p>We're excited to have you on board. Portkit makes it easy to convert your Java mods to Bedrock add-ons.</p>
-        
+
         <h3 style="color: #2c3e50;">Getting Started:</h3>
         <ol style="color: #555;">
             <li>Upload your Java mod file (.jar or .zip)</li>
@@ -351,17 +352,17 @@ https://portkit.cloud
             <li>Download your Bedrock add-on (.mcaddon)</li>
             <li>Install and enjoy!</li>
         </ol>
-        
+
         <div style="text-align: center; margin: 30px 0;">
             <a href="{FRONTEND_URL}" style="background: #27ae60; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">Start Converting</a>
         </div>
     </div>
-    
+
     <div style="background: #ecf0f1; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
         <h3 style="color: #2c3e50; margin-top: 0;">Need Help?</h3>
         <p>Check out our <a href="https://docs.portkit.cloud" style="color: #3498db;">documentation</a> or join our <a href="https://discord.gg/portkit" style="color: #3498db;">Discord</a> community.</p>
     </div>
-    
+
     <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
     <p style="font-size: 12px; color: #95a5a6; text-align: center;">
         <a href="{unsubscribe}" style="color: #95a5a6;">Unsubscribe from notifications</a><br>
@@ -495,13 +496,13 @@ https://portkit.cloud
         <h1 style="color: #2c3e50;">Portkit</h1>
         <p style="color: #7f8c8d;">Java to Bedrock Mod Converter</p>
     </div>
-    
+
     <div style="background: #f9f9f9; border-radius: 8px; padding: 30px; margin-bottom: 20px;">
         <h2 style="color: {status_color}; margin-top: 0;">Conversion {status_text}</h2>
         {body_content}
         <p><a href="{FRONTEND_URL}/conversions/{conversion_id}" style="color: #3498db;">View conversion details</a></p>
     </div>
-    
+
     <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
     <p style="font-size: 12px; color: #95a5a6; text-align: center;">
         <a href="{unsubscribe}" style="color: #95a5a6;">Unsubscribe from notifications</a><br>
@@ -513,26 +514,25 @@ https://portkit.cloud
 """
 
 
-# Singleton instance
 _email_service = None
 
 
 def get_email_service(
     api_key: Optional[str] = None,
     from_email: str = "noreply@portkit.cloud",
-) -> SendGridEmailService:
+) -> ResendEmailService:
     """Get or create email service singleton."""
     global _email_service
     if _email_service is None:
         import os
 
-        api_key = api_key or os.getenv("SENDGRID_API_KEY")
+        api_key = api_key or os.getenv("RESEND_API_KEY")
 
         if not api_key:
-            logger.warning("SendGrid API key not configured. Emails will be logged only.")
+            logger.warning("Resend API key not configured. Emails will be logged only.")
             api_key = "dummy-key-for-development"
 
-        _email_service = SendGridEmailService(api_key=api_key, from_email=from_email)
+        _email_service = ResendEmailService(api_key=api_key, from_email=from_email)
 
     return _email_service
 

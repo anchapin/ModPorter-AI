@@ -6,10 +6,10 @@ queries with additional context and related terms before processing.
 """
 
 import logging
-from typing import List, Dict, Any, Optional
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from enum import Enum
-from collections import defaultdict, Counter
+from typing import Any, Dict, List, Optional
 
 from schemas.multimodal_schema import SearchQuery
 

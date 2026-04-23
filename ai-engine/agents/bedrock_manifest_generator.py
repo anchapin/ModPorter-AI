@@ -4,12 +4,13 @@ Part of the Bedrock Add-on Generation System (Issue #6)
 """
 
 import json
-import uuid
 import logging
-from typing import Dict, List, Any, Tuple, Optional
-from pathlib import Path
+import uuid
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
 import jsonschema
 
 logger = logging.getLogger(__name__)

@@ -13,10 +13,10 @@ and reduces manual review burden for beta users.
 """
 
 import hashlib
-import json
-from typing import Dict, Any, List, Optional, Tuple, Callable
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -266,7 +266,7 @@ class MultiCandidateConsistencyChecker:
             )
 
         rankings = self.rank_candidates(candidates)
-        agreement_scores = dict(rankings)
+        dict(rankings)
         overall_agreement = sum(s for _, s in rankings) / len(rankings)
 
         consensus_code, consensus_rate = self.find_consensus_code(candidates)

@@ -3,10 +3,10 @@ Modrinth Pack Format Parser
 Parses Modrinth pack format files for modpack conversion support.
 """
 
-from typing import Dict, List, Any, Optional
-from pathlib import Path
 import json
 import logging
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

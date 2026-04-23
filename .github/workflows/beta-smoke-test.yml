@@ -1,0 +1,225 @@
+name: Beta Smoke Test (Issue #1165)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+  schedule:
+    # Run daily at 6 AM UTC
+    - cron: '0 6 * * *'
+  pull_request:
+    paths:
+      - 'backend/src/api/**'
+      - 'backend/src/services/**'
+      - '.github/workflows/beta-smoke-test.yml'
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  smoke-test:
+    name: Run Beta Smoke Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: 'backend/requirements.txt'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install httpx
+
+      - name: Determine environment URL
+        id: env-url
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "production" ]; then
+            echo "url=https://portkit.ai" >> $GITHUB_OUTPUT
+          else
+            echo "url=https://staging.portkit.ai" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Wait for deployment (if triggered by schedule)
+        if: github.event_name == 'schedule'
+        run: |
+          echo "Waiting 5 minutes for deployment to stabilize..."
+          sleep 300
+
+      - name: Run smoke tests
+        id: smoke-test
+        env:
+          BASE_URL: ${{ steps.env-url.outputs.url }}
+        run: |
+          cd scripts
+          python beta_smoke_test.py \
+            --url $BASE_URL \
+            --verbose \
+            2>&1 | tee smoke_test_output.log
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-report-${{ github.run_number }}
+          path: |
+            scripts/smoke_test_output.log
+            scripts/beta_smoke_test_report_*.json
+          retention-days: 30
+
+      - name: Parse test results
+        id: parse-results
+        if: always()
+        run: |
+          cd scripts
+          # Find the most recent report file
+          REPORT_FILE=$(ls -t beta_smoke_test_report_*.json | head -1)
+
+          if [ -z "$REPORT_FILE" ]; then
+            echo "No report file found"
+            exit 1
+          fi
+
+          # Extract test results
+          TOTAL=$(jq '.total_tests' "$REPORT_FILE")
+          PASSED=$(jq '.passed' "$REPORT_FILE")
+          FAILED=$(jq '.failed' "$REPORT_FILE")
+          PERCENTAGE=$(jq '.percentage' "$REPORT_FILE")
+
+          echo "total=$TOTAL" >> $GITHUB_OUTPUT
+          echo "passed=$PASSED" >> $GITHUB_OUTPUT
+          echo "failed=$FAILED" >> $GITHUB_OUTPUT
+          echo "percentage=$PERCENTAGE" >> $GITHUB_OUTPUT
+
+          # Check for NO-GO criteria
+          FAILED_TESTS=$(jq -r '.results[] | select(.passed == false) | .test' "$REPORT_FILE")
+          {
+            echo "failed_tests<<EOF"
+            echo "$FAILED_TESTS"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Create test summary
+        if: always()
+        run: |
+          cat << EOF >> $GITHUB_STEP_SUMMARY
+          # 🧪 Beta Smoke Test Results
+
+          **Environment:** ${{ steps.env-url.outputs.url }}
+          **Run ID:** ${{ github.run_number }}
+          **Triggered by:** ${{ github.event_name }}
+
+          | Metric | Value |
+          |--------|-------|
+          | Total Tests | ${{ steps.parse-results.outputs.total }} |
+          | ✅ Passed | ${{ steps.parse-results.outputs.passed }} |
+          | ❌ Failed | ${{ steps.parse-results.outputs.failed }} |
+          | Success Rate | ${{ steps.parse-results.outputs.percentage }}% |
+
+          EOF
+
+          if [ "${{ steps.parse-results.outputs.percentage }}" -ge 80 ]; then
+            echo "## 🟢 Decision: GO - Beta Ready!" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.parse-results.outputs.percentage }}" -ge 60 ]; then
+            echo "## 🟡 Decision: PROCEED WITH CAUTION" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## 🔴 Decision: NO-GO - Critical Issues Found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ steps.parse-results.outputs.failed }}" -gt 0 ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Failed Tests:" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "${{ steps.parse-results.outputs.failed_tests }}" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Fail workflow if tests fail
+        if: steps.parse-results.outputs.percentage < 80
+        run: |
+          echo "Smoke test success rate below 80% threshold"
+          exit 1
+
+      - name: Notify on failure
+        if: failure() && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🔴 Beta Smoke Test Failed - ${new Date().toISOString()}`,
+              body: `Smoke tests failed on ${{ steps.env-url.outputs.url }}\n\nSuccess rate: ${{ steps.parse-results.outputs.percentage }}%\n\nFailed tests:\n${{ steps.parse-results.outputs.failed_tests }}\n\n[View workflow run](${context.payload.repository.html_url}/actions/runs/${context.runId})`,
+              labels: ['P0', 'testing', 'smoke-test']
+            })
+
+  health-check:
+    name: Quick Health Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Check staging health
+        if: github.event.inputs.environment != 'production'
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 15 https://staging.portkit.ai/health 2>/dev/null) || true
+          if [ "$STATUS" = "000" ]; then
+            echo "⚠️ Staging unreachable (DNS/network issue) - skipping health check"
+          elif [ "$STATUS" -ne 200 ]; then
+            echo "❌ Staging health check failed: $STATUS"
+            exit 1
+          else
+            echo "✅ Staging health check passed"
+          fi
+
+      - name: Check production health
+        if: github.event.inputs.environment == 'production'
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 15 https://portkit.ai/health 2>/dev/null) || true
+          if [ "$STATUS" = "000" ]; then
+            echo "⚠️ Production unreachable (DNS/network issue) - skipping health check"
+          elif [ "$STATUS" -ne 200 ]; then
+            echo "❌ Production health check failed: $STATUS"
+            exit 1
+          else
+            echo "✅ Production health check passed"
+          fi
+
+      - name: Check API endpoints
+        run: |
+          URL="${{ github.event.inputs.environment == 'production' && 'https://portkit.ai' || 'https://staging.portkit.ai' }}"
+
+          # Check critical endpoints
+          ENDPOINTS=(
+            "/health"
+            "/api/v1/health"
+            "/docs"
+          )
+
+          for endpoint in "${ENDPOINTS[@]}"; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 15 "$URL$endpoint" 2>/dev/null) || true
+            if [ "$STATUS" = "000" ]; then
+              echo "⚠️ Endpoint $endpoint unreachable (DNS/network issue) - skipping"
+            elif [ "$STATUS" -ne 200 ]; then
+              echo "❌ Endpoint $endpoint failed: $STATUS"
+              exit 1
+            else
+              echo "✅ $endpoint - OK"
+            fi
+          done

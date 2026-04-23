@@ -1,8 +1,9 @@
-from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any, List
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field
 
 
 @dataclass

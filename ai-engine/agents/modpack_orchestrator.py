@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from .curseforge_parser import CurseForgeManifestParser, CurseForgeParserAgent
-from .modrinth_parser import ModrinthPackParser, ModrinthParserAgent
 from .mod_dependency_analyzer import (
     DependencyAnalysisResult,
     mod_dependency_analyzer,
@@ -24,6 +23,7 @@ from .modpack_conflict_detector import (
     ConflictDetectionResult,
     modpack_conflict_detector,
 )
+from .modrinth_parser import ModrinthPackParser, ModrinthParserAgent
 
 logger = logging.getLogger(__name__)
 

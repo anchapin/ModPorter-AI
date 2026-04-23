@@ -4,12 +4,12 @@ Correction storage and retrieval for user correction learning system.
 Provides async methods for managing correction submissions in the knowledge base.
 """
 
-import uuid
-import sys
 import os
-from typing import List, Optional
+import sys
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import List, Optional
 
 ai_engine_path = str(Path(__file__).parent.parent)
 if ai_engine_path not in sys.path:

@@ -3,7 +3,7 @@ Cross-encoder based re-ranker for improved search result ranking.
 """
 
 import logging
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List
 
 from schemas.multimodal_schema import SearchResult
 

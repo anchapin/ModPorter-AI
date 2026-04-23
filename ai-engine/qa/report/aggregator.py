@@ -1,15 +1,16 @@
 """Result aggregation for QA reports."""
 
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List
+
 from qa.report.models import (
-    Issue,
-    IssueSeverity,
-    IssueLocation,
     AgentResult,
+    ConfidenceDistribution,
+    Issue,
+    IssueLocation,
+    IssueSeverity,
     QAReport,
     SegmentConfidence,
-    ConfidenceDistribution,
 )
 from qa.report.scorer import WeightedScorer
 

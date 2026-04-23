@@ -7,9 +7,9 @@ Part of the Bedrock Add-on Generation System
 Issue: #6 - Entity Converter
 """
 
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
 
 class EntityBehaviorType(Enum):

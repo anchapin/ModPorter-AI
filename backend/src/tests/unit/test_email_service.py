@@ -1,16 +1,15 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from services.email_service import SendGridEmailService, EmailMessage, get_email_service
+from services.email_service import ResendEmailService, EmailMessage, get_email_service
 
 
 @pytest.fixture
 def email_service():
-    return SendGridEmailService(api_key="test-key")
+    return ResendEmailService(api_key="test-key")
 
 
 @pytest.mark.asyncio
 async def test_send_email_no_client(email_service):
-    # Test when sendgrid is not installed or api key missing
     with patch.object(email_service, "_get_client", return_value=None):
         msg = EmailMessage(
             to="test@example.com",
@@ -19,29 +18,17 @@ async def test_send_email_no_client(email_service):
             context={"user_name": "Test User"},
         )
         result = await email_service.send(msg)
-        assert result is True  # Returns True because it logs only
+        assert result is True
 
 
 @pytest.mark.asyncio
 async def test_send_email_success(email_service):
-    mock_client = MagicMock()
-    mock_response = MagicMock()
-    mock_response.status_code = 202
-    mock_client.send.return_value = mock_response
+    mock_response = {"id": "test-email-id"}
+    mock_emails = MagicMock()
+    mock_emails.send.return_value = mock_response
 
-    # Mock sys.modules to prevent ImportError
-    mock_sendgrid = MagicMock()
-    mock_mail_module = MagicMock()
-
-    with patch.dict(
-        "sys.modules",
-        {
-            "sendgrid": mock_sendgrid,
-            "sendgrid.helpers": MagicMock(),
-            "sendgrid.helpers.mail": mock_mail_module,
-        },
-    ):
-        with patch.object(email_service, "_get_client", return_value=mock_client):
+    with patch.object(email_service, "_get_client", return_value=True):
+        with patch.dict("sys.modules", {"resend": MagicMock(Emails=mock_emails)}):
             msg = EmailMessage(
                 to="test@example.com",
                 subject="Test",
@@ -50,7 +37,7 @@ async def test_send_email_success(email_service):
             )
             result = await email_service.send(msg)
             assert result is True
-            mock_client.send.assert_called_once()
+            mock_emails.send.assert_called_once()
 
 
 def test_render_template_welcome(email_service):
@@ -75,6 +62,6 @@ def test_get_email_service():
     import services.email_service as email_service_module
 
     email_service_module._email_service = None
-    with patch.dict("os.environ", {"SENDGRID_API_KEY": "env-key"}):
+    with patch.dict("os.environ", {"RESEND_API_KEY": "env-key"}):
         service = get_email_service()
         assert service.api_key == "env-key"

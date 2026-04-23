@@ -7,9 +7,9 @@ for retrieval during translation.
 This module implements issue #992: Wire RAG Pipeline into Conversion Loop.
 """
 
-import logging
-from typing import Dict, Any, Optional, TYPE_CHECKING
 import json
+import logging
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 if TYPE_CHECKING:
     from knowledge.patterns.mappings import PatternMappingRegistry

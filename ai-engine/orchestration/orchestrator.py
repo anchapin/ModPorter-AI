@@ -3,18 +3,18 @@ Parallel Orchestrator for managing multi-agent conversion workflows.
 Part of Phase 2: Core Orchestration Engine Implementation
 """
 
-import time
+import asyncio
+import json
 import logging
 import multiprocessing
-import asyncio
 import os
-from typing import Dict, List, Any, Optional, Callable
-import json
+import time
 from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
 
+from .strategy_selector import OrchestrationStrategy, StrategyConfig, StrategySelector
 from .task_graph import TaskGraph, TaskNode
 from .worker_pool import WorkerPool, WorkerType, create_agent_executor
-from .strategy_selector import OrchestrationStrategy, StrategySelector, StrategyConfig
 
 logger = logging.getLogger(__name__)
 

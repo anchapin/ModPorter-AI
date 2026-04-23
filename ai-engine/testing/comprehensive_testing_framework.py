@@ -16,16 +16,16 @@ import logging
 import random
 import statistics
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 # Import existing framework components
 try:
-    from .qa_framework import TestFramework as BaseTestFramework
     from .behavioral_framework import BehavioralTestingFramework, GameStateTracker
+    from .qa_framework import TestFramework as BaseTestFramework
 except (ImportError, ValueError):
     logging.warning("Could not import base testing frameworks. Using dummy implementations.")
 

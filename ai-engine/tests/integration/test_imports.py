@@ -18,7 +18,7 @@ def test_can_import_main():
         main_content = f.read()
 
     # Verify key imports are present
-    assert "from fastapi import FastAPI" in main_content, "main.py should import FastAPI"
+    assert "from fastapi import" in main_content and "FastAPI" in main_content, "main.py should import FastAPI"
     assert "from crew.conversion_crew import" in main_content, (
         "main.py should import from crew.conversion_crew"
     )

@@ -2,11 +2,12 @@
 Asset Converter Agent for handling texture, model, and audio asset conversion
 """
 
-from typing import Dict, List, Optional, Tuple
-import logging
 import json
+import logging
 import zipfile
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
 from PIL import Image
 
 # Optional audio import (removed in Python 3.14)
@@ -21,6 +22,7 @@ except ImportError:
     CouldntDecodeError = Exception
 
 from crewai.tools import tool
+
 from models.smart_assumptions import SmartAssumptionEngine
 
 logger = logging.getLogger(__name__)
@@ -105,10 +107,7 @@ class AssetConverterAgent:
 # EXTRACTED MODULES - Delegation for backward compatibility
 # ============================================================================
 try:
-    from . import texture_converter
-    from . import model_converter
-    from . import audio_converter
-    from . import converter_utils
+    from . import audio_converter, converter_utils, model_converter, texture_converter
 
     _HAS_EXTRACTED_MODULES = True
 except ImportError:
@@ -4357,13 +4356,13 @@ def validate_texture(self, texture_path: str, metadata: Dict = None) -> Dict:
                 result["warnings"].append(f"Width {width} is not a power of 2")
                 if self.texture_constraints.get("must_be_power_of_2", True):
                     result["valid"] = False
-                    result["errors"].append(f"Width must be power of 2 for Bedrock")
+                    result["errors"].append("Width must be power of 2 for Bedrock")
 
             if not self._is_power_of_2(height):
                 result["warnings"].append(f"Height {height} is not a power of 2")
                 if self.texture_constraints.get("must_be_power_of_2", True):
                     result["valid"] = False
-                    result["errors"].append(f"Height must be power of 2 for Bedrock")
+                    result["errors"].append("Height must be power of 2 for Bedrock")
 
             # Check max resolution
             max_res = self.texture_constraints.get("max_resolution", 1024)

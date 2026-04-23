@@ -129,7 +129,6 @@ class FormulaDriftChecker:
         if java["var"] != bedrock["var"]:
             return None
 
-        java_uses_mult = "*" in java_expr
 
         java_has_coef = re.search(r"\*\s*(\d+\.?\d*)", java_expr)
         bedrock_has_addcoef = re.search(r"\+\s*(\d+\.?\d*)", bedrock_expr)
@@ -711,7 +710,7 @@ class LLMLogicAuditor:
             return
 
         try:
-            from utils.rate_limiter import get_llm_backend, get_fallback_llm
+            from utils.rate_limiter import get_llm_backend
 
             self._llm = get_llm_backend()
             logger.info("LLM initialized for logic auditing")

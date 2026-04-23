@@ -1,6 +1,6 @@
 import json
 import os
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 # Adjust the import path based on the project structure and how it's run.
 # This assumes rag_evaluator.py might be run as a script from the project root,

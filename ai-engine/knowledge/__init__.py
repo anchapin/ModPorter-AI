@@ -8,8 +8,8 @@ This module contains:
 - Cross-reference detection: Concept graph relationships
 """
 
-from knowledge.schema import ConceptNode, ConceptRelationship, ConceptType, RelationshipType
 from knowledge.cross_reference import CrossReferenceDetector, DetectedConcept, RelationshipCandidate
+from knowledge.schema import ConceptNode, ConceptRelationship, ConceptType, RelationshipType
 
 __all__ = [
     "ConceptNode",

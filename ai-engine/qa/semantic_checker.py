@@ -9,13 +9,13 @@ import json
 import re
 import time
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import structlog
 
 from qa.context import QAContext
 from qa.validators import AgentOutput, validate_agent_output
-from utils.rate_limiter import get_llm_backend, get_fallback_llm
+from utils.rate_limiter import get_fallback_llm, get_llm_backend
 
 logger = structlog.get_logger(__name__)
 

@@ -2,23 +2,24 @@
 Packaging Agent for assembling converted components into .mcaddon packages
 """
 
-from typing import Dict, List, Any
-
-import logging
-import json
-import zipfile
-import os
 import copy
-from pathlib import Path
+import json
+import logging
+import os
 import uuid
+import zipfile
+from pathlib import Path
+from typing import Any, Dict, List
+
 from crewai.tools import tool
-from models.smart_assumptions import SmartAssumptionEngine
+
+from agents.addon_validator import AddonValidator
 from agents.bedrock_manifest_generator import BedrockManifestGenerator
 from agents.block_item_generator import BlockItemGenerator
 from agents.entity_converter import EntityConverter
 from agents.file_packager import FilePackager
-from agents.addon_validator import AddonValidator
 from agents.packaging_validator import PackagingValidator
+from models.smart_assumptions import SmartAssumptionEngine
 
 logger = logging.getLogger(__name__)
 

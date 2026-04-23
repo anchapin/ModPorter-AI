@@ -8,7 +8,7 @@ This module provides:
 
 import re
 from dataclasses import dataclass, field
-from typing import List, Tuple, Dict, Any, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from indexing.chunking_strategies import Chunk
 

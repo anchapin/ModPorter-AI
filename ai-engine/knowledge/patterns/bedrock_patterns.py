@@ -6,6 +6,7 @@ recipes, events, and other common components.
 """
 
 from typing import Dict, List, Optional
+
 from .base import ConversionPattern
 
 

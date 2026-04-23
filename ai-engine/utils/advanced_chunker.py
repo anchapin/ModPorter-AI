@@ -6,12 +6,12 @@ including code-aware chunking, semantic chunking, and multi-modal content proces
 """
 
 import ast
-import re
+import hashlib
 import logging
-from typing import List, Dict, Any, Optional
+import re
 from dataclasses import dataclass
 from enum import Enum
-import hashlib
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

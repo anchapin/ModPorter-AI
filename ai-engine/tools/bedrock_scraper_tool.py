@@ -3,12 +3,14 @@ BedrockScraperTool for RAG workflow integration.
 This tool provides access to Bedrock documentation scraping capabilities.
 """
 
-import logging
 import asyncio
 import json
+import logging
 from typing import Dict
+
 from crewai.tools import BaseTool
 from pydantic import Field
+
 from utils.bedrock_docs_scraper import BedrockDocsScraper
 
 logger = logging.getLogger(__name__)

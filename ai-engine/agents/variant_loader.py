@@ -2,9 +2,10 @@
 Module for loading different agent configurations based on experiment variants.
 """
 
-from typing import Dict, Any, Optional
 import json
 import os
+from typing import Any, Dict, Optional
+
 from utils.logging_config import get_agent_logger
 
 logger = get_agent_logger("variant_loader")

@@ -16,15 +16,15 @@ warnings.warn(
 )
 
 from search.reranking import (
-    ReRankingStrategy,
+    ContextualReRanker,
+    CrossEncoderReRanker,
+    EnsembleReRanker,
+    FeatureBasedReRanker,
+    HybridReRanker,
+    NeuralReRanker,
     ReRankingFeature,
     ReRankingResult,
-    FeatureBasedReRanker,
-    ContextualReRanker,
-    EnsembleReRanker,
-    CrossEncoderReRanker,
-    NeuralReRanker,
-    HybridReRanker,
+    ReRankingStrategy,
 )
 
 __all__ = [

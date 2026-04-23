@@ -3,8 +3,8 @@ Audio converter module - handles all audio-related conversion logic.
 This module is extracted from asset_converter.py for better organization.
 """
 
-import logging
 import json
+import logging
 from pathlib import Path
 from typing import Dict, List
 

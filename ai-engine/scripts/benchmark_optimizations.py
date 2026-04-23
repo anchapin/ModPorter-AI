@@ -8,9 +8,9 @@ Tests:
 3. Error recovery effectiveness
 """
 
+import json
 import sys
 import time
-import json
 
 # Add ai-engine to path
 sys.path.insert(0, "ai-engine")
@@ -120,9 +120,9 @@ def test_error_recovery():
 
     try:
         from utils.error_recovery import (
-            with_retry,
-            RecoveryStrategy,
             CircuitBreaker,
+            RecoveryStrategy,
+            with_retry,
         )
 
         # Test retry decorator

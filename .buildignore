@@ -1,0 +1,32 @@
+# Fly.io-specific build exclusions (in addition to .dockerignore)
+# Further reduces build context size
+
+# Development files
+*.md
+!README.md
+CHANGELOG*
+CONTRIBUTING*
+DEVELOPMENT*
+
+# Test data and fixtures
+**/test_*.py
+**/tests/fixtures/**
+**/tests/data/**
+frontend/test/**
+
+# Large assets not needed in build
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+!frontend/public/favicon.ico
+
+# Build artifacts (already handled by .dockerignore but double-sure)
+frontend/.vite/
+frontend/tsconfig.tsbuildinfo
+
+# Documentation folders
+docs/
+.planning/
+examples/

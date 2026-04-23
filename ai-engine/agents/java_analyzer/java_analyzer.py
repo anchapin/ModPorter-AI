@@ -15,26 +15,23 @@ import os
 import re
 import time
 import zipfile
-from pathlib import Path
-from typing import List, Dict, Union, Optional, Any
+from typing import Any, Dict, List, Optional
 
-from crewai.tools import tool
+from agents.java_analyzer.archive_reader import (
+    DEPENDENCY_ANALYSIS_FILE_LIMIT,
+    FEATURE_ANALYSIS_FILE_LIMIT,
+    METADATA_AST_FILE_LIMIT,
+    ArchiveReader,
+)
+from agents.java_analyzer.embedding_bridge import EmbeddingBridge
+from agents.java_analyzer.feature_extractor import FeatureExtractor, _class_name_to_registry_name
+from agents.java_analyzer.framework_detector import FrameworkDetector
+from agents.java_analyzer.llm_analyzer import LLMAnalyzer
+from agents.java_analyzer.tools import JavaAnalyzerTools
+from agents.java_semantic_chunker import ChunkManifest, JavaSemanticChunker
 from models.smart_assumptions import SmartAssumptionEngine
 from utils.embedding_generator import LocalEmbeddingGenerator
 from utils.logging_config import get_agent_logger, log_performance
-from agents.java_semantic_chunker import JavaSemanticChunker, ChunkManifest
-
-from agents.java_analyzer.archive_reader import (
-    ArchiveReader,
-    FEATURE_ANALYSIS_FILE_LIMIT,
-    METADATA_AST_FILE_LIMIT,
-    DEPENDENCY_ANALYSIS_FILE_LIMIT,
-)
-from agents.java_analyzer.framework_detector import FrameworkDetector
-from agents.java_analyzer.feature_extractor import FeatureExtractor, _class_name_to_registry_name
-from agents.java_analyzer.embedding_bridge import EmbeddingBridge
-from agents.java_analyzer.llm_analyzer import LLMAnalyzer
-from agents.java_analyzer.tools import JavaAnalyzerTools
 
 logger = get_agent_logger("java_analyzer")
 
@@ -721,7 +718,6 @@ def _class_name_to_registry_name(class_name: str) -> str:
     elif name.startswith("Block") and len(name) > 5 and name[5].isupper():
         name = name[5:]
 
-    import re
 
     name = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name).lower()
     name = re.sub(r"_+", "_", name).strip("_")

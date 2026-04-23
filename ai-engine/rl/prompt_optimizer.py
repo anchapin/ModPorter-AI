@@ -10,13 +10,13 @@ Implements the feedback loop that the original RL module was missing:
 This approach is practical at current scale and creates a self-improving system.
 """
 
-import logging
 import json
-from typing import Dict, List, Any, Optional, Tuple
+import logging
+import sqlite3
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-import sqlite3
+from typing import Any, Dict, List, Optional, Tuple
 
 from utils.vector_db_client import VectorDBClient
 
@@ -354,7 +354,7 @@ Quality: {example.quality_score}
         placeholders = ",".join("?" * len(example_ids))
 
         query = f"""
-            SELECT * FROM prompt_examples 
+            SELECT * FROM prompt_examples
             WHERE example_id IN ({placeholders})
         """
         params = list(example_ids)
@@ -418,7 +418,7 @@ Quality: {example.quality_score}
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute(
                     """
-                    UPDATE prompt_examples 
+                    UPDATE prompt_examples
                     SET retrieval_count = retrieval_count + 1,
                         last_retrieved = ?
                     WHERE example_id = ?

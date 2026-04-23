@@ -7,8 +7,8 @@ This module provides:
 """
 
 from dataclasses import dataclass
-from typing import List, Optional, Dict, Any
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
 from search.query_complexity_analyzer import ComplexityLevel
 

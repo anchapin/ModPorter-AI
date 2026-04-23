@@ -4,7 +4,6 @@ Embedding generation bridge for mod analysis results
 
 import json
 
-
 from utils.embedding_generator import LocalEmbeddingGenerator
 from utils.logging_config import get_agent_logger
 

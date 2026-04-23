@@ -6,11 +6,11 @@ This is the second QA agent (QA-03) in the multi-agent pipeline.
 """
 
 import json
+import re
 import subprocess
 import time
-import re
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import structlog
 
@@ -274,7 +274,7 @@ class ReviewerAgent:
                             issues.append(
                                 ValidationIssue(
                                     issue_type="schema",
-                                    message=f"Missing 'description' in block",
+                                    message="Missing 'description' in block",
                                     severity="error",
                                     file_path=str(json_file.relative_to(output_dir)),
                                 )
@@ -283,7 +283,7 @@ class ReviewerAgent:
                             issues.append(
                                 ValidationIssue(
                                     issue_type="schema",
-                                    message=f"Missing 'identifier' in block description",
+                                    message="Missing 'identifier' in block description",
                                     severity="error",
                                     file_path=str(json_file.relative_to(output_dir)),
                                 )
@@ -294,7 +294,7 @@ class ReviewerAgent:
                             issues.append(
                                 ValidationIssue(
                                     issue_type="schema",
-                                    message=f"Missing 'description' in item",
+                                    message="Missing 'description' in item",
                                     severity="error",
                                     file_path=str(json_file.relative_to(output_dir)),
                                 )

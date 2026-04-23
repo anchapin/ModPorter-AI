@@ -3,21 +3,22 @@ Portkit Engine
 FastAPI service for AI-powered mod conversion using CrewAI
 """
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+import json
+import os
+import time
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Dict, List, Optional
+
+import redis.asyncio as aioredis
+import uvicorn
+from dotenv import load_dotenv
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timezone
-import time
-from enum import Enum
-import uvicorn
-import os
-import json
-from dotenv import load_dotenv
-import redis.asyncio as aioredis
 
 # Configure logging using centralized configuration
-from utils.logging_config import setup_logging, get_agent_logger, configure_structlog
+from utils.logging_config import configure_structlog, get_agent_logger, setup_logging
 
 # Load environment variables
 load_dotenv()
@@ -39,11 +40,11 @@ logger = get_agent_logger("main")
 
 from crew.conversion_crew import PortkitConversionCrew
 from models.smart_assumptions import SmartAssumptionEngine
-from utils.gpu_config import get_gpu_config, print_gpu_info, optimize_for_inference
+from utils.gpu_config import get_gpu_config, optimize_for_inference, print_gpu_info
 
 # Import RAG evaluation components
 try:
-    from evaluation.rag_evaluator import RAGEvaluator, GoldenDatasetItem, EvaluationResult
+    from evaluation.rag_evaluator import EvaluationResult, GoldenDatasetItem, RAGEvaluator
 
     RAG_EVALUATOR_AVAILABLE = True
 except ImportError:
@@ -54,7 +55,7 @@ except ImportError:
 
 # Import progress callback for real-time updates
 try:
-    from utils.progress_callback import create_progress_callback, cleanup_progress_callback
+    from utils.progress_callback import cleanup_progress_callback, create_progress_callback
 
     PROGRESS_CALLBACK_AVAILABLE = True
 except ImportError:

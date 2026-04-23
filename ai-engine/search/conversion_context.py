@@ -11,12 +11,12 @@ This module implements the K³Trans approach from issue #992.
 """
 
 import logging
-from typing import List, Dict, Any, Optional, TYPE_CHECKING
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 if TYPE_CHECKING:
-    from search.rag_pipeline import RAGPipeline
     from knowledge.patterns.mappings import PatternMappingRegistry
+    from search.rag_pipeline import RAGPipeline
 
 logger = logging.getLogger(__name__)
 

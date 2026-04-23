@@ -1444,7 +1444,7 @@ class RecipeConverterAgent:
                     break
 
             if not found_type:
-                issues.append(f"Unknown recipe type")
+                issues.append("Unknown recipe type")
                 return json.dumps({"valid": False, "issues": issues}, indent=2)
 
             recipe_content = recipe.get(found_type, {})

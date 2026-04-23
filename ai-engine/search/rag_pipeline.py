@@ -7,9 +7,9 @@ search, reranking, and fusion into a coherent multi-stage system.
 
 import logging
 import time
-from typing import List, Dict, Any, Optional, Protocol
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any, Dict, List, Optional, Protocol
 
 from schemas.multimodal_schema import SearchQuery, SearchResult
 
@@ -212,7 +212,7 @@ class RerankingStage:
     def _init_rerankers(self):
         """Initialize rerankers."""
         try:
-            from search.reranking_engine import FeatureBasedReRanker, CrossEncoderReRanker
+            from search.reranking_engine import CrossEncoderReRanker, FeatureBasedReRanker
 
             self.feature_reranker = FeatureBasedReRanker()
             self.cross_encoder_reranker = CrossEncoderReRanker(model_name="msmarco")

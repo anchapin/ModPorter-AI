@@ -156,10 +156,7 @@ const LandingPage: React.FC = () => {
           name="description"
           content="Convert Minecraft Java Edition mods to Bedrock Edition 60-80% automatically. Detailed conversion reports, professional-grade output for Marketplace creators."
         />
-        <meta
-          property="og:title"
-          content="Portkit — Conversion Accelerator"
-        />
+        <meta property="og:title" content="Portkit — Conversion Accelerator" />
         <meta
           property="og:description"
           content="Convert Java mods to Bedrock 60-80% automatically with detailed reports."
@@ -203,9 +200,8 @@ const LandingPage: React.FC = () => {
             <span className="hero-highlight">Marketplace Faster</span>
           </h1>
           <p className="hero-subtitle">
-            Portkit handles 60-80% of Java→Bedrock conversion
-            automatically. Detailed reports show exactly what needs manual work
-            — no guesswork.
+            Portkit handles 60-80% of Java→Bedrock conversion automatically.
+            Detailed reports show exactly what needs manual work — no guesswork.
           </p>
           <div className="hero-cta-group">
             <Link to="/convert" className="hero-cta primary">

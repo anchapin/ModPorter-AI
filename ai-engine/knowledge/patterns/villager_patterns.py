@@ -6,8 +6,8 @@ professions, careers, and trade conversion patterns.
 """
 
 from dataclasses import dataclass
-from typing import List, Dict, Optional
 from enum import Enum
+from typing import Dict, List, Optional
 
 
 class VillagerPatternCategory(Enum):

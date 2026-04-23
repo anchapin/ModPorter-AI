@@ -4,21 +4,22 @@ Implements PRD Feature 2: AI Conversion Engine using CrewAI multi-agent system
 Enhanced for Issue #547: Connect Agents for MVP Pipeline
 """
 
-from crewai import Agent, Task, Crew, Process
-from typing import Dict, List, Any, Optional, Literal
 import json
 import os
-from pathlib import Path
-import tempfile
 import shutil
+import tempfile
 import time
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Literal, Optional
 
-from agents.java_analyzer import JavaAnalyzerAgent
-from agents.bedrock_architect import BedrockArchitectAgent
-from agents.logic_translator import LogicTranslatorAgent
+from crewai import Agent, Crew, Process, Task
+
 from agents.asset_converter import AssetConverterAgent
+from agents.bedrock_architect import BedrockArchitectAgent
+from agents.java_analyzer import JavaAnalyzerAgent
+from agents.logic_translator import LogicTranslatorAgent
 from agents.packaging_agent import PackagingAgent
 from agents.qa_validator import QAValidatorAgent
 from agents.variant_loader import variant_loader
@@ -44,9 +45,9 @@ CONTROL_VARIANTS = {"control", "sequential", "baseline"}
 # 1. Import QAAgent:
 #    from src.agents.qa_agent import QAAgent # Add this near other agent imports
 # --- END INTEGRATION PLAN ---
-from models.smart_assumptions import ConversionPlanComponent, AssumptionReport
-from utils.rate_limiter import create_rate_limited_llm, create_ollama_llm
+from models.smart_assumptions import AssumptionReport, ConversionPlanComponent
 from utils.logging_config import get_crew_logger, log_performance
+from utils.rate_limiter import create_ollama_llm, create_rate_limited_llm
 
 # Import progress callback for real-time updates
 try:
@@ -154,8 +155,8 @@ class PortkitConversionCrew:
         agent_kwargs = {
             "role": "Java Mod Analyzer",
             "goal": "Accurately analyze Java mod structure, dependencies, and features",
-            "backstory": """You are an expert Java developer with deep knowledge of Minecraft 
-            modding frameworks like Forge, Fabric, and Quilt. You can deconstruct any mod 
+            "backstory": """You are an expert Java developer with deep knowledge of Minecraft
+            modding frameworks like Forge, Fabric, and Quilt. You can deconstruct any mod
             to understand its components, dependencies, and intended functionality.""",
             "verbose": True,
             "allow_delegation": False,
@@ -185,9 +186,9 @@ class PortkitConversionCrew:
         architect_kwargs = {
             "role": "Bedrock Conversion Architect",
             "goal": "Design optimal conversion strategies using smart assumptions",
-            "backstory": """You are a Minecraft Bedrock add-on expert who understands the 
-            limitations and capabilities of the Bedrock platform. You excel at finding 
-            creative workarounds and making intelligent compromises to adapt Java features 
+            "backstory": """You are a Minecraft Bedrock add-on expert who understands the
+            limitations and capabilities of the Bedrock platform. You excel at finding
+            creative workarounds and making intelligent compromises to adapt Java features
             for Bedrock.""",
             "verbose": True,
             "allow_delegation": False,
@@ -216,8 +217,8 @@ class PortkitConversionCrew:
         translator_kwargs = {
             "role": "Code Logic Translator",
             "goal": "Convert Java code to Bedrock JavaScript with proper error handling",
-            "backstory": """You are a polyglot programmer specializing in Java to JavaScript 
-            conversion. You understand both object-oriented and event-driven paradigms 
+            "backstory": """You are a polyglot programmer specializing in Java to JavaScript
+            conversion. You understand both object-oriented and event-driven paradigms
             and can bridge the gap between Minecraft's Java API and Bedrock's JavaScript API.""",
             "verbose": True,
             "allow_delegation": False,
@@ -246,8 +247,8 @@ class PortkitConversionCrew:
         asset_kwargs = {
             "role": "Asset Conversion Specialist",
             "goal": "Convert all visual and audio assets to Bedrock-compatible formats",
-            "backstory": """You are a technical artist who specializes in game asset 
-            conversion. You understand the technical requirements for Minecraft Bedrock 
+            "backstory": """You are a technical artist who specializes in game asset
+            conversion. You understand the technical requirements for Minecraft Bedrock
             textures, models, and sounds, and can optimize them for performance.""",
             "verbose": True,
             "allow_delegation": False,
@@ -264,8 +265,8 @@ class PortkitConversionCrew:
         packaging_kwargs = {
             "role": "Bedrock Package Builder",
             "goal": "Assemble converted components into valid .mcaddon packages",
-            "backstory": """You are a Bedrock add-on packaging expert who knows the exact 
-            file structure, manifest requirements, and validation rules for creating 
+            "backstory": """You are a Bedrock add-on packaging expert who knows the exact
+            file structure, manifest requirements, and validation rules for creating
             working .mcaddon files.""",
             "verbose": True,
             "allow_delegation": False,
@@ -282,8 +283,8 @@ class PortkitConversionCrew:
         qa_kwargs = {
             "role": "Quality Assurance Validator",
             "goal": "Validate conversion quality and generate comprehensive reports",
-            "backstory": """You are a meticulous QA engineer who tests both functionality 
-            and user experience. You can identify potential issues and provide clear, 
+            "backstory": """You are a meticulous QA engineer who tests both functionality
+            and user experience. You can identify potential issues and provide clear,
             actionable feedback on conversion quality.""",
             "verbose": True,
             "allow_delegation": False,
@@ -377,18 +378,18 @@ class PortkitConversionCrew:
         self.analyze_task = Task(
             description="""Analyze the provided Java mod file to identify:
             1. All assets (textures, models, sounds) - use extract_assets_tool with mod_path input
-            2. Code logic and custom mechanics - use identify_features_tool with mod_path input  
+            2. Code logic and custom mechanics - use identify_features_tool with mod_path input
             3. Dependencies and mod framework used - use analyze_mod_structure_tool with mod_path input
             4. Feature types (blocks, items, entities, dimensions, GUI, etc.)
             5. Incompatible features that require smart assumptions
-            
+
             Use the mod_path from the task inputs: {mod_path}
-            
+
             Pass the mod_path directly to each tool as a string parameter.
             After each tool execution, provide a BRIEF summary (max 50 words) of what was found.
             If a tool fails or times out, return a simple JSON response with the error.
             Keep all responses very concise - aim for under 500 characters total to prevent timeouts.
-            
+
             Final output should be a simple JSON with: assets, features, dependencies, framework.""",
             agent=self.java_analyzer,
             expected_output="Simple JSON with assets, features, dependencies, framework (under 500 characters)",
@@ -402,14 +403,14 @@ class PortkitConversionCrew:
             4. Documents all applied assumptions with explanations and confidence levels
             5. Flags features that cannot be converted and must be excluded
             6. Provides detailed conversion strategy for each component
-            
+
             Use the bedrock_architect_agent tools to:
             - analyze_feature_compatibility for each identified feature
             - apply_smart_assumptions for incompatible features
             - create_conversion_plan with comprehensive mapping
             - resolve_assumption_conflicts when multiple assumptions apply
             - validate_bedrock_compatibility for the overall plan
-            
+
             Return results as ConversionPlanComponent objects for assumption reporting.""",
             agent=self.bedrock_architect,
             expected_output="Comprehensive conversion plan with smart assumption mappings and conflict resolution details",
@@ -425,7 +426,7 @@ class PortkitConversionCrew:
             5. Validate conversions with validate_javascript_syntax
             6. Comment out untranslatable code with explanations
             7. Ensure all scripts follow Bedrock scripting standards
-            
+
             For untranslatable logic, add explanatory notes for developers.
             Use the logic_translator_agent tools for accurate conversion.""",
             agent=self.logic_translator,
@@ -442,7 +443,7 @@ class PortkitConversionCrew:
             5. Use organize_converted_assets for proper Bedrock folder structure
             6. Validate conversions with validate_asset_conversion
             7. Generate necessary texture and model definition files
-            
+
             Ensure all assets meet Bedrock technical requirements and performance standards.
             Use the asset_converter_agent tools for reliable conversion.""",
             agent=self.asset_converter,
@@ -452,7 +453,7 @@ class PortkitConversionCrew:
 
         self.package_task = Task(
             description="""Assemble all converted components into a valid .mcaddon using the enhanced Bedrock generation system:
-            
+
             ENHANCED BEDROCK GENERATION WORKFLOW:
             1. Extract mod metadata (name, description, version) from the analysis report.
             2. Use 'generate_enhanced_manifests_tool' to create standards-compliant behavior and resource pack manifests with proper UUIDs, dependencies, and capabilities.
@@ -462,13 +463,13 @@ class PortkitConversionCrew:
             6. Use 'package_enhanced_addon_tool' to create the final .mcaddon file with correct structure (behavior_packs/ and resource_packs/ directories).
             7. Use 'validate_enhanced_addon_tool' to perform comprehensive validation including manifest schema validation, file structure checks, and compatibility analysis.
             8. Generate detailed installation and usage instructions.
-            
+
             The enhanced system provides:
             - Standards-compliant manifest generation with proper UUIDs and dependencies
             - Automatic block/item/entity conversion with Bedrock components
             - Comprehensive validation with detailed scoring and feedback
             - Proper .mcaddon file structure for Bedrock compatibility
-            
+
             Return comprehensive results including validation scores, compatibility analysis, and any issues found.""",
             agent=self.packaging_agent,
             expected_output="Complete .mcaddon package with validation score, compatibility analysis, and detailed generation report",
@@ -489,7 +490,7 @@ class PortkitConversionCrew:
             5. Generate comprehensive reports with generate_qa_report
             6. Document all smart assumptions applied with detailed explanations
             7. Create both user-friendly summary and technical developer documentation
-            
+
             Provide detailed validation results and actionable recommendations.
             Use the qa_validator_agent tools for thorough quality assurance.""",
             agent=self.qa_validator,

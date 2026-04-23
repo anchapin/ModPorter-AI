@@ -4,8 +4,8 @@ Automatically detects and configures GPU settings based on GPU_TYPE environment 
 """
 
 import os
-from typing import Dict, Any, Tuple
 from enum import Enum
+from typing import Any, Dict, Tuple
 
 
 class GPUType(Enum):
