@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Fly.io startup script for Portkit
 
 echo "🚀 Starting Portkit on Fly.io..."
@@ -21,7 +21,7 @@ else
             export DATABASE_URL="postgresql+asyncpg://${DATABASE_URL#postgresql://}"
             ;;
         *)
-            echo "DATABASE_URL already in correct format: ${DATABASE_URL:0:30}..."
+            echo "DATABASE_URL already in correct format"
             ;;
     esac
 fi
