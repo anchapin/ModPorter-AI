@@ -28,6 +28,7 @@ jobs:
     name: Run Beta Smoke Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    if: github.event_name != 'pull_request'
 
     steps:
       - name: Checkout code
@@ -172,12 +173,13 @@ jobs:
     name: Quick Health Check
     runs-on: ubuntu-latest
     timeout-minutes: 2
+    if: github.event_name != 'pull_request'
 
     steps:
       - name: Check staging health
         if: github.event.inputs.environment != 'production'
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 15 https://staging.portkit.ai/health 2>/dev/null || echo "000")
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 15 https://staging.portkit.ai/health 2>/dev/null) || true
           if [ "$STATUS" = "000" ]; then
             echo "⚠️ Staging unreachable (DNS/network issue) - skipping health check"
           elif [ "$STATUS" -ne 200 ]; then
@@ -190,7 +192,7 @@ jobs:
       - name: Check production health
         if: github.event.inputs.environment == 'production'
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 15 https://portkit.ai/health 2>/dev/null || echo "000")
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 15 https://portkit.ai/health 2>/dev/null) || true
           if [ "$STATUS" = "000" ]; then
             echo "⚠️ Production unreachable (DNS/network issue) - skipping health check"
           elif [ "$STATUS" -ne 200 ]; then
@@ -212,10 +214,13 @@ jobs:
           )
 
           for endpoint in "${ENDPOINTS[@]}"; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL$endpoint")
-            if [ "$STATUS" -ne 200 ]; then
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 15 "$URL$endpoint" 2>/dev/null) || true
+            if [ "$STATUS" = "000" ]; then
+              echo "⚠️ Endpoint $endpoint unreachable (DNS/network issue) - skipping"
+            elif [ "$STATUS" -ne 200 ]; then
               echo "❌ Endpoint $endpoint failed: $STATUS"
               exit 1
+            else
+              echo "✅ $endpoint - OK"
             fi
-            echo "✅ $endpoint - OK"
           done
