@@ -6,7 +6,7 @@ on:
       environment:
         description: 'Environment to test'
         required: true
-        default: 'staging'
+        default: 'production'
         type: choice
         options:
           - staging
