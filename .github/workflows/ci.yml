@@ -202,7 +202,7 @@ jobs:
             test-path: 'ai-engine/tests/integration/test_basic_integration.py'
             container-name: 'integration-test'
           - test-suite: backend
-            test-path: 'backend/tests/integration/'
+            test-path: 'backend/src/tests/integration/'
             container-name: 'backend-test'
           - test-suite: ai-engine
             test-path: 'ai-engine/tests/integration/test_imports.py'
