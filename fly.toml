@@ -1,61 +1,45 @@
-# Fly.io configuration for Portkit
-# Deploy with: fly deploy
+# fly.toml app configuration file generated for portkit-backend on 2026-04-24T07:37:02-04:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-app = "portkit-backend"
-primary_region = "iad"
+app = 'portkit-backend'
+primary_region = 'iad'
 
-# Build configuration
 [build]
-  dockerfile = "Dockerfile.fly"
+  dockerfile = 'Dockerfile.fly'
 
-[build.args]
-  PYTHON_VERSION = "3.11"
+  [build.args]
+    PYTHON_VERSION = '3.11'
 
-# Database migrations - temporarily disabled for deployment
-# [deploy]
-#   release_command = "sh /app/scripts/run-migrations.sh"
-
-# Process groups
-# "app" runs nginx + backend API + AI engine via the startup script
-# "worker" runs Celery background jobs
-[processes]
-  app = "/startup.sh"
-  worker = "sh -c 'cd /app/backend && PYTHONPATH=/usr/lib/python3.11/site-packages:/app/backend python -m celery -A src.services.celery_config worker --loglevel=info'"
-
-# Environment variables applied to all processes
 [env]
-  PYTHONUNBUFFERED = "1"
+  PYTHONUNBUFFERED = '1'
 
-# Persistent volume for uploads, conversions, and SQLite fallback
-[mounts]
-  source = "portkit_data"
-  destination = "/app/data"
-  initial_size = "1gb"
+[processes]
+  app = '/startup.sh'
+  worker = "sh -c 'cd /app/backend && PYTHONPATH=/usr/lib/python3.11/site-packages:/app/backend/src python -m celery -A src.services.celery_config worker --loglevel=info'"
 
-# VM size - 1GB memory required for AI/ML dependencies
-[vm]
-  size = "shared-cpu-1x"
-  memory_mb = 1024
+[[mounts]]
+  source = 'portkit_data'
+  destination = '/app/data'
+  initial_size = '1gb'
 
-# HTTP service: Fly terminates TLS and forwards plain HTTP to nginx on port 80
 [[services]]
-  processes = ["app"]
+  protocol = 'tcp'
   internal_port = 80
-  protocol = "tcp"
   auto_start_machines = true
   min_machines_running = 1
+  processes = ['app']
 
   [[services.ports]]
     port = 80
-    handlers = ["http"]
+    handlers = ['http']
     force_https = true
 
   [[services.ports]]
     port = 443
-    handlers = ["tls", "http"]
+    handlers = ['tls', 'http']
 
-  [[services.checks]]
-    path = "/health"
-    interval = "30s"
-    timeout = "10s"
-    retries = 3
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory_mb = 1024
