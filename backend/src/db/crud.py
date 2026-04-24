@@ -52,11 +52,14 @@ async def create_job(
     return job
 
 
+def _to_uuid(value: object) -> uuid.UUID:
+    return uuid.UUID(str(value))
+
+
 async def get_job(session: AsyncSession, job_id: str) -> Optional[models.ConversionJob]:
-    # Convert string job_id to UUID for database query
     try:
-        job_uuid = uuid.UUID(job_id)
-    except ValueError:
+        job_uuid = _to_uuid(job_id)
+    except (ValueError, AttributeError):
         return None
     stmt = (
         select(models.ConversionJob)
@@ -74,8 +77,8 @@ async def update_job_status(
     session: AsyncSession, job_id: str, status: str, commit: bool = True
 ) -> Optional[models.ConversionJob]:
     try:
-        job_uuid = uuid.UUID(job_id)
-    except ValueError:
+        job_uuid = _to_uuid(job_id)
+    except (ValueError, AttributeError):
         return None
 
     stmt = (
@@ -101,8 +104,8 @@ async def update_job_progress(
     session: AsyncSession, job_id: str, progress: int, commit: bool = True
 ) -> Optional[models.JobProgress]:
     try:
-        job_uuid = uuid.UUID(job_id)
-    except ValueError:
+        job_uuid = _to_uuid(job_id)
+    except (ValueError, AttributeError):
         raise ValueError(f"Invalid job_id format: {job_id}")
 
     # Use PostgreSQL's ON CONFLICT DO UPDATE for an atomic upsert operation
@@ -130,8 +133,8 @@ async def update_job_progress(
 
 async def get_job_progress(session: AsyncSession, job_id: str) -> Optional[models.JobProgress]:
     try:
-        job_uuid = uuid.UUID(job_id)
-    except ValueError:
+        job_uuid = _to_uuid(job_id)
+    except (ValueError, AttributeError):
         return None
 
     stmt = select(models.JobProgress).where(models.JobProgress.job_id == job_uuid)
@@ -147,8 +150,8 @@ async def create_result(
     commit: bool = True,
 ) -> models.ConversionResult:
     try:
-        job_uuid = uuid.UUID(job_id)
-    except ValueError:
+        job_uuid = _to_uuid(job_id)
+    except (ValueError, AttributeError):
         raise ValueError("Invalid job_id format")
 
     result = models.ConversionResult(
@@ -827,7 +830,7 @@ async def create_behavior_file(
 ) -> models.BehaviorFile:
     """Create a new behavior file entry."""
     try:
-        conversion_uuid = uuid.UUID(conversion_id)
+        conversion_uuid = _to_uuid(conversion_id)
     except ValueError:
         raise ValueError("Invalid conversion_id format")
 
@@ -857,7 +860,7 @@ async def create_behavior_file(
 async def get_behavior_file(session: AsyncSession, file_id: str) -> Optional[models.BehaviorFile]:
     """Get a specific behavior file by ID."""
     try:
-        file_uuid = uuid.UUID(file_id)
+        file_uuid = _to_uuid(file_id)
     except ValueError:
         return None
 
@@ -871,7 +874,7 @@ async def get_behavior_files_by_conversion(
 ) -> List[models.BehaviorFile]:
     """Get all behavior files for a specific conversion."""
     try:
-        conversion_uuid = uuid.UUID(conversion_id)
+        conversion_uuid = _to_uuid(conversion_id)
     except ValueError:
         return []
 
@@ -892,7 +895,7 @@ async def update_behavior_file_content(
 ) -> Optional[models.BehaviorFile]:
     """Update the content of a behavior file."""
     try:
-        file_uuid = uuid.UUID(file_id)
+        file_uuid = _to_uuid(file_id)
     except ValueError:
         return None
 
@@ -918,7 +921,7 @@ async def update_behavior_file_content(
 async def delete_behavior_file(session: AsyncSession, file_id: str) -> bool:
     """Delete a behavior file by ID."""
     try:
-        file_uuid = uuid.UUID(file_id)
+        file_uuid = _to_uuid(file_id)
     except ValueError:
         return False
 
@@ -937,7 +940,7 @@ async def get_behavior_files_by_type(
 ) -> List[models.BehaviorFile]:
     """Get behavior files of a specific type for a conversion."""
     try:
-        conversion_uuid = uuid.UUID(conversion_id)
+        conversion_uuid = _to_uuid(conversion_id)
     except ValueError:
         return []
 
@@ -997,6 +1000,74 @@ async def list_jobs(
     return jobs, total
 
 
+async def update_addon_details(
+    session: AsyncSession,
+    addon_id: object,
+    addon_data: object,
+    commit: bool = True,
+) -> Optional[models.Addon]:
+    addon_uuid = _to_uuid(addon_id)
+
+    stmt = select(models.Addon).where(models.Addon.id == addon_uuid)
+    result = await session.execute(stmt)
+    addon = result.scalar_one_or_none()
+
+    if addon is None:
+        addon = models.Addon(
+            id=addon_uuid,
+            name=getattr(addon_data, "name", "Unnamed Addon"),
+            description=getattr(addon_data, "description", None),
+            user_id=getattr(addon_data, "user_id", "anonymous"),
+        )
+        session.add(addon)
+    else:
+        addon.name = getattr(addon_data, "name", addon.name)
+        addon.description = getattr(addon_data, "description", addon.description)
+        addon.user_id = getattr(addon_data, "user_id", addon.user_id)
+
+    for block_model in list(addon.blocks):
+        await session.delete(block_model)
+    for recipe_model in list(addon.recipes):
+        await session.delete(recipe_model)
+    await session.flush()
+
+    for block_data in getattr(addon_data, "blocks", []):
+        block = models.AddonBlock(
+            addon_id=addon_uuid,
+            identifier=block_data.identifier,
+            properties=getattr(block_data, "properties", {}),
+        )
+        session.add(block)
+        await session.flush()
+
+        behavior_data = getattr(block_data, "behavior", None)
+        if behavior_data:
+            behavior = models.AddonBehavior(
+                block_id=block.id,
+                data=getattr(behavior_data, "data", {}),
+            )
+            session.add(behavior)
+
+    for recipe_data in getattr(addon_data, "recipes", []):
+        recipe = models.AddonRecipe(
+            addon_id=addon_uuid,
+            data=getattr(recipe_data, "data", {}),
+        )
+        session.add(recipe)
+
+    if commit:
+        try:
+            await session.commit()
+            await session.refresh(addon)
+        except Exception:
+            await session.rollback()
+            raise
+    else:
+        await session.flush()
+
+    return addon
+
+
 # Addon CRUD operations
 async def get_addon_details(session: AsyncSession, addon_id: uuid.UUID) -> Optional[models.Addon]:
     """Get addon details with all blocks, assets, and recipes."""
@@ -1017,7 +1088,7 @@ async def get_addon_details(session: AsyncSession, addon_id: uuid.UUID) -> Optio
 async def get_addon_asset(session: AsyncSession, asset_id: str) -> Optional[models.AddonAsset]:
     """Get an addon asset by ID."""
     try:
-        asset_uuid = uuid.UUID(asset_id)
+        asset_uuid = _to_uuid(asset_id)
     except ValueError:
         raise ValueError(f"Invalid asset ID format: {asset_id}")
 
@@ -1037,7 +1108,7 @@ async def create_addon_asset(
 ) -> models.AddonAsset:
     """Create a new addon asset."""
     try:
-        addon_uuid = uuid.UUID(addon_id)
+        addon_uuid = _to_uuid(addon_id)
     except ValueError:
         raise ValueError(f"Invalid addon ID format: {addon_id}")
 
@@ -1064,6 +1135,30 @@ async def create_addon_asset(
     return asset
 
 
+async def create_addon_asset_from_local_path(
+    session: AsyncSession,
+    *,
+    addon_id: object,
+    source_file_path: str,
+    asset_type: str,
+    original_filename: str,
+    commit: bool = True,
+) -> models.AddonAsset:
+    rel_path = (
+        os.path.relpath(source_file_path, BASE_ASSET_PATH)
+        if os.path.isabs(source_file_path)
+        else source_file_path
+    )
+    return await create_addon_asset(
+        session,
+        addon_id=str(addon_id),
+        asset_type=asset_type,
+        file_path=rel_path,
+        original_filename=original_filename,
+        commit=commit,
+    )
+
+
 async def update_addon_asset(
     session: AsyncSession,
     asset_id: str,
@@ -1075,7 +1170,7 @@ async def update_addon_asset(
 ) -> Optional[models.AddonAsset]:
     """Update an addon asset."""
     try:
-        asset_uuid = uuid.UUID(asset_id)
+        asset_uuid = _to_uuid(asset_id)
     except ValueError:
         raise ValueError(f"Invalid asset ID format: {asset_id}")
 
@@ -1118,7 +1213,7 @@ async def update_addon_asset(
 async def delete_addon_asset(session: AsyncSession, asset_id: str) -> bool:
     """Delete an addon asset."""
     try:
-        asset_uuid = uuid.UUID(asset_id)
+        asset_uuid = _to_uuid(asset_id)
     except ValueError:
         raise ValueError(f"Invalid asset ID format: {asset_id}")
 
@@ -1147,7 +1242,7 @@ async def list_addon_assets(
 ) -> List[models.AddonAsset]:
     """List addon assets for a given addon."""
     try:
-        addon_uuid = uuid.UUID(addon_id)
+        addon_uuid = _to_uuid(addon_id)
     except ValueError:
         raise ValueError(f"Invalid addon ID format: {addon_id}")
 
@@ -1170,7 +1265,7 @@ async def list_addon_assets(
 async def get_asset(session: AsyncSession, asset_id: str) -> Optional[models.Asset]:
     """Get an asset by ID."""
     try:
-        asset_uuid = uuid.UUID(asset_id)
+        asset_uuid = _to_uuid(asset_id)
     except ValueError:
         raise ValueError(f"Invalid asset ID format: {asset_id}")
 
@@ -1193,7 +1288,7 @@ async def create_asset(
 ) -> models.Asset:
     """Create a new asset."""
     try:
-        conversion_uuid = uuid.UUID(conversion_id)
+        conversion_uuid = _to_uuid(conversion_id)
     except ValueError:
         raise ValueError(f"Invalid conversion ID format: {conversion_id}")
 
@@ -1228,7 +1323,7 @@ async def update_asset_status(
 ) -> Optional[models.Asset]:
     """Update asset status."""
     try:
-        asset_uuid = uuid.UUID(asset_id)
+        asset_uuid = _to_uuid(asset_id)
     except ValueError:
         raise ValueError(f"Invalid asset ID format: {asset_id}")
 
@@ -1261,7 +1356,7 @@ async def update_asset_metadata(
 ) -> Optional[models.Asset]:
     """Update asset metadata."""
     try:
-        asset_uuid = uuid.UUID(asset_id)
+        asset_uuid = _to_uuid(asset_id)
     except ValueError:
         raise ValueError(f"Invalid asset ID format: {asset_id}")
 
@@ -1289,7 +1384,7 @@ async def update_asset_metadata(
 async def delete_asset(session: AsyncSession, asset_id: str) -> bool:
     """Delete an asset."""
     try:
-        asset_uuid = uuid.UUID(asset_id)
+        asset_uuid = _to_uuid(asset_id)
     except ValueError:
         raise ValueError(f"Invalid asset ID format: {asset_id}")
 
@@ -1318,7 +1413,7 @@ async def list_assets_for_conversion(
 ) -> List[models.Asset]:
     """List assets for a given conversion."""
     try:
-        conversion_uuid = uuid.UUID(conversion_id)
+        conversion_uuid = _to_uuid(conversion_id)
     except ValueError:
         raise ValueError(f"Invalid conversion ID format: {conversion_id}")
 
@@ -1400,7 +1495,7 @@ async def get_pattern_submission(
         PatternSubmission if found, None otherwise
     """
     try:
-        submission_uuid = uuid.UUID(submission_id)
+        submission_uuid = _to_uuid(submission_id)
     except ValueError:
         raise ValueError(f"Invalid submission ID format: {submission_id}")
 
@@ -1457,7 +1552,7 @@ async def update_pattern_submission_status(
         ValueError: If submission not found
     """
     try:
-        submission_uuid = uuid.UUID(submission_id)
+        submission_uuid = _to_uuid(submission_id)
     except ValueError:
         raise ValueError(f"Invalid submission ID format: {submission_id}")
 
@@ -1501,7 +1596,7 @@ async def vote_on_pattern(
         ValueError: If submission not found
     """
     try:
-        submission_uuid = uuid.UUID(submission_id)
+        submission_uuid = _to_uuid(submission_id)
     except ValueError:
         raise ValueError(f"Invalid submission ID format: {submission_id}")
 

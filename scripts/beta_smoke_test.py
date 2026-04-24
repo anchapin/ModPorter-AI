@@ -77,9 +77,16 @@ class BetaSmokeTest:
                         await asyncio.sleep(retry_delay)
                         retry_delay *= 2
                         continue
+                    try:
+                        data = response.json() if response.content else {}
+                    except Exception:
+                        data = {
+                            "content_type": response.headers.get("content-type", ""),
+                            "content_length": len(response.content),
+                        }
                     return {
                         "status": response.status_code,
-                        "data": response.json() if response.content else {},
+                        "data": data,
                         "headers": dict(response.headers),
                     }
                 except Exception as e:
