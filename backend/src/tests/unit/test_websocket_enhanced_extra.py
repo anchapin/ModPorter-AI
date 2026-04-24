@@ -1,10 +1,12 @@
 import pytest
 import asyncio
+import time
 from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timedelta, timezone
 from websocket.enhanced_manager import (
     EnhancedConnectionManager,
     MessageType,
+    RateLimiter,
     RateLimitConfig,
     HealthConfig,
     get_enhanced_manager,
@@ -163,10 +165,8 @@ async def test_cleanup_loop(mock_websocket):
     manager._running = True
 
     info = await manager.connect(mock_websocket, "conv1")
-    # Set last activity to be far in the past
     info.last_activity = datetime.now(timezone.utc) - timedelta(seconds=10)
 
-    # Manually trigger cleanup loop logic
     with patch("asyncio.sleep", side_effect=[None, asyncio.CancelledError()]):
         try:
             await manager._cleanup_loop()
@@ -174,3 +174,58 @@ async def test_cleanup_loop(mock_websocket):
             pass
 
     assert manager.get_total_connection_count() == 0
+
+
+def test_rate_limiter_cooldown_expiry():
+    """Test that blocked client cooldown entry is deleted after expiry (lines 137-139)."""
+    limiter = RateLimiter(
+        RateLimitConfig(
+            max_messages_per_second=100, max_messages_per_minute=100, cooldown_seconds=0.01
+        )
+    )
+
+    assert limiter.is_allowed("client-1") is True
+
+    limiter._blocked_until["client-1"] = time.time() - 1.0
+
+    assert limiter.is_allowed("client-1") is True
+    assert "client-1" not in limiter._blocked_until
+
+
+@pytest.mark.asyncio
+async def test_send_personal_message_exception(mock_websocket):
+    """Test send_personal_message returns False on send exception."""
+    manager = EnhancedConnectionManager()
+    await manager.connect(mock_websocket, "conv1")
+
+    mock_websocket.send_json.side_effect = Exception("Send failed")
+
+    success = await manager.send_personal_message({"type": "test"}, mock_websocket, "conv1")
+    assert success is False
+
+
+@pytest.mark.asyncio
+async def test_heartbeat_loop_general_exception():
+    """Test heartbeat loop handles general exceptions in outer try block."""
+    health_config = HealthConfig(heartbeat_interval_seconds=0.01)
+    manager = EnhancedConnectionManager(health_config=health_config)
+    manager._running = True
+
+    with patch("asyncio.sleep", side_effect=[RuntimeError("unexpected"), asyncio.CancelledError()]):
+        try:
+            await manager._heartbeat_loop()
+        except asyncio.CancelledError:
+            pass
+
+
+@pytest.mark.asyncio
+async def test_cleanup_loop_general_exception():
+    """Test cleanup loop handles general exceptions in outer try block."""
+    manager = EnhancedConnectionManager()
+    manager._running = True
+
+    with patch("asyncio.sleep", side_effect=[RuntimeError("unexpected"), asyncio.CancelledError()]):
+        try:
+            await manager._cleanup_loop()
+        except asyncio.CancelledError:
+            pass

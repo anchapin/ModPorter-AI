@@ -1471,7 +1471,7 @@ class BetaSmokeTest:
         """Test automation metrics endpoint"""
         self.log("Testing automation metrics endpoint...")
 
-        response = await self.make_request("GET", "/api/v1/automation-metrics/dashboard")
+        response = await self.make_request("GET", "/api/v1/automation/dashboard")
 
         if response["status"] in [200, 401, 403, 404]:
             self.log_result("Automation Metrics", True, f"Status: {response['status']}")
