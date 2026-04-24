@@ -343,7 +343,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         # Endpoints with different limits
         self.endpoint_limits = {
-            "/api/v1/conversions": RateLimitConfig(requests_per_minute=10, requests_per_hour=100),
+            "/api/v1/conversions": RateLimitConfig(requests_per_minute=30, requests_per_hour=300),
             "/api/v1/upload": RateLimitConfig(requests_per_minute=60, requests_per_hour=600),
         }
 
@@ -477,7 +477,7 @@ async def check_rate_limit(request: Request) -> Dict[str, any]:
 
 # Endpoint-specific rate limiters
 conversion_rate_limiter = RateLimiter(
-    config=RateLimitConfig(requests_per_minute=10, requests_per_hour=100, burst_size=3)
+    config=RateLimitConfig(requests_per_minute=30, requests_per_hour=300, burst_size=5)
 )
 
 upload_rate_limiter = RateLimiter(
