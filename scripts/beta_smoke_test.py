@@ -39,6 +39,7 @@ class BetaSmokeTest:
         self.refresh_token = None
         self.conversion_job_id = None
         self.uploaded_file_id = None
+        self.asset_id = None
 
     def log(self, message: str, level: str = "INFO"):
         """Log message with timestamp"""
@@ -721,6 +722,8 @@ class BetaSmokeTest:
             self.log_result("Asset Upload & Convert", False, "No asset ID returned")
             return False
 
+        self.asset_id = asset_id
+
         convert_response = await self.make_request("POST", f"/api/v1/assets/{asset_id}/convert")
 
         if convert_response["status"] == 200:
@@ -745,6 +748,105 @@ class BetaSmokeTest:
                 False,
                 f"Convert failed: {convert_response['status']}",
             )
+            return False
+
+    async def test_get_asset_by_id(self) -> bool:
+        """Test retrieving a single asset by ID"""
+        self.log("Testing individual asset retrieval...")
+
+        if not self.asset_id:
+            self.log_result("Get Asset by ID", False, "No asset ID available")
+            return False
+
+        response = await self.make_request("GET", f"/api/v1/assets/{self.asset_id}")
+
+        if response["status"] == 200:
+            asset = response["data"]
+            has_required_fields = all(
+                k in asset for k in ("id", "status", "asset_type", "original_filename")
+            )
+            self.log_result(
+                "Get Asset by ID",
+                has_required_fields,
+                f"Asset {self.asset_id[:8]}... retrieved"
+                if has_required_fields
+                else "Missing required fields",
+            )
+            return has_required_fields
+        else:
+            self.log_result("Get Asset by ID", False, f"Status: {response['status']}")
+            return False
+
+    async def test_update_asset_status(self) -> bool:
+        """Test updating asset conversion status"""
+        self.log("Testing asset status update...")
+
+        if not self.asset_id:
+            self.log_result("Update Asset Status", False, "No asset ID available")
+            return False
+
+        response = await self.make_request(
+            "PUT",
+            f"/api/v1/assets/{self.asset_id}/status",
+            json={"status": "processing"},
+        )
+
+        if response["status"] == 200:
+            status = response["data"].get("status", "")
+            self.log_result(
+                "Update Asset Status",
+                True,
+                f"Asset {self.asset_id[:8]}... status updated to '{status}'",
+            )
+            return True
+        else:
+            self.log_result("Update Asset Status", False, f"Status: {response['status']}")
+            return False
+
+    async def test_delete_asset(self) -> bool:
+        """Test deleting an asset by ID"""
+        self.log("Testing asset deletion...")
+
+        if not self.conversion_job_id:
+            self.log_result("Delete Asset", False, "No conversion job")
+            return False
+
+        png_content = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
+        upload_response = await self.make_request(
+            "POST",
+            f"/api/v1/conversions/{self.conversion_job_id}/assets",
+            files={"file": ("delete_test.png", png_content, "image/png")},
+            data={"asset_type": "texture"},
+        )
+
+        if upload_response["status"] not in [200, 201]:
+            self.log_result(
+                "Delete Asset",
+                False,
+                f"Failed to create asset for deletion: {upload_response['status']}",
+            )
+            return False
+
+        delete_asset_id = upload_response["data"].get("id")
+        if not delete_asset_id:
+            self.log_result("Delete Asset", False, "No asset ID returned from upload")
+            return False
+
+        response = await self.make_request("DELETE", f"/api/v1/assets/{delete_asset_id}")
+
+        if response["status"] == 200:
+            get_response = await self.make_request("GET", f"/api/v1/assets/{delete_asset_id}")
+            confirmed_deleted = get_response["status"] == 404
+            self.log_result(
+                "Delete Asset",
+                confirmed_deleted,
+                f"Asset {delete_asset_id[:8]}... deleted"
+                if confirmed_deleted
+                else "Delete returned 200 but asset still retrievable",
+            )
+            return confirmed_deleted
+        else:
+            self.log_result("Delete Asset", False, f"Status: {response['status']}")
             return False
 
     # ============================================
@@ -796,6 +898,9 @@ class BetaSmokeTest:
         await self.test_conversion_assets_status_filter()
         await self.test_convert_all_assets()
         await self.test_asset_upload_and_convert()
+        await self.test_get_asset_by_id()
+        await self.test_update_asset_status()
+        await self.test_delete_asset()
         self.log("")
 
         # Summary
