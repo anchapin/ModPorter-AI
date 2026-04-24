@@ -669,13 +669,11 @@ async def feature_flag_not_enabled_handler(
     """Handler for feature flag not enabled errors - returns 503 Service Unavailable"""
     logger.warning(f"Feature flag disabled: {exc}")
 
-    error_response = ErrorResponse(
-        error_id=str(uuid.uuid4())[:8],
-        error_type="feature_disabled",
-        message=str(exc),
-        details={"reason": "service_unavailable"},
-        error_category="configuration_error",
-    )
+    error_response = create_error_response(exc, request, include_traceback=False)
+    error_response.error_category = "configuration_error"
+    error_response.error_code = "CONFIGURATION_ERROR"
+    error_response.user_message = str(exc)
+    error_response.details = {"reason": "service_unavailable"}
 
     _record_error_metric(
         error_category="configuration_error",

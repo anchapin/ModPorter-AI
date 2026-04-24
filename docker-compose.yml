@@ -26,6 +26,7 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - LOG_LEVEL=INFO
       - FEATURE_USER_ACCOUNTS=true
+      - SKIP_EMAIL_VERIFICATION=true
       - TRACING_EXPORTER=jaeger
       - JAEGER_HOST=jaeger
       - JAEGER_PORT=14268
