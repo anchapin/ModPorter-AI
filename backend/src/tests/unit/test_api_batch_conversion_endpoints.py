@@ -1,6 +1,6 @@
 """
 Tests for Batch Conversion API endpoints - src/api/batch_conversion.py
-Patches ConversionJob to add batch_id for testing unimplemented columns.
+ConversionJob now has native batch_id/user_id columns in the model.
 """
 
 import uuid
@@ -71,21 +71,9 @@ class TestBatchConversionModels:
         assert resp.download_all_url is not None
 
 
-def _patch_conversion_job():
-    """Patch ConversionJob to have batch_id/user_id for select() calls."""
-    from db.models import ConversionJob
-
-    if not hasattr(ConversionJob, "batch_id"):
-        ConversionJob.batch_id = MagicMock()
-    if not hasattr(ConversionJob, "user_id"):
-        ConversionJob.user_id = MagicMock()
-    return ConversionJob
-
-
 class TestGetBatchStatus:
     @pytest.mark.asyncio
     async def test_batch_status_not_found(self):
-        _patch_conversion_job()
         from api.batch_conversion import get_batch_status
 
         mock_db = AsyncMock()
@@ -98,7 +86,6 @@ class TestGetBatchStatus:
 
     @pytest.mark.asyncio
     async def test_batch_status_with_conversions(self):
-        _patch_conversion_job()
         from api.batch_conversion import get_batch_status
 
         mock_db = AsyncMock()
@@ -118,7 +105,6 @@ class TestGetBatchStatus:
 class TestGetBatchResults:
     @pytest.mark.asyncio
     async def test_batch_results_not_found(self):
-        _patch_conversion_job()
         from api.batch_conversion import get_batch_results
 
         mock_db = AsyncMock()
@@ -131,7 +117,6 @@ class TestGetBatchResults:
 
     @pytest.mark.asyncio
     async def test_batch_results_mixed(self):
-        _patch_conversion_job()
         from api.batch_conversion import get_batch_results
 
         mock_db = AsyncMock()
@@ -148,7 +133,6 @@ class TestGetBatchResults:
 
     @pytest.mark.asyncio
     async def test_batch_results_all_failed(self):
-        _patch_conversion_job()
         from api.batch_conversion import get_batch_results
 
         mock_db = AsyncMock()
@@ -178,7 +162,6 @@ class TestDownloadAllBatch:
 class TestCancelBatch:
     @pytest.mark.asyncio
     async def test_cancel_batch_not_found(self):
-        _patch_conversion_job()
         from api.batch_conversion import cancel_batch
 
         mock_db = AsyncMock()
@@ -191,7 +174,6 @@ class TestCancelBatch:
 
     @pytest.mark.asyncio
     async def test_cancel_batch_with_pending(self):
-        _patch_conversion_job()
         from api.batch_conversion import cancel_batch
 
         mock_db = AsyncMock()
@@ -209,7 +191,6 @@ class TestCancelBatch:
 
     @pytest.mark.asyncio
     async def test_cancel_batch_all_completed(self):
-        _patch_conversion_job()
         from api.batch_conversion import cancel_batch
 
         mock_db = AsyncMock()

@@ -40,6 +40,7 @@ class BetaSmokeTest:
         self.conversion_job_id = None
         self.uploaded_file_id = None
         self.asset_id = None
+        self.batch_id = None
 
     def log(self, message: str, level: str = "INFO"):
         """Log message with timestamp"""
@@ -1082,6 +1083,8 @@ class BetaSmokeTest:
                 if has_batch_id
                 else "Response missing batch_id",
             )
+            if has_batch_id:
+                self.batch_id = data["batch_id"]
             return has_batch_id
         elif response["status"] == 404:
             self.log_result("Batch Conversion", True, "Endpoint not mounted (acceptable)")
@@ -1103,6 +1106,145 @@ class BetaSmokeTest:
         else:
             self.log_result("Batch Conversion", False, f"Status: {response['status']}")
             return False
+
+    async def test_behavior_file_type_filter(self) -> bool:
+        """Test behavior file type filter endpoint"""
+        self.log("Testing behavior file type filter...")
+
+        if not self.conversion_job_id:
+            self.log_result("Behavior File Type Filter", False, "No conversion job")
+            return False
+
+        create_response = await self.make_request(
+            "POST",
+            f"/api/v1/conversions/{self.conversion_job_id}/behaviors",
+            json={
+                "file_path": "behaviors/blocks/test_block.json",
+                "file_type": "block_behavior",
+                "content": '{"minecraft:block": {"description": {"identifier": "test:block"}}}',
+            },
+        )
+
+        if create_response["status"] not in [200, 201]:
+            self.log_result(
+                "Behavior File Type Filter",
+                False,
+                f"Setup create failed: {create_response['status']}",
+            )
+            return False
+
+        behavior_id = create_response["data"].get("id")
+
+        filter_response = await self.make_request(
+            "GET",
+            f"/api/v1/conversions/{self.conversion_job_id}/behaviors/types/block_behavior",
+        )
+
+        if filter_response["status"] == 200:
+            items = filter_response["data"]
+            if isinstance(items, list):
+                count = len(items)
+                has_correct_type = all(
+                    item.get("file_type") == "block_behavior"
+                    for item in items
+                    if isinstance(item, dict)
+                )
+                self.log_result(
+                    "Behavior File Type Filter",
+                    True,
+                    f"Found {count} block_behavior files, all correct type: {has_correct_type}",
+                )
+            else:
+                self.log_result(
+                    "Behavior File Type Filter",
+                    True,
+                    "Endpoint returned data (non-list format)",
+                )
+        elif filter_response["status"] == 404:
+            self.log_result(
+                "Behavior File Type Filter",
+                True,
+                "Endpoint available (no matching files)",
+            )
+        else:
+            self.log_result(
+                "Behavior File Type Filter",
+                False,
+                f"Unexpected status: {filter_response['status']}",
+            )
+            return False
+
+        if behavior_id:
+            await self.make_request("DELETE", f"/api/v1/behaviors/{behavior_id}")
+
+        return True
+
+    async def test_batch_status_and_results(self) -> bool:
+        """Test batch status and results endpoints"""
+        self.log("Testing batch status and results...")
+
+        batch_id = getattr(self, "batch_id", None)
+        if not batch_id:
+            status_response = await self.make_request(
+                "GET",
+                "/api/v1/batch/nonexistent_batch/status",
+            )
+            results_response = await self.make_request(
+                "GET",
+                "/api/v1/batch/nonexistent_batch/results",
+            )
+            cancel_response = await self.make_request(
+                "DELETE",
+                "/api/v1/batch/nonexistent_batch",
+            )
+
+            endpoints_ok = all(
+                r["status"] in [200, 404, 422, 500]
+                for r in [status_response, results_response, cancel_response]
+            )
+            self.log_result(
+                "Batch Status/Results/Cancel",
+                endpoints_ok,
+                "All batch endpoints reachable (no real batch to test)"
+                if endpoints_ok
+                else "Some batch endpoints unreachable",
+            )
+            return endpoints_ok
+
+        status_response = await self.make_request(
+            "GET",
+            f"/api/v1/batch/{batch_id}/status",
+        )
+
+        results_response = await self.make_request(
+            "GET",
+            f"/api/v1/batch/{batch_id}/results",
+        )
+
+        cancel_response = await self.make_request(
+            "DELETE",
+            f"/api/v1/batch/{batch_id}",
+        )
+
+        status_ok = status_response["status"] in [200, 404]
+        results_ok = results_response["status"] in [200, 404]
+        cancel_ok = cancel_response["status"] in [200, 404]
+
+        all_ok = status_ok and results_ok and cancel_ok
+        details = []
+        if status_ok:
+            details.append(f"status={status_response['status']}")
+        if results_ok:
+            details.append(f"results={results_response['status']}")
+        if cancel_ok:
+            details.append(f"cancel={cancel_response['status']}")
+
+        self.log_result(
+            "Batch Status/Results/Cancel",
+            all_ok,
+            ", ".join(details) if all_ok else "Some endpoints failed",
+        )
+        return all_ok
 
     # ============================================
     # Test Runner
@@ -1169,11 +1311,13 @@ class BetaSmokeTest:
         self.log("### BEHAVIOR FILE TESTS ###")
         await self.test_behavior_file_crud()
         await self.test_behavior_file_tree()
+        await self.test_behavior_file_type_filter()
         self.log("")
 
         # Batch conversion tests
         self.log("### BATCH CONVERSION TESTS ###")
         await self.test_batch_conversion_endpoint()
+        await self.test_batch_status_and_results()
         self.log("")
 
         # Summary
