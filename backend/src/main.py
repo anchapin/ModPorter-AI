@@ -15,7 +15,7 @@ from db import crud
 from services.cache import CacheService
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from services import addon_exporter  # For .mcaddon export
 from services import conversion_parser  # For parsing converted pack output
 from services.asset_conversion_service import asset_conversion_service
@@ -307,6 +307,13 @@ class ConversionJob(BaseModel):
     error_message: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+
+    @field_validator("job_id", "file_id", mode="before")
+    @classmethod
+    def coerce_uuid_to_str(cls, v: object) -> str:
+        if isinstance(v, uuid.UUID):
+            return str(v)
+        return v
 
 
 class HealthResponse(BaseModel):
