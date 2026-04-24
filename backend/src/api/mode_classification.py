@@ -209,7 +209,7 @@ async def get_modes() -> JSONResponse:
 
 @router.get(
     "/pipeline/{mode}",
-    response_model=dict,
+    response_model=ModeSpecificPipelineConfig,
     summary="Get pipeline configuration for mode",
     description="Returns the conversion pipeline configuration for a specific mode.",
 )

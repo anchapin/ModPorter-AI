@@ -85,8 +85,6 @@ class RegisterRequest(BaseModel):
     @classmethod
     def validate_password(cls, v):
         """Validate password strength"""
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
         if not any(c.isdigit() for c in v):
             raise ValueError("Password must contain at least one number")
         if not any(c.isupper() for c in v) and not any(c.islower() for c in v):
@@ -146,8 +144,6 @@ class PasswordResetConfirmRequest(BaseModel):
     @classmethod
     def validate_password(cls, v):
         """Validate password strength"""
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
         if not any(c.isdigit() for c in v):
             raise ValueError("Password must contain at least one number")
         if not any(c.isupper() for c in v) and not any(c.islower() for c in v):

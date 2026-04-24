@@ -1247,6 +1247,83 @@ class BetaSmokeTest:
         return all_ok
 
     # ============================================
+    # Mode Classification Tests
+    # ============================================
+
+    async def test_mode_classification_modes(self) -> bool:
+        """Test GET /api/v1/classify/modes endpoint"""
+        self.log("Testing mode classification modes endpoint...")
+
+        response = await self.make_request("GET", "/api/v1/classify/modes")
+        ok = response["status"] == 200
+
+        if ok:
+            modes = response["data"]
+            mode_names = [m["mode"] for m in modes]
+            has_all = all(m in mode_names for m in ["simple", "standard", "complex", "expert"])
+            details = f"{len(modes)} modes returned"
+            if not has_all:
+                ok = False
+                details = f"Missing modes, got: {mode_names}"
+        else:
+            details = f"status={response['status']}"
+
+        self.log_result("Mode Classification Modes", ok, details)
+        return ok
+
+    async def test_mode_classification_pipeline(self) -> bool:
+        """Test GET /api/v1/classify/pipeline/{mode} endpoint"""
+        self.log("Testing mode classification pipeline endpoint...")
+
+        response = await self.make_request("GET", "/api/v1/classify/pipeline/simple")
+        ok = response["status"] == 200
+
+        if ok:
+            data = response["data"]
+            has_steps = "steps" in data and len(data["steps"]) > 0
+            has_name = "pipeline_name" in data
+            details = f"pipeline={data.get('pipeline_name', 'unknown')}"
+            if not has_steps or not has_name:
+                ok = False
+                details = "Missing pipeline_name or steps"
+        else:
+            details = f"status={response['status']}"
+
+        self.log_result("Mode Classification Pipeline", ok, details)
+        return ok
+
+    async def test_mode_classification_settings(self) -> bool:
+        """Test GET /api/v1/classify/settings/{mode} endpoint"""
+        self.log("Testing mode classification settings endpoint...")
+
+        test_modes = ["simple", "standard", "complex", "expert"]
+        all_ok = True
+        details = []
+
+        for mode in test_modes:
+            response = await self.make_request("GET", f"/api/v1/classify/settings/{mode}")
+            ok = response["status"] == 200
+            if ok:
+                data = response["data"]
+                has_detail = "detail_level" in data
+                has_validation = "validation_level" in data
+                if not has_detail or not has_validation:
+                    ok = False
+                    details.append(f"{mode}: missing fields")
+                else:
+                    details.append(f"{mode}={data.get('detail_level', '?')}")
+            else:
+                all_ok = False
+                details.append(f"{mode}: status={response['status']}")
+
+        self.log_result(
+            "Mode Classification Settings",
+            all_ok,
+            ", ".join(details),
+        )
+        return all_ok
+
+    # ============================================
     # Test Runner
     # ============================================
 
@@ -1318,6 +1395,13 @@ class BetaSmokeTest:
         self.log("### BATCH CONVERSION TESTS ###")
         await self.test_batch_conversion_endpoint()
         await self.test_batch_status_and_results()
+        self.log("")
+
+        # Mode classification tests
+        self.log("### MODE CLASSIFICATION TESTS ###")
+        await self.test_mode_classification_modes()
+        await self.test_mode_classification_pipeline()
+        await self.test_mode_classification_settings()
         self.log("")
 
         # Summary
