@@ -319,11 +319,9 @@ async def trigger_asset_conversion(
         return _asset_to_response(asset)
 
     try:
-        # Trigger conversion through the service
         result = await asset_conversion_service.convert_asset(asset_id)
 
         if result.get("success"):
-            # Get updated asset
             updated_asset = await crud.get_asset(db, asset_id)
             logger.info(f"Asset {asset_id} conversion triggered successfully")
             return _asset_to_response(updated_asset)
@@ -332,6 +330,8 @@ async def trigger_asset_conversion(
             logger.error(f"Asset {asset_id} conversion failed: {error_msg}")
             raise HTTPException(status_code=500, detail=f"Conversion failed: {error_msg}")
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error triggering asset conversion: {e}")
         raise HTTPException(status_code=500, detail="Failed to trigger asset conversion")
