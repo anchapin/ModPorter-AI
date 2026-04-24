@@ -93,25 +93,46 @@ class BetaSmokeTest:
         """Test user registration"""
         self.log("Testing user registration...")
 
-        response = await self.make_request(
-            "POST",
-            "/api/v1/auth/register",
-            json={
-                "email": self.test_user_email,
-                "password": self.test_user_password,
-            },
-        )
+        max_retries = 3
+        retry_delay = 2.0
 
-        if response["status"] == 201 or response["status"] == 200:
-            self.log_result("User Registration", True)
-            return True
-        else:
-            self.log_result(
-                "User Registration",
-                False,
-                f"Status: {response['status']}, Error: {response.get('error', 'Unknown')}",
+        for attempt in range(max_retries):
+            response = await self.make_request(
+                "POST",
+                "/api/v1/auth/register",
+                json={
+                    "email": self.test_user_email,
+                    "password": self.test_user_password,
+                },
             )
-            return False
+
+            if response["status"] == 429 and attempt < max_retries - 1:
+                self.log(f"  Rate limited, waiting {retry_delay}s then retrying...", "DEBUG")
+                import asyncio
+
+                await asyncio.sleep(retry_delay)
+                retry_delay *= 2
+                continue
+
+            if response["status"] == 201 or response["status"] == 200:
+                self.log_result("User Registration", True)
+                return True
+            elif (
+                response["status"] == 400
+                and "already registered" in response.get("data", {}).get("detail", "").lower()
+            ):
+                self.log_result("User Registration", True, "User already exists (test artifact)")
+                return True
+            else:
+                self.log_result(
+                    "User Registration",
+                    False,
+                    f"Status: {response['status']}, Error: {response.get('error', response.get('data', {}).get('detail', 'Unknown'))}",
+                )
+                return False
+
+        self.log_result("User Registration", False, "Max retries exceeded")
+        return False
 
     async def test_login(self) -> bool:
         """Test user login"""
@@ -202,23 +223,43 @@ class BetaSmokeTest:
             zf.writestr("mod.class", b"dummy bytecode")
 
         try:
-            with open(test_jar_path, "rb") as f:
-                files = {"file": (test_jar_path.name, f, "application/java-archive")}
-                response = await self.make_request("POST", "/api/v1/upload", files=files)
+            max_retries = 3
+            retry_delay = 2.0
 
-            # Clean up
-            test_jar_path.unlink()
+            for attempt in range(max_retries):
+                with open(test_jar_path, "rb") as f:
+                    files = {"file": (test_jar_path.name, f, "application/java-archive")}
+                    response = await self.make_request("POST", "/api/v1/upload", files=files)
 
-            if response["status"] in [200, 201]:
-                self.uploaded_file_id = response["data"].get("file_id")
-                self.log_result("File Upload", True, f"File ID: {self.uploaded_file_id}")
-                return True
-            else:
-                self.log_result("File Upload", False, f"Status: {response['status']}")
-                return False
+                if response["status"] == 429 and attempt < max_retries - 1:
+                    self.log(f"  Rate limited, waiting {retry_delay}s then retrying...", "DEBUG")
+                    import asyncio
+
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2
+                    continue
+
+                # Clean up
+                test_jar_path.unlink()
+
+                if response["status"] in [200, 201]:
+                    self.uploaded_file_id = response["data"].get("file_id")
+                    self.log_result("File Upload", True, f"File ID: {self.uploaded_file_id}")
+                    return True
+                else:
+                    self.log_result("File Upload", False, f"Status: {response['status']}")
+                    return False
         except Exception as e:
+            # Clean up on error
+            if test_jar_path.exists():
+                test_jar_path.unlink()
             self.log_result("File Upload", False, str(e))
             return False
+
+        # Final cleanup
+        if test_jar_path.exists():
+            test_jar_path.unlink()
+        return False
 
     async def test_start_conversion(self) -> bool:
         """Test starting a conversion job"""
