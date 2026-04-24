@@ -654,6 +654,22 @@ class BetaSmokeTest:
             self.log_result("Convert All Assets", False, "No conversion job")
             return False
 
+        png_content = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
+        upload_response = await self.make_request(
+            "POST",
+            f"/api/v1/conversions/{self.conversion_job_id}/assets",
+            files={"file": ("batch_test.png", png_content, "image/png")},
+            data={"asset_type": "texture"},
+        )
+
+        if upload_response["status"] not in [200, 201]:
+            self.log_result(
+                "Convert All Assets",
+                False,
+                f"Failed to upload pending asset for batch test: {upload_response['status']}",
+            )
+            return False
+
         response = await self.make_request(
             "POST",
             f"/api/v1/conversions/{self.conversion_job_id}/assets/convert-all",

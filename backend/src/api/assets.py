@@ -322,6 +322,7 @@ async def trigger_asset_conversion(
         result = await asset_conversion_service.convert_asset(asset_id)
 
         if result.get("success"):
+            db.expire_all()
             updated_asset = await crud.get_asset(db, asset_id)
             logger.info(f"Asset {asset_id} conversion triggered successfully")
             return _asset_to_response(updated_asset)
@@ -352,7 +353,6 @@ async def convert_all_conversion_assets(
     - **conversion_id**: ID of the conversion job
     """
     try:
-        # Trigger batch conversion through the service
         result = await asset_conversion_service.convert_assets_for_conversion(conversion_id)
 
         return {

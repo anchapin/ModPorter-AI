@@ -94,22 +94,24 @@ class AssetConversionService:
                 logger.error(f"Asset {asset_id} conversion error: {e}")
                 return {"success": False, "asset_id": asset_id, "error": error_message}
 
-    async def convert_assets_for_conversion(self, conversion_id: str) -> Dict[str, Any]:
+    async def convert_assets_for_conversion(
+        self, conversion_id: str, status: str = None
+    ) -> Dict[str, Any]:
         """
         Convert all assets associated with a conversion job.
 
         Args:
             conversion_id: ID of the conversion job
+            status: Filter by asset status (default: None = all non-converted)
 
         Returns:
             Dictionary with batch conversion results
         """
         async with AsyncSessionLocal() as session:
-            # Get all assets for the conversion
             assets = await crud.list_assets_for_conversion(
                 session,
                 conversion_id,
-                status="pending",  # Only convert pending assets
+                status=status,
             )
 
             if not assets:
@@ -311,6 +313,33 @@ class AssetConversionService:
             }
         except Exception as e:
             return {"success": False, "error": f"Model conversion failed: {str(e)}"}
+
+    async def cleanup_stale_assets(self, max_age_hours: int = 24) -> Dict[str, Any]:
+        import time
+        import glob as glob_mod
+
+        cleaned = 0
+        errors = 0
+        cutoff = time.time() - (max_age_hours * 3600)
+        converted_dir = os.path.join(CONVERSION_ASSETS_DIR, "converted")
+
+        if not os.path.isdir(converted_dir):
+            return {"cleaned": 0, "errors": 0}
+
+        for filepath in glob_mod.glob(os.path.join(converted_dir, "*")):
+            try:
+                if os.path.getmtime(filepath) < cutoff:
+                    os.remove(filepath)
+                    cleaned += 1
+            except OSError:
+                errors += 1
+
+        if cleaned > 0:
+            logger.info(
+                f"Cleaned up {cleaned} stale converted assets (older than {max_age_hours}h)"
+            )
+
+        return {"cleaned": cleaned, "errors": errors}
 
     async def _fallback_copy_conversion(self, input_path: str, output_path: str) -> Dict[str, Any]:
         """Simple copy fallback for unknown asset types"""
