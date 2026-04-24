@@ -408,3 +408,59 @@ def test_shutdown_tracing_no_provider():
     tracing._tracer_provider = None
     tracing.shutdown_tracing()
     assert tracing._initialized is False
+
+
+def test_create_resource_ec2_exception():
+    with patch("services.tracing.AwsEc2ResourceDetector") as mock_ec2:
+        mock_ec2.return_value.detect.side_effect = Exception("EC2 detect failed")
+        resource = tracing._create_resource()
+        assert resource is not None
+
+
+def test_create_resource_ecs_exception():
+    with patch("services.tracing.AwsEcsResourceDetector") as mock_ecs:
+        mock_ecs.return_value.detect.side_effect = Exception("ECS detect failed")
+        resource = tracing._create_resource()
+        assert resource is not None
+
+
+def test_setup_jaeger_exporter_success():
+    original = tracing.JaegerExporter
+    mock_exporter = MagicMock()
+    tracing.JaegerExporter = MagicMock(return_value=mock_exporter)
+
+    with patch("services.tracing.BatchSpanProcessor") as mock_bsp:
+        mock_bsp.return_value = MagicMock()
+        result = tracing._setup_jaeger_exporter()
+        assert result is not None
+
+    tracing.JaegerExporter = original
+
+
+def test_setup_otlp_exporter_success():
+    with patch("services.tracing.OTLPSpanExporter") as mock_otlp:
+        mock_otlp.return_value = MagicMock()
+        with patch("services.tracing.BatchSpanProcessor") as mock_bsp:
+            mock_bsp.return_value = MagicMock()
+            result = tracing._setup_otlp_exporter()
+            assert result is not None
+
+
+def test_instrument_fastapi_success():
+    tracing.FastAPIInstrumentor = MagicMock()
+    tracing._instrument_fastapi(MagicMock())
+    tracing.FastAPIInstrumentor.instrument_app.assert_called_once()
+
+
+def test_instrument_httpx_success():
+    mock_cls = MagicMock()
+    tracing.HTTPXClientInstrumentor = mock_cls
+    tracing._instrument_httpx()
+    mock_cls.return_value.instrument.assert_called_once()
+
+
+def test_instrument_redis_success():
+    mock_cls = MagicMock()
+    tracing.RedisInstrumentor = mock_cls
+    tracing._instrument_redis()
+    mock_cls.return_value.instrument.assert_called_once()
