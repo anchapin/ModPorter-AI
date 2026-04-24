@@ -174,6 +174,12 @@ app.add_middleware(
 # Initialization (Redis connection) happens in startup
 # Skip rate limiting in test mode to avoid 429 errors during test runs
 if os.getenv("TESTING", "false").lower() != "true":
+    # UserContextMiddleware must be added BEFORE RateLimitMiddleware
+    # to extract user info from JWT before rate limiting checks
+    from services.rate_limiter import UserContextMiddleware
+
+    app.add_middleware(UserContextMiddleware)
+
     rate_limiter = create_global_limiter()
     app.add_middleware(RateLimitMiddleware, rate_limiter=rate_limiter)
 

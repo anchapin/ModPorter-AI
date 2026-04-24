@@ -25,6 +25,7 @@ from services.metrics import (
     update_rate_limit_usage,
     update_active_rate_limit_clients,
 )
+from security.auth import verify_token
 
 logger = logging.getLogger(__name__)
 
@@ -256,6 +257,64 @@ class RateLimiter:
             "used_minute": state.request_count,
             "used_hour": state.request_count,
         }
+
+
+# Paths that don't need authentication
+AUTH_OPTIONAL_PATHS = {"/api/v1/auth/login", "/api/v1/auth/register"}
+
+
+async def extract_user_from_token(request: Request) -> tuple[Optional[str], Optional[str]]:
+    """
+    Extract user_id and tier from JWT token in request.
+
+    Returns:
+        Tuple of (user_id, tier) or (None, None) if not authenticated
+    """
+    # Check Authorization header for Bearer token
+    auth_header = request.headers.get("Authorization", "")
+
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]  # Strip "Bearer " prefix
+        user_id = verify_token(token, "access")
+        if user_id:
+            # For now, default to "free" tier - tier lookup requires DB call
+            # which we avoid in middleware for performance
+            return user_id, "free"
+
+    # Check X-API-Key header (for API key authentication)
+    api_key = request.headers.get("X-API-Key", "")
+    if api_key:
+        # Note: API key validation requires DB lookup
+        # For now, treat valid-looking keys as authenticated
+        # Full implementation would look up API key in DB
+        if api_key and len(api_key) > 10:
+            return f"apikey:{api_key[:8]}", "free"
+
+    return None, None
+
+
+class UserContextMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware that extracts user context from JWT token BEFORE other middleware.
+
+    This runs BEFORE RateLimitMiddleware to populate request.state with user info,
+    enabling per-user rate limiting instead of per-IP.
+    """
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        # Skip for health checks and docs
+        if request.url.path in {"/api/v1/health", "/docs", "/redoc", "/openapi.json"}:
+            return await call_next(request)
+
+        # Try to extract user info from token
+        user_id, tier = await extract_user_from_token(request)
+
+        if user_id:
+            request.state.user_id = user_id
+            request.state.user_tier = tier
+            logger.debug(f"User context set: user_id={user_id}, tier={tier}")
+
+        return await call_next(request)
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
