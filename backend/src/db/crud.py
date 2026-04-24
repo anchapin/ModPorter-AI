@@ -1408,6 +1408,7 @@ async def list_assets_for_conversion(
     conversion_id: str,
     *,
     asset_type: Optional[str] = None,
+    status: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
 ) -> List[models.Asset]:
@@ -1427,6 +1428,9 @@ async def list_assets_for_conversion(
 
     if asset_type:
         stmt = stmt.where(models.Asset.asset_type == asset_type)
+
+    if status:
+        stmt = stmt.where(models.Asset.status == status)
 
     result = await session.execute(stmt)
     return result.scalars().all()

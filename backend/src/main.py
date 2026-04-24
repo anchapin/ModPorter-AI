@@ -432,7 +432,7 @@ async def simulate_ai_conversion(job_id: str):
 
     try:
         async with AsyncSessionLocal() as session:
-            job = await crud.get_job(session, PyUUID(job_id))  # Ensure job_id is UUID
+            job = await crud.get_job(session, job_id)
             if not job:
                 logger.error(f"Job not found for AI simulation: {job_id}")
                 return
@@ -484,8 +484,8 @@ async def simulate_ai_conversion(job_id: str):
                 )
 
                 # Stage 2: Preprocessing -> Processing
-                job = await crud.update_job_status(session, PyUUID(job_id), "processing")
-                await crud.upsert_progress(session, PyUUID(job_id), 25)
+                job = await crud.update_job_status(session, job_id, "processing")
+                await crud.upsert_progress(session, job_id, 25)
                 mirror = mirror_dict_from_job(job, 25)
                 conversion_jobs_db[job_id] = mirror  # Keep legacy mirror for now
                 await cache.set_job_status(job_id, mirror.model_dump())
@@ -512,12 +512,11 @@ async def simulate_ai_conversion(job_id: str):
 
                 # Stage 4: Processing -> Postprocessing
                 await asyncio.sleep(1)
-                job = await crud.get_job(session, PyUUID(job_id))
-                if job.status == "cancelled":
-                    logger.info(f"Job {job_id} was cancelled. Stopping AI simulation.")
-                    return
-                job = await crud.update_job_status(session, PyUUID(job_id), "postprocessing")
-                await crud.upsert_progress(session, PyUUID(job_id), 50)
+                job = await crud.get_job(session, job_id)
+
+                # Stage 4: Postprocessing -> Validating
+                job = await crud.update_job_status(session, job_id, "postprocessing")
+                await crud.upsert_progress(session, job_id, 50)
                 mirror = mirror_dict_from_job(job, 50)
                 conversion_jobs_db[job_id] = mirror
                 await cache.set_job_status(job_id, mirror.model_dump())
@@ -558,7 +557,7 @@ async def simulate_ai_conversion(job_id: str):
                 )
 
                 # Update to 75% progress
-                await crud.upsert_progress(session, PyUUID(job_id), 75)
+                await crud.upsert_progress(session, job_id, 75)
                 await cache.set_progress(job_id, 75)
                 mirror = mirror_dict_from_job(job, 75)
                 conversion_jobs_db[job_id] = mirror
@@ -567,7 +566,7 @@ async def simulate_ai_conversion(job_id: str):
 
                 # Stage 7: Postprocessing -> Completed
                 await asyncio.sleep(1)
-                job = await crud.get_job(session, PyUUID(job_id))
+                job = await crud.get_job(session, job_id)
                 if job.status == "cancelled":
                     logger.info(f"Job {job_id} was cancelled. Stopping AI simulation.")
                     return
@@ -679,13 +678,13 @@ async def simulate_ai_conversion(job_id: str):
                     conversion_parser.transform_pack_to_addon_data(
                         pack_root_path=simulated_pack_output_path,
                         addon_name_fallback=original_mod_name,
-                        addon_id_override=PyUUID(job_id),  # Use job_id as addon_id
+                        addon_id_override=job_id,
                         user_id=user_id_for_addon,
                     )
                 )
 
                 # Save Addon, Blocks, Recipes (assets list in addon_data_upload is empty)
-                await crud.update_addon_details(session, PyUUID(job_id), addon_data_upload)
+                await crud.update_addon_details(session, job_id, addon_data_upload)
                 logger.info(
                     f"Job {job_id}: Addon core data (metadata, blocks, recipes) saved to DB."
                 )
@@ -694,7 +693,7 @@ async def simulate_ai_conversion(job_id: str):
                 for asset_info in identified_assets_info:
                     await crud.create_addon_asset_from_local_path(
                         session=session,
-                        addon_id=PyUUID(job_id),
+                        addon_id=job_id,
                         source_file_path=asset_info["source_tmp_path"],
                         asset_type=asset_info["type"],
                         original_filename=asset_info["original_filename"],
@@ -739,8 +738,8 @@ async def simulate_ai_conversion(job_id: str):
                 )
                 logger.info(f"Job {job_id}: Original ZIP archive created at {mock_output_filepath}")
 
-                job = await crud.update_job_status(session, PyUUID(job_id), "completed")
-                await crud.upsert_progress(session, PyUUID(job_id), 100)
+                job = await crud.update_job_status(session, job_id, "completed")
+                await crud.upsert_progress(session, job_id, 100)
 
                 mirror = mirror_dict_from_job(job, 100, result_url)
                 conversion_jobs_db[job_id] = mirror
@@ -758,7 +757,7 @@ async def simulate_ai_conversion(job_id: str):
                     f"Error during AI simulation processing for job {job_id}: {e_inner}",
                     exc_info=True,
                 )
-                job = await crud.update_job_status(session, PyUUID(job_id), "failed")
+                job = await crud.update_job_status(session, job_id, "failed")
                 mirror = mirror_dict_from_job(job, 0, None, str(e_inner))
                 conversion_jobs_db[job_id] = mirror
                 await cache.set_job_status(job_id, mirror.model_dump())
@@ -788,14 +787,12 @@ async def simulate_ai_conversion(job_id: str):
                 job_data.progress = 0
                 job_data.error_message = "Critical simulation error: " + str(e_outer)
                 await cache.set_job_status(job_id, job_data.model_dump())
-            elif (
-                PyUUID(job_id) in conversion_jobs_db
-            ):  # Check if job_id is UUID key (less likely for this dict)
-                # This path might be less common depending on how conversion_jobs_db is keyed
-                job_data_uuid_key = conversion_jobs_db[PyUUID(job_id)]
+            elif job_id in conversion_jobs_db:
+                job_data_uuid_key = conversion_jobs_db[job_id]
                 job_data_uuid_key.status = "failed"
-                # ... update other fields ...
-                await cache.set_job_status(str(PyUUID(job_id)), job_data_uuid_key.model_dump())
+                job_data_uuid_key.progress = 0
+                job_data_uuid_key.error_message = "Critical simulation error: " + str(e_outer)
+                await cache.set_job_status(job_id, job_data_uuid_key.model_dump())
 
         except Exception as cache_error:
             logger.error(

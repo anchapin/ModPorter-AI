@@ -173,21 +173,56 @@ class TestListAssetsForConversion:
             await crud.list_assets_for_conversion(mock_session, "invalid-uuid")
 
     @patch("db.crud.select")
-    async def test_list_assets_with_filters(self, mock_select, mock_session, sample_conversion_id):
-        """Test asset listing with type and status filters"""
-        # Setup
+    async def test_list_assets_with_asset_type_filter(
+        self, mock_select, mock_session, sample_conversion_id
+    ):
+        """Test asset listing with asset_type filter"""
         mock_scalars = MagicMock()
         mock_scalars.all.return_value = []
         mock_result = MagicMock()
         mock_result.scalars.return_value = mock_scalars
         mock_session.execute = AsyncMock(return_value=mock_result)
 
-        # Execute
         result = await crud.list_assets_for_conversion(
             mock_session, sample_conversion_id, asset_type="texture"
         )
 
-        # Verify
+        assert result == []
+        mock_session.execute.assert_called_once()
+
+    @patch("db.crud.select")
+    async def test_list_assets_with_status_filter(
+        self, mock_select, mock_session, sample_conversion_id
+    ):
+        """Test asset listing with status filter"""
+        mock_scalars = MagicMock()
+        mock_scalars.all.return_value = []
+        mock_result = MagicMock()
+        mock_result.scalars.return_value = mock_scalars
+        mock_session.execute = AsyncMock(return_value=mock_result)
+
+        result = await crud.list_assets_for_conversion(
+            mock_session, sample_conversion_id, status="pending"
+        )
+
+        assert result == []
+        mock_session.execute.assert_called_once()
+
+    @patch("db.crud.select")
+    async def test_list_assets_with_both_filters(
+        self, mock_select, mock_session, sample_conversion_id
+    ):
+        """Test asset listing with both asset_type and status filters"""
+        mock_scalars = MagicMock()
+        mock_scalars.all.return_value = []
+        mock_result = MagicMock()
+        mock_result.scalars.return_value = mock_scalars
+        mock_session.execute = AsyncMock(return_value=mock_result)
+
+        result = await crud.list_assets_for_conversion(
+            mock_session, sample_conversion_id, asset_type="texture", status="converted"
+        )
+
         assert result == []
         mock_session.execute.assert_called_once()
 
