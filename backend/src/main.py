@@ -691,7 +691,7 @@ async def simulate_ai_conversion(job_id: str):
                     f"Job {job_id}: Addon core data (metadata, blocks, recipes) saved to DB."
                 )
 
-                # Save Assets
+                # Save AddonAssets (linked to addon) and Assets (linked to conversion job)
                 for asset_info in identified_assets_info:
                     await crud.create_addon_asset_from_local_path(
                         session=session,
@@ -699,6 +699,18 @@ async def simulate_ai_conversion(job_id: str):
                         source_file_path=asset_info["source_tmp_path"],
                         asset_type=asset_info["type"],
                         original_filename=asset_info["original_filename"],
+                    )
+                    try:
+                        file_size = os.path.getsize(asset_info["source_tmp_path"])
+                    except OSError:
+                        file_size = None
+                    await crud.create_asset(
+                        session=session,
+                        conversion_id=job_id,
+                        asset_type=asset_info["type"],
+                        original_path=asset_info["source_tmp_path"],
+                        original_filename=asset_info["original_filename"],
+                        file_size=file_size,
                     )
                 logger.info(
                     f"Job {job_id}: {len(identified_assets_info)} assets processed and saved."

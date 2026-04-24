@@ -1319,23 +1319,31 @@ async def update_asset_status(
     session: AsyncSession,
     asset_id: str,
     status: str,
+    *,
+    converted_path: Optional[str] = None,
+    error_message: Optional[str] = None,
     commit: bool = True,
 ) -> Optional[models.Asset]:
-    """Update asset status."""
+    """Update asset status, optionally setting converted_path or error_message."""
     try:
         asset_uuid = _to_uuid(asset_id)
     except ValueError:
         raise ValueError(f"Invalid asset ID format: {asset_id}")
 
-    # Check if asset exists
     asset = await get_asset(session, asset_id)
     if not asset:
         return None
 
+    values: dict = {"status": status}
+    if converted_path is not None:
+        values["converted_path"] = converted_path
+    if error_message is not None:
+        values["error_message"] = error_message
+
     stmt = (
         update(models.Asset)
         .where(models.Asset.id == asset_uuid)
-        .values(status=status)
+        .values(**values)
         .returning(models.Asset)
     )
     result = await session.execute(stmt)
