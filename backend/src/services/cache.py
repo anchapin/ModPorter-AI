@@ -1,4 +1,5 @@
 import json
+import uuid
 import redis.asyncio as aioredis
 from config import settings
 from typing import Optional
@@ -64,6 +65,8 @@ class CacheService:
         """
         if isinstance(obj, datetime):
             return obj.isoformat()
+        if isinstance(obj, uuid.UUID):
+            return str(obj)
         raise TypeError(f"Type {type(obj)} not serializable")
 
     async def set_job_status(self, job_id: str, status: dict) -> None:

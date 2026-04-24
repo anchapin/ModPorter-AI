@@ -442,7 +442,7 @@ async def simulate_ai_conversion(job_id: str):
             ):
                 return ConversionJob(
                     job_id=str(current_job.id),
-                    file_id=current_job.input_data.get("file_id"),
+                    file_id=str(current_job.input_data.get("file_id", "")),
                     original_filename=current_job.input_data.get("original_filename"),
                     status=current_job.status,
                     progress=(
@@ -804,10 +804,9 @@ async def call_ai_engine_conversion(job_id: str):
             return
 
         def mirror_dict_from_job(job, progress_val=None, result_url=None, error_message=None):
-            # Compose dict for legacy mirror
             return ConversionJob(
                 job_id=str(job.id),
-                file_id=job.input_data.get("file_id"),
+                file_id=str(job.input_data.get("file_id", "")),
                 original_filename=job.input_data.get("original_filename"),
                 status=job.status,
                 progress=(
@@ -1078,7 +1077,7 @@ async def get_conversion_status(
     # Mirror for legacy tests
     mirror = ConversionJob(
         job_id=str(job.id),
-        file_id=job.input_data.get("file_id"),
+        file_id=str(job.input_data.get("file_id", "")),
         original_filename=job.input_data.get("original_filename"),
         status=job.status,
         progress=progress,
@@ -1125,10 +1124,9 @@ async def list_conversions(db: AsyncSession = Depends(get_db)):
             message = error_message
         elif status == "completed":
             result_url = f"/api/download/{job.id}"
-        # Mirror for legacy tests
         mirror = ConversionJob(
             job_id=str(job.id),
-            file_id=job.input_data.get("file_id"),
+            file_id=str(job.input_data.get("file_id", "")),
             original_filename=job.input_data.get("original_filename"),
             status=status,
             progress=progress,
@@ -1175,7 +1173,7 @@ async def cancel_conversion(
     await crud.upsert_progress(db, job_id, 0)
     mirror = ConversionJob(
         job_id=str(job.id),
-        file_id=job.input_data.get("file_id"),
+        file_id=str(job.input_data.get("file_id", "")),
         original_filename=job.input_data.get("original_filename"),
         status="cancelled",
         progress=0,
