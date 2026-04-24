@@ -20,6 +20,7 @@ services:
       - DATABASE_URL=postgresql://postgres:password@postgres:5432/portkit
       - LOG_LEVEL=INFO
       - FEATURE_USER_ACCOUNTS=true
+      - SKIP_EMAIL_VERIFICATION=true
       # Add other necessary production environment variables here
     depends_on:
       redis:
