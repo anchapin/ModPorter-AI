@@ -849,6 +849,101 @@ class BetaSmokeTest:
             self.log_result("Delete Asset", False, f"Status: {response['status']}")
             return False
 
+    async def test_invalid_conversion_id(self) -> bool:
+        """Test that invalid conversion ID format returns 400"""
+        self.log("Testing invalid conversion ID handling...")
+
+        response = await self.make_request("GET", "/api/v1/conversions/not-a-valid-uuid/assets")
+        if response["status"] == 400 or response["status"] == 422:
+            self.log_result("Invalid Conversion ID Format", True, "Correctly rejected")
+            return True
+        else:
+            self.log_result(
+                "Invalid Conversion ID Format",
+                False,
+                f"Expected 400/422, got {response['status']}",
+            )
+            return False
+
+    async def test_asset_metadata_update(self) -> bool:
+        """Test updating asset metadata via PATCH"""
+        self.log("Testing asset metadata update...")
+
+        if not self.conversion_job_id:
+            self.log_result("Asset Metadata Update", False, "No conversion job")
+            return False
+
+        png_content = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
+        upload_response = await self.make_request(
+            "POST",
+            f"/api/v1/conversions/{self.conversion_job_id}/assets",
+            files={"file": ("meta_test.png", png_content, "image/png")},
+            data={"asset_type": "texture"},
+        )
+
+        if upload_response["status"] not in [200, 201]:
+            self.log_result(
+                "Asset Metadata Update",
+                False,
+                f"Failed to create asset: {upload_response['status']}",
+            )
+            return False
+
+        asset_id = upload_response["data"].get("id")
+        if not asset_id:
+            self.log_result("Asset Metadata Update", False, "No asset ID returned")
+            return False
+
+        update_response = await self.make_request(
+            "PATCH",
+            f"/api/v1/assets/{asset_id}",
+            json={"asset_metadata": {"resolution": "32x32", "format": "png"}},
+        )
+
+        if update_response["status"] == 200:
+            meta = update_response["data"].get("asset_metadata", {})
+            has_meta = "resolution" in str(meta)
+            self.log_result(
+                "Asset Metadata Update",
+                has_meta,
+                f"Metadata updated for asset {asset_id[:8]}..."
+                if has_meta
+                else "Update succeeded but metadata not reflected",
+            )
+            return has_meta
+        else:
+            self.log_result(
+                "Asset Metadata Update",
+                False,
+                f"Status: {update_response['status']}",
+            )
+            return False
+
+    async def test_concurrent_asset_operations(self) -> bool:
+        """Test that concurrent asset operations don't cause errors"""
+        self.log("Testing concurrent asset operations...")
+
+        if not self.conversion_job_id:
+            self.log_result("Concurrent Asset Ops", False, "No conversion job")
+            return False
+
+        import asyncio
+
+        async def list_assets():
+            return await self.make_request(
+                "GET", f"/api/v1/conversions/{self.conversion_job_id}/assets"
+            )
+
+        results = await asyncio.gather(*[list_assets() for _ in range(5)])
+
+        all_ok = all(r["status"] in [200, 404] for r in results)
+        self.log_result(
+            "Concurrent Asset Ops",
+            all_ok,
+            f"All 5 concurrent requests completed" if all_ok else "Some requests failed",
+        )
+        return all_ok
+
     # ============================================
     # Test Runner
     # ============================================
@@ -901,6 +996,13 @@ class BetaSmokeTest:
         await self.test_get_asset_by_id()
         await self.test_update_asset_status()
         await self.test_delete_asset()
+        self.log("")
+
+        # Edge case tests
+        self.log("### EDGE CASE TESTS ###")
+        await self.test_invalid_conversion_id()
+        await self.test_asset_metadata_update()
+        await self.test_concurrent_asset_operations()
         self.log("")
 
         # Summary
