@@ -1,0 +1,85 @@
+{
+  "timestamp": "2026-04-24T07:08:42.109239",
+  "environment": "https://staging.portkit.cloud",
+  "total_tests": 15,
+  "passed": 9,
+  "failed": 6,
+  "percentage": 60.0,
+  "results": [
+    {
+      "test": "User Registration",
+      "passed": false,
+      "details": "Status: 500, Error: Unknown"
+    },
+    {
+      "test": "User Login",
+      "passed": false,
+      "details": "Status: 401"
+    },
+    {
+      "test": "Email Verification Endpoint",
+      "passed": true,
+      "details": "Endpoint exists"
+    },
+    {
+      "test": "Discord OAuth",
+      "passed": true,
+      "details": "OAuth endpoint available"
+    },
+    {
+      "test": "Password Reset Request",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "test": "File Upload",
+      "passed": true,
+      "details": "File ID: 7b002959-5051-455c-9fa6-7f6c6594e09b"
+    },
+    {
+      "test": "Start Conversion",
+      "passed": true,
+      "details": "Job ID: 03d52f0e-1327-45d4-9ef2-a442e284b6fe"
+    },
+    {
+      "test": "Conversion Progress",
+      "passed": false,
+      "details": "Progress not updating properly"
+    },
+    {
+      "test": "Conversion Completion",
+      "passed": false,
+      "details": "Timeout waiting for completion"
+    },
+    {
+      "test": ".mcaddon Download",
+      "passed": true,
+      "details": "Endpoint working (test job failed, no file)"
+    },
+    {
+      "test": "Conversion History",
+      "passed": true,
+      "details": "Found 4 conversions"
+    },
+    {
+      "test": "Stripe Checkout",
+      "passed": false,
+      "details": "Status: 401"
+    },
+    {
+      "test": "Free Tier Limit",
+      "passed": false,
+      "details": "Status: 401"
+    },
+    {
+      "test": "Invalid File Type Error",
+      "passed": true,
+      "details": "User-friendly error message"
+    },
+    {
+      "test": "No File Error",
+      "passed": true,
+      "details": "Clear error message"
+    }
+  ]
+}
