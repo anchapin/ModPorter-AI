@@ -398,3 +398,9 @@ class TestConversionJobUUIDCoercion:
         job = self._make_job(job_id="abc-123", file_id="def-456")
         assert job.job_id == "abc-123"
         assert job.file_id == "def-456"
+
+    def test_original_filename_uuid_coerced_to_str(self):
+        test_uuid = uuid.uuid4()
+        job = self._make_job(original_filename=test_uuid)
+        assert isinstance(job.original_filename, str)
+        assert job.original_filename == str(test_uuid)

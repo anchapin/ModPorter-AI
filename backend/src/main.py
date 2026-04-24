@@ -308,7 +308,7 @@ class ConversionJob(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    @field_validator("job_id", "file_id", mode="before")
+    @field_validator("job_id", "file_id", "original_filename", mode="before")
     @classmethod
     def coerce_uuid_to_str(cls, v: object) -> str:
         if isinstance(v, uuid.UUID):
@@ -442,7 +442,9 @@ async def simulate_ai_conversion(job_id: str):
             )[0]
             # Attempt to get user_id from job input_data, fall back to a default if not found
             # This field might not exist in older job records.
-            user_id_for_addon = job.input_data.get("user_id", conversion_parser.DEFAULT_USER_ID)
+            user_id_for_addon = str(
+                job.input_data.get("user_id", conversion_parser.DEFAULT_USER_ID)
+            )
 
             def mirror_dict_from_job(
                 current_job, progress_val=None, result_url=None, error_message=None
@@ -836,7 +838,9 @@ async def call_ai_engine_conversion(job_id: str):
             output_path = os.path.join(CONVERSION_OUTPUTS_DIR, output_filename)
 
             # Get the input file path
-            input_file_path = os.path.join(TEMP_UPLOADS_DIR, f"{job.input_data.get('file_id')}.jar")
+            input_file_path = os.path.join(
+                TEMP_UPLOADS_DIR, f"{str(job.input_data.get('file_id', ''))}.jar"
+            )
 
             # Call AI Engine
             conversion_options = job.input_data.get("options", {})
