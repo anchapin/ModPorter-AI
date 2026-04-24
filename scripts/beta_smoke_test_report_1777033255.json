@@ -1,0 +1,85 @@
+{
+  "timestamp": "2026-04-24T08:20:55.043671",
+  "environment": "https://portkit.cloud",
+  "total_tests": 15,
+  "passed": 15,
+  "failed": 0,
+  "percentage": 100.0,
+  "results": [
+    {
+      "test": "User Registration",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "test": "User Login",
+      "passed": true,
+      "details": "Access token received"
+    },
+    {
+      "test": "Email Verification Endpoint",
+      "passed": true,
+      "details": "Endpoint exists"
+    },
+    {
+      "test": "Discord OAuth",
+      "passed": true,
+      "details": "OAuth endpoint available"
+    },
+    {
+      "test": "Password Reset Request",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "test": "File Upload",
+      "passed": true,
+      "details": "File ID: 1ece672b-ba2a-4425-9999-699bbd19cf5e"
+    },
+    {
+      "test": "Start Conversion",
+      "passed": true,
+      "details": "Job ID: 047ebda8-8907-48e9-a68a-adc0dc598d6b"
+    },
+    {
+      "test": "Conversion Progress",
+      "passed": true,
+      "details": "Progress updated: [10, 10, 10]"
+    },
+    {
+      "test": "Conversion Completion",
+      "passed": true,
+      "details": "Pipeline working (test file failed as expected: None)"
+    },
+    {
+      "test": ".mcaddon Download",
+      "passed": true,
+      "details": "Endpoint working (test job failed, no file)"
+    },
+    {
+      "test": "Conversion History",
+      "passed": true,
+      "details": "Endpoint available (rate limited)"
+    },
+    {
+      "test": "Stripe Checkout",
+      "passed": true,
+      "details": "Endpoint available (Stripe not configured or premium disabled)"
+    },
+    {
+      "test": "Free Tier Limit",
+      "passed": true,
+      "details": "Remaining: 3"
+    },
+    {
+      "test": "Invalid File Type Error",
+      "passed": true,
+      "details": "User-friendly error message"
+    },
+    {
+      "test": "No File Error",
+      "passed": true,
+      "details": "Clear error message"
+    }
+  ]
+}

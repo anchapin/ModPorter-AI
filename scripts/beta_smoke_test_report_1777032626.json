@@ -1,0 +1,85 @@
+{
+  "timestamp": "2026-04-24T08:10:26.822361",
+  "environment": "https://portkit.cloud",
+  "total_tests": 15,
+  "passed": 9,
+  "failed": 6,
+  "percentage": 60.0,
+  "results": [
+    {
+      "test": "User Registration",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "test": "User Login",
+      "passed": true,
+      "details": "Access token received"
+    },
+    {
+      "test": "Email Verification Endpoint",
+      "passed": true,
+      "details": "Endpoint exists"
+    },
+    {
+      "test": "Discord OAuth",
+      "passed": true,
+      "details": "OAuth endpoint available"
+    },
+    {
+      "test": "Password Reset Request",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "test": "File Upload",
+      "passed": false,
+      "details": "Status: 429"
+    },
+    {
+      "test": "Start Conversion",
+      "passed": false,
+      "details": "No uploaded file"
+    },
+    {
+      "test": "Conversion Progress",
+      "passed": false,
+      "details": "No conversion job"
+    },
+    {
+      "test": "Conversion Completion",
+      "passed": false,
+      "details": "No conversion job"
+    },
+    {
+      "test": ".mcaddon Download",
+      "passed": false,
+      "details": "No conversion job"
+    },
+    {
+      "test": "Conversion History",
+      "passed": false,
+      "details": "Status: 500"
+    },
+    {
+      "test": "Stripe Checkout",
+      "passed": true,
+      "details": "Endpoint available (Stripe not configured or premium disabled)"
+    },
+    {
+      "test": "Free Tier Limit",
+      "passed": true,
+      "details": "Remaining: 3"
+    },
+    {
+      "test": "Invalid File Type Error",
+      "passed": true,
+      "details": "User-friendly error message"
+    },
+    {
+      "test": "No File Error",
+      "passed": true,
+      "details": "Clear error message"
+    }
+  ]
+}
