@@ -1104,7 +1104,12 @@ async def list_conversions(db: AsyncSession = Depends(get_db)):
     jobs = await crud.list_jobs(db)
     statuses = []
     for job in jobs:
-        progress = job.progress.progress if job.progress else 0
+        try:
+            progress = (
+                job.progress.progress if job.progress and hasattr(job.progress, "progress") else 0
+            )
+        except Exception:
+            progress = 0
         error_message = None
         result_url = None
         status = job.status
