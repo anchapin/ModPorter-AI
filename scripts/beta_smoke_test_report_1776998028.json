@@ -1,0 +1,85 @@
+{
+  "timestamp": "2026-04-23T22:33:48.014241",
+  "environment": "https://portkit-backend-staging.fly.dev",
+  "total_tests": 15,
+  "passed": 6,
+  "failed": 9,
+  "percentage": 40.0,
+  "results": [
+    {
+      "test": "User Registration",
+      "passed": false,
+      "details": "Status: 500, Error: Unknown"
+    },
+    {
+      "test": "User Login",
+      "passed": false,
+      "details": "Status: 401"
+    },
+    {
+      "test": "Email Verification Endpoint",
+      "passed": true,
+      "details": "Endpoint exists"
+    },
+    {
+      "test": "Discord OAuth",
+      "passed": true,
+      "details": "OAuth endpoint available"
+    },
+    {
+      "test": "Password Reset Request",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "test": "File Upload",
+      "passed": true,
+      "details": "File ID: 0a5a8a64-cf5a-485e-b97e-b2df15bdb083"
+    },
+    {
+      "test": "Start Conversion",
+      "passed": true,
+      "details": "Job ID: c4a1e29b-c08d-4c71-afcc-b40b90592107"
+    },
+    {
+      "test": "Conversion Progress",
+      "passed": false,
+      "details": "Progress not updating properly"
+    },
+    {
+      "test": "Conversion Completion",
+      "passed": false,
+      "details": "Timeout waiting for completion"
+    },
+    {
+      "test": ".mcaddon Download",
+      "passed": false,
+      "details": "Status: 400"
+    },
+    {
+      "test": "Conversion History",
+      "passed": true,
+      "details": "Found 4 conversions"
+    },
+    {
+      "test": "Stripe Checkout",
+      "passed": false,
+      "details": "Status: 401"
+    },
+    {
+      "test": "Free Tier Limit",
+      "passed": false,
+      "details": "Status: 401"
+    },
+    {
+      "test": "Invalid File Type Error",
+      "passed": false,
+      "details": "Generic error message"
+    },
+    {
+      "test": "No File Error",
+      "passed": false,
+      "details": "Status: 422"
+    }
+  ]
+}
