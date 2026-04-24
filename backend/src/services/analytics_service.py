@@ -4,7 +4,7 @@ Analytics service for tracking user behavior and usage.
 
 import hashlib
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -112,8 +112,8 @@ class AnalyticsService:
         if feedback_type is not None:
             props["feedback_type"] = feedback_type
         return await self.track_event(
-            event_type=AnalyticsEventType.FEEDBACK_SUBMIT,
-            event_category=AnalyticsEventType.CATEGORY_FEEDBACK,
+            event_type=AnalyticsEvents.FEEDBACK_SUBMIT,
+            event_category=AnalyticsEvents.CATEGORY_FEEDBACK,
             user_id=user_id,
             conversion_id=uuid.UUID(conversion_id) if conversion_id else None,
             event_properties=props,
