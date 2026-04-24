@@ -399,3 +399,21 @@ class TestCloseRedisActual:
             with patch.object(redis_mod, "_job_queue", None):
                 with patch.object(redis_mod, "_rate_limiter", None):
                     await redis_mod.close_redis()
+
+    @pytest.mark.asyncio
+    async def test_job_queue_connect_passthrough(self):
+        from core.redis import JobQueue
+
+        queue = JobQueue(queue_name="test")
+        with patch.object(queue.client, "connect", new_callable=AsyncMock, return_value=True):
+            result = await queue.connect()
+            assert result is True
+
+    @pytest.mark.asyncio
+    async def test_rate_limiter_connect_passthrough(self):
+        from core.redis import RateLimiter
+
+        limiter = RateLimiter(limit=10, window=60)
+        with patch.object(limiter.client, "connect", new_callable=AsyncMock, return_value=True):
+            result = await limiter.connect()
+            assert result is True
