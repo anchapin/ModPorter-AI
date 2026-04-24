@@ -41,7 +41,7 @@ from security.auth import (
     generate_api_key,
     hash_api_key,
 )
-from services.feature_flags import is_feature_enabled
+from services.feature_flags import is_feature_enabled, FeatureFlagNotEnabledError
 from services.email_service import send_verification_email, send_password_reset_email
 from services.oauth_service import oauth_service, generate_oauth_state
 from config import settings
@@ -50,14 +50,15 @@ logger = logging.getLogger(__name__)
 
 
 def require_feature_flag(flag_name: str):
-    """Dependency that checks if a feature flag is enabled."""
+    """Dependency that checks if a feature flag is enabled.
+
+    Raises FeatureFlagNotEnabledError (handled by error handler to return 503)
+    instead of HTTPException to properly return 503 Service Unavailable.
+    """
 
     async def check_flag():
         if not is_feature_enabled(flag_name):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"This feature is currently disabled. Please contact support if you believe this is an error.",
-            )
+            raise FeatureFlagNotEnabledError(f"Feature '{flag_name}' is not enabled")
         return True
 
     return check_flag
@@ -260,7 +261,11 @@ async def register(
             expiry_hours=24,
         )
 
-    message = "User registered." + (" Account verified automatically (test mode)." if auto_verify else " Please check email for verification link.")
+    message = "User registered." + (
+        " Account verified automatically (test mode)."
+        if auto_verify
+        else " Please check email for verification link."
+    )
 
     return RegisterResponse(
         message=message,
