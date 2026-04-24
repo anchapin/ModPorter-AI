@@ -8,7 +8,9 @@ import pytest
 from unittest.mock import MagicMock, patch
 from datetime import datetime, timezone
 
-from services.celery_tasks import (
+pytest.importorskip("celery", reason="celery not installed - skipping Celery tests")
+
+from src.services.celery_tasks import (
     TaskData,
     TaskStatus,
     TaskPriority,
@@ -227,7 +229,7 @@ class TestCeleryConfigImport:
 
     def test_celery_config_import(self):
         """Test that celery_config can be imported."""
-        from services.celery_config import celery_app, REDIS_URL
+        from src.services.celery_config import celery_app, REDIS_URL
 
         assert celery_app is not None
         assert REDIS_URL is not None
@@ -235,13 +237,13 @@ class TestCeleryConfigImport:
 
     def test_celery_app_name(self):
         """Test Celery app is configured with correct name."""
-        from services.celery_config import celery_app
+        from src.services.celery_config import celery_app
 
         assert celery_app.main == "portkit"
 
     def test_celery_conf_settings(self):
         """Test Celery configuration settings."""
-        from services.celery_config import celery_app
+        from src.services.celery_config import celery_app
 
         assert celery_app.conf.task_serializer == "json"
         assert celery_app.conf.result_serializer == "json"
