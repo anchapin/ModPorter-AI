@@ -128,14 +128,24 @@ def test_upload_asset_success(mock_makedirs, mock_create, mock_asset, tmp_path):
 
 
 def test_upload_asset_no_filename():
-    conversion_id = str(uuid.uuid4())
-    response = client.post(
-        f"/conversions/{conversion_id}/assets",
-        files={"file": ("", io.BytesIO(b"data"), "image/png")},
-        data={"asset_type": "texture"},
-    )
+    from starlette.datastructures import UploadFile as StarletteUploadFile
 
-    assert response.status_code in (400, 422)
+    original_init = StarletteUploadFile.__init__
+
+    def _force_no_filename(self, *args, **kwargs):
+        original_init(self, *args, **kwargs)
+        self.filename = None
+
+    conversion_id = str(uuid.uuid4())
+    with patch.object(StarletteUploadFile, "__init__", _force_no_filename):
+        response = client.post(
+            f"/conversions/{conversion_id}/assets",
+            files={"file": ("test.png", io.BytesIO(b"data"), "image/png")},
+            data={"asset_type": "texture"},
+        )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "No file provided"
 
 
 @patch("os.path.exists", return_value=True)
