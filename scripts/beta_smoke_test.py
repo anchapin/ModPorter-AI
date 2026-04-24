@@ -33,7 +33,7 @@ class BetaSmokeTest:
         self.api_key = api_key
         self.verbose = verbose
         self.results = []
-        self.test_user_email = f"beta_test_{int(time.time())}@portkit.cloud"
+        self.test_user_email = f"beta_test_{int(time.time())}@example.com"
         self.test_user_password = "TestPass123!@#"
         self.access_token = None
         self.refresh_token = None
@@ -265,7 +265,7 @@ class BetaSmokeTest:
                 # Progress should not be frozen at 0
                 if i == 0 and progress > 0:
                     progress_updates.append(progress)
-                elif i > 0 and progress >= progress_updates[-1]:
+                elif i > 0 and progress_updates and progress >= progress_updates[-1]:
                     progress_updates.append(progress)
 
         if len(progress_updates) >= 2:

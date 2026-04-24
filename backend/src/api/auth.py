@@ -44,6 +44,7 @@ from security.auth import (
 from services.feature_flags import is_feature_enabled
 from services.email_service import send_verification_email, send_password_reset_email
 from services.oauth_service import oauth_service, generate_oauth_state
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -234,12 +235,15 @@ async def register(
         )
 
     verification_token = generate_verification_token()
+    # Auto-verify if skip_email_verification is enabled (for smoke testing)
+    auto_verify = settings.skip_email_verification
+
     user = User(
         email=request_data.email,
         password_hash=hash_password(request_data.password),
         verification_token=verification_token,
         verification_token_expires=datetime.now(timezone.utc) + timedelta(hours=24),
-        is_verified=False,
+        is_verified=auto_verify,
     )
 
     db.add(user)
@@ -248,14 +252,18 @@ async def register(
 
     logger.info(f"Email verification token generated for {request_data.email}")
 
-    await send_verification_email(
-        email=user.email,
-        verification_token=verification_token,
-        expiry_hours=24,
-    )
+    # Skip email sending in test mode
+    if not auto_verify:
+        await send_verification_email(
+            email=user.email,
+            verification_token=verification_token,
+            expiry_hours=24,
+        )
+
+    message = "User registered." + (" Account verified automatically (test mode)." if auto_verify else " Please check email for verification link.")
 
     return RegisterResponse(
-        message="User registered. Please check email for verification link.",
+        message=message,
         user_id=str(user.id),
     )
 
