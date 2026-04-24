@@ -95,14 +95,14 @@ class AssetConversionService:
                 return {"success": False, "asset_id": asset_id, "error": error_message}
 
     async def convert_assets_for_conversion(
-        self, conversion_id: str, status: str = None
+        self, conversion_id: str, status: str = "pending"
     ) -> Dict[str, Any]:
         """
         Convert all assets associated with a conversion job.
 
         Args:
             conversion_id: ID of the conversion job
-            status: Filter by asset status (default: None = all non-converted)
+            status: Filter by asset status (default: "pending")
 
         Returns:
             Dictionary with batch conversion results

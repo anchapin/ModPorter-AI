@@ -100,17 +100,17 @@ conversion_jobs_db: Dict[str, "ConversionJob"] = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     testing_env = os.getenv("TESTING", "false").lower()
     if testing_env != "true":
         await init_db()
         logger.info("Database initialized")
+        cleanup_result = await asset_conversion_service.cleanup_stale_assets(max_age_hours=24)
+        if cleanup_result.get("cleaned", 0) > 0:
+            logger.info(f"Startup cleanup: removed {cleanup_result['cleaned']} stale assets")
     yield
-    # Shutdown - properly close all connections
     logger.info("Application shutdown initiated")
     await close_rate_limiter()
     logger.info("Rate limiter closed")
-    # Add any other graceful shutdown cleanup here
     logger.info("Application shutdown complete")
 
 
