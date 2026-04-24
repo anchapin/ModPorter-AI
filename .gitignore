@@ -173,7 +173,8 @@ AGENTS.MD
 # Exclude patterns
 ai-engine/tests/test_smart_assumptions.py
 
-.worktrees/
+# Smoke test reports
+scripts/beta_smoke_test_report_*.json
 node-compile-cache/
 backend/coverage.json
 例外: tests/fixtures/simple_copper_block.jar
