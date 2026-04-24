@@ -25,6 +25,7 @@ services:
       - PYTHONPATH=/app/src
       - REDIS_URL=redis://redis:6379/0
       - LOG_LEVEL=INFO
+      - FEATURE_USER_ACCOUNTS=true
       - TRACING_EXPORTER=jaeger
       - JAEGER_HOST=jaeger
       - JAEGER_PORT=14268
