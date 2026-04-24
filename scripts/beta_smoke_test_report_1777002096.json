@@ -1,0 +1,85 @@
+{
+  "timestamp": "2026-04-23T23:41:36.030175",
+  "environment": "https://portkit.cloud",
+  "total_tests": 15,
+  "passed": 11,
+  "failed": 4,
+  "percentage": 73.33333333333333,
+  "results": [
+    {
+      "test": "User Registration",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "test": "User Login",
+      "passed": true,
+      "details": "Access token received"
+    },
+    {
+      "test": "Email Verification Endpoint",
+      "passed": true,
+      "details": "Endpoint exists"
+    },
+    {
+      "test": "Discord OAuth",
+      "passed": true,
+      "details": "OAuth endpoint available"
+    },
+    {
+      "test": "Password Reset Request",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "test": "File Upload",
+      "passed": true,
+      "details": "File ID: 7ced5a7d-5b3e-48fa-b7ed-914b8aac8a29"
+    },
+    {
+      "test": "Start Conversion",
+      "passed": true,
+      "details": "Job ID: a4d09d3c-08d2-4dfc-985f-d3ebe32cf656"
+    },
+    {
+      "test": "Conversion Progress",
+      "passed": false,
+      "details": "Progress not updating properly"
+    },
+    {
+      "test": "Conversion Completion",
+      "passed": false,
+      "details": "Job failed: None"
+    },
+    {
+      "test": ".mcaddon Download",
+      "passed": false,
+      "details": "Status: 400"
+    },
+    {
+      "test": "Conversion History",
+      "passed": true,
+      "details": "Endpoint available (rate limited)"
+    },
+    {
+      "test": "Stripe Checkout",
+      "passed": false,
+      "details": "Status: 403"
+    },
+    {
+      "test": "Free Tier Limit",
+      "passed": true,
+      "details": "Remaining: 3"
+    },
+    {
+      "test": "Invalid File Type Error",
+      "passed": true,
+      "details": "User-friendly error message"
+    },
+    {
+      "test": "No File Error",
+      "passed": true,
+      "details": "Clear error message"
+    }
+  ]
+}

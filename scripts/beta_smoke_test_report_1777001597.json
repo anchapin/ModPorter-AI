@@ -1,0 +1,85 @@
+{
+  "timestamp": "2026-04-23T23:33:17.487652",
+  "environment": "https://staging.portkit.cloud",
+  "total_tests": 15,
+  "passed": 0,
+  "failed": 15,
+  "percentage": 0.0,
+  "results": [
+    {
+      "test": "User Registration",
+      "passed": false,
+      "details": "Status: 0, Error: "
+    },
+    {
+      "test": "User Login",
+      "passed": false,
+      "details": "Status: 0"
+    },
+    {
+      "test": "Email Verification Endpoint",
+      "passed": false,
+      "details": "Status: 0"
+    },
+    {
+      "test": "Discord OAuth",
+      "passed": false,
+      "details": "Status: 0"
+    },
+    {
+      "test": "Password Reset Request",
+      "passed": false,
+      "details": "Status: 0"
+    },
+    {
+      "test": "File Upload",
+      "passed": false,
+      "details": "Status: 0"
+    },
+    {
+      "test": "Start Conversion",
+      "passed": false,
+      "details": "No uploaded file"
+    },
+    {
+      "test": "Conversion Progress",
+      "passed": false,
+      "details": "No conversion job"
+    },
+    {
+      "test": "Conversion Completion",
+      "passed": false,
+      "details": "No conversion job"
+    },
+    {
+      "test": ".mcaddon Download",
+      "passed": false,
+      "details": "No conversion job"
+    },
+    {
+      "test": "Conversion History",
+      "passed": false,
+      "details": "Status: 0"
+    },
+    {
+      "test": "Stripe Checkout",
+      "passed": false,
+      "details": "Status: 0"
+    },
+    {
+      "test": "Free Tier Limit",
+      "passed": false,
+      "details": "Status: 0"
+    },
+    {
+      "test": "Invalid File Type Error",
+      "passed": false,
+      "details": "Status: 0"
+    },
+    {
+      "test": "No File Error",
+      "passed": false,
+      "details": "Status: 0"
+    }
+  ]
+}
