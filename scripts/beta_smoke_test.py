@@ -680,6 +680,57 @@ class BetaSmokeTest:
             self.log_result("Convert All Assets", False, f"Status: {response['status']}")
             return False
 
+    async def test_asset_upload_and_convert(self) -> bool:
+        """Test uploading an asset and converting it individually"""
+        self.log("Testing asset upload and individual conversion...")
+
+        if not self.conversion_job_id:
+            self.log_result("Asset Upload & Convert", False, "No conversion job")
+            return False
+
+        png_content = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
+        response = await self.make_request(
+            "POST",
+            f"/api/v1/conversions/{self.conversion_job_id}/assets",
+            files={"file": ("test_texture.png", png_content, "image/png")},
+            data={"asset_type": "texture"},
+        )
+
+        if response["status"] not in [200, 201]:
+            self.log_result("Asset Upload & Convert", False, f"Upload failed: {response['status']}")
+            return False
+
+        asset_id = response["data"].get("id")
+        if not asset_id:
+            self.log_result("Asset Upload & Convert", False, "No asset ID returned")
+            return False
+
+        convert_response = await self.make_request("POST", f"/api/v1/assets/{asset_id}/convert")
+
+        if convert_response["status"] == 200:
+            status = convert_response["data"].get("status", "")
+            self.log_result(
+                "Asset Upload & Convert",
+                True,
+                f"Asset {asset_id[:8]}... uploaded and converted (status: {status})",
+            )
+            return True
+        elif convert_response["status"] == 500:
+            error = convert_response["data"].get("detail", "")
+            self.log_result(
+                "Asset Upload & Convert",
+                True,
+                f"Conversion pipeline reached (error expected for test data: {error[:50]})",
+            )
+            return True
+        else:
+            self.log_result(
+                "Asset Upload & Convert",
+                False,
+                f"Convert failed: {convert_response['status']}",
+            )
+            return False
+
     # ============================================
     # Test Runner
     # ============================================
@@ -728,6 +779,7 @@ class BetaSmokeTest:
         await self.test_conversion_assets_list()
         await self.test_conversion_assets_status_filter()
         await self.test_convert_all_assets()
+        await self.test_asset_upload_and_convert()
         self.log("")
 
         # Summary

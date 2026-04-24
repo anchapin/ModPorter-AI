@@ -487,6 +487,47 @@ def test_convert_all_conversion_assets_partial_failure(mock_convert_all):
     assert data["failed_count"] == 1
 
 
+# ---- remaining edge-case coverage ----
+
+
+@patch("db.crud.get_asset", new_callable=AsyncMock)
+@patch("db.crud.delete_asset", new_callable=AsyncMock)
+@patch("os.path.exists", return_value=True)
+@patch("os.remove")
+def test_delete_asset_original_file_cleanup_warning(
+    mock_remove, mock_exists, mock_delete, mock_get, mock_asset
+):
+    mock_get.return_value = mock_asset
+    mock_delete.return_value = {"id": str(mock_asset.id)}
+    mock_remove.side_effect = OSError("permission denied")
+    asset_id = str(mock_asset.id)
+
+    response = client.delete(f"/assets/{asset_id}")
+
+    assert response.status_code == 200
+
+
+@patch("os.remove")
+@patch("os.path.exists", return_value=True)
+@patch("os.makedirs")
+def test_upload_asset_file_write_error_with_existing_file(
+    mock_makedirs, mock_exists, mock_remove, tmp_path
+):
+    conversion_id = str(uuid.uuid4())
+
+    with patch.object(api_assets_module(), "ASSETS_STORAGE_DIR", str(tmp_path)):
+        with patch("builtins.open", side_effect=OSError("disk full")):
+            response = client.post(
+                f"/conversions/{conversion_id}/assets",
+                files={"file": ("test.png", io.BytesIO(b"data"), "image/png")},
+                data={"asset_type": "texture"},
+            )
+
+    assert response.status_code == 500
+    assert response.json()["detail"] == "Could not save file"
+    mock_remove.assert_called()
+
+
 def api_assets_module():
     import api.assets as m
 
