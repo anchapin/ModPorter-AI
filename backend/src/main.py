@@ -1272,7 +1272,10 @@ async def try_ai_engine_or_fallback(job_id: str):
     except Exception as e:
         # This catches errors when trying to connect to AI Engine
         logger.error(f"Failed to connect to AI Engine: {e}")
-        # Fallback to simulation will be handled by the caller
+
+    # Fallback to simulation when AI Engine is unavailable
+    logger.info(f"Falling back to AI simulation for job {job_id}")
+    await simulate_ai_conversion(job_id)
 
 
 @app.get(
