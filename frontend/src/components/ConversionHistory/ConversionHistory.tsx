@@ -142,24 +142,28 @@ export const ConversionHistory: React.FC<ConversionHistoryProps> = ({
 
   // Filter history based on search and status
   const filteredHistory = useMemo(() => {
-    let result = [...history];
+    if (!searchQuery && statusFilter === 'all') {
+      return history;
+    }
 
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (item) =>
+    const query = searchQuery ? searchQuery.toLowerCase() : null;
+
+    return history.filter((item) => {
+      // Apply less expensive status filter first to maximize short-circuiting
+      if (statusFilter !== 'all' && item.status !== statusFilter) {
+        return false;
+      }
+
+      // Apply search filter
+      if (query) {
+        return (
           item.original_filename.toLowerCase().includes(query) ||
           item.job_id.toLowerCase().includes(query)
-      );
-    }
+        );
+      }
 
-    // Apply status filter
-    if (statusFilter !== 'all') {
-      result = result.filter((item) => item.status === statusFilter);
-    }
-
-    return result;
+      return true;
+    });
   }, [history, searchQuery, statusFilter]);
 
   // Add new conversion to history
