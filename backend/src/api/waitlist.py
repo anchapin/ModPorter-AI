@@ -92,44 +92,37 @@ async def get_waitlist(
 ) -> WaitlistStatsResponse:
     """Get waitlist entries with statistics."""
     from config import settings
-    
+
     # Validate API key
     if api_key != settings.admin_api_key:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid API key"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key")
+
     # Get total count
     total_result = await db.execute(select(func.count(WaitlistEntry.id)))
     total_count = total_result.scalar() or 0
-    
+
     # Get entries with pagination
     result = await db.execute(
-        select(WaitlistEntry)
-        .order_by(WaitlistEntry.created_at.desc())
-        .offset(offset)
-        .limit(limit)
+        select(WaitlistEntry).order_by(WaitlistEntry.created_at.desc()).offset(offset).limit(limit)
     )
     entries = result.scalars().all()
-    
+
     # Calculate new today (midnight UTC)
     from datetime import timezone
+
     today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today_start.replace(day=today_start.day - today_start.weekday())
-    
+
     today_result = await db.execute(
-        select(func.count(WaitlistEntry.id))
-        .where(WaitlistEntry.created_at >= today_start)
+        select(func.count(WaitlistEntry.id)).where(WaitlistEntry.created_at >= today_start)
     )
     new_today = today_result.scalar() or 0
-    
+
     week_result = await db.execute(
-        select(func.count(WaitlistEntry.id))
-        .where(WaitlistEntry.created_at >= week_start)
+        select(func.count(WaitlistEntry.id)).where(WaitlistEntry.created_at >= week_start)
     )
     new_this_week = week_result.scalar() or 0
-    
+
     return WaitlistStatsResponse(
         total_count=total_count,
         entries=[WaitlistEntryResponse.model_validate(e) for e in entries],
@@ -150,42 +143,37 @@ async def get_waitlist_stats(
 ) -> dict:
     """Get waitlist statistics only."""
     from config import settings
-    
+
     # Validate API key
     if api_key != settings.admin_api_key:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid API key"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key")
+
     # Get total count
     total_result = await db.execute(select(func.count(WaitlistEntry.id)))
     total_count = total_result.scalar() or 0
-    
+
     # Calculate new today (midnight UTC)
     from datetime import timezone
+
     today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today_start.replace(day=today_start.day - today_start.weekday())
-    
+
     today_result = await db.execute(
-        select(func.count(WaitlistEntry.id))
-        .where(WaitlistEntry.created_at >= today_start)
+        select(func.count(WaitlistEntry.id)).where(WaitlistEntry.created_at >= today_start)
     )
     new_today = today_result.scalar() or 0
-    
+
     week_result = await db.execute(
-        select(func.count(WaitlistEntry.id))
-        .where(WaitlistEntry.created_at >= week_start)
+        select(func.count(WaitlistEntry.id)).where(WaitlistEntry.created_at >= week_start)
     )
     new_this_week = week_result.scalar() or 0
-    
+
     # Get source breakdown
     source_result = await db.execute(
-        select(WaitlistEntry.source, func.count(WaitlistEntry.id))
-        .group_by(WaitlistEntry.source)
+        select(WaitlistEntry.source, func.count(WaitlistEntry.id)).group_by(WaitlistEntry.source)
     )
     source_breakdown = {row[0] or "unknown": row[1] for row in source_result.all()}
-    
+
     return {
         "total_count": total_count,
         "new_today": new_today,
