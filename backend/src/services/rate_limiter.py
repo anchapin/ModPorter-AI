@@ -312,7 +312,7 @@ class UserContextMiddleware(BaseHTTPMiddleware):
         if user_id:
             request.state.user_id = user_id
             request.state.user_tier = tier
-            logger.debug(f"User context set: user_id={user_id}, tier={tier}")
+            logger.debug("User context set for request")
 
         return await call_next(request)
 

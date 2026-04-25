@@ -666,24 +666,24 @@ async def validation_exception_handler(
 async def feature_flag_not_enabled_handler(
     request: Request, exc: FeatureFlagNotEnabledError
 ) -> JSONResponse:
-    """Handler for feature flag not enabled errors - returns 503 Service Unavailable"""
+    """Handler for feature flag not enabled errors - returns 403 Forbidden"""
     logger.warning(f"Feature flag disabled: {exc}")
 
     error_response = create_error_response(exc, request, include_traceback=False)
-    error_response.error_category = "configuration_error"
-    error_response.error_code = "CONFIGURATION_ERROR"
-    error_response.user_message = str(exc)
-    error_response.details = {"reason": "service_unavailable"}
+    error_response.error_category = "authorization_error"
+    error_response.error_code = "FEATURE_DISABLED"
+    feature_msg = str(exc).replace("is not enabled", "is disabled")
+    error_response.message = feature_msg
+    error_response.user_message = feature_msg
+    error_response.details = {"reason": "feature_disabled"}
 
     _record_error_metric(
-        error_category="configuration_error",
+        error_category="authorization_error",
         error_type="FeatureFlagNotEnabledError",
         source="api",
     )
 
-    return JSONResponse(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE, content=error_response.model_dump()
-    )
+    return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content=error_response.model_dump())
 
 
 async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
