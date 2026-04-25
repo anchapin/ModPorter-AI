@@ -45,3 +45,8 @@
 **Vulnerability:** The `upload.py` API endpoint directly exposed internal exception details (e.g., file system errors, stack traces) to clients by passing `str(e)` to `HTTPException(detail=...)`.
 **Learning:** Developers often include raw exception strings in HTTP error responses for easier debugging, unintentionally violating the "fail securely" principle and causing Information Exposure (CWE-200).
 **Prevention:** Always log detailed exceptions internally using `logger.error(f"... {str(e)}")` but return a generic, static, and safe error message (e.g., "An unexpected error occurred.") to the client.
+
+## 2024-05-24 - Prevent Information Exposure in API Exceptions
+**Vulnerability:** The application directly exposed internal exception details (e.g., file system errors, stack traces) to clients by passing `str(e)` to `HTTPException(detail=...)` across multiple files.
+**Learning:** Developers often include raw exception strings in HTTP error responses for easier debugging, unintentionally violating the "fail securely" principle and causing Information Exposure (CWE-200).
+**Prevention:** Always log detailed exceptions internally using `logger.error(f"... {str(e)}")` but return a generic, static, and safe error message (e.g., "An unexpected error occurred.") to the client.
