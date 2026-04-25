@@ -1521,6 +1521,172 @@ class BetaSmokeTest:
             return True
 
     # ============================================
+    # Email Webhook Tests
+    # ============================================
+
+    async def test_email_webhook_endpoint(self) -> bool:
+        """Test Resend email webhook endpoint"""
+        self.log("Testing email webhook endpoint...")
+
+        response = await self.make_request(
+            "POST",
+            "/api/v1/webhooks/resend/email-events",
+            json=[{"type": "delivered", "email": "smoke@test.com"}],
+        )
+
+        if response["status"] in [200, 401, 404]:
+            self.log_result("Email Webhook", True, f"Status: {response['status']}")
+            return True
+        else:
+            self.log_result("Email Webhook", False, f"Status: {response['status']}")
+            return False
+
+    async def test_email_unsubscribe_endpoint(self) -> bool:
+        """Test email unsubscribe GET endpoint"""
+        self.log("Testing email unsubscribe endpoint...")
+
+        response = await self.make_request(
+            "GET", "/api/v1/webhooks/unsubscribe?email=smoke@test.com"
+        )
+
+        if response["status"] in [200, 401, 404]:
+            self.log_result("Email Unsubscribe", True, f"Status: {response['status']}")
+            return True
+        else:
+            self.log_result("Email Unsubscribe", False, f"Status: {response['status']}")
+            return False
+
+    # ============================================
+    # Health Detail Tests
+    # ============================================
+
+    async def test_health_readiness(self) -> bool:
+        """Test health readiness endpoint"""
+        self.log("Testing health readiness endpoint...")
+
+        response = await self.make_request("GET", "/health/readiness")
+
+        if response["status"] == 200:
+            data = response["data"]
+            has_status = "status" in data
+            has_checks = "checks" in data
+            self.log_result(
+                "Health Readiness",
+                has_status and has_checks,
+                f"status={data.get('status')}" if has_status else "Missing fields",
+            )
+            return has_status and has_checks
+        else:
+            self.log_result("Health Readiness", False, f"Status: {response['status']}")
+            return False
+
+    async def test_health_liveness(self) -> bool:
+        """Test health liveness endpoint"""
+        self.log("Testing health liveness endpoint...")
+
+        response = await self.make_request("GET", "/health/liveness")
+
+        if response["status"] == 200:
+            data = response["data"]
+            ok = data.get("status") == "healthy"
+            self.log_result("Health Liveness", ok, f"status={data.get('status')}")
+            return ok
+        else:
+            self.log_result("Health Liveness", False, f"Status: {response['status']}")
+            return False
+
+    async def test_health_basic(self) -> bool:
+        """Test basic health endpoint"""
+        self.log("Testing basic health endpoint...")
+
+        response = await self.make_request("GET", "/health")
+
+        if response["status"] == 200:
+            ok = response["data"].get("status") == "healthy"
+            self.log_result("Health Basic", ok, f"status={response['data'].get('status')}")
+            return ok
+        else:
+            self.log_result("Health Basic", False, f"Status: {response['status']}")
+            return False
+
+    # ============================================
+    # Build Performance Tests
+    # ============================================
+
+    async def test_build_performance_start(self) -> bool:
+        """Test build performance start endpoint"""
+        self.log("Testing build performance start...")
+
+        response = await self.make_request(
+            "POST",
+            "/api/v1/build-performance/start",
+            json={
+                "conversion_id": str(uuid.uuid4())
+                if "uuid" in dir()
+                else "00000000-0000-0000-0000-000000000000",
+                "build_type": "standard",
+                "target_version": "1.20.0",
+                "mod_size_bytes": 1024,
+            },
+        )
+
+        if response["status"] in [200, 201, 401, 404, 422]:
+            self.log_result("Build Perf Start", True, f"Status: {response['status']}")
+            return True
+        else:
+            self.log_result("Build Perf Start", False, f"Status: {response['status']}")
+            return False
+
+    async def test_build_performance_stages(self) -> bool:
+        """Test build performance stages list endpoint"""
+        self.log("Testing build performance stages...")
+
+        response = await self.make_request("GET", "/api/v1/build-performance/stages")
+
+        if response["status"] in [200, 401, 404]:
+            self.log_result("Build Perf Stages", True, f"Status: {response['status']}")
+            return True
+        else:
+            self.log_result("Build Perf Stages", False, f"Status: {response['status']}")
+            return False
+
+    async def test_build_performance_stats(self) -> bool:
+        """Test build performance stats endpoint"""
+        self.log("Testing build performance stats...")
+
+        response = await self.make_request("GET", "/api/v1/build-performance/stats")
+
+        if response["status"] in [200, 401, 404]:
+            self.log_result("Build Perf Stats", True, f"Status: {response['status']}")
+            return True
+        else:
+            self.log_result("Build Perf Stats", False, f"Status: {response['status']}")
+            return False
+
+    # ============================================
+    # QA Endpoint Tests
+    # ============================================
+
+    async def test_qa_start_task(self) -> bool:
+        """Test QA task start endpoint"""
+        self.log("Testing QA task start...")
+
+        response = await self.make_request(
+            "POST",
+            "/api/v1/qa/start",
+            json={
+                "conversion_id": "00000000-0000-0000-0000-000000000000",
+            },
+        )
+
+        if response["status"] in [200, 201, 401, 404, 422]:
+            self.log_result("QA Start Task", True, f"Status: {response['status']}")
+            return True
+        else:
+            self.log_result("QA Start Task", False, f"Status: {response['status']}")
+            return False
+
+    # ============================================
     # Test Runner
     # ============================================
 
@@ -1622,6 +1788,31 @@ class BetaSmokeTest:
         # Automation metrics tests
         self.log("### AUTOMATION METRICS TESTS ###")
         await self.test_automation_metrics_endpoint()
+        self.log("")
+
+        # Email webhook tests
+        self.log("### EMAIL WEBHOOK TESTS ###")
+        await self.test_email_webhook_endpoint()
+        await self.test_email_unsubscribe_endpoint()
+        self.log("")
+
+        # Health detail tests
+        self.log("### HEALTH DETAIL TESTS ###")
+        await self.test_health_readiness()
+        await self.test_health_liveness()
+        await self.test_health_basic()
+        self.log("")
+
+        # Build performance tests
+        self.log("### BUILD PERFORMANCE TESTS ###")
+        await self.test_build_performance_start()
+        await self.test_build_performance_stages()
+        await self.test_build_performance_stats()
+        self.log("")
+
+        # QA tests
+        self.log("### QA ENDPOINT TESTS ###")
+        await self.test_qa_start_task()
         self.log("")
 
         # Summary
