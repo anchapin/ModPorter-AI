@@ -135,6 +135,14 @@ async def upload_asset(
     - **asset_type**: Type of asset being uploaded
     - **file**: The asset file to upload
     """
+    try:
+        uuid.UUID(conversion_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid conversion_id format: '{conversion_id}'. Must be a UUID.",
+        )
+
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
 
@@ -359,6 +367,14 @@ async def convert_all_conversion_assets(
 
     - **conversion_id**: ID of the conversion job
     """
+    try:
+        uuid.UUID(conversion_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid conversion_id format: '{conversion_id}'. Must be a UUID.",
+        )
+
     try:
         result = await asset_conversion_service.convert_assets_for_conversion(conversion_id)
 
