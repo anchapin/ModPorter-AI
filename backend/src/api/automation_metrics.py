@@ -253,7 +253,7 @@ async def get_automation_metrics(
         )
     except Exception as e:
         logger.error(f"Failed to get automation metrics: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get automation metrics: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get automation metrics.")
 
 
 @router.get("/automation/dashboard", response_model=DashboardData)
@@ -324,7 +324,7 @@ async def get_automation_dashboard(
         )
     except Exception as e:
         logger.error(f"Failed to get dashboard data: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get dashboard data: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get dashboard data.")
 
 
 @router.post("/automation/record", response_model=ConversionEventResponse, status_code=201)
@@ -364,7 +364,7 @@ async def record_conversion_event(
         )
     except Exception as e:
         logger.error(f"Failed to record conversion event: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to record conversion event: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to record conversion event.")
 
 
 @router.get("/automation/history", response_model=HistoricalDataResponse)
@@ -403,7 +403,7 @@ async def get_automation_history(
         )
     except Exception as e:
         logger.error(f"Failed to get historical data: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get historical data: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get historical data.")
 
 
 @router.get("/automation/events", response_model=HistoryEventsResponse)
@@ -448,7 +448,7 @@ async def get_conversion_events(
         )
     except Exception as e:
         logger.error(f"Failed to get conversion events: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get conversion events: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get conversion events.")
 
 
 @router.post("/automation/reset")
@@ -469,4 +469,4 @@ async def reset_automation_metrics():
         }
     except Exception as e:
         logger.error(f"Failed to reset metrics: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to reset metrics: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to reset metrics.")

@@ -23,3 +23,6 @@
 ## 2026-04-18 - Pre-compute search strings for static arrays
 **Learning:** Performing multiple `.toLowerCase()` calls on object properties inside a `.filter()` callback for a search function creates $O(N \times M)$ redundant string allocations on every keystroke, causing noticeable input lag.
 **Action:** For static data arrays, pre-compute a concatenated lowercase search string once outside the component, and filter against that single string to eliminate allocations during renders.
+## 2024-05-18 - [Optimize Array Filtering Operations in React]
+**Learning:** When calculating aggregate statistics or category counts for rendering (e.g., inside a React component like `ConversionHistory`), chaining multiple `.filter()` or `.map()` methods creates intermediate arrays that can be computationally expensive (O(N * number of filters)). Furthermore, running `.toLowerCase().includes()` on every item for text-based filtering is costly compared to simple string equality.
+**Action:** Use a single O(N) pass (e.g., with `.reduce()` or a single `.filter()` with multiple conditions) inside `useMemo` instead of chaining array methods. When combining filter conditions, place less computationally expensive checks (e.g., exact string matches or boolean checks) before more expensive ones (e.g., `.includes()` or regex) to maximize short-circuiting efficiency and exit early.

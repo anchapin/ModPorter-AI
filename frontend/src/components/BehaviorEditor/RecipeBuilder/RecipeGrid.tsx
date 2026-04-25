@@ -146,6 +146,7 @@ export const RecipeGrid: React.FC<RecipeGridProps> = ({
               <IconButton
                 size="small"
                 className="remove-button"
+                aria-label={`Remove ${slot.item.name}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onItemRemove(slot);

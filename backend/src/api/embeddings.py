@@ -355,13 +355,13 @@ async def index_document(
         logger.error(f"Invalid chunking strategy: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid chunking strategy: {str(e)}",
+            detail="Invalid chunking strategy.",
         )
     except Exception as e:
         logger.error(f"Error indexing document: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error indexing document: {str(e)}",
+            detail="Error indexing document.",
         )
 
 
@@ -731,12 +731,12 @@ async def hybrid_search(  # noqa: C901
         logger.error("Required module not available", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Required module not available: {str(e)}",
+            detail="Required module not available.",
         )
     except Exception as e:
         logger.error(f"Hybrid search failed: {e}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Search failed: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Search failed."
         )
 
 
@@ -1059,5 +1059,5 @@ async def search_similar_embeddings_enhanced(
     except Exception as e:
         logger.error(f"Error in enhanced search: {e}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Search failed: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Search failed."
         )
