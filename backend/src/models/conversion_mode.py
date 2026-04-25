@@ -115,6 +115,8 @@ class ModeClassificationRequest(BaseModel):
 class ModeClassificationResponse(BaseModel):
     """Response with mode classification result."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     classification_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     mode: ConversionMode
     confidence: float
@@ -237,3 +239,5 @@ MODE_PIPELINES: Dict[ConversionMode, ModeSpecificPipelineConfig] = {
         special_requirements=["expert_qa", "manual_inspection", "extended_validation"],
     ),
 }
+
+ModeClassificationResponse.model_rebuild()

@@ -12,7 +12,7 @@ import json
 import os
 from typing import Optional, Any, List
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import redis.asyncio as aioredis
 from redis.asyncio import Redis

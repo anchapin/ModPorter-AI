@@ -523,7 +523,7 @@ async def submit_correction(
     correction: CorrectionSubmissionRequest, db: AsyncSession = Depends(get_db)
 ):
     """Submit a correction for a conversion output."""
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     logger.info(f"Receiving correction for job {correction.job_id}")
 
@@ -681,7 +681,7 @@ async def review_correction(
     correction_id: str, review: CorrectionReviewRequest, db: AsyncSession = Depends(get_db)
 ):
     """Review a correction (approve or reject)."""
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     if review.status not in ["approved", "rejected"]:
         raise HTTPException(status_code=400, detail="Status must be 'approved' or 'rejected'")
@@ -724,7 +724,7 @@ async def review_correction(
 @router.post("/feedback/corrections/{correction_id}/apply")
 async def apply_correction(correction_id: str, db: AsyncSession = Depends(get_db)):
     """Manually apply a correction to the knowledge base."""
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     try:
         correction_uuid = uuid.UUID(correction_id)

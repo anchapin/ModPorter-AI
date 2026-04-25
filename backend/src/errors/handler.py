@@ -23,6 +23,7 @@ from pydantic import BaseModel, ValidationError
 
 from .classifier import ErrorType, ErrorSeverity, ErrorClassification
 from .models import RecoveryAction, RecoveryStrategy
+from services.feature_flags import FeatureFlagNotEnabledError
 
 logger = logging.getLogger(__name__)
 
@@ -662,6 +663,29 @@ async def validation_exception_handler(
     )
 
 
+async def feature_flag_not_enabled_handler(
+    request: Request, exc: FeatureFlagNotEnabledError
+) -> JSONResponse:
+    """Handler for feature flag not enabled errors - returns 403 Forbidden"""
+    logger.warning(f"Feature flag disabled: {exc}")
+
+    error_response = create_error_response(exc, request, include_traceback=False)
+    error_response.error_category = "authorization_error"
+    error_response.error_code = "FEATURE_DISABLED"
+    feature_msg = str(exc).replace("is not enabled", "is disabled")
+    error_response.message = feature_msg
+    error_response.user_message = feature_msg
+    error_response.details = {"reason": "feature_disabled"}
+
+    _record_error_metric(
+        error_category="authorization_error",
+        error_type="FeatureFlagNotEnabledError",
+        source="api",
+    )
+
+    return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content=error_response.model_dump())
+
+
 async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handler for all other exceptions"""
     logger.error(f"[{exc.__class__.__name__}] Unhandled exception: {str(exc)}", exc_info=True)
@@ -685,6 +709,11 @@ def register_exception_handlers(app):
         (PortkitException, portkit_exception_handler, "PortkitException"),
         (HTTPException, http_exception_handler, "HTTPException"),
         (RequestValidationError, validation_exception_handler, "RequestValidationError"),
+        (
+            FeatureFlagNotEnabledError,
+            feature_flag_not_enabled_handler,
+            "FeatureFlagNotEnabledError",
+        ),
         (Exception, generic_exception_handler, "Exception"),
     ]
 

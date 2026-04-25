@@ -1,7 +1,7 @@
 """add_comparison_tables
 
-Revision ID: 0002_add_comparison_tables
-Revises: 0001_initial
+Revision ID: 0007_add_comparison_tables
+Revises: 0006_add_usage_records
 Create Date: 2023-10-27 10:00:00.000000 # Placeholder Create Date
 
 """
@@ -11,8 +11,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "0002_add_comparison_tables"  # User-defined revision string
-down_revision = "0001_initial"  # Points to the previous migration (0001_initial.py)
+revision = "0007_add_comparison_tables"  # User-defined revision string
+down_revision = "0006_add_usage_records"  # Points to the previous migration
 branch_labels = None
 depends_on = None
 

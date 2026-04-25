@@ -107,7 +107,7 @@ async def submit_feedback(
 
     # Track analytics
     analytics = get_analytics_service()
-    analytics.track_feedback_submitted(
+    await analytics.track_feedback_submitted(
         user_id=user_id,
         conversion_id=request.conversion_id,
         rating=request.rating,
@@ -153,7 +153,7 @@ async def rate_conversion(
 
     # Track analytics
     analytics = get_analytics_service()
-    analytics.track_feedback_submitted(
+    await analytics.track_feedback_submitted(
         user_id=user_id,
         conversion_id=request.conversion_id,
         rating=request.rating,

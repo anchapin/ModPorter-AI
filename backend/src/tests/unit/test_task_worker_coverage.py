@@ -6,12 +6,14 @@ import pytest
 import asyncio
 from unittest.mock import MagicMock, patch, AsyncMock
 
-from services.task_worker import (
+pytest.importorskip("celery", reason="celery not installed - skipping Celery tests")
+
+from src.services.task_worker import (
     TaskWorker,
     handle_conversion_task,
     handle_asset_conversion_task,
 )
-from services.task_queue import Task, TaskStatus, TaskPriority
+from src.services.task_queue import Task, TaskStatus, TaskPriority
 
 
 class TestTaskWorker:

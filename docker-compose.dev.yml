@@ -26,7 +26,7 @@ services:
       dockerfile: Dockerfile
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
-      - '8080:8000'
+      - '8000:8000'
     volumes:
       - ./backend:/app
       - conversion-cache:/app/cache
@@ -36,10 +36,14 @@ services:
       - DEBUG=True
       - LOG_LEVEL=DEBUG
       - PYTHONDONTWRITEBYTECODE=1
-      - PYTHONPATH=/app
+      - PYTHONPATH=/app/src
       - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/portkit
       - REDIS_URL=redis://redis:6379
       - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3002,http://localhost:8080
+      - SKIP_EMAIL_VERIFICATION=true
+      - SECRET_KEY=dev-secret-key-for-testing-only
+      - JWT_SECRET_KEY=dev-jwt-secret-for-testing-only
+      - FEATURE_USER_ACCOUNTS=true
     depends_on:
       redis:
         condition: service_healthy

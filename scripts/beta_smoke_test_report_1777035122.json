@@ -1,40 +1,40 @@
 {
-  "timestamp": "2026-04-23T09:53:55.734733",
-  "environment": "http://localhost:8000",
+  "timestamp": "2026-04-24T08:52:02.441510",
+  "environment": "https://portkit.cloud",
   "total_tests": 15,
-  "passed": 0,
-  "failed": 15,
-  "percentage": 0.0,
+  "passed": 10,
+  "failed": 5,
+  "percentage": 66.66666666666666,
   "results": [
     {
       "test": "User Registration",
-      "passed": false,
-      "details": "Status: 0, Error: All connection attempts failed"
+      "passed": true,
+      "details": ""
     },
     {
       "test": "User Login",
-      "passed": false,
-      "details": "Status: 0"
+      "passed": true,
+      "details": "Access token received"
     },
     {
       "test": "Email Verification Endpoint",
-      "passed": false,
-      "details": "Status: 0"
+      "passed": true,
+      "details": "Endpoint exists"
     },
     {
       "test": "Discord OAuth",
-      "passed": false,
-      "details": "Status: 0"
+      "passed": true,
+      "details": "OAuth endpoint available"
     },
     {
       "test": "Password Reset Request",
-      "passed": false,
-      "details": "Status: 0"
+      "passed": true,
+      "details": ""
     },
     {
       "test": "File Upload",
       "passed": false,
-      "details": "Status: 0"
+      "details": "Status: 429"
     },
     {
       "test": "Start Conversion",
@@ -58,28 +58,28 @@
     },
     {
       "test": "Conversion History",
-      "passed": false,
-      "details": "Status: 0"
+      "passed": true,
+      "details": "Endpoint available (rate limited)"
     },
     {
       "test": "Stripe Checkout",
-      "passed": false,
-      "details": "Status: 0"
+      "passed": true,
+      "details": "Endpoint available (Stripe not configured or premium disabled)"
     },
     {
       "test": "Free Tier Limit",
-      "passed": false,
-      "details": "Status: 0"
+      "passed": true,
+      "details": "Remaining: 3"
     },
     {
       "test": "Invalid File Type Error",
-      "passed": false,
-      "details": "Status: 0"
+      "passed": true,
+      "details": "Endpoint available (rate limited)"
     },
     {
       "test": "No File Error",
-      "passed": false,
-      "details": "Status: 0"
+      "passed": true,
+      "details": "Endpoint available (rate limited)"
     }
   ]
 }

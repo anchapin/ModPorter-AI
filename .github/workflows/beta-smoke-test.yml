@@ -6,7 +6,7 @@ on:
       environment:
         description: 'Environment to test'
         required: true
-        default: 'staging'
+        default: 'production'
         type: choice
         options:
           - staging
@@ -51,9 +51,9 @@ jobs:
         id: env-url
         run: |
           if [ "${{ github.event.inputs.environment }}" = "production" ]; then
-            echo "url=https://portkit.ai" >> $GITHUB_OUTPUT
+            echo "url=https://portkit.cloud" >> $GITHUB_OUTPUT
           else
-            echo "url=https://staging.portkit.ai" >> $GITHUB_OUTPUT
+            echo "url=https://staging.portkit.cloud" >> $GITHUB_OUTPUT
           fi
 
       - name: Wait for deployment (if triggered by schedule)
@@ -100,7 +100,7 @@ jobs:
           TOTAL=$(jq '.total_tests' "$REPORT_FILE")
           PASSED=$(jq '.passed' "$REPORT_FILE")
           FAILED=$(jq '.failed' "$REPORT_FILE")
-          PERCENTAGE=$(jq '.percentage' "$REPORT_FILE")
+          PERCENTAGE=$(jq '.percentage | floor' "$REPORT_FILE")
 
           echo "total=$TOTAL" >> $GITHUB_OUTPUT
           echo "passed=$PASSED" >> $GITHUB_OUTPUT
@@ -178,7 +178,7 @@ jobs:
       - name: Check staging health
         if: github.event.inputs.environment != 'production'
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 15 https://staging.portkit.ai/health 2>/dev/null) || true
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 15 https://staging.portkit.cloud/health 2>/dev/null) || true
           if [ "$STATUS" = "000" ]; then
             echo "⚠️ Staging unreachable (DNS/network issue) - skipping health check"
           elif [ "$STATUS" -ne 200 ]; then
@@ -191,7 +191,7 @@ jobs:
       - name: Check production health
         if: github.event.inputs.environment == 'production'
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 15 https://portkit.ai/health 2>/dev/null) || true
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 15 https://portkit.cloud/health 2>/dev/null) || true
           if [ "$STATUS" = "000" ]; then
             echo "⚠️ Production unreachable (DNS/network issue) - skipping health check"
           elif [ "$STATUS" -ne 200 ]; then
@@ -203,7 +203,7 @@ jobs:
 
       - name: Check API endpoints
         run: |
-          URL="${{ github.event.inputs.environment == 'production' && 'https://portkit.ai' || 'https://staging.portkit.ai' }}"
+          URL="${{ github.event.inputs.environment == 'production' && 'https://portkit.cloud' || 'https://staging.portkit.cloud' }}"
 
           # Check critical endpoints
           ENDPOINTS=(
