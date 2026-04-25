@@ -61,7 +61,7 @@ class TestRegisterWithVerification:
         with (
             patch("api.email_verification.get_email_service", return_value=mock_email_svc),
             patch("api.email_verification.generate_verification_token", return_value="tok_new"),
-            patch("api.email_verification.hash_password", return_value="hashed"),
+            patch("security.auth.hash_password", return_value="hashed"),
         ):
             _override_db(app, mock_db)
             client = TestClient(app)
@@ -87,7 +87,7 @@ class TestRegisterWithVerification:
         with (
             patch("api.email_verification.get_email_service"),
             patch("api.email_verification.generate_verification_token"),
-            patch("api.email_verification.hash_password"),
+            patch("security.auth.hash_password"),
         ):
             client = TestClient(app)
             resp = client.post(
@@ -116,7 +116,7 @@ class TestRegisterWithVerification:
         with (
             patch("api.email_verification.get_email_service", return_value=mock_email_svc),
             patch("api.email_verification.generate_verification_token", return_value="tok_re"),
-            patch("api.email_verification.hash_password", return_value="hashed"),
+            patch("security.auth.hash_password", return_value="hashed"),
         ):
             _override_db(app, mock_db)
             client = TestClient(app)
