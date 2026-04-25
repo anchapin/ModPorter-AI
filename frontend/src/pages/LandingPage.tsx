@@ -131,24 +131,6 @@ const LandingPage: React.FC = () => {
 
   return (
     <div className="landing-page">
-      <head>
-        <title>Portkit — Java to Bedrock Conversion Accelerator</title>
-        <meta
-          name="description"
-          content="Convert Minecraft Java Edition mods to Bedrock Edition 60-80% automatically. Join the waitlist for early access."
-        />
-        <meta
-          property="og:title"
-          content="Portkit — Java to Bedrock Conversion"
-        />
-        <meta
-          property="og:description"
-          content="AI-powered Java to Bedrock mod conversion. Join the waitlist."
-        />
-        <meta property="og:type" content="website" />
-        <meta name="twitter:card" content="summary_large_image" />
-      </head>
-
       <nav className="landing-nav">
         <div className="nav-container">
           <div className="nav-logo">
