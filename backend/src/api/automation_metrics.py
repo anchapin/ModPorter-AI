@@ -253,7 +253,7 @@ async def get_automation_metrics(
         )
     except Exception as e:
         logger.error(f"Failed to get automation metrics: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get automation metrics.")
+        raise HTTPException(status_code=500, detail=f"Failed to get automation metrics: {e}")
 
 
 @router.get("/automation/dashboard", response_model=DashboardData)
