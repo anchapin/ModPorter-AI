@@ -6,7 +6,7 @@ import { TopNavigation } from './components/TopNavigation';
 import { OnboardingFlow } from './components/Onboarding';
 import { CookieConsentBanner } from './components/common/CookieConsentBanner';
 import { PageViewTracker } from './components/PageViewTracker';
-import { usePageViewTracking } from './hooks/useAnalytics';
+// import { usePageViewTracking } from './hooks/useAnalytics'; // Temporarily disabled pending PageViewTracker integration
 import './App.css';
 import './components/common/CookieConsentBanner.css';
 
