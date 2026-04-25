@@ -5,6 +5,7 @@ import { NotificationProvider } from './components/NotificationSystem';
 import { TopNavigation } from './components/TopNavigation';
 import { OnboardingFlow } from './components/Onboarding';
 import { CookieConsentBanner } from './components/common/CookieConsentBanner';
+import { PageViewTracker } from './components/PageViewTracker';
 import { usePageViewTracking } from './hooks/useAnalytics';
 import './App.css';
 import './components/common/CookieConsentBanner.css';
@@ -48,25 +49,21 @@ const CookiesPage = lazy(() => import('./pages/CookiesPage'));
 function App() {
   console.log('App component is rendering...');
 
-  // Track page views automatically
-  usePageViewTracking(true);
-
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    // Check if user has completed onboarding
-    const onboardingCompleted = localStorage.getItem('onboarding_completed');
-    if (!onboardingCompleted) {
-      // Show onboarding for first-time users
-      setShowOnboarding(true);
-    }
+    // TEMPORARILY DISABLED: Onboarding flow is disabled
+    // New users should be directed to sign up for waitlist instead
+    // To re-enable: change the logic back to check for !onboardingCompleted
+    setShowOnboarding(false);
   }, []);
 
   return (
     <ErrorBoundary>
       <NotificationProvider>
         <Router>
+          <PageViewTracker />
           <div className="app">
             <OnboardingFlow
               isOpen={showOnboarding}

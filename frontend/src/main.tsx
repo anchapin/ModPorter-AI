@@ -42,8 +42,6 @@ if (sentryDsn) {
   console.log('Sentry error tracking initialized');
 }
 
-Sentry.addCaptureConsoleIntegration();
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
