@@ -1,21 +1,21 @@
 # ai-engine/models/__init__.py
+from .comparison import ComparisonResult, FeatureMapping
 from .smart_assumptions import (
-    SmartAssumption,
-    SmartAssumptionEngine,
-    FeatureContext,
-    AssumptionResult,
-    ConversionPlanComponent,
-    ConversionPlan,
-    AssumptionReport,
     AppliedAssumptionReportItem,
     AssumptionImpact,
+    AssumptionReport,
+    AssumptionResult,
+    ConversionPlan,
+    ConversionPlanComponent,
+    FeatureContext,
+    SmartAssumption,
+    SmartAssumptionEngine,
 )
-from .comparison import ComparisonResult, FeatureMapping
 from .validation import (
-    SemanticAnalysisResult,
-    BehaviorPredictionResult,
     AssetValidationResult,
+    BehaviorPredictionResult,
     ManifestValidationResult,
+    SemanticAnalysisResult,
     ValidationReport,
 )
 

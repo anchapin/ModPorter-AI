@@ -5,13 +5,14 @@ Part of the Bedrock Add-on Generation System (Issue #6)
 
 import json
 import logging
-from typing import Dict, List, Any, Optional
-from pathlib import Path
 from dataclasses import dataclass
 from enum import Enum
-from converters.spawn_rule_generator import SpawnRuleGenerator
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 from converters.loot_table_generator import LootTableGenerator
 from converters.rendering_converter import convert_animation_controller
+from converters.spawn_rule_generator import SpawnRuleGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -208,7 +209,6 @@ class EntityConverter:
             "pickup": "minecraft:behavior.pickup_items",
             # Specialized goals
             "celebrate": "minecraft:behavior.celebrate",
-            "rest": "minecraft:behavior.restrict_sun",
             "eat": "minecraft:behavior.item_consume",
             "graze": "minecraft:behavior.graze",
             "sleep": "minecraft:behavior.sleep",

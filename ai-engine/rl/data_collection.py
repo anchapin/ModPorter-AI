@@ -8,16 +8,16 @@ metrics and stores user feedback data.
 Issue: #514 - Set up data collection for RL training (RL Pipeline Phase 1)
 """
 
+import asyncio
+import hashlib
 import json
 import logging
 import sqlite3
-import hashlib
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from dataclasses import dataclass, asdict, field
-from enum import Enum
-import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -265,23 +265,23 @@ class DataCollectionStore:
 
             # Create indexes for efficient queries
             conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_label_status 
+                CREATE INDEX IF NOT EXISTS idx_label_status
                 ON conversion_examples(label_status)
             """)
 
             conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_conversion_outcome 
+                CREATE INDEX IF NOT EXISTS idx_conversion_outcome
                 ON conversion_examples(conversion_outcome)
             """)
 
             conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_quality_score 
+                CREATE INDEX IF NOT EXISTS idx_quality_score
                 ON conversion_examples(quality_score)
             """)
 
             # Create index on job_id for efficient lookups during user feedback processing
             conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_conversion_examples_job_id 
+                CREATE INDEX IF NOT EXISTS idx_conversion_examples_job_id
                 ON conversion_examples(job_id)
             """)
 
@@ -368,9 +368,9 @@ class DataCollectionStore:
             with sqlite3.connect(self.db_path) as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.execute(
-                    """SELECT * FROM conversion_examples 
-                       WHERE label_status = ? 
-                       ORDER BY created_at DESC 
+                    """SELECT * FROM conversion_examples
+                       WHERE label_status = ?
+                       ORDER BY created_at DESC
                        LIMIT ?""",
                     (status.value, limit),
                 )
@@ -405,7 +405,7 @@ class DataCollectionStore:
             with sqlite3.connect(self.db_path) as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.execute(
-                    """SELECT * FROM conversion_examples 
+                    """SELECT * FROM conversion_examples
                        WHERE label_status IN ('labeled', 'verified')
                        AND quality_score >= ?
                        AND conversion_outcome IN ('success', 'partial')
@@ -432,7 +432,7 @@ class DataCollectionStore:
                 now = datetime.now().isoformat()
                 conn.execute(
                     """
-                    UPDATE conversion_examples 
+                    UPDATE conversion_examples
                     SET label_status = 'labeled',
                         quality_label = ?,
                         labeler_id = ?,
@@ -465,7 +465,7 @@ class DataCollectionStore:
                 now = datetime.now().isoformat()
                 conn.execute(
                     """
-                    UPDATE conversion_examples 
+                    UPDATE conversion_examples
                     SET user_feedback_type = ?,
                         user_comment = ?,
                         user_rating = ?,
@@ -788,7 +788,7 @@ class DataCollectionPipeline:
             with sqlite3.connect(self.store.db_path) as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.execute("""
-                    SELECT * FROM labeling_tasks 
+                    SELECT * FROM labeling_tasks
                     WHERE status = 'pending'
                     ORDER BY priority DESC, created_at ASC
                     LIMIT 1
@@ -837,7 +837,7 @@ class DataCollectionPipeline:
                     now = datetime.now().isoformat()
                     conn.execute(
                         """
-                        UPDATE labeling_tasks 
+                        UPDATE labeling_tasks
                         SET status = 'completed', completed_at = ?
                         WHERE task_id = ?
                     """,

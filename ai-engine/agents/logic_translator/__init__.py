@@ -12,26 +12,27 @@ Split into submodules per Issue #1141:
 - tools: CrewAI @tool wrappers via LogicTranslatorTools
 """
 
-from typing import Dict, Any
-
-from agents.logic_translator.translator import (
-    LogicTranslatorAgent,
-    BEDROCK_BLOCK_TEMPLATES,
-    BEDROCK_ITEM_TEMPLATES,
-    BEDROCK_ENTITY_TEMPLATES,
-    BEDROCK_RECIPE_TEMPLATES,
-    JAVA_TO_BEDROCK_BLOCK_PROPERTIES,
+from agents.logic_translator.assumptions import SMART_ASSUMPTIONS, get_smart_assumptions
+from agents.logic_translator.block_state_mapper import (
     JAVA_BLOCK_METHOD_MAPPINGS,
-    JAVA_TO_BEDROCK_ITEM_PROPERTIES,
-    JAVA_ITEM_METHOD_MAPPINGS,
-    JAVA_TO_BEDROCK_ENTITY_PROPERTIES,
-    SMART_ASSUMPTIONS,
-    TREE_SITTER_AVAILABLE,
-    LLM_CODE_TEMPERATURE,
+    JAVA_TO_BEDROCK_BLOCK_PROPERTIES,
     BlockStateMapper,
 )
+from agents.logic_translator.block_templates import (
+    BEDROCK_BLOCK_TEMPLATES,
+    BEDROCK_ENTITY_TEMPLATES,
+    BEDROCK_ITEM_TEMPLATES,
+    BEDROCK_RECIPE_TEMPLATES,
+    JAVA_ITEM_METHOD_MAPPINGS,
+    JAVA_TO_BEDROCK_ENTITY_PROPERTIES,
+    JAVA_TO_BEDROCK_ITEM_PROPERTIES,
+    TREE_SITTER_AVAILABLE,
+)
 from agents.logic_translator.tools import LogicTranslatorTools
-from agents.logic_translator.assumptions import get_smart_assumptions
+from agents.logic_translator.translator import (
+    LLM_CODE_TEMPERATURE,
+    LogicTranslatorAgent,
+)
 
 LogicTranslator = LogicTranslatorAgent
 

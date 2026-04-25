@@ -3,13 +3,13 @@ Ensemble re-ranker combining multiple re-ranking strategies.
 """
 
 import logging
-from typing import List, Dict, Any, Tuple
 from collections import defaultdict
+from typing import Any, Dict, List, Tuple
 
 from schemas.multimodal_schema import SearchQuery, SearchResult
 
-from .feature_reranker import FeatureBasedReRanker
 from .contextual_reranker import ContextualReRanker
+from .feature_reranker import FeatureBasedReRanker
 
 logger = logging.getLogger(__name__)
 

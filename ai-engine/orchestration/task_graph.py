@@ -3,13 +3,13 @@ Task Graph implementation for managing agent dependencies and execution order.
 Part of Phase 2: Core Orchestration Engine Implementation
 """
 
-from enum import Enum
-from dataclasses import dataclass, field
-from typing import Dict, List, Set, Any, Optional, Callable
+import json
 import logging
 import time
 from concurrent.futures import Future
-import json
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional, Set
 
 logger = logging.getLogger(__name__)
 

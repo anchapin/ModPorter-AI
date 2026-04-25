@@ -192,6 +192,53 @@ class TestRateLimiter:
 
         assert limiter.get_wait_time("unknown-client") == 0.0
 
+    def test_cooldown_still_active(self):
+        """Test that is_allowed returns False when client is still in cooldown."""
+        limiter = RateLimiter(
+            RateLimitConfig(
+                max_messages_per_second=2,
+                max_messages_per_minute=10,
+                cooldown_seconds=5.0,
+            )
+        )
+
+        with patch("websocket.enhanced_manager.time") as mock_time:
+            now = 1000.0
+            mock_time.time.return_value = now
+
+            assert limiter.is_allowed("client-1") is True
+            assert limiter.is_allowed("client-1") is True
+
+            recent_second = [t for t in limiter._message_times["client-1"] if now - t < 1.0]
+            assert len(recent_second) >= 2
+
+            result = limiter.is_allowed("client-1")
+            assert result is False
+            assert "client-1" in limiter._blocked_until
+
+            mock_time.time.return_value = now + 1.0
+            result = limiter.is_allowed("client-1")
+            assert result is False
+
+            mock_time.time.return_value = now + 10.0
+            result = limiter.is_allowed("client-1")
+            assert result is True
+
+    def test_minute_limit_blocks(self):
+        """Test that per-minute limit blocks when exceeded."""
+        limiter = RateLimiter(
+            RateLimitConfig(
+                max_messages_per_second=100,
+                max_messages_per_minute=3,
+                cooldown_seconds=1.0,
+            )
+        )
+
+        for _ in range(3):
+            assert limiter.is_allowed("client-1") is True
+
+        assert limiter.is_allowed("client-1") is False
+
 
 class TestEnhancedConnectionManager:
     """Tests for EnhancedConnectionManager."""

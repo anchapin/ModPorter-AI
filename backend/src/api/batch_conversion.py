@@ -23,7 +23,7 @@ router = APIRouter(prefix="/batch", tags=["Batch Conversion"])
 class BatchConversionRequest(BaseModel):
     """Batch conversion request."""
 
-    files: List[Dict[str, Any]] = Field(..., min_items=2, max_items=20)
+    files: List[Dict[str, Any]] = Field(..., min_length=2, max_length=20)
     options: Optional[Dict[str, Any]] = None
     priority: str = Field(default="normal", description="low, normal, high")
 

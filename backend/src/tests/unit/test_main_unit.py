@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 
 from main import app, conversion_jobs_db
+from main import ConversionJob
 
 
 @pytest.fixture(autouse=True)
@@ -360,3 +361,46 @@ class TestConversionRequestValidation:
 
         # The response should use the default target version
         # This would be tested in integration tests with actual logic
+
+
+class TestConversionJobUUIDCoercion:
+    """Test that ConversionJob auto-coerces UUID fields to strings."""
+
+    def _make_job(self, **overrides):
+        from datetime import datetime, timezone
+
+        defaults = {
+            "job_id": str(uuid.uuid4()),
+            "file_id": str(uuid.uuid4()),
+            "original_filename": "test.jar",
+            "status": "queued",
+            "progress": 0,
+            "target_version": "1.21.0",
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+        }
+        defaults.update(overrides)
+        return ConversionJob(**defaults)
+
+    def test_job_id_uuid_coerced_to_str(self):
+        test_uuid = uuid.uuid4()
+        job = self._make_job(job_id=test_uuid)
+        assert isinstance(job.job_id, str)
+        assert job.job_id == str(test_uuid)
+
+    def test_file_id_uuid_coerced_to_str(self):
+        test_uuid = uuid.uuid4()
+        job = self._make_job(file_id=test_uuid)
+        assert isinstance(job.file_id, str)
+        assert job.file_id == str(test_uuid)
+
+    def test_str_values_pass_through(self):
+        job = self._make_job(job_id="abc-123", file_id="def-456")
+        assert job.job_id == "abc-123"
+        assert job.file_id == "def-456"
+
+    def test_original_filename_uuid_coerced_to_str(self):
+        test_uuid = uuid.uuid4()
+        job = self._make_job(original_filename=test_uuid)
+        assert isinstance(job.original_filename, str)
+        assert job.original_filename == str(test_uuid)

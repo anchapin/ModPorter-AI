@@ -3,16 +3,17 @@ QA Validator Agent for validating conversion quality and generating comprehensiv
 Implements real validation framework for Bedrock .mcaddon files
 """
 
-from typing import List, Dict, Any, Optional, Tuple
+import hashlib
+import json
+import logging
+import struct
+import zipfile
 from datetime import datetime
 from pathlib import Path
-import zipfile
-import hashlib
-import struct
+from typing import Any, Dict, List, Optional, Tuple
 
-import logging
-import json
 from crewai.tools import tool
+
 from models.smart_assumptions import SmartAssumptionEngine
 
 logger = logging.getLogger(__name__)

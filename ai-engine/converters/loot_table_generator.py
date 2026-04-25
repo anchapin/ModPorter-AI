@@ -7,9 +7,9 @@ Part of Issue #1003 - Entity converter: full behavior, spawn rules, loot tables,
 
 import json
 import logging
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

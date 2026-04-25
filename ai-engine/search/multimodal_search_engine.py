@@ -8,17 +8,17 @@ This module extends the hybrid search engine to support:
 """
 
 import logging
-from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
 from schemas.multimodal_schema import (
-    SearchQuery,
-    SearchResult,
-    MultiModalDocument,
     ContentType,
     EmbeddingModel,
+    MultiModalDocument,
+    SearchQuery,
+    SearchResult,
 )
 from search.hybrid_search_engine import HybridSearchEngine, SearchMode
 

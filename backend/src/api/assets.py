@@ -100,6 +100,13 @@ async def list_conversion_assets(
     - **limit**: Maximum number of assets to return
     """
     try:
+        uuid.UUID(conversion_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid conversion_id format: '{conversion_id}'. Must be a UUID.",
+        )
+    try:
         assets = await crud.list_assets_for_conversion(
             db,
             conversion_id=conversion_id,
@@ -128,6 +135,14 @@ async def upload_asset(
     - **asset_type**: Type of asset being uploaded
     - **file**: The asset file to upload
     """
+    try:
+        uuid.UUID(conversion_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid conversion_id format: '{conversion_id}'. Must be a UUID.",
+        )
+
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
 
@@ -319,11 +334,10 @@ async def trigger_asset_conversion(
         return _asset_to_response(asset)
 
     try:
-        # Trigger conversion through the service
         result = await asset_conversion_service.convert_asset(asset_id)
 
         if result.get("success"):
-            # Get updated asset
+            db.expire_all()
             updated_asset = await crud.get_asset(db, asset_id)
             logger.info(f"Asset {asset_id} conversion triggered successfully")
             return _asset_to_response(updated_asset)
@@ -332,6 +346,8 @@ async def trigger_asset_conversion(
             logger.error(f"Asset {asset_id} conversion failed: {error_msg}")
             raise HTTPException(status_code=500, detail=f"Conversion failed: {error_msg}")
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error triggering asset conversion: {e}")
         raise HTTPException(status_code=500, detail="Failed to trigger asset conversion")
@@ -352,7 +368,14 @@ async def convert_all_conversion_assets(
     - **conversion_id**: ID of the conversion job
     """
     try:
-        # Trigger batch conversion through the service
+        uuid.UUID(conversion_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid conversion_id format: '{conversion_id}'. Must be a UUID.",
+        )
+
+    try:
         result = await asset_conversion_service.convert_assets_for_conversion(conversion_id)
 
         return {

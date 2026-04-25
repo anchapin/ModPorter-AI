@@ -5,21 +5,21 @@ Measures latency for hybrid search, re-ranking, and query expansion
 to validate the < 500ms performance target.
 """
 
-import time
 import asyncio
 import statistics
-from typing import Dict
 import sys
+import time
 from pathlib import Path
+from typing import Dict
 
 # Add ai-engine to path
 ai_engine_root = Path(__file__).parent.parent
 sys.path.insert(0, str(ai_engine_root))
 
-from search.hybrid_search_engine import HybridSearchEngine, SearchMode, RankingStrategy
-from search.reranking_engine import CrossEncoderReRanker
-from search.query_expansion import QueryExpansionEngine
 from schemas.multimodal_schema import SearchQuery
+from search.hybrid_search_engine import HybridSearchEngine, RankingStrategy, SearchMode
+from search.query_expansion import QueryExpansionEngine
+from search.reranking_engine import CrossEncoderReRanker
 
 # Import fixtures
 sys.path.insert(0, str(Path(__file__).parent.parent / "tests"))
@@ -272,14 +272,14 @@ class SearchBenchmark:
         avg_search = statistics.mean(breakdown["search_ms"])
         avg_rerank = statistics.mean(breakdown["rerank_ms"])
 
-        print(f"\nTotal Latency:")
+        print("\nTotal Latency:")
         print(f"  Average: {avg_latency:.2f}ms")
         print(f"  Median: {median_latency:.2f}ms")
         print(f"  95th percentile: {p95_latency:.2f}ms")
         print(f"  Min: {min_latency:.2f}ms")
         print(f"  Max: {max_latency:.2f}ms")
 
-        print(f"\nBreakdown (Average):")
+        print("\nBreakdown (Average):")
         print(
             f"  Query Expansion: {avg_expansion:.2f}ms ({avg_expansion / avg_latency * 100:.1f}%)"
         )
@@ -287,7 +287,7 @@ class SearchBenchmark:
         print(f"  Re-ranking: {avg_rerank:.2f}ms ({avg_rerank / avg_latency * 100:.1f}%)")
 
         # Performance target validation
-        print(f"\nPerformance Target (< 500ms):")
+        print("\nPerformance Target (< 500ms):")
         if median_latency < 500:
             print(f"  ✅ PASS: Median latency {median_latency:.2f}ms < 500ms")
         else:
@@ -322,7 +322,7 @@ class SearchBenchmark:
             print(f"  Median: {metrics['median_ms']:.2f}ms")
             print(f"  95th %ile: {metrics['p95_ms']:.2f}ms")
             if "breakdown" in metrics:
-                print(f"  Breakdown:")
+                print("  Breakdown:")
                 for step, latency in metrics["breakdown"].items():
                     print(f"    {step}: {latency:.2f}ms")
 

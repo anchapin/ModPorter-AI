@@ -1,6 +1,8 @@
 services:
   frontend:
-    image: anchapin/portkit-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
       - '3000:80'
     depends_on:
@@ -11,22 +13,27 @@ services:
     restart: unless-stopped
 
   backend:
-    image: anchapin/portkit-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - '8000:8000'
     environment:
-      - PYTHONPATH=/app
+      - PYTHONPATH=/app/src
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=postgresql://postgres:password@postgres:5432/portkit
       - LOG_LEVEL=INFO
-      # Add other necessary production environment variables here
+      - FEATURE_USER_ACCOUNTS=true
+      - SKIP_EMAIL_VERIFICATION=true
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-jwt-secret-change-in-production}
     depends_on:
       redis:
         condition: service_healthy
       postgres:
         condition: service_healthy
     volumes:
-      - conversion-cache:/app/cache # Or use a managed cloud storage service
+      - conversion-cache:/app/cache
     networks:
       - portkit-network
     restart: unless-stopped
@@ -38,19 +45,20 @@ services:
       start_period: 30s
 
   ai-engine:
-    image: anchapin/portkit-ai-engine:latest
+    build:
+      context: ./ai-engine
+      dockerfile: Dockerfile
     environment:
       - PYTHONPATH=/app
       - REDIS_URL=redis://redis:6379
-      - OPENAI_API_KEY=${OPENAI_API_KEY} # Must be provided in the environment
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY} # Must be provided in the environment
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - LOG_LEVEL=INFO
-      # Add other necessary production environment variables here
     depends_on:
       redis:
         condition: service_healthy
     volumes:
-      - model-cache:/app/models # Or use a managed cloud storage service
+      - model-cache:/app/models
     networks:
       - portkit-network
     restart: unless-stopped
@@ -90,8 +98,7 @@ services:
     environment:
       - POSTGRES_DB=portkit
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password # Change for production
-      - POSTGRES_INITDB_ARGS="--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+      - POSTGRES_PASSWORD=password
     volumes:
       - postgres-data:/var/lib/postgresql/data
       # init.sql might not be needed if the image handles initialization

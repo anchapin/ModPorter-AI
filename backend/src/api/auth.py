@@ -41,22 +41,24 @@ from security.auth import (
     generate_api_key,
     hash_api_key,
 )
-from services.feature_flags import is_feature_enabled
+from services.feature_flags import is_feature_enabled, FeatureFlagNotEnabledError
 from services.email_service import send_verification_email, send_password_reset_email
 from services.oauth_service import oauth_service, generate_oauth_state
+from config import settings
 
 logger = logging.getLogger(__name__)
 
 
 def require_feature_flag(flag_name: str):
-    """Dependency that checks if a feature flag is enabled."""
+    """Dependency that checks if a feature flag is enabled.
+
+    Raises FeatureFlagNotEnabledError (handled by error handler to return 503)
+    instead of HTTPException to properly return 503 Service Unavailable.
+    """
 
     async def check_flag():
         if not is_feature_enabled(flag_name):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"This feature is currently disabled. Please contact support if you believe this is an error.",
-            )
+            raise FeatureFlagNotEnabledError(f"Feature '{flag_name}' is not enabled")
         return True
 
     return check_flag
@@ -83,8 +85,6 @@ class RegisterRequest(BaseModel):
     @classmethod
     def validate_password(cls, v):
         """Validate password strength"""
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
         if not any(c.isdigit() for c in v):
             raise ValueError("Password must contain at least one number")
         if not any(c.isupper() for c in v) and not any(c.islower() for c in v):
@@ -144,8 +144,6 @@ class PasswordResetConfirmRequest(BaseModel):
     @classmethod
     def validate_password(cls, v):
         """Validate password strength"""
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
         if not any(c.isdigit() for c in v):
             raise ValueError("Password must contain at least one number")
         if not any(c.isupper() for c in v) and not any(c.islower() for c in v):
@@ -234,12 +232,15 @@ async def register(
         )
 
     verification_token = generate_verification_token()
+    # Auto-verify if skip_email_verification is enabled (for smoke testing)
+    auto_verify = settings.skip_email_verification
+
     user = User(
         email=request_data.email,
         password_hash=hash_password(request_data.password),
         verification_token=verification_token,
         verification_token_expires=datetime.now(timezone.utc) + timedelta(hours=24),
-        is_verified=False,
+        is_verified=auto_verify,
     )
 
     db.add(user)
@@ -248,14 +249,22 @@ async def register(
 
     logger.info(f"Email verification token generated for {request_data.email}")
 
-    await send_verification_email(
-        email=user.email,
-        verification_token=verification_token,
-        expiry_hours=24,
+    # Skip email sending in test mode
+    if not auto_verify:
+        await send_verification_email(
+            email=user.email,
+            verification_token=verification_token,
+            expiry_hours=24,
+        )
+
+    message = "User registered." + (
+        " Account verified automatically (test mode)."
+        if auto_verify
+        else " Please check email for verification link."
     )
 
     return RegisterResponse(
-        message="User registered. Please check email for verification link.",
+        message=message,
         user_id=str(user.id),
     )
 

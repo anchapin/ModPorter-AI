@@ -147,59 +147,6 @@ async def end_performance_tracking(build_id: str, request: BuildPerformanceEndRe
     return response
 
 
-@router.get("/{build_id}", response_model=BuildPerformanceResponse)
-async def get_build_performance_endpoint(build_id: str):
-    """
-    Get complete performance data for a build.
-    """
-    response = get_build_performance(build_id)
-
-    if not response:
-        raise HTTPException(status_code=404, detail=f"Build {build_id} not found")
-
-    return response
-
-
-@router.get("/{build_id}/snapshot", response_model=BuildPerformanceSnapshot)
-async def get_build_snapshot(build_id: str):
-    """
-    Get a snapshot of current build performance.
-
-    This provides real-time performance data including:
-    - Current stage
-    - Progress percentage
-    - Elapsed time
-    - Estimated remaining time
-    - Current resource usage
-    """
-    snapshot = get_build_performance_snapshot(build_id)
-
-    if not snapshot:
-        raise HTTPException(status_code=404, detail=f"Build {build_id} not found or completed")
-
-    return snapshot
-
-
-@router.get("/{build_id}/summary", response_model=BuildPerformanceSummary)
-async def get_build_summary(build_id: str):
-    """
-    Get a summary of build performance.
-
-    This provides a quick overview including:
-    - Total duration
-    - Stage count
-    - Failed stages
-    - Performance score
-    """
-    service = get_build_performance_service()
-    summary = service.get_summary(build_id)
-
-    if not summary:
-        raise HTTPException(status_code=404, detail=f"Build {build_id} not found")
-
-    return summary
-
-
 @router.get("/stats", response_model=BuildPerformanceStats)
 async def get_performance_stats(
     conversion_id: Optional[str] = None,
@@ -252,3 +199,56 @@ async def list_builds(
     # Note: This is a simplified implementation
     # Full implementation would need persistent storage
     return []
+
+
+@router.get("/{build_id}", response_model=BuildPerformanceResponse)
+async def get_build_performance_endpoint(build_id: str):
+    """
+    Get complete performance data for a build.
+    """
+    response = get_build_performance(build_id)
+
+    if not response:
+        raise HTTPException(status_code=404, detail=f"Build {build_id} not found")
+
+    return response
+
+
+@router.get("/{build_id}/snapshot", response_model=BuildPerformanceSnapshot)
+async def get_build_snapshot(build_id: str):
+    """
+    Get a snapshot of current build performance.
+
+    This provides real-time performance data including:
+    - Current stage
+    - Progress percentage
+    - Elapsed time
+    - Estimated remaining time
+    - Current resource usage
+    """
+    snapshot = get_build_performance_snapshot(build_id)
+
+    if not snapshot:
+        raise HTTPException(status_code=404, detail=f"Build {build_id} not found or completed")
+
+    return snapshot
+
+
+@router.get("/{build_id}/summary", response_model=BuildPerformanceSummary)
+async def get_build_summary(build_id: str):
+    """
+    Get a summary of build performance.
+
+    This provides a quick overview including:
+    - Total duration
+    - Stage count
+    - Failed stages
+    - Performance score
+    """
+    service = get_build_performance_service()
+    summary = service.get_summary(build_id)
+
+    if not summary:
+        raise HTTPException(status_code=404, detail=f"Build {build_id} not found")
+
+    return summary

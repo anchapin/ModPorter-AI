@@ -6,9 +6,9 @@ sounds, entities, recipes, and other game components.
 """
 
 from .sound_converter import (
-    SoundConverter,
-    SoundCategory,
     MusicDiscConverter,
+    SoundCategory,
+    SoundConverter,
 )
 
 __all__ = [

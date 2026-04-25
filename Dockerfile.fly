@@ -44,8 +44,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ln -sf python3 /usr/bin/python
 
 # Copy Python packages from consolidated builder (NOT binaries - use production stage's Python)
-# Debian system Python looks in /usr/lib/python3.X, not /usr/local/lib/python3.X
-COPY --from=python-builder /usr/local/lib/python3.11/site-packages /usr/lib/python3.11/site-packages
+# Debian system Python looks in /usr/lib/python3.X/dist-packages, not site-packages
+COPY --from=python-builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/dist-packages
 
 # Copy application code
 COPY backend/ /app/backend/

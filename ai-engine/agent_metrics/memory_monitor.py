@@ -2,13 +2,13 @@
 Memory Monitor for tracking memory usage during operations
 """
 
-import time
+import os
 import threading
+import time
 import tracemalloc
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional, Callable, Any
-import os
+from typing import Any, Callable, Dict, List, Optional
 
 # Try to import psutil for more detailed memory info
 try:

@@ -3,7 +3,7 @@ Contextual re-ranker that considers user context and query history.
 """
 
 import logging
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List
 
 from schemas.multimodal_schema import SearchQuery, SearchResult
 

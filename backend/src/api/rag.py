@@ -137,7 +137,7 @@ async def rag_search(request: RAGSearchRequest):
     except Exception as e:
         logger.error(f"RAG search failed: {e}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Search failed: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Search failed."
         )
 
 

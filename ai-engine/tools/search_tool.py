@@ -3,14 +3,16 @@ SearchTool implementation for RAG workflow agents.
 Provides semantic search capabilities using the existing vector database with fallback mechanism.
 """
 
-import json
 import asyncio
-import logging
 import importlib
-from typing import List, Dict, Any, Optional
+import json
+import logging
+from typing import Any, Dict, List, Optional
+
 from crewai.tools import tool
-from utils.vector_db_client import VectorDBClient
+
 from utils.config import Config
+from utils.vector_db_client import VectorDBClient
 
 logger = logging.getLogger(__name__)
 

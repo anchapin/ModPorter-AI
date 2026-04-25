@@ -8,7 +8,7 @@ This is the first QA agent (QA-02) in the multi-agent pipeline.
 import json
 import time
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import structlog
 

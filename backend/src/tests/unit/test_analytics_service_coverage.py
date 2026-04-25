@@ -286,6 +286,8 @@ class TestAnalyticsServiceGetEvents:
             event_type="conversion_start",
             event_category="conversion",
             user_id="user123",
+            session_id="sess_abc",
+            conversion_id=uuid.uuid4(),
             start_date=start,
             end_date=end,
         )
@@ -346,6 +348,31 @@ class TestAnalyticsServiceGetEventCounts:
 
         assert counts[0]["group"] == "desktop"
 
+    @pytest.mark.asyncio
+    async def test_get_event_counts_with_date_filters(self):
+        """Test event counting with date range filters."""
+        from services.analytics_service import AnalyticsService
+
+        mock_db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.all.return_value = [("page_view", 25)]
+        mock_db.execute = AsyncMock(return_value=mock_result)
+
+        service = AnalyticsService(mock_db)
+
+        start = datetime.now(timezone.utc) - timedelta(days=7)
+        end = datetime.now(timezone.utc)
+
+        counts = await service.get_event_counts(
+            event_type="page_view",
+            event_category="navigation",
+            start_date=start,
+            end_date=end,
+        )
+
+        assert counts[0]["group"] == "page_view"
+        assert counts[0]["count"] == 25
+
 
 class TestAnalyticsServiceGetUniqueUsers:
     """Tests for get_unique_users method."""
@@ -385,21 +412,65 @@ class TestAnalyticsServiceGetUniqueUsers:
 
         assert count == 15
 
+    @pytest.mark.asyncio
+    async def test_get_unique_users_none_result(self):
+        """Test unique user count returns 0 when no results."""
+        from services.analytics_service import AnalyticsService
+
+        mock_db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar.return_value = None
+        mock_db.execute = AsyncMock(return_value=mock_result)
+
+        service = AnalyticsService(mock_db)
+
+        count = await service.get_unique_users()
+
+        assert count == 0
+
 
 class TestAnalyticsServiceGetEventsTimeline:
-    """Tests for get_events_timeline method - skipped due to source bug (missing timezone import)"""
+    """Tests for get_events_timeline method - timezone bug now fixed."""
 
-    @pytest.mark.skip(reason="Source code has bug - uses timezone.utc without importing timezone")
     @pytest.mark.asyncio
     async def test_get_events_timeline_basic(self):
         """Test basic timeline retrieval."""
-        pass
+        from services.analytics_service import AnalyticsService
 
-    @pytest.mark.skip(reason="Source code has bug - uses timezone.utc without importing timezone")
+        mock_db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.all.return_value = [
+            ("2025-01-15", 10),
+            ("2025-01-14", 8),
+        ]
+        mock_db.execute = AsyncMock(return_value=mock_result)
+
+        service = AnalyticsService(mock_db)
+
+        timeline = await service.get_events_timeline(days=7)
+
+        assert len(timeline) == 2
+        assert timeline[0]["date"] == "2025-01-15"
+        assert timeline[0]["count"] == 10
+
     @pytest.mark.asyncio
     async def test_get_events_timeline_with_filters(self):
         """Test timeline with event type filter."""
-        pass
+        from services.analytics_service import AnalyticsService
+
+        mock_db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.all.return_value = [("2025-01-15", 5)]
+        mock_db.execute = AsyncMock(return_value=mock_result)
+
+        service = AnalyticsService(mock_db)
+
+        timeline = await service.get_events_timeline(
+            days=30, event_type="page_view", event_category="navigation"
+        )
+
+        assert len(timeline) == 1
+        assert timeline[0]["count"] == 5
 
 
 class TestAnalyticsServiceTrackFeedback:
@@ -430,8 +501,68 @@ class TestAnalyticsServiceTrackFeedback:
             feedback_type="positive",
         )
 
-        # Returns None immediately when db is None
         assert result is None
+
+    @pytest.mark.asyncio
+    async def test_track_feedback_submitted_with_db(self):
+        """Test feedback submission with valid db session."""
+        from services.analytics_service import AnalyticsService
+        from db.models import AnalyticsEvent
+
+        mock_db = AsyncMock()
+        mock_db.add = MagicMock()
+        mock_db.commit = AsyncMock()
+        mock_db.refresh = AsyncMock()
+
+        service = AnalyticsService(mock_db)
+
+        result = await service.track_feedback_submitted(
+            user_id="user123",
+            conversion_id=str(uuid.uuid4()),
+            rating=4,
+            feedback_type="thumbs_up",
+        )
+
+        assert isinstance(result, AnalyticsEvent)
+        mock_db.add.assert_called_once()
+        mock_db.commit.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_track_feedback_submitted_with_event_properties(self):
+        """Test feedback with additional event properties."""
+        from services.analytics_service import AnalyticsService
+
+        mock_db = AsyncMock()
+        mock_db.add = MagicMock()
+        mock_db.commit = AsyncMock()
+        mock_db.refresh = AsyncMock()
+
+        service = AnalyticsService(mock_db)
+
+        result = await service.track_feedback_submitted(
+            user_id="user456",
+            rating=3,
+            feedback_type="thumbs_down",
+            event_properties={"page": "/results"},
+        )
+
+        assert result is not None
+
+    @pytest.mark.asyncio
+    async def test_track_feedback_submitted_no_optional_fields(self):
+        """Test feedback with no optional fields."""
+        from services.analytics_service import AnalyticsService
+
+        mock_db = AsyncMock()
+        mock_db.add = MagicMock()
+        mock_db.commit = AsyncMock()
+        mock_db.refresh = AsyncMock()
+
+        service = AnalyticsService(mock_db)
+
+        result = await service.track_feedback_submitted()
+
+        assert result is not None
 
 
 class TestAnalyticsEventsConstants:

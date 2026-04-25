@@ -9,22 +9,22 @@ This module provides:
 - Chunk prioritization for relevance ranking
 """
 
-from .chunking_strategies import (
-    ChunkingStrategy,
-    FixedSizeChunking,
-    SemanticChunking,
-    RecursiveChunking,
-    ChunkingStrategyFactory,
-    Chunk,
-)
-from .metadata_extractor import (
-    DocumentMetadataExtractor,
-    ChunkMetadata,
-    DocumentMetadata,
-)
 from .chunk_prioritizer import (
     ChunkPrioritizer,
     RelevanceScore,
+)
+from .chunking_strategies import (
+    Chunk,
+    ChunkingStrategy,
+    ChunkingStrategyFactory,
+    FixedSizeChunking,
+    RecursiveChunking,
+    SemanticChunking,
+)
+from .metadata_extractor import (
+    ChunkMetadata,
+    DocumentMetadata,
+    DocumentMetadataExtractor,
 )
 
 __all__ = [

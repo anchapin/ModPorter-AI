@@ -1,13 +1,15 @@
-import httpx
 import hashlib
-import os
 import logging
-from typing import Optional, List, Dict, Any
+import os
+from typing import Any, Dict, List, Optional
+
+import httpx
+
 from utils.embedding_generator import (
+    EmbeddingCache,
+    EmbeddingGenerator,
     LocalEmbeddingGenerator,
     OpenAIEmbeddingGenerator,
-    EmbeddingGenerator,
-    EmbeddingCache,
     get_embedding_config,
 )
 

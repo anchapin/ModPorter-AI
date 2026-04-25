@@ -1,9 +1,9 @@
 # ai-engine/src/agents/qa_agent.py
-import logging
-import random  # For PerformanceAnalyzer
 import json  # For main block dummy data
+import logging
 import os  # For main block dummy data file check
-from typing import List, Dict, Any
+import random  # For PerformanceAnalyzer
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 

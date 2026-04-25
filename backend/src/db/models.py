@@ -51,6 +51,8 @@ class ConversionJob(Base):
         server_default=text("'queued'"),
     )
     input_data: Mapped[dict] = mapped_column(JSONType, nullable=False)
+    user_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+    batch_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

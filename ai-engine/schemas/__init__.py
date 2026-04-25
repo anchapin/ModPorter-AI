@@ -4,9 +4,9 @@ Schemas module for portkit.
 
 from schemas.multimodal_schema import (
     ContentType,
+    MultiModalDocument,
     SearchQuery,
     SearchResult,
-    MultiModalDocument,
 )
 
 __all__ = [

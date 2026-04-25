@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import json
 import base64
 import os
+import uuid as uuid_mod
 from datetime import datetime
 
 
@@ -54,6 +55,32 @@ class TestCacheService:
             result = service._json_encoder_default(datetime(2024, 1, 1, 12, 0, 0))
 
             assert result is not None
+
+    def test_json_encoder_default_uuid(self):
+        """Test JSON encoder with UUID objects"""
+        with patch.dict(os.environ, {"DISABLE_REDIS": "true"}):
+            from importlib import reload
+            import services.cache
+
+            reload(services.cache)
+
+            service = services.cache.CacheService()
+            test_uuid = uuid_mod.uuid4()
+            result = service._json_encoder_default(test_uuid)
+            assert result == str(test_uuid)
+            assert isinstance(result, str)
+
+    def test_json_encoder_default_unsupported_raises(self):
+        """Test JSON encoder raises TypeError for unsupported types"""
+        with patch.dict(os.environ, {"DISABLE_REDIS": "true"}):
+            from importlib import reload
+            import services.cache
+
+            reload(services.cache)
+
+            service = services.cache.CacheService()
+            with pytest.raises(TypeError):
+                service._json_encoder_default(set([1, 2, 3]))
 
 
 class TestCacheServiceJobStatus:

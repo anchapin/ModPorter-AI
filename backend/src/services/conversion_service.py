@@ -24,7 +24,7 @@ from services.ai_engine_client import (
     AIEngineError,
 )
 from services.cache import CacheService
-from websocket.progress_handler import ProgressHandler, AgentStatus
+from src.websocket.progress_handler import ProgressHandler, AgentStatus
 from services.error_handler import (
     ConversionError,
     AIEngineUnavailableError,

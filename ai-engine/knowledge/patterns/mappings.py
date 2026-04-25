@@ -5,8 +5,8 @@ Provides bidirectional mappings with confidence scores and conversion notes.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 from enum import Enum
+from typing import Dict, List, Optional
 
 
 class MappingConfidence(Enum):

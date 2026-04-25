@@ -9,10 +9,10 @@ Issue: #499 - Implement Modpack Conflict Detection & Load Order (Phase 5d)
 """
 
 import logging
+from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set
-from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -194,7 +194,7 @@ class ModpackConflictDetector:
                         severity=Severity.WARNING,
                         mods_involved=ns_info.mods,
                         description=f"Namespace '{ns_info.namespace}' used by multiple mods",
-                        suggestion=f"Resolve which mod should provide the namespace",
+                        suggestion="Resolve which mod should provide the namespace",
                         resolution=self._suggest_namespace_resolution(ns_info),
                     )
                     result.conflicts.append(conflict)
@@ -422,7 +422,7 @@ class ModpackConflictDetector:
                         severity=Severity.ERROR,
                         mods_involved=[mod.name, conflict_name],
                         description=f"{mod.name} explicitly conflicts with {conflict_name}",
-                        suggestion=f"Remove one of the conflicting mods",
+                        suggestion="Remove one of the conflicting mods",
                         resolution=None,
                     )
                     conflicts.append(conflict)

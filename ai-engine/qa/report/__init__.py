@@ -1,24 +1,24 @@
 """QA Report Generator - aggregates results from all QA agents."""
 
-from qa.report.models import (
-    QAReport,
-    QualityScore,
-    Issue,
-    IssueSeverity,
-    IssueLocation,
-    AgentResult,
-    SegmentConfidence,
-    ConfidenceDistribution,
-    ConfidenceLevel,
-)
-from qa.report.scorer import WeightedScorer
 from qa.report.aggregator import ResultAggregator, convert_agent_output
 from qa.report.conformal_scorer import (
-    ConformalScorer,
-    CandidateResult,
-    create_candidate_result,
     CandidateGenerator,
+    CandidateResult,
+    ConformalScorer,
+    create_candidate_result,
 )
+from qa.report.models import (
+    AgentResult,
+    ConfidenceDistribution,
+    ConfidenceLevel,
+    Issue,
+    IssueLocation,
+    IssueSeverity,
+    QAReport,
+    QualityScore,
+    SegmentConfidence,
+)
+from qa.report.scorer import WeightedScorer
 
 __all__ = [
     "QAReport",

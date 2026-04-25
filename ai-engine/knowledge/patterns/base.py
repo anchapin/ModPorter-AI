@@ -6,8 +6,8 @@ Java→Bedrock conversion patterns.
 """
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional
 from enum import Enum
+from typing import Dict, List, Optional
 
 
 class ComplexityLevel(Enum):

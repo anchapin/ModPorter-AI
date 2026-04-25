@@ -3,7 +3,7 @@ Neural network-based re-ranker using bi-encoder embeddings.
 """
 
 import logging
-from typing import List, Optional
+from typing import List
 
 from schemas.multimodal_schema import SearchResult
 

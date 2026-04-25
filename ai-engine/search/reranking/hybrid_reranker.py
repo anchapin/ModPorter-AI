@@ -3,7 +3,7 @@ Hybrid re-ranker combining multiple re-ranking strategies.
 """
 
 import logging
-from typing import List, Any, Optional
+from typing import Any, List
 
 from schemas.multimodal_schema import SearchResult
 

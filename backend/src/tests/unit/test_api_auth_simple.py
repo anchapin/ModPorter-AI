@@ -56,7 +56,17 @@ def client(mock_db):
                                         with patch(
                                             "api.auth.is_feature_enabled", return_value=True
                                         ):
-                                            yield TestClient(app)
+                                            with patch(
+                                                "api.auth.send_verification_email",
+                                                new_callable=AsyncMock,
+                                                return_value=True,
+                                            ):
+                                                with patch(
+                                                    "api.auth.send_password_reset_email",
+                                                    new_callable=AsyncMock,
+                                                    return_value=True,
+                                                ):
+                                                    yield TestClient(app)
 
     app.dependency_overrides.clear()
 

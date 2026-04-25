@@ -3,17 +3,18 @@ Reinforcement Learning Training Loop for AI Agents
 Implements the core RL training pipeline with feedback integration.
 """
 
-import logging
 import json
+import logging
 import os
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from .quality_scorer import ConversionQualityScorer
-from .reward_system import RewardSignalGenerator, RewardSignal
 from .prompt_optimizer import get_rl_feedback_loop
+from .quality_scorer import ConversionQualityScorer
+from .reward_system import RewardSignal, RewardSignalGenerator
+
 # Note: This will be imported dynamically to avoid circular imports
 # from ..training_manager import fetch_training_data_from_backend
 
@@ -141,8 +142,8 @@ class RLTrainingLoop:
 
         try:
             # Import dynamically to avoid circular imports
-            import sys
             import os
+            import sys
 
             parent_dir = os.path.dirname(os.path.dirname(__file__))
             if parent_dir not in sys.path:

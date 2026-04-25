@@ -10,6 +10,7 @@ This module provides REST endpoints for managing conversion jobs:
 - WS /api/v1/conversions/{id}/ws - WebSocket progress endpoint
 """
 
+import json
 import logging
 import os
 import shutil
@@ -36,13 +37,14 @@ from fastapi import (
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field, field_validator, validator
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.base import get_db
 from db import crud
 from db.models import User
-from websocket.manager import manager
-from websocket.progress_handler import ProgressHandler
+from src.websocket.manager import manager
+from src.websocket.progress_handler import ProgressHandler
 from services.cache import CacheService
 from services.task_queue import enqueue_task, TaskPriority
 from services.conversion_service import get_conversion_service
@@ -482,7 +484,18 @@ async def websocket_conversion_progress(websocket: WebSocket, conversion_id: str
             # Receive any messages from client (for future bidirectional support)
             try:
                 data = await websocket.receive_text()
-                # Currently just echo back, but could handle client commands
+                try:
+                    msg = json.loads(data)
+                    if msg.get("type") == "ping":
+                        await websocket.send_json(
+                            {
+                                "type": "pong",
+                                "data": {"timestamp": datetime.now(timezone.utc).isoformat()},
+                            }
+                        )
+                        continue
+                except (json.JSONDecodeError, AttributeError):
+                    pass
                 logger.debug(f"Received WebSocket message for {conversion_id}: {data}")
             except WebSocketDisconnect:
                 logger.info(f"WebSocket disconnected for conversion {conversion_id}")

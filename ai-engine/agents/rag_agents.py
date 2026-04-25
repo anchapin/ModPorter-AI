@@ -1,10 +1,11 @@
-from crewai import Agent
 import os
+
+from crewai import Agent
 
 
 # Initialize LLM using the same logic as conversion_crew.py
 def get_llm():
-    from utils.rate_limiter import create_rate_limited_llm, create_ollama_llm
+    from utils.rate_limiter import create_ollama_llm, create_rate_limited_llm
 
     # Check for Ollama configuration first (for local testing)
     if os.getenv("USE_OLLAMA", "false").lower() == "true":

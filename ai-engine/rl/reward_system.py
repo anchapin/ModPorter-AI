@@ -3,13 +3,15 @@ Reward Signal Generation System for Reinforcement Learning
 Converts quality assessments and user feedback into training signals.
 """
 
-import logging
 import json
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, asdict
+import logging
+from dataclasses import asdict, dataclass
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
 import numpy as np
-from .quality_scorer import QualityMetrics, ConversionQualityScorer
+
+from .quality_scorer import ConversionQualityScorer, QualityMetrics
 
 logger = logging.getLogger(__name__)
 

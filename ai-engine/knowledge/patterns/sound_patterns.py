@@ -6,8 +6,8 @@ scenarios including block sounds, item sounds, entity sounds, and music.
 """
 
 from dataclasses import dataclass
-from typing import List, Dict, Optional
 from enum import Enum
+from typing import Dict, List, Optional
 
 
 class SoundCategory(Enum):

@@ -1,7 +1,7 @@
 """
-Email Webhooks for SendGrid Event API
+Email Webhooks for Resend Event API
 
-Handles bounce, complaint, and other email events from SendGrid.
+Handles bounce, complaint, and other email events from Resend.
 """
 
 import logging
@@ -21,61 +21,53 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["Email Webhooks"])
 
 
-class SendGridEvent(BaseModel):
-    """SendGrid event payload."""
+class ResendEvent(BaseModel):
+    """Resend event payload."""
 
     email: EmailStr
     timestamp: int
     event: str
-    sg_event_id: Optional[str] = None
-    sg_message_id: Optional[str] = None
-    reason: Optional[str] = None
-    type: Optional[str] = None
-    url: Optional[str] = None
+    event_id: Optional[str] = None
 
 
-class SendGridBounceEvent(BaseModel):
-    """SendGrid bounce event."""
+class ResendBounceEvent(BaseModel):
+    """Resend bounce event."""
 
     email: EmailStr
     timestamp: int
     event: str = "bounce"
-    sg_event_id: Optional[str] = None
-    sg_message_id: Optional[str] = None
+    event_id: Optional[str] = None
     bounce_classification: str = "unknown"
     reason: Optional[str] = None
-    ip: Optional[str] = None
 
 
-class SendGridComplaintEvent(BaseModel):
-    """SendGrid complaint (spam) event."""
+class ResendComplaintEvent(BaseModel):
+    """Resend complaint (spam) event."""
 
     email: EmailStr
     timestamp: int
     event: str = "complaint"
-    sg_event_id: Optional[str] = None
-    sg_message_id: Optional[str] = None
+    event_id: Optional[str] = None
 
 
-class SendGridUnsubscribeEvent(BaseModel):
-    """SendGrid unsubscribe event."""
+class ResendUnsubscribeEvent(BaseModel):
+    """Resend unsubscribe event."""
 
     email: EmailStr
     timestamp: int
     event: str = "unsubscribe"
-    sg_event_id: Optional[str] = None
-    sg_message_id: Optional[str] = None
+    event_id: Optional[str] = None
 
 
-@router.post("/sendgrid/email-events")
-async def handle_sendgrid_email_events(
+@router.post("/resend/email-events")
+async def handle_resend_email_events(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Handle SendGrid email events webhook.
+    Handle Resend email events webhook.
 
-    This endpoint receives events from SendGrid's Event Webhook:
+    This endpoint receives events from Resend's Event Webhook:
     - bounce
     - complaint (spam reports)
     - unsubscribe
@@ -84,7 +76,7 @@ async def handle_sendgrid_email_events(
     - click
     - dropped
 
-    SendGrid sends these as a JSON array of events.
+    Resend sends these as a JSON array of events.
     """
     try:
         events = await request.json()
@@ -102,7 +94,7 @@ async def handle_sendgrid_email_events(
 
     for event_data in events:
         try:
-            event_type = event_data.get("event", "")
+            event_type = event_data.get("type", "")
 
             if event_type == "bounce":
                 await _handle_bounce(event_data, db)
@@ -134,7 +126,7 @@ async def _handle_bounce(event_data: dict, db: AsyncSession) -> None:
     """Handle bounce event."""
     email = event_data.get("email")
     reason = event_data.get("reason", "unknown")
-    bounce_type = event_data.get("type", "unknown")
+    bounce_type = event_data.get("bounce_type", "unknown")
 
     logger.warning(f"Bounce received for {email}: {bounce_type} - {reason}")
 
@@ -175,7 +167,7 @@ async def _handle_unsubscribe(event_data: dict, db: AsyncSession) -> None:
 
 
 async def _handle_dropped(event_data: dict, db: AsyncSession) -> None:
-    """Handle dropped event (email rejected by SendGrid)."""
+    """Handle dropped event (email rejected by Resend)."""
     email = event_data.get("email")
     reason = event_data.get("reason", "unknown")
 

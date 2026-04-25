@@ -1,7 +1,7 @@
 """Markdown exporter for QA reports."""
 
-from qa.report.models import QAReport, IssueSeverity
 from qa.report.exporters.base import BaseExporter, ExportFormat
+from qa.report.models import IssueSeverity, QAReport
 
 
 class MarkdownExporter(BaseExporter):

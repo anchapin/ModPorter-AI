@@ -302,13 +302,38 @@ class TestProgressHandler:
         with patch("src.websocket.progress_handler.manager") as mock_manager:
             mock_manager.broadcast = AsyncMock(side_effect=Exception("Connection error"))
 
-            # Should not raise exception, just log error
             await ProgressHandler.broadcast_progress(
                 conversion_id="test-123",
                 agent="Test",
                 status=AgentStatus.COMPLETED,
                 progress=100,
                 message="Done",
+            )
+
+            mock_manager.broadcast.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_broadcast_conversion_complete_error(self):
+        """Test error handling in broadcast_conversion_complete."""
+        with patch("src.websocket.progress_handler.manager") as mock_manager:
+            mock_manager.broadcast = AsyncMock(side_effect=Exception("Connection error"))
+
+            await ProgressHandler.broadcast_conversion_complete(
+                conversion_id="test-123",
+                download_url="https://example.com/download",
+            )
+
+            mock_manager.broadcast.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_broadcast_conversion_failed_error(self):
+        """Test error handling in broadcast_conversion_failed."""
+        with patch("src.websocket.progress_handler.manager") as mock_manager:
+            mock_manager.broadcast = AsyncMock(side_effect=Exception("Connection error"))
+
+            await ProgressHandler.broadcast_conversion_failed(
+                conversion_id="test-123",
+                error_message="Conversion failed",
             )
 
             mock_manager.broadcast.assert_called_once()

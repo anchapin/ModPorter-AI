@@ -4,8 +4,8 @@ Pattern validation logic.
 Validates Java and Bedrock patterns for syntax, structure, and security.
 """
 
-import logging
 import json
+import logging
 import re
 from dataclasses import dataclass, field
 from typing import List

@@ -258,8 +258,8 @@ class EmbeddingStorage:
                 f"""
                 INSERT INTO {self.table_name} (document_id, content, embedding, metadata)
                 VALUES (%s, %s, %s, %s)
-                ON CONFLICT (document_id) 
-                DO UPDATE SET content = EXCLUDED.content, 
+                ON CONFLICT (document_id)
+                DO UPDATE SET content = EXCLUDED.content,
                              embedding = EXCLUDED.embedding,
                              metadata = EXCLUDED.metadata,
                              updated_at = CURRENT_TIMESTAMP

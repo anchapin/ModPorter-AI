@@ -6,9 +6,9 @@ different reranking strategies in sequence for improved result quality.
 """
 
 import logging
-from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
 from schemas.multimodal_schema import SearchQuery, SearchResult
 
@@ -104,11 +104,11 @@ class MultiStageReranker:
         """Initialize reranker instances."""
         try:
             from search.reranking_engine import (
-                FeatureBasedReRanker,
-                CrossEncoderReRanker,
-                NeuralReRanker,
-                EnsembleReRanker,
                 ContextualReRanker,
+                CrossEncoderReRanker,
+                EnsembleReRanker,
+                FeatureBasedReRanker,
+                NeuralReRanker,
             )
 
             for stage in self.stages:

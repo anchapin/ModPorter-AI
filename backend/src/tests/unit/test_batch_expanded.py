@@ -155,3 +155,68 @@ class TestProcessBatchConversion:
         }
 
         await process_batch_conversion(batch_id, conversion_ids, options)
+
+
+class TestStartBatchConversionEndpoint:
+    @pytest.mark.asyncio
+    async def test_start_batch_user_not_found(self):
+        from api.batch_conversion import start_batch_conversion, BatchConversionRequest
+
+        mock_db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_db.execute = AsyncMock(return_value=mock_result)
+
+        request = BatchConversionRequest(
+            files=[{"name": "a.jar"}, {"name": "b.jar"}],
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            await start_batch_conversion(
+                request=request,
+                user_id=str(uuid.uuid4()),
+                background_tasks=MagicMock(),
+                db=mock_db,
+            )
+        assert exc_info.value.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_start_batch_success(self):
+        from api.batch_conversion import start_batch_conversion, BatchConversionRequest
+
+        mock_db = AsyncMock()
+        mock_user = MagicMock()
+        mock_user.id = uuid.uuid4()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = mock_user
+        mock_db.execute = AsyncMock(return_value=mock_result)
+        mock_db.commit = AsyncMock()
+        mock_bg = MagicMock()
+
+        request = BatchConversionRequest(
+            files=[{"name": "mod1.jar"}, {"name": "mod2.jar"}],
+            options={"target": "1.20.0"},
+        )
+
+        resp = await start_batch_conversion(
+            request=request,
+            user_id=str(mock_user.id),
+            background_tasks=mock_bg,
+            db=mock_db,
+        )
+
+        assert resp.total_files == 2
+        assert resp.status == "queued"
+        assert resp.batch_id.startswith("batch_")
+        mock_db.commit.assert_called_once()
+        mock_bg.add_task.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_start_batch_max_files_validation(self):
+        from pydantic import ValidationError
+        from api.batch_conversion import BatchConversionRequest
+
+        with pytest.raises(ValidationError):
+            BatchConversionRequest(
+                files=[{"name": f"mod{i}.jar"} for i in range(21)],
+            )

@@ -7,21 +7,22 @@ for multi-modal content, hybrid search, query expansion, and result re-ranking.
 
 import logging
 import re
-from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Tuple
+
+from schemas.multimodal_schema import ContentType, MultiModalDocument, SearchQuery, SearchResult
 
 # Import advanced RAG components
-from search.hybrid_search_engine import HybridSearchEngine, SearchMode, RankingStrategy
+from search.hybrid_search_engine import HybridSearchEngine, RankingStrategy, SearchMode
+from search.query_expansion import ExpansionStrategy, QueryExpansionEngine
 from search.reranking_engine import EnsembleReRanker
-from search.query_expansion import QueryExpansionEngine, ExpansionStrategy
-from utils.multimodal_embedding_generator import MultiModalEmbeddingGenerator, EmbeddingStrategy
 from utils.advanced_chunker import AdvancedChunker
-from schemas.multimodal_schema import SearchQuery, SearchResult, MultiModalDocument, ContentType
+from utils.multimodal_embedding_generator import EmbeddingStrategy, MultiModalEmbeddingGenerator
+from utils.token_optimizer import ContextTrimmer
 
 # Import existing components
 from utils.vector_db_client import VectorDBClient
-from utils.token_optimizer import ContextTrimmer
 
 logger = logging.getLogger(__name__)
 

@@ -36,16 +36,16 @@ fi
 # Start Backend API
 echo "🔧 Starting Backend API..."
 cd /app/backend
-export PYTHONPATH=/usr/lib/python3.11/site-packages:/app/backend:/app/backend/src
+export PYTHONPATH=/usr/local/lib/python3.11/dist-packages:/app/backend:/app/backend/src
 echo "PYTHONPATH=$PYTHONPATH"
-python -m uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1 2>&1 | sed 's/^/[BACKEND] /' &
+python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 1 2>&1 | sed 's/^/[BACKEND] /' &
 BACKEND_PID=$!
 echo "Backend PID: $BACKEND_PID"
 
 # Start AI Engine
 echo "🤖 Starting AI Engine..."
 cd /app/ai-engine
-export PYTHONPATH=/usr/lib/python3.11/site-packages:/app/ai-engine
+export PYTHONPATH=/usr/local/lib/python3.11/dist-packages:/app/ai-engine
 echo "PYTHONPATH=$PYTHONPATH"
 python -m uvicorn main:app --host 0.0.0.0 --port 8001 --workers 1 2>&1 | sed 's/^/[AI-ENGINE] /' &
 AI_PID=$!

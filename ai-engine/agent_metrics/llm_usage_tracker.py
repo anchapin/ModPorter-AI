@@ -2,13 +2,12 @@
 LLM Usage Tracker for tracking API calls, tokens, and costs
 """
 
-import time
 import threading
+import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional, Any
-
+from typing import Any, Dict, List, Optional
 
 # Pricing per 1K tokens (as of 2024, adjust as needed)
 MODEL_PRICING = {

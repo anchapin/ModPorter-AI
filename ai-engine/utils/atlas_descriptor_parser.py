@@ -28,7 +28,7 @@ Alternative mod-specific formats may use:
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from PIL import Image
 
@@ -147,7 +147,6 @@ def _parse_minecraft_format(data: Dict, atlas_base_path: str) -> Dict[str, Atlas
         if ":" in resource_location:
             modid, rel_path = resource_location.split(":", 1)
         else:
-            modid = "unknown"
             rel_path = resource_location
 
         # Remove file extension for sprite name
@@ -295,9 +294,6 @@ def find_atlas_descriptors_in_jar(
     descriptors = {}
 
     # Common atlas descriptor file patterns
-    descriptor_patterns = [
-        f"assets/{modid}/textures/{texture_type}/",
-    ]
 
     for file_path in file_list:
         # Look for PNG files that might be atlases

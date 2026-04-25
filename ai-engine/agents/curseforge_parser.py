@@ -3,10 +3,10 @@ CurseForge Modpack Manifest Parser
 Parses CurseForge modpack manifest files for modpack conversion support.
 """
 
-from typing import Dict, List, Any, Optional
-from pathlib import Path
 import json
 import logging
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

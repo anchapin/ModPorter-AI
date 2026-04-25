@@ -1,16 +1,17 @@
-from crewai import Agent, Task, Crew, Process
-from langchain_openai import ChatOpenAI
-import os
-import yaml
 import logging
+import os
+
+import yaml
+from crewai import Agent, Crew, Process, Task
+from langchain_openai import ChatOpenAI
 
 logger = logging.getLogger(__name__)
 
 # Import the actual SearchTool and tool utilities
+from tools.bedrock_scraper_tool import BedrockScraperTool
 from tools.search_tool import SearchTool
 from tools.tool_utils import get_tool_registry
 from tools.web_search_tool import WebSearchTool
-from tools.bedrock_scraper_tool import BedrockScraperTool
 
 # Mapping tool names from YAML to actual tool classes/functions
 AVAILABLE_TOOLS = {

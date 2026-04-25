@@ -83,7 +83,9 @@ async def classify_mod(
 
     except ValueError as e:
         logger.error(f"Classification error: {e}")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request parameters."
+        )
     except Exception as e:
         logger.error(f"Unexpected error during classification: {e}", exc_info=True)
         raise HTTPException(
@@ -209,7 +211,7 @@ async def get_modes() -> JSONResponse:
 
 @router.get(
     "/pipeline/{mode}",
-    response_model=dict,
+    response_model=ModeSpecificPipelineConfig,
     summary="Get pipeline configuration for mode",
     description="Returns the conversion pipeline configuration for a specific mode.",
 )

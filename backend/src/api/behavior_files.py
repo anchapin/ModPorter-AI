@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, HTTPException, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict, Any
@@ -5,6 +7,8 @@ from pydantic import BaseModel, Field
 from db.base import get_db
 from db import crud
 import uuid
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 

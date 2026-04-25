@@ -3,12 +3,13 @@ WebSearchTool implementation for fallback search functionality.
 This tool provides real web search capabilities using DuckDuckGo when the primary SearchTool fails.
 """
 
-import logging
 import asyncio
-from typing import Dict, List, Any, Optional
+import json
+import logging
+from typing import Any, Dict, List, Optional
+
 from crewai.tools import BaseTool
 from duckduckgo_search import DDGS
-import json
 from pydantic import Field
 
 logger = logging.getLogger(__name__)
@@ -127,7 +128,7 @@ class WebSearchTool(BaseTool):
         import time
 
         try:
-            logger.info(f"Attempting DuckDuckGo search")
+            logger.info("Attempting DuckDuckGo search")
 
             results = list(self.ddgs.text(query, max_results=self.max_results))
 
@@ -135,7 +136,7 @@ class WebSearchTool(BaseTool):
                 logger.info(f"DuckDuckGo search succeeded, found {len(results)} results")
                 return results
             else:
-                logger.warning(f"DuckDuckGo search returned no results")
+                logger.warning("DuckDuckGo search returned no results")
                 return []
 
         except Exception as e:

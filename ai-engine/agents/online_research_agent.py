@@ -9,14 +9,14 @@ the converted addon against the checklist.
 Issue: #495 (Phase 4b)
 """
 
-import os
 import json
-import re
 import logging
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+import os
+import re
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 # Set up logging

@@ -1,14 +1,16 @@
 # ai-engine/src/agents/validation_agent.py
-import uuid
 import os
-import time
 import random
+import time
+import uuid
 
 from models.validation import (
+    AssetValidationResult,
+    BehaviorPredictionResult,
     ManifestValidationResult,
     SemanticAnalysisResult,
-    BehaviorPredictionResult,
-    AssetValidationResult,
+)
+from models.validation import (
     ValidationReport as AgentValidationReport,
 )
 

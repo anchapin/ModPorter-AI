@@ -5,7 +5,7 @@ JAR/ZIP archive extraction for Java mod analysis
 import json
 import zipfile
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
 from utils.logging_config import get_agent_logger
 

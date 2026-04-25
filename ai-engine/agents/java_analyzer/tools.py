@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Dict, List, Union
 
 from crewai.tools import tool
+
 from utils.logging_config import get_agent_logger
 
 logger = get_agent_logger("java_analyzer.tools")
@@ -465,7 +466,7 @@ class JavaAnalyzerTools:
         """
         from agents.java_analyzer import JavaAnalyzerAgent
 
-        agent = JavaAnalyzerAgent.get_instance()
+        JavaAnalyzerAgent.get_instance()
 
         def _categorize_features(features: List[Dict]) -> Dict:
             """Categorize features by type"""
@@ -595,19 +596,19 @@ class JavaAnalyzerTools:
                 try:
                     data = json.loads(mod_data)
                     if "mod_data" in data:
-                        mod_metadata = (
+                        (
                             data["mod_data"] if isinstance(data["mod_data"], dict) else {}
                         )
                     else:
-                        mod_metadata = data.get("mod_metadata", {})
+                        data.get("mod_metadata", {})
                 except json.JSONDecodeError:
-                    mod_metadata = {}
+                    pass
             else:
                 data = mod_data if isinstance(mod_data, dict) else {"mod_metadata": {}}
                 if "mod_data" in data:
-                    mod_metadata = data["mod_data"] if isinstance(data["mod_data"], dict) else {}
+                    data["mod_data"] if isinstance(data["mod_data"], dict) else {}
                 else:
-                    mod_metadata = data.get("mod_metadata", {})
+                    data.get("mod_metadata", {})
 
             dependency_results = {
                 "direct_dependencies": [],

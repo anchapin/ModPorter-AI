@@ -477,9 +477,7 @@ describe('EnhancedConversionReport Component', () => {
   it('renders complete report correctly', () => {
     render(<EnhancedConversionReport reportData={mockInteractiveReport} />);
 
-    expect(
-      screen.getByText('Portkit Conversion Report')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Portkit Conversion Report')).toBeInTheDocument();
     expect(
       screen.getByText('Conversion Completed Successfully')
     ).toBeInTheDocument();
@@ -623,9 +621,7 @@ describe('Integration Tests', () => {
     render(<EnhancedConversionReport reportData={mockInteractiveReport} />);
 
     // 1. User sees the report
-    expect(
-      screen.getByText('Portkit Conversion Report')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Portkit Conversion Report')).toBeInTheDocument();
 
     // 2. User expands feature analysis
     const featuresNavButton = screen.getByText('Feature Analysis');
@@ -660,9 +656,7 @@ describe('Integration Tests', () => {
     fireEvent.click(exportJsonButton);
 
     // Verify the workflow completed without errors
-    expect(
-      screen.getByText('Portkit Conversion Report')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Portkit Conversion Report')).toBeInTheDocument();
     expect(global.URL.createObjectURL).toHaveBeenCalled();
     expect(global.URL.revokeObjectURL).toHaveBeenCalled();
 

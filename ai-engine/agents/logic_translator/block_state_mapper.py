@@ -4,7 +4,7 @@ Block property and state mapping for Java to Bedrock conversion.
 Contains JAVA_TO_BEDROCK_BLOCK_PROPERTIES and JAVA_BLOCK_METHOD_MAPPINGS.
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 JAVA_TO_BEDROCK_BLOCK_PROPERTIES = {
     "Material.METAL": {"template": "metal", "destroy_time": 5.0, "explosion_resistance": 6.0},

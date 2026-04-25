@@ -11,6 +11,7 @@ class Settings(BaseSettings):
         alias="DATABASE_URL",
     )
     redis_url: str = Field(default="redis://localhost:6379", alias="REDIS_URL")
+    skip_email_verification: bool = Field(default=False, alias="SKIP_EMAIL_VERIFICATION")
 
     @property
     def database_url(self) -> str:

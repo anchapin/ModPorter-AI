@@ -5,21 +5,22 @@ This module implements advanced search capabilities that combine the semantic
 understanding of vector embeddings with the precision of keyword matching.
 """
 
-import re
 import logging
-from typing import List, Dict, Any, Tuple, Set, Optional
+import math
+import re
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Dict, List, Optional, Set, Tuple
+
 import numpy as np
-from collections import Counter, defaultdict
-import math
 
 # Initialize logger first
 logger = logging.getLogger(__name__)
 
 from rank_bm25 import BM25Okapi
 
-from schemas.multimodal_schema import SearchQuery, SearchResult, MultiModalDocument
+from schemas.multimodal_schema import MultiModalDocument, SearchQuery, SearchResult
 
 try:
     from search.feedback_reranker import FeedbackReranker

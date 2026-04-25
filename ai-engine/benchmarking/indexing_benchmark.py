@@ -5,11 +5,11 @@ Measures indexing throughput, chunking performance, and end-to-end
 document processing speed to ensure ≥100 chunks/second target.
 """
 
-import time
-import sys
 import os
-from typing import List, Dict, Any
+import sys
+import time
 from dataclasses import dataclass
+from typing import Any, Dict, List
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -115,7 +115,7 @@ class IndexingBenchmark:
         metadata = extractor.extract(test_doc, source="benchmark-doc")
         duration = (time.time() - start) * 1000
 
-        print(f"  Metadata Extraction:")
+        print("  Metadata Extraction:")
         print(f"    Time: {duration:.2f}ms")
         print(f"    Document Type: {metadata.document_type.value}")
         print(f"    Tags Extracted: {len(metadata.tags)}")
@@ -174,9 +174,9 @@ class IndexingBenchmark:
 
             # Check if meets target
             if throughput >= 100:
-                print(f"    ✓ Meets target (≥100 chunks/sec)")
+                print("    ✓ Meets target (≥100 chunks/sec)")
             else:
-                print(f"    ✗ Below target (≥100 chunks/sec)")
+                print("    ✗ Below target (≥100 chunks/sec)")
 
     def _generate_test_document(self, word_count: int) -> str:
         """Generate a test document with specified word count."""

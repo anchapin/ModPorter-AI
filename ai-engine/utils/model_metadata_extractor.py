@@ -7,22 +7,22 @@ references, parent model references, and model type classification.
 """
 
 import json
-import os
 import logging
+import os
 import uuid
-from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 # Import MultiModalDocument schema
 try:
-    from schemas.multimodal_schema import MultiModalDocument, ContentType, ProcessingStatus
+    from schemas.multimodal_schema import ContentType, MultiModalDocument, ProcessingStatus
 except ImportError:
     try:
         from ai_engine.schemas.multimodal_schema import (
-            MultiModalDocument,
             ContentType,
+            MultiModalDocument,
             ProcessingStatus,
         )
     except ImportError:
