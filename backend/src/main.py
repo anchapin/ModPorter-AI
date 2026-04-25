@@ -69,6 +69,7 @@ from api import (
     billing,
     auth,
     email_webhooks,
+    waitlist,
     assets,
     mode_classification,
     automation_metrics,
@@ -227,6 +228,7 @@ app.include_router(rag.router, prefix="/api/v1/search", tags=["rag-search"])
 app.include_router(billing.router, prefix="/api/v1/billing", tags=["Billing"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(email_webhooks.router, prefix="/api/v1/webhooks", tags=["Email Webhooks"])
+app.include_router(waitlist.router, prefix="/api/v1", tags=["waitlist"])
 app.include_router(mode_classification.router, tags=["mode-classification"])
 app.include_router(automation_metrics.router, prefix="/api/v1", tags=["automation-metrics"])
 

@@ -83,7 +83,9 @@ async def classify_mod(
 
     except ValueError as e:
         logger.error(f"Classification error: {e}")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid request parameters: {e}"
+        )
     except Exception as e:
         logger.error(f"Unexpected error during classification: {e}", exc_info=True)
         raise HTTPException(

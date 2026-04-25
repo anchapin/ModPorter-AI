@@ -1,36 +1,12 @@
 import React, { useState } from 'react';
 import './LandingPage.css';
-import { Link } from 'react-router-dom';
-
-const benchmarks = [
-  {
-    label: 'Avg. Texture Coverage',
-    value: '68%',
-    description: 'Across 30 real-world mods',
-  },
-  {
-    label: 'Avg. Model Coverage',
-    value: '68%',
-    description: 'Java block/entity geometry',
-  },
-  {
-    label: 'Conversions',
-    value: '100%',
-    description: 'Zero crashes in testing',
-  },
-  {
-    label: 'Time Saved',
-    value: '60-80%',
-    description: 'Manual work reduction',
-  },
-];
 
 const features = [
   {
     icon: '⚡',
     title: 'Automated Conversion',
     description:
-      'Handles the tedious 60-80% of Java→Bedrock work automatically. Textures, models, recipes, entities and more.',
+      'Handles the tedious 60-80% of Java to Bedrock work automatically. Textures, models, recipes, entities and more.',
   },
   {
     icon: '📊',
@@ -67,35 +43,11 @@ const steps = [
   },
 ];
 
-const testimonials = [
-  {
-    quote:
-      'ModPorter cut my conversion time from 3 weeks to 4 days. The report feature is a game-changer.',
-    author: 'Alex M.',
-    role: 'Marketplace Creator',
-    mods: '15+ mods ported',
-  },
-  {
-    quote:
-      'Finally, a tool that understands the complexity of modern Java mods. The entity conversion is impressive.',
-    author: 'Jordan K.',
-    role: 'Mod Author',
-    mods: 'Create framework specialist',
-  },
-  {
-    quote:
-      'The hybrid approach makes sense. Automated conversion with clear manual work items.',
-    author: 'Sam R.',
-    role: 'Studio Lead',
-    mods: 'Team of 5 modders',
-  },
-];
-
 const faqs = [
   {
     question: 'What about IP and licensing?',
     answer:
-      "ModPorter processes your mod locally. We don't store or retain your files. You retain all rights to your converted content.",
+      "Portkit processes your mod locally. We don't store or retain your files. You retain all rights to your converted content.",
   },
   {
     question: 'What quality should I expect?',
@@ -108,30 +60,13 @@ const faqs = [
       'Typically: custom textures, advanced AI behaviors, complex recipe chains, and 3rd party mod integrations. The report pinpoints exactly what.',
   },
   {
-    question: 'How does the Marketplace tier work?',
+    question: 'When will Portkit launch?',
     answer:
-      'For commercial use on Minecraft Marketplace, we offer licensing plans with priority support and dedicated conversion assistance.',
-  },
-  {
-    question: 'Is there a free tier?',
-    answer:
-      'Yes! Free tier includes 5 conversions per month for testing and hobby projects. Pro and Studio tiers offer unlimited conversions.',
+      "We're currently in closed testing. Join the waitlist and we'll let you know as soon as we're ready to onboard new users.",
   },
 ];
 
 const footerLinks = {
-  documentation: [
-    { label: 'Getting Started', href: '/docs' },
-    { label: 'Conversion Guide', href: '/docs/conversion' },
-    { label: 'API Reference', href: '/docs/api' },
-    { label: 'Troubleshooting', href: '/docs/troubleshooting' },
-  ],
-  company: [
-    { label: 'About', href: '/about' },
-    { label: 'Blog', href: '/blog' },
-    { label: 'Careers', href: '/careers' },
-    { label: 'Contact', href: '/contact' },
-  ],
   legal: [
     { label: 'Terms of Service', href: '/terms' },
     { label: 'Privacy Policy', href: '/privacy' },
@@ -144,28 +79,76 @@ const footerLinks = {
   ],
 };
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+  ? import.meta.env.VITE_API_BASE_URL + '/api/v1'
+  : import.meta.env.VITE_API_URL
+    ? import.meta.env.VITE_API_URL.replace(/\/api\/v1$/, '') + '/api/v1'
+    : '/api/v1';
+
 const LandingPage: React.FC = () => {
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [status, setStatus] = useState<
+    'idle' | 'loading' | 'success' | 'error'
+  >('idle');
+  const [message, setMessage] = useState('');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+
+    setStatus('loading');
+    try {
+      const response = await fetch(`${API_BASE_URL}/waitlist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          name: name || undefined,
+          source: 'landing-page',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Something went wrong. Please try again.');
+      }
+
+      const data = await response.json();
+      setStatus('success');
+      setMessage(data.message);
+      setEmail('');
+      setName('');
+    } catch (err) {
+      setStatus('error');
+      setMessage(
+        err instanceof Error
+          ? err.message
+          : 'Something went wrong. Please try again.'
+      );
+    }
+  };
 
   return (
     <div className="landing-page">
-      {/* SEO Meta Tags - these would be set via react-helmet or similar in production */}
       <head>
         <title>Portkit — Java to Bedrock Conversion Accelerator</title>
         <meta
           name="description"
-          content="Convert Minecraft Java Edition mods to Bedrock Edition 60-80% automatically. Detailed conversion reports, professional-grade output for Marketplace creators."
+          content="Convert Minecraft Java Edition mods to Bedrock Edition 60-80% automatically. Join the waitlist for early access."
         />
-        <meta property="og:title" content="Portkit — Conversion Accelerator" />
+        <meta
+          property="og:title"
+          content="Portkit — Java to Bedrock Conversion"
+        />
         <meta
           property="og:description"
-          content="Convert Java mods to Bedrock 60-80% automatically with detailed reports."
+          content="AI-powered Java to Bedrock mod conversion. Join the waitlist."
         />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
       </head>
 
-      {/* Navigation */}
       <nav className="landing-nav">
         <div className="nav-container">
           <div className="nav-logo">
@@ -175,46 +158,71 @@ const LandingPage: React.FC = () => {
           <div className="nav-links">
             <a href="#features">Features</a>
             <a href="#how-it-works">How It Works</a>
-            <a href="#benchmarks">Benchmarks</a>
-            <a href="#pricing">Pricing</a>
-            <a href="/docs">Docs</a>
-          </div>
-          <div className="nav-actions">
-            <Link to="/login" className="nav-link-login">
-              Log In
-            </Link>
-            <Link to="/signup" className="nav-cta">
-              Start Free
-            </Link>
+            <a href="#faq">FAQ</a>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
       <section className="hero-section">
         <div className="hero-container">
-          <div className="hero-badge">B2B Ready — Marketplace Creators</div>
+          <div className="hero-badge">Coming Soon — Join the Waitlist</div>
           <h1 className="hero-title">
             Get Your Java Mods on the
             <br />
-            <span className="hero-highlight">Marketplace Faster</span>
+            <span className="hero-highlight">Bedrock Marketplace Faster</span>
           </h1>
           <p className="hero-subtitle">
-            Portkit handles 60-80% of Java→Bedrock conversion automatically.
+            Portkit handles 60-80% of Java to Bedrock conversion automatically.
             Detailed reports show exactly what needs manual work — no guesswork.
           </p>
-          <div className="hero-cta-group">
-            <Link to="/convert" className="hero-cta primary">
-              Start Converting Free
-            </Link>
-            <a href="#how-it-works" className="hero-cta secondary">
-              See How It Works
-            </a>
-          </div>
+
+          <form className="waitlist-form" onSubmit={handleSubmit}>
+            {status !== 'success' ? (
+              <>
+                <div className="waitlist-fields">
+                  <input
+                    type="text"
+                    className="waitlist-input"
+                    placeholder="Your name (optional)"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    disabled={status === 'loading'}
+                  />
+                  <div className="waitlist-email-row">
+                    <input
+                      type="email"
+                      className="waitlist-input"
+                      placeholder="your@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      disabled={status === 'loading'}
+                    />
+                    <button
+                      type="submit"
+                      className="waitlist-submit"
+                      disabled={status === 'loading'}
+                    >
+                      {status === 'loading' ? 'Joining...' : 'Join Waitlist'}
+                    </button>
+                  </div>
+                </div>
+                {status === 'error' && (
+                  <p className="waitlist-error">{message}</p>
+                )}
+              </>
+            ) : (
+              <div className="waitlist-success">
+                <span className="waitlist-success-icon">✓</span>
+                <p>{message}</p>
+              </div>
+            )}
+          </form>
+
           <div className="hero-stats">
             <div className="stat">
-              <span className="stat-value">295+</span>
-              <span className="stat-label">Marketplace Partners</span>
+              <span className="stat-value">68%</span>
+              <span className="stat-label">Avg. Texture Coverage</span>
             </div>
             <div className="stat-divider" />
             <div className="stat">
@@ -223,35 +231,13 @@ const LandingPage: React.FC = () => {
             </div>
             <div className="stat-divider" />
             <div className="stat">
-              <span className="stat-value">68%</span>
-              <span className="stat-label">Avg. Coverage</span>
+              <span className="stat-value">60-80%</span>
+              <span className="stat-label">Time Saved</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Benchmarks Section */}
-      <section id="benchmarks" className="benchmarks-section">
-        <div className="section-container">
-          <h2 className="section-title">Real Conversion Benchmarks</h2>
-          <p className="section-subtitle">
-            Tested across 30 real-world Java mods from the community
-          </p>
-          <div className="benchmarks-grid">
-            {benchmarks.map((benchmark, index) => (
-              <div key={index} className="benchmark-card">
-                <div className="benchmark-value">{benchmark.value}</div>
-                <div className="benchmark-label">{benchmark.label}</div>
-                <div className="benchmark-description">
-                  {benchmark.description}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
       <section id="features" className="features-section">
         <div className="section-container">
           <h2 className="section-title">Everything You Need to Go to Market</h2>
@@ -271,7 +257,6 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* How It Works Section */}
       <section id="how-it-works" className="how-it-works-section">
         <div className="section-container">
           <h2 className="section-title">Simple Workflow</h2>
@@ -293,81 +278,7 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Social Proof Section */}
-      <section className="social-proof-section">
-        <div className="section-container">
-          <h2 className="section-title">Trusted by Marketplace Creators</h2>
-          <div className="testimonials-grid">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="testimonial-card">
-                <div className="testimonial-quote">"{testimonial.quote}"</div>
-                <div className="testimonial-author">
-                  <div className="author-name">{testimonial.author}</div>
-                  <div className="author-role">{testimonial.role}</div>
-                  <div className="author-mods">{testimonial.mods}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="pricing-section">
-        <div className="section-container">
-          <h2 className="section-title">Simple Pricing</h2>
-          <p className="section-subtitle">
-            Free tier for testing, paid plans for commercial use
-          </p>
-          <div className="pricing-grid">
-            <div className="pricing-card">
-              <div className="pricing-tier">Free</div>
-              <div className="pricing-price">$0</div>
-              <div className="pricing-period">forever</div>
-              <ul className="pricing-features">
-                <li>5 conversions/month</li>
-                <li>Basic conversion reports</li>
-                <li>Community support</li>
-              </ul>
-              <Link to="/signup" className="pricing-cta">
-                Get Started
-              </Link>
-            </div>
-            <div className="pricing-card featured">
-              <div className="popular-badge">Most Popular</div>
-              <div className="pricing-tier">Pro</div>
-              <div className="pricing-price">$9.99</div>
-              <div className="pricing-period">/month</div>
-              <ul className="pricing-features">
-                <li>Unlimited conversions</li>
-                <li>Advanced reports</li>
-                <li>Priority support</li>
-                <li>API access</li>
-              </ul>
-              <Link to="/signup?plan=pro" className="pricing-cta primary">
-                Start Free Trial
-              </Link>
-            </div>
-            <div className="pricing-card">
-              <div className="pricing-tier">Marketplace</div>
-              <div className="pricing-price">Custom</div>
-              <div className="pricing-period">licensing</div>
-              <ul className="pricing-features">
-                <li>Commercial use rights</li>
-                <li>Dedicated support</li>
-                <li>Custom integrations</li>
-                <li>SLA guarantee</li>
-              </ul>
-              <a href="mailto:sales@portkit.cloud" className="pricing-cta">
-                Contact Sales
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section className="faq-section">
+      <section id="faq" className="faq-section">
         <div className="section-container">
           <h2 className="section-title">Frequently Asked Questions</h2>
           <div className="faq-list">
@@ -397,7 +308,47 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Footer */}
+      <section className="waitlist-cta-section">
+        <div className="section-container">
+          <h2 className="section-title">Be First in Line</h2>
+          <p className="section-subtitle">
+            Join the waitlist and get early access when we launch
+          </p>
+          <form
+            className="waitlist-form waitlist-form-center"
+            onSubmit={handleSubmit}
+          >
+            {status !== 'success' ? (
+              <>
+                <div className="waitlist-email-row">
+                  <input
+                    type="email"
+                    className="waitlist-input"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={status === 'loading'}
+                  />
+                  <button
+                    type="submit"
+                    className="waitlist-submit"
+                    disabled={status === 'loading'}
+                  >
+                    {status === 'loading' ? 'Joining...' : 'Join Waitlist'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="waitlist-success">
+                <span className="waitlist-success-icon">✓</span>
+                <p>{message}</p>
+              </div>
+            )}
+          </form>
+        </div>
+      </section>
+
       <footer className="landing-footer">
         <div className="footer-container">
           <div className="footer-brand">
@@ -410,26 +361,6 @@ const LandingPage: React.FC = () => {
             </p>
           </div>
           <div className="footer-links-grid">
-            <div className="footer-column">
-              <h4>Documentation</h4>
-              <ul>
-                {footerLinks.documentation.map((link, index) => (
-                  <li key={index}>
-                    <a href={link.href}>{link.label}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="footer-column">
-              <h4>Company</h4>
-              <ul>
-                {footerLinks.company.map((link, index) => (
-                  <li key={index}>
-                    <a href={link.href}>{link.label}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
             <div className="footer-column">
               <h4>Legal</h4>
               <ul>
@@ -458,7 +389,7 @@ const LandingPage: React.FC = () => {
             </div>
           </div>
           <div className="footer-bottom">
-            <p>© 2026 Portkit. All rights reserved.</p>
+            <p>&copy; 2026 Portkit. All rights reserved.</p>
           </div>
         </div>
       </footer>
