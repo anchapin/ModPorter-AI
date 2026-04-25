@@ -100,6 +100,13 @@ async def list_conversion_assets(
     - **limit**: Maximum number of assets to return
     """
     try:
+        uuid.UUID(conversion_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid conversion_id format: '{conversion_id}'. Must be a UUID.",
+        )
+    try:
         assets = await crud.list_assets_for_conversion(
             db,
             conversion_id=conversion_id,
