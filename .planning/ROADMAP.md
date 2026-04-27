@@ -613,3 +613,15 @@ Phase 21.0 (Coverage Optimization)
 - Explore a Bedrock↔Java Knowledge Graph mapping API symbols, obfuscation mappings (Mojang/Yarn), and behavioral semantics. A KG could provide explainable conversion rationale to mod creators. Motivated by *Using LLMs and Knowledge Graphs to Improve ML Interpretability*.
 
 *Full digest: [.planning/research/digest-2026-04-20.md](.planning/research/digest-2026-04-20.md)*
+
+
+---
+
+## Research Scout Update — 2026-04-27
+
+## Suggested Roadmap Updates
+
+* **Implement Utility-Aligned Embeddings (UAE) for Bedrock Documentation RAG**: Add to **Milestone v0.2 (AI Conversion Pipeline)**. This replaces standard similarity-based retrieval with embeddings distilled for LLM utility, ensuring the Bedrock API snippets retrieved are those most likely to result in valid code generation. (Motivated by: *Aligning Dense Retrievers with LLM Utility via Distillation*)
+* **Agentic Token Usage Prediction & Cost Monitoring**: Add to **Milestone v2.5 (Automation & Scale)**. Implement a "dry-run" estimation module that predicts token consumption for complex, multi-file mod conversions, allowing for budget capping and agent behavior optimization before execution. (Motivated by: *How Do AI Agents Spend Your Money? Analyzing and Predicting Token Consumption*)
+
+*Full digest: [.planning/research/digest-2026-04-27.md](.planning/research/digest-2026-04-27.md)*
