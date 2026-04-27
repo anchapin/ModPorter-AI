@@ -3,17 +3,17 @@
 # This file contains additional dev-only tools
 
 # Additional testing tools (beyond what's in requirements.txt)
-pytest-mock>=3.11.0
+pytest-mock>=3.15.1
 
 # Mutation testing
-mutmut>=2.4.0
+mutmut>=3.5.0
 
 # Development Tools
-pre-commit>=3.0.0
+pre-commit>=4.6.0
 
 # Logging
 structlog
 
 # Dependency checking
-pip-audit>=2.7.0
-pipdeptree>=2.23.0
+pip-audit>=2.10.0
+pipdeptree>=2.35.1
