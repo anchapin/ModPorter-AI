@@ -625,3 +625,11 @@ Phase 21.0 (Coverage Optimization)
 * **Agentic Token Usage Prediction & Cost Monitoring**: Add to **Milestone v2.5 (Automation & Scale)**. Implement a "dry-run" estimation module that predicts token consumption for complex, multi-file mod conversions, allowing for budget capping and agent behavior optimization before execution. (Motivated by: *How Do AI Agents Spend Your Money? Analyzing and Predicting Token Consumption*)
 
 *Full digest: [.planning/research/digest-2026-04-27.md](.planning/research/digest-2026-04-27.md)*
+
+## 💰 Bounty Contribution
+
+- **Task:** Implement per-conversion token budget prediction and cost monitoring for B2B tra
+- **Reward:** $5
+- **Source:** GitHub-Paid
+- **Date:** 2026-04-27
+
