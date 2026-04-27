@@ -1,26 +1,26 @@
 # Requirements for Advanced RAG Prototype Environment
 
 # Core dependencies
-numpy>=1.21.0
-pydantic>=1.8.0
+numpy>=2.0.2
+pydantic>=2.13.3
 httpx>=0.24.0
-sentence-transformers>=2.2.0
+sentence-transformers>=5.1.2
 
 # Multi-modal models
-torch>=1.13.0
-torchvision>=0.14.0
-transformers>=4.20.0
-pillow>=9.0.0
+torch>=2.8.0
+torchvision>=0.23.0
+transformers>=4.57.6
+pillow>=11.3.0
 
 # OpenCLIP for multi-modal embeddings
-open-clip-torch>=2.20.0
+open-clip-torch>=3.3.0
 
 # Optional: Hugging Face models
-datasets>=2.0.0
-accelerate>=0.20.0
+datasets>=4.5.0
+accelerate>=1.10.1
 
 # Testing and development
-pytest>=7.0.0
+pytest>=8.4.2
 pytest-asyncio>=0.21.0
 
 # Logging and monitoring
