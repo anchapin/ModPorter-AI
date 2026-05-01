@@ -143,14 +143,14 @@ class TestQueueNames:
 
     def test_queue_name_values(self):
         """Test queue name values."""
-        assert QUEUE_NAMES[TaskPriority.LOW] == "celery:low"
-        assert QUEUE_NAMES[TaskPriority.NORMAL] == "celery:normal"
-        assert QUEUE_NAMES[TaskPriority.HIGH] == "celery:high"
-        assert QUEUE_NAMES[TaskPriority.CRITICAL] == "celery:critical"
+        assert QUEUE_NAMES[TaskPriority.LOW] == "portkit:queue:low"
+        assert QUEUE_NAMES[TaskPriority.NORMAL] == "portkit:queue:normal"
+        assert QUEUE_NAMES[TaskPriority.HIGH] == "portkit:queue:high"
+        assert QUEUE_NAMES[TaskPriority.CRITICAL] == "portkit:queue:critical"
 
     def test_dead_letter_queue_name(self):
         """Test dead letter queue name."""
-        assert DEAD_LETTER_QUEUE == "celery:dead_letter"
+        assert DEAD_LETTER_QUEUE == "portkit:dead_letter"
 
 
 class TestTaskHandlers:

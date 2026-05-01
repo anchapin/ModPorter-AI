@@ -136,15 +136,16 @@ class TaskData:
 
 
 QUEUE_NAMES = {
-    TaskPriority.LOW: "celery:low",
-    TaskPriority.NORMAL: "celery:normal",
-    TaskPriority.HIGH: "celery:high",
-    TaskPriority.CRITICAL: "celery:critical",
+    TaskPriority.LOW: "portkit:queue:low",
+    TaskPriority.NORMAL: "portkit:queue:normal",
+    TaskPriority.HIGH: "portkit:queue:high",
+    TaskPriority.CRITICAL: "portkit:queue:critical",
 }
-DEAD_LETTER_QUEUE = "celery:dead_letter"
-PROCESSING_SET = "celery:processing"
-METRICS_KEY = "celery:metrics"
-RETRY_QUEUE = "celery:retry"
+DEAD_LETTER_QUEUE = "portkit:dead_letter"
+PROCESSING_SET = "portkit:processing"
+METRICS_KEY = "portkit:metrics"
+RETRY_QUEUE = "portkit:retry"
+TASK_KEY_PREFIX = "portkit:task:"
 
 
 def _get_redis_sync():
@@ -177,7 +178,7 @@ def process_task(self, task_id: str) -> Dict[str, Any]:
     r = _get_redis_sync()
 
     try:
-        task_data = r.get(f"task:{task_id}")
+        task_data = r.get(f"portkit:task:{task_id}")
         if not task_data:
             logger.error(f"Task {task_id} not found in Redis")
             return {"status": "error", "message": "Task not found"}
@@ -186,7 +187,7 @@ def process_task(self, task_id: str) -> Dict[str, Any]:
 
         task.status = TaskStatus.PROCESSING
         task.started_at = datetime.now(timezone.utc)
-        r.set(f"task:{task_id}", json.dumps(task.to_dict()), ex=86400)
+        r.set(f"portkit:task:{task_id}", json.dumps(task.to_dict()), ex=86400)
         r.sadd(PROCESSING_SET, task_id)
         r.hincrby(METRICS_KEY, "tasks_dequeued", 1)
 
@@ -201,7 +202,7 @@ def process_task(self, task_id: str) -> Dict[str, Any]:
         task.status = TaskStatus.COMPLETED
         task.completed_at = datetime.now(timezone.utc)
         task.result = result
-        r.set(f"task:{task_id}", json.dumps(task.to_dict()), ex=86400)
+        r.set(f"portkit:task:{task_id}", json.dumps(task.to_dict()), ex=86400)
         r.srem(PROCESSING_SET, task_id)
         r.hincrby(METRICS_KEY, "tasks_completed", 1)
 
@@ -234,7 +235,7 @@ def _get_task_handler(task_name: str):
 
 def _fail_task(r, task_id: str, error: str, retry: bool = True) -> bool:
     """Mark task as failed and potentially schedule retry."""
-    task_data = r.get(f"task:{task_id}")
+    task_data = r.get(f"portkit:task:{task_id}")
     if not task_data:
         return False
 
@@ -254,7 +255,7 @@ def _fail_task(r, task_id: str, error: str, retry: bool = True) -> bool:
         task.next_retry_at = next_retry
 
         r.zadd(RETRY_QUEUE, {task_id: next_retry.timestamp()})
-        r.set(f"task:{task_id}", json.dumps(task.to_dict()), ex=86400)
+        r.set(f"portkit:task:{task_id}", json.dumps(task.to_dict()), ex=86400)
         r.srem(PROCESSING_SET, task_id)
         r.hincrby(METRICS_KEY, "tasks_retried", 1)
 
@@ -273,7 +274,7 @@ def _fail_task(r, task_id: str, error: str, retry: bool = True) -> bool:
             r.hincrby(METRICS_KEY, "tasks_failed", 1)
             logger.error(f"Task {task_id} failed: {error}")
 
-        r.set(f"task:{task_id}", json.dumps(task.to_dict()), ex=86400)
+        r.set(f"portkit:task:{task_id}", json.dumps(task.to_dict()), ex=86400)
         r.srem(PROCESSING_SET, task_id)
         return False
 
@@ -285,7 +286,7 @@ def cleanup_old_tasks(max_age_hours: int = 24) -> Dict[str, Any]:
     cutoff = datetime.now(timezone.utc) - timedelta(hours=max_age_hours)
     cleaned = 0
 
-    for key in r.scan_iter("task:*"):
+    for key in r.scan_iter("portkit:task:*"):
         if key == METRICS_KEY:
             continue
         task_data = r.get(key)
@@ -314,7 +315,7 @@ def process_retry_queue() -> Dict[str, Any]:
 
     for task_id in task_ids:
         r.zrem(RETRY_QUEUE, task_id)
-        task_data = r.get(f"task:{task_id}")
+        task_data = r.get(f"portkit:task:{task_id}")
         if task_data:
             task = TaskData.from_dict(json.loads(task_data))
             task.status = TaskStatus.QUEUED
@@ -322,7 +323,7 @@ def process_retry_queue() -> Dict[str, Any]:
 
             queue_name = QUEUE_NAMES[task.priority]
             r.zadd(queue_name, {task_id: time.time()})
-            r.set(f"task:{task_id}", json.dumps(task.to_dict()), ex=86400)
+            r.set(f"portkit:task:{task_id}", json.dumps(task.to_dict()), ex=86400)
             requeued += 1
 
     if requeued > 0:
@@ -351,7 +352,7 @@ def enqueue_task(
         timeout_seconds=timeout_seconds,
     )
 
-    r.set(f"task:{task.id}", json.dumps(task.to_dict()), ex=86400)
+    r.set(f"portkit:task:{task.id}", json.dumps(task.to_dict()), ex=86400)
 
     queue_name = QUEUE_NAMES[task.priority]
     r.zadd(queue_name, {task.id: time.time()})
@@ -372,7 +373,7 @@ def enqueue_task(
 def get_task_status(task_id: str) -> Optional[Dict[str, Any]]:
     """Get task status by ID."""
     r = _get_redis_sync()
-    task_data = r.get(f"task:{task_id}")
+    task_data = r.get(f"portkit:task:{task_id}")
     if task_data:
         return json.loads(task_data)
     return None
@@ -382,13 +383,13 @@ def get_task_status(task_id: str) -> Optional[Dict[str, Any]]:
 def cancel_task(task_id: str) -> bool:
     """Cancel a queued task."""
     r = _get_redis_sync()
-    task_data = r.get(f"task:{task_id}")
+    task_data = r.get(f"portkit:task:{task_id}")
     if task_data:
         task_dict = json.loads(task_data)
         if task_dict["status"] == TaskStatus.QUEUED.value:
             task_dict["status"] = TaskStatus.CANCELLED.value
             task_dict["completed_at"] = datetime.now(timezone.utc).isoformat()
-            r.set(f"task:{task_id}", json.dumps(task_dict), ex=86400)
+            r.set(f"portkit:task:{task_id}", json.dumps(task_dict), ex=86400)
 
             for queue_name in QUEUE_NAMES.values():
                 r.zrem(queue_name, task_id)
@@ -428,7 +429,7 @@ def get_dead_letter_tasks(limit: int = 100, offset: int = 0) -> List[Dict[str, A
 
     tasks = []
     for task_id in task_ids:
-        task_data = r.get(f"task:{task_id}")
+        task_data = r.get(f"portkit:task:{task_id}")
         if task_data:
             tasks.append(json.loads(task_data))
 
@@ -439,7 +440,7 @@ def get_dead_letter_tasks(limit: int = 100, offset: int = 0) -> List[Dict[str, A
 def reprocess_dead_letter_task(task_id: str) -> bool:
     """Move a task from dead letter queue back to main queue."""
     r = _get_redis_sync()
-    task_data = r.get(f"task:{task_id}")
+    task_data = r.get(f"portkit:task:{task_id}")
     if not task_data:
         return False
 
@@ -455,7 +456,7 @@ def reprocess_dead_letter_task(task_id: str) -> bool:
 
     queue_name = QUEUE_NAMES[task.priority]
     r.zadd(queue_name, {task_id: time.time()})
-    r.set(f"task:{task_id}", json.dumps(task.to_dict()), ex=86400)
+    r.set(f"portkit:task:{task_id}", json.dumps(task.to_dict()), ex=86400)
 
     r.hincrby(METRICS_KEY, "tasks_reprocessed", 1)
     logger.info(f"Task {task_id} reprocessed from dead letter queue")
