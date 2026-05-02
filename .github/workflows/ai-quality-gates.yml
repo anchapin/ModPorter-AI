@@ -52,6 +52,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            backend
+          sparse-checkout-cone-mode: false
+
+      - name: Clear any cached coverage/test artifacts
+        run: |
+          rm -rf backend/.pytest_cache backend/coverage.json backend/.coverage 2>/dev/null || true
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -63,6 +71,14 @@ jobs:
           pip install -r backend/requirements.txt
           pip install -r backend/requirements-dev.txt
           pip install pytest pytest-cov pytest-asyncio PyJWT psutil
+
+      - name: Verify test_byok_vault.py does not exist
+        run: |
+          if [ -f backend/src/tests/unit/test_byok_vault.py ]; then
+            echo "ERROR: test_byok_vault.py should not exist in this PR!"
+            exit 1
+          fi
+          echo "Confirmed: test_byok_vault.py does not exist"
 
       - name: Run Batch 1 Tests
         run: |
@@ -88,6 +104,14 @@ jobs:
         run: |
           pip install -r backend/requirements.txt
           pip install pytest pytest-cov pytest-asyncio PyJWT psutil
+
+      - name: Verify test_byok_vault.py does not exist
+        run: |
+          if [ -f backend/src/tests/unit/test_byok_vault.py ]; then
+            echo "ERROR: test_byok_vault.py should not exist in this PR!"
+            exit 1
+          fi
+          echo "Confirmed: test_byok_vault.py does not exist"
 
       - name: Run Batch 2 Tests
         run: |
@@ -146,6 +170,18 @@ jobs:
           pip install -r backend/requirements.txt
           pip install -r backend/requirements-dev.txt
           pip install pytest pytest-cov pytest-asyncio PyJWT psutil pytest-randomly pytest-xdist pytest-timeout
+
+      - name: Clear any cached files that might include deleted tests
+        run: |
+          rm -rf backend/.pytest_cache backend/coverage.json backend/.coverage 2>/dev/null || true
+
+      - name: Verify test_byok_vault.py does not exist
+        run: |
+          if [ -f backend/src/tests/unit/test_byok_vault.py ]; then
+            echo "ERROR: test_byok_vault.py should not exist in this PR!"
+            exit 1
+          fi
+          echo "Confirmed: test_byok_vault.py does not exist"
 
       - name: Run Coverage Tests
         run: |
