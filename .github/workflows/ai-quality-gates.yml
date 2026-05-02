@@ -344,7 +344,8 @@ jobs:
 
           echo "🔍 Checking for common issues..."
           # Check for TODO comments (should have issue numbers)
-          if grep -r "TODO" --include="*.py" backend/src/ | grep -v "[A-Z]-[0-9]"; then
+          # Exclude test files since they contain intentional TODOs in fixtures
+          if grep -r "TODO" --include="*.py" backend/src/ --exclude-dir=tests | grep -v "[A-Z]-[0-9]"; then
             echo "⚠️ TODO without issue number found"
           fi
 
