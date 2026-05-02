@@ -772,6 +772,16 @@ async def simulate_ai_conversion(job_id: str):
                 # Broadcast completion to WebSocket clients
                 await ProgressHandler.broadcast_conversion_complete(job_id, result_url)
 
+                # Delete input JAR file after conversion completes (data retention policy)
+                # Issue: #1156
+                try:
+                    from services.celery_tasks import delete_input_file
+                    file_id = str(job.input_data.get("file_id", ""))
+                    if file_id:
+                        delete_input_file.delay(job_id, file_id)
+                except Exception as del_err:
+                    logger.warning(f"Could not schedule input file deletion: {del_err}")
+
             except Exception as e_inner:
                 logger.error(
                     f"Error during AI simulation processing for job {job_id}: {e_inner}",
