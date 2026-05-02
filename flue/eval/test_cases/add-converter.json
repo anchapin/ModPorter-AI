@@ -1,0 +1,11 @@
+[
+  {
+    "prompt": "Add a new converter for brewing stands that maps Java BrewingStandTileEntity to a Bedrock addon JSON representation"
+  },
+  {
+    "prompt": "Add a converter for custom enchantments that reads a Java EnchantmentDefinition class and outputs Bedrock enchantment_table addon JSON"
+  },
+  {
+    "prompt": "Add a dimension converter that handles custom biome definitions from Java DimensionType and produces the Bedrock dimension JSON format"
+  }
+]

@@ -1,0 +1,11 @@
+[
+  {
+    "prompt": "Add a REST endpoint to start an async conversion job for a single mod JAR file, returning a task_id"
+  },
+  {
+    "prompt": "Add a GET endpoint to retrieve the full conversion report for a completed job, including all converter results and warnings"
+  },
+  {
+    "prompt": "Add a DELETE endpoint to cancel a running conversion task and clean up any temporary files"
+  }
+]

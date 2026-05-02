@@ -1,0 +1,18 @@
+{
+  "name": "portkit-flue",
+  "private": true,
+  "type": "module",
+  "description": "PortKit-specific Flue coding agent harness",
+  "scripts": {
+    "dev": "flue dev flue/agents/portkit-coder.ts",
+    "build": "flue build flue/agents/portkit-coder.ts",
+    "eval": "python flue/eval/eval.py"
+  },
+  "dependencies": {
+    "@flue/sdk": "latest",
+    "@flue/cli": "latest"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
