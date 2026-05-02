@@ -62,7 +62,7 @@ Portkit is the first AI-powered tool that converts Java mods to Bedrock add-ons.
 - Active Minecraft Java mod creators
 - At least one published mod (.jar file)
 - Willing to provide feedback and bug reports
-- interested in cross-platform modding
+- Interested in cross-platform modding
 
 ### What Converts Well (Beta)
 - Items, blocks, armor, tools: 80%+ automated
@@ -80,7 +80,7 @@ Portkit is the first AI-powered tool that converts Java mods to Bedrock add-ons.
 
 ### Form Fields (Tally)
 
-**Section 1: About You
+**Section 1: About You**
 
 **Field 1:** Your name
 - Type: Short text
@@ -98,7 +98,7 @@ Portkit is the first AI-powered tool that converts Java mods to Bedrock add-ons.
 
 ---
 
-**Section 2: Your Mods
+**Section 2: Your Mods**
 
 **Field 4:** Link to your mod(s) on CurseForge, Modrinth, or GitHub
 - Type: Long text
@@ -124,7 +124,7 @@ Portkit is the first AI-powered tool that converts Java mods to Bedrock add-ons.
 
 ---
 
-**Section 3: Your Goals
+**Section 3: Your Goals**
 
 **Field 7:** Why do you want to join the beta?
 - Type: Long text
@@ -140,7 +140,7 @@ Portkit is the first AI-powered tool that converts Java mods to Bedrock add-ons.
 
 ---
 
-**Section 4: Agreement
+**Section 4: Agreement**
 
 **Field 9:** I agree to provide feedback and bug reports during the beta period
 - Type: Checkbox

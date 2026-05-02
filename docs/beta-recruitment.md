@@ -99,15 +99,6 @@ This document outlines the recruitment strategy for beta testers for Portkit, an
 - [ ] #beta-feedback channel
 - [ ] Beta guidelines document
 
-## Social Media Post Templates
-
-See individual files:
-- `beta-signup-page.md` - Tally form content
-- `templates/beta-invite-email.md` - Email template
-- Social posts included in this document below
-
----
-
 ## Social Media Posts by Channel
 
 ### Twitter/X Post
