@@ -64,9 +64,22 @@ def _get_metadata_extractor():
     return _metadata_extractor
 
 
-# Now get the classes
-ChunkingStrategyFactory = _get_chunking_strategies().ChunkingStrategyFactory
-DocumentMetadataExtractor = _get_metadata_extractor().DocumentMetadataExtractor
+_ChunkingStrategyFactory = None
+_DocumentMetadataExtractor = None
+
+
+def _get_chunking_factory_class():
+    global _ChunkingStrategyFactory
+    if _ChunkingStrategyFactory is None:
+        _ChunkingStrategyFactory = _get_chunking_strategies().ChunkingStrategyFactory
+    return _ChunkingStrategyFactory
+
+
+def _get_metadata_extractor_class():
+    global _DocumentMetadataExtractor
+    if _DocumentMetadataExtractor is None:
+        _DocumentMetadataExtractor = _get_metadata_extractor().DocumentMetadataExtractor
+    return _DocumentMetadataExtractor
 
 # Import CRUD operations
 from db import crud
@@ -100,8 +113,8 @@ class IngestionPipeline:
         self.sources: Dict[str, BaseSourceAdapter] = {}
         self.processors: Dict[DocumentType, Any] = {}
         self.validator = QualityValidator()
-        self.chunking_factory = ChunkingStrategyFactory()
-        self.metadata_extractor = DocumentMetadataExtractor()
+        self.chunking_factory = _get_chunking_factory_class()()
+        self.metadata_extractor = _get_metadata_extractor_class()()
 
         # Load sources and processors
         self._load_sources()
