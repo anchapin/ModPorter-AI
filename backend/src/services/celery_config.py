@@ -55,5 +55,9 @@ celery_app.conf.update(
             "task": "services.celery_tasks.process_retry_queue",
             "schedule": 60.0,
         },
+        "purge-orphaned-files": {
+            "task": "services.celery_tasks.purge_orphaned_files",
+            "schedule": 3600.0,
+        },
     },
 )

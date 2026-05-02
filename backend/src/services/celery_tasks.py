@@ -590,6 +590,133 @@ def model_conversion_task(model_id: str) -> Dict[str, Any]:
     return handle_model_conversion_task({"model_id": model_id})
 
 
+@celery_app.task(name="services.celery_tasks.purge_orphaned_files")
+def purge_orphaned_files(max_age_hours: int = 24) -> Dict[str, Any]:
+    """
+    Purge orphaned JAR files older than max_age_hours.
+
+    An orphaned file is one that has no associated active job
+    (not in conversion queue, not being processed).
+
+    Issue: #1156 - JAR data retention: 24hr auto-delete + Privacy Policy statement
+    """
+    from core.storage import storage_manager
+    import os
+
+    audit = get_audit_logger()
+    r = _get_redis_sync()
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=max_age_hours)
+    max_age_days = 7  # For output files (.mcaddon)
+    output_cutoff = datetime.now(timezone.utc) - timedelta(days=max_age_days)
+
+    deleted_input = 0
+    deleted_output = 0
+    errors = 0
+
+    active_jobs = set()
+    for queue_name in QUEUE_NAMES.values():
+        for task_id in r.zrange(queue_name, 0, -1):
+            active_jobs.add(task_id)
+    for task_id in r.smembers(PROCESSING_SET):
+        active_jobs.add(task_id)
+    for task_id in r.zrange(RETRY_QUEUE, 0, -1):
+        active_jobs.add(task_id)
+
+    uploads_base = os.path.join(storage_manager.base_path, storage_manager.UPLOADS_DIR)
+    if os.path.exists(uploads_base):
+        for root, dirs, files in os.walk(uploads_base):
+            for filename in files:
+                if not filename.endswith(".jar"):
+                    continue
+                file_path = os.path.join(root, filename)
+                try:
+                    mtime = datetime.fromtimestamp(os.path.getmtime(file_path))
+                    if mtime < cutoff:
+                        rel_path = os.path.relpath(file_path, uploads_base)
+                        path_parts = rel_path.split(os.sep)
+                        if len(path_parts) >= 2:
+                            job_id = path_parts[1]
+                            if job_id not in active_jobs:
+                                os.remove(file_path)
+                                audit.log_file_deleted(
+                                    job_id=job_id,
+                                    filename=filename,
+                                    deleted_by="system",
+                                    reason="orphaned_file_24h",
+                                )
+                                deleted_input += 1
+                except OSError as e:
+                    logger.error(f"Error purging {file_path}: {e}")
+                    errors += 1
+
+    results_base = os.path.join(storage_manager.base_path, storage_manager.RESULTS_DIR)
+    if os.path.exists(results_base):
+        for root, dirs, files in os.walk(results_base):
+            for filename in files:
+                if not filename.endswith((".mcaddon", ".zip")):
+                    continue
+                file_path = os.path.join(root, filename)
+                try:
+                    mtime = datetime.fromtimestamp(os.path.getmtime(file_path))
+                    if mtime < output_cutoff:
+                        rel_path = os.path.relpath(file_path, results_base)
+                        path_parts = rel_path.split(os.sep)
+                        if len(path_parts) >= 2:
+                            job_id = path_parts[1]
+                            if job_id not in active_jobs:
+                                os.remove(file_path)
+                                audit.log_file_deleted(
+                                    job_id=job_id,
+                                    filename=filename,
+                                    deleted_by="system",
+                                    reason="orphaned_output_7d",
+                                )
+                                deleted_output += 1
+                except OSError as e:
+                    logger.error(f"Error purging {file_path}: {e}")
+                    errors += 1
+
+    logger.info(
+        f"Purged {deleted_input} orphaned input files, {deleted_output} orphaned output files, {errors} errors"
+    )
+    return {
+        "deleted_input": deleted_input,
+        "deleted_output": deleted_output,
+        "errors": errors,
+    }
+
+
+@shared_task(name="services.celery_tasks.delete_input_file")
+def delete_input_file(job_id: str, file_id: str) -> Dict[str, Any]:
+    """
+    Delete the original input JAR file after conversion completes.
+
+    Issue: #1156 - JAR data retention: 24hr auto-delete + Privacy Policy statement
+    """
+    import os
+
+    audit = get_audit_logger()
+    file_path = os.path.join(os.getenv("TEMP_UPLOADS_DIR", "temp_uploads"), f"{file_id}.jar")
+
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            audit.log_file_deleted(
+                job_id=job_id,
+                filename=f"{file_id}.jar",
+                deleted_by="system",
+                reason="conversion_complete",
+            )
+            logger.info(f"Deleted input file: {file_path}")
+            return {"deleted": True, "file_path": file_path}
+        else:
+            logger.warning(f"Input file not found for deletion: {file_path}")
+            return {"deleted": False, "file_path": file_path, "reason": "file_not_found"}
+    except OSError as e:
+        logger.error(f"Error deleting input file {file_path}: {e}")
+        return {"deleted": False, "error": str(e)}
+
+
 @shared_task(name="services.celery_tasks.heavy_task")
 def heavy_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Heavy processing task for batch operations."""
