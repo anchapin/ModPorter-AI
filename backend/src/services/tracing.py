@@ -7,7 +7,7 @@ including trace context propagation between services.
 
 import os
 import logging
-from typing import Optional
+from typing import Optional, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +97,19 @@ def get_jaeger_port() -> int:
 def get_otlp_endpoint() -> str:
     """Get OTLP endpoint from environment."""
     return os.getenv("OTLP_ENDPOINT", "http://localhost:4317")
+
+
+def get_better_stack_otlp_endpoint() -> str:
+    """Get Better Stack OTLP endpoint for trace export."""
+    return os.getenv("BETTERSTACK_OTLP_ENDPOINT", "")
+
+
+def get_better_stack_otlp_headers() -> Dict[str, str]:
+    """Get Better Stack OTLP headers for trace export."""
+    api_key = os.getenv("BETTERSTACK_API_TOKEN", "")
+    if api_key:
+        return {"X-API-Key": api_key}
+    return {}
 
 
 def _create_resource() -> Resource:
