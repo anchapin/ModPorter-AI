@@ -16,7 +16,7 @@ RUN npm run build
 # Python dependencies build stage (consolidates all Python deps)
 # Note: Using Python 3.11 to match Debian bookworm's Python version
 # Debian bookworm-slim ships with Python 3.11.2, so we must build packages for 3.11
-FROM python:3.14-slim AS python-builder
+FROM python:3.13-slim AS python-builder
 WORKDIR /tmp
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc g++ curl libmagic1 ffmpeg && \
@@ -45,7 +45,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy Python packages from consolidated builder (NOT binaries - use production stage's Python)
 # Debian system Python looks in /usr/lib/python3.X/dist-packages, not site-packages
-COPY --from=python-builder /usr/local/lib/python3.14/site-packages /usr/local/lib/python3.14/dist-packages
+COPY --from=python-builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/dist-packages
 
 # Copy application code
 COPY backend/ /app/backend/
