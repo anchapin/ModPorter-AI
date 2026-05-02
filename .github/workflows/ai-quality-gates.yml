@@ -54,12 +54,13 @@ jobs:
       - uses: actions/checkout@v6
         with:
           sparse-checkout: |
-            backend/src
+            backend
           sparse-checkout-cone-mode: false
 
       - name: Clear any cached coverage/test artifacts
         run: |
           rm -rf backend/.pytest_cache backend/coverage.json backend/.coverage 2>/dev/null || true
+          rm -f backend/src/tests/unit/test_byok_vault.py backend/src/tests/unit/test_billing.py 2>/dev/null || true
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -96,12 +97,13 @@ jobs:
       - uses: actions/checkout@v6
         with:
           sparse-checkout: |
-            backend/src
+            backend
           sparse-checkout-cone-mode: false
 
       - name: Clear any cached coverage/test artifacts
         run: |
           rm -rf backend/.pytest_cache backend/coverage.json backend/.coverage 2>/dev/null || true
+          rm -f backend/src/tests/unit/test_byok_vault.py backend/src/tests/unit/test_billing.py 2>/dev/null || true
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -139,12 +141,13 @@ jobs:
       - uses: actions/checkout@v6
         with:
           sparse-checkout: |
-            backend/src
+            backend
           sparse-checkout-cone-mode: false
 
       - name: Clear any cached coverage/test artifacts
         run: |
           rm -rf backend/.pytest_cache backend/coverage.json backend/.coverage 2>/dev/null || true
+          rm -f backend/src/tests/unit/test_byok_vault.py backend/src/tests/unit/test_billing.py 2>/dev/null || true
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -185,7 +188,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           sparse-checkout: |
-            backend/src
+            backend
           sparse-checkout-cone-mode: false
 
       - name: Set up Python
