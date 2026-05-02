@@ -64,11 +64,9 @@ stripe>=8.0.0  # Stripe payment integration (Issue #970)
 resend>=2.0.0  # Transactional email sending (switched from SendGrid)
 
 # Distributed Tracing - OpenTelemetry
-# Note: opentelemetry-exporter-jaeger 1.21.0 is the latest version compatible with Python 3.11
 opentelemetry-api>=1.41.1
 opentelemetry-sdk>=1.41.1
 opentelemetry-exporter-otlp>=1.41.1
-opentelemetry-exporter-jaeger==1.21.0
 opentelemetry-instrumentation-fastapi>=0.62b1
 opentelemetry-instrumentation-httpx>=0.62b1
 opentelemetry-instrumentation-redis>=0.62b1

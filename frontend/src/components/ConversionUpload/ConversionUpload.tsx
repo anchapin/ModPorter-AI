@@ -449,6 +449,9 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
               <p className="supporting-text">
                 Supports .jar files and .zip modpack archives
               </p>
+              <p className="privacy-note">
+                Your .jar file is automatically deleted within 24 hours
+              </p>
             </div>
           )}
         </div>

@@ -414,6 +414,7 @@ class TestEmbeddingsAPILogic:
         # Mock dependencies in sys.modules to avoid import errors
         sys.modules["utils.embedding_generator"] = MagicMock()
         sys.modules["schemas.multimodal_schema"] = MagicMock()
+        sys.modules["search"] = MagicMock()
         sys.modules["search.hybrid_search_engine"] = MagicMock()
 
         # Mock the internal imports and helpers
