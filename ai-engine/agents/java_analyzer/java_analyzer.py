@@ -718,7 +718,6 @@ def _class_name_to_registry_name(class_name: str) -> str:
     elif name.startswith("Block") and len(name) > 5 and name[5].isupper():
         name = name[5:]
 
-
     name = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name).lower()
     name = re.sub(r"_+", "_", name).strip("_")
 

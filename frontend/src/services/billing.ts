@@ -20,10 +20,28 @@ const getAuthHeaders = (): Record<string, string> => {
 };
 
 export interface CheckoutRequest {
-  tier: 'pro' | 'studio';
+  tier: 'creator' | 'creator_byok' | 'studio' | 'studio_byok' | 'enterprise';
   trial?: boolean;
   success_url?: string;
   cancel_url?: string;
+  purchase_type?: 'subscription' | 'credits';
+}
+
+export interface CreditsCheckoutRequest {
+  credit_pack: 'credits_5' | 'credits_12';
+  success_url?: string;
+  cancel_url?: string;
+}
+
+export interface CreditsResponse {
+  checkout_url: string;
+  session_id: string;
+  credits: number;
+}
+
+export interface CreditBalanceResponse {
+  balance: number;
+  lifetime_purchased: number;
 }
 
 export interface CheckoutResponse {
@@ -134,6 +152,53 @@ export const getPublishableKey = async (): Promise<PublishableKeyResponse> => {
       .catch(() => ({ detail: 'Failed to get publishable key' }));
     throw new ApiError(
       errorData.detail || 'Failed to get publishable key',
+      response.status
+    );
+  }
+
+  return response.json();
+};
+
+export const createCreditsCheckoutSession = async (
+  request: CreditsCheckoutRequest
+): Promise<CreditsResponse> => {
+  const response = await fetch(`${API_BASE_URL}/billing/credits/checkout`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Failed to create credits checkout session' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to create credits checkout session',
+      response.status
+    );
+  }
+
+  return response.json();
+};
+
+export const getCreditBalance = async (): Promise<CreditBalanceResponse> => {
+  const response = await fetch(`${API_BASE_URL}/billing/credits/balance`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Failed to get credit balance' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to get credit balance',
       response.status
     );
   }

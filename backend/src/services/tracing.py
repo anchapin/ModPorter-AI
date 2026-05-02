@@ -167,6 +167,26 @@ def _setup_otlp_exporter() -> Optional[BatchSpanProcessor]:
         return None
 
 
+def _setup_betterstack_exporter() -> Optional[BatchSpanProcessor]:
+    """Setup Better Stack OTLP exporter for distributed tracing."""
+    endpoint = get_better_stack_otlp_endpoint()
+    if not endpoint:
+        logger.debug("Better Stack OTLP endpoint not configured")
+        return None
+
+    try:
+        headers = get_better_stack_otlp_headers()
+        otlp_exporter = OTLPSpanExporter(
+            endpoint=endpoint,
+            headers=headers,
+            insecure=True,
+        )
+        return BatchSpanProcessor(otlp_exporter)
+    except Exception as e:
+        logger.warning(f"Failed to setup Better Stack OTLP exporter: {e}")
+        return None
+
+
 def init_tracing(app=None) -> None:
     """
     Initialize OpenTelemetry tracing.
@@ -202,6 +222,12 @@ def init_tracing(app=None) -> None:
             if processor:
                 _tracer_provider.add_span_processor(processor)
                 logger.info(f"OTLP exporter configured: {get_otlp_endpoint()}")
+
+        if exporter_type in ("betterstack", "all"):
+            processor = _setup_betterstack_exporter()
+            if processor:
+                _tracer_provider.add_span_processor(processor)
+                logger.info("Better Stack OTLP exporter configured")
 
         # Always add console exporter for development
         if os.getenv("TRACING_CONSOLE", "false").lower() == "true":
@@ -421,5 +447,5 @@ def shutdown_tracing() -> None:
 
     if _tracer_provider:
         _tracer_provider.shutdown()
-        _initialized = False
         logger.info("Tracing provider shutdown")
+    _initialized = False

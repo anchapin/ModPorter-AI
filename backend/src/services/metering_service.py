@@ -1,8 +1,10 @@
 """
-Metering Service for subscription tier usage limits (Issue #977)
+Metering Service for subscription tier usage limits (Issue #977, #1226)
 
 Provides:
-- Tier-based conversion limits (Free: 3/month, Creator/Pro: unlimited, Studio: unlimited + API)
+- Tier-based conversion limits (Free: 1/month, Creator/Pro: unlimited, Studio: unlimited + API)
+- PAYG credit-based conversions (credits never expire)
+- BYOK (Bring Your Own Key) tier variants
 - Monthly usage tracking with automatic reset
 - API usage tracking separate from web UI usage
 - Usage queries for UI display
@@ -24,29 +26,52 @@ logger = logging.getLogger(__name__)
 
 TIER_LIMITS = {
     "free": {
-        "monthly_conversions": 3,
+        "monthly_conversions": 1,
         "monthly_api_calls": 0,
         "has_api_access": False,
+        "max_jar_size_mb": 5,
+    },
+    "payg": {
+        "monthly_conversions": -1,
+        "monthly_api_calls": 0,
+        "has_api_access": False,
+        "max_jar_size_mb": 100,
     },
     "creator": {
-        "monthly_conversions": -1,  # -1 means unlimited
+        "monthly_conversions": -1,
         "monthly_api_calls": 0,
         "has_api_access": False,
+        "max_jar_size_mb": 100,
+    },
+    "creator_byok": {
+        "monthly_conversions": -1,
+        "monthly_api_calls": 0,
+        "has_api_access": False,
+        "max_jar_size_mb": 100,
     },
     "pro": {
         "monthly_conversions": -1,
         "monthly_api_calls": 0,
         "has_api_access": False,
+        "max_jar_size_mb": 100,
     },
     "studio": {
         "monthly_conversions": -1,
         "monthly_api_calls": 1000,
         "has_api_access": True,
+        "max_jar_size_mb": 500,
+    },
+    "studio_byok": {
+        "monthly_conversions": -1,
+        "monthly_api_calls": 500,
+        "has_api_access": True,
+        "max_jar_size_mb": 500,
     },
     "enterprise": {
         "monthly_conversions": -1,
         "monthly_api_calls": -1,
         "has_api_access": True,
+        "max_jar_size_mb": -1,
     },
 }
 

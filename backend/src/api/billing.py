@@ -12,6 +12,7 @@ Endpoints:
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+from uuid import UUID
 
 import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -36,12 +37,21 @@ STRIPE_PUBLISHABLE_KEY = ""  # Loaded from env
 STRIPE_WEBHOOK_SECRET = ""  # Loaded from env
 
 TIER_PRICE_IDS = {
-    "pro": "prod_ULsnGiOD4DbTer",
-    "studio": "prod_ULso0In8XJcHQv",
-    "enterprise": None,  # Enterprise uses custom pricing, no subscription
+    "creator": "price_creator_monthly",
+    "creator_byok": "price_creator_byok_monthly",
+    "studio": "price_studio_monthly",
+    "studio_byok": "price_studio_byok_monthly",
+    "enterprise": None,
+}
+
+PAYG_CREDIT_PRICES = {
+    "credits_5": "price_payg_5",
+    "credits_12": "price_payg_12",
 }
 
 FREE_TRIAL_DAYS = 14
+
+MAX_FREE_JAR_SIZE_MB = 5
 
 
 def get_stripe():
@@ -77,10 +87,33 @@ init_stripe()
 class CheckoutRequest(BaseModel):
     """Request to create a Stripe Checkout session"""
 
-    tier: str = "pro"  # "pro" or "studio"
-    trial: bool = True  # Whether to include free trial
+    tier: str = "creator"
+    trial: bool = True
     success_url: Optional[str] = None
     cancel_url: Optional[str] = None
+
+
+class CreditsCheckoutRequest(BaseModel):
+    """Request to create a Stripe Checkout session for PAYG credit purchase"""
+
+    credit_pack: str = "credits_5"
+    success_url: Optional[str] = None
+    cancel_url: Optional[str] = None
+
+
+class CreditsResponse(BaseModel):
+    """Response with Stripe Checkout session URL for credit purchase"""
+
+    checkout_url: str
+    session_id: str
+    credits: int
+
+
+class CreditBalanceResponse(BaseModel):
+    """Current credit balance for a user"""
+
+    balance: int
+    lifetime_purchased: int
 
 
 class CheckoutResponse(BaseModel):
@@ -230,7 +263,7 @@ async def create_checkout_session(
             },
         }
 
-        if request.trial and request.tier in ("pro", "studio"):
+        if request.trial and request.tier in ("creator", "creator_byok", "studio", "studio_byok"):
             session_params["subscription_data"] = {
                 "trial_period_days": FREE_TRIAL_DAYS,
             }
@@ -299,6 +332,99 @@ async def create_portal_session(
         )
 
 
+@router.post("/credits/checkout", response_model=CreditsResponse)
+async def create_credits_checkout(
+    request: CreditsCheckoutRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a Stripe Checkout session for PAYG credit pack purchase"""
+    from services.feature_flags import is_feature_enabled
+
+    if not is_feature_enabled("payg_credits"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="PAYG credits are currently disabled.",
+        )
+    if request.credit_pack not in PAYG_CREDIT_PRICES:
+        raise HTTPException(status_code=400, detail=f"Invalid credit pack: {request.credit_pack}")
+
+    credit_amounts = {"credits_5": 5, "credits_12": 12}
+    credits = credit_amounts.get(request.credit_pack, 5)
+
+    stripe_instance = get_stripe()
+    import os
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    base_url = os.getenv("APP_BASE_URL", "http://localhost:3000")
+
+    success_url = request.success_url or f"{base_url}/dashboard?billing=credits_success"
+    cancel_url = request.cancel_url or f"{base_url}/pricing?billing=credits_cancelled"
+
+    try:
+        customer_id = user.stripe_customer_id
+        if not customer_id:
+            customer = stripe_instance.Customer.create(
+                email=user.email,
+                metadata={"user_id": str(user.id)},
+            )
+            customer_id = customer.id
+            user.stripe_customer_id = customer_id
+            db.add(user)
+            await db.commit()
+
+        price_id = PAYG_CREDIT_PRICES.get(request.credit_pack)
+        if not price_id:
+            raise HTTPException(status_code=400, detail="Credit pack price not configured")
+
+        session = stripe_instance.checkout.sessions.create(
+            customer=customer_id,
+            mode="payment",
+            payment_method_types=["card"],
+            line_items=[{"price": price_id, "quantity": 1}],
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata={
+                "user_id": str(user.id),
+                "credit_pack": request.credit_pack,
+                "credits": str(credits),
+            },
+        )
+
+        return CreditsResponse(
+            checkout_url=session.url,
+            session_id=session.id,
+            credits=credits,
+        )
+
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe credits checkout error: {e}")
+        raise HTTPException(
+            status_code=500, detail="Failed to create checkout session. Please try again later."
+        )
+
+
+@router.get("/credits/balance", response_model=CreditBalanceResponse)
+async def get_credit_balance(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get current PAYG credit balance for a user"""
+    from db.models import UserCredits
+
+    result = await db.execute(select(UserCredits).where(UserCredits.user_id == user.id))
+    credit_record = result.scalar_one_or_none()
+
+    if not credit_record:
+        return CreditBalanceResponse(balance=0, lifetime_purchased=0)
+
+    return CreditBalanceResponse(
+        balance=credit_record.balance,
+        lifetime_purchased=credit_record.lifetime_purchased,
+    )
+
+
 @router.post("/webhook")
 async def handle_stripe_webhook(
     request: Request, response: Response, db: AsyncSession = Depends(get_db)
@@ -336,6 +462,10 @@ async def handle_stripe_webhook(
         if event["type"] == "checkout.session.completed":
             session = event["data"]["object"]
             await handle_checkout_completed(session, db)
+
+            credits_str = session.get("metadata", {}).get("credits")
+            if credits_str:
+                await handle_credits_purchase(session, db)
 
         elif event["type"] == "customer.subscription.updated":
             subscription = event["data"]["object"]
@@ -399,16 +529,59 @@ async def handle_checkout_completed(session: dict, db: AsyncSession):
     logger.info(f"User {user_id} subscribed to {tier} (checkout.completed)")
 
 
+async def handle_credits_purchase(session: dict, db: AsyncSession):
+    """Handle checkout.session.completed for PAYG credit purchases"""
+    user_id = session.get("metadata", {}).get("user_id")
+    credits_str = session.get("metadata", {}).get("credits")
+
+    if not user_id or not credits_str:
+        logger.warning(
+            f"Credits purchase missing metadata: user_id={user_id}, credits={credits_str}"
+        )
+        return
+
+    try:
+        credits = int(credits_str)
+    except (ValueError, TypeError):
+        logger.error(f"Invalid credits value: {credits_str}")
+        return
+
+    from db.models import UserCredits
+
+    result = await db.execute(select(UserCredits).where(UserCredits.user_id == UUID(user_id)))
+    credit_record = result.scalar_one_or_none()
+
+    if credit_record:
+        credit_record.balance += credits
+        credit_record.lifetime_purchased += credits
+    else:
+        credit_record = UserCredits(
+            user_id=UUID(user_id),
+            balance=credits,
+            lifetime_purchased=credits,
+        )
+        db.add(credit_record)
+
+    await db.commit()
+    logger.info(f"User {user_id} purchased {credits} credits (checkout.completed)")
+
+
 async def handle_subscription_updated(subscription: dict, db: AsyncSession):
     """Handle customer.subscription.updated"""
     customer_id = subscription.get("customer")
     status = subscription.get("status")
-    tier = "pro"  # Would need to derive from price lookup
+    tier = "free"
+
+    price_id_to_tier = {
+        "price_creator_monthly": "creator",
+        "price_creator_byok_monthly": "creator_byok",
+        "price_studio_monthly": "studio",
+        "price_studio_byok_monthly": "studio_byok",
+    }
 
     if subscription.get("items", {}).get("data"):
         price_id = subscription["items"]["data"][0].get("price", {}).get("id")
-        if price_id == TIER_PRICE_IDS.get("studio"):
-            tier = "studio"
+        tier = price_id_to_tier.get(price_id, tier)
 
     result = await db.execute(select(User).where(User.stripe_customer_id == customer_id))
     user = result.scalar_one_or_none()

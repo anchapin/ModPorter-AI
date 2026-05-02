@@ -63,7 +63,6 @@ jobs:
           cd backend
           uv pip install --system -r requirements.txt
           uv pip install --system pytest pytest-asyncio pytest-cov pytest-timeout pytest-xdist
-
       - name: Verify test_byok_vault.py does not exist
         run: |
           if [ -f backend/src/tests/unit/test_byok_vault.py ]; then
