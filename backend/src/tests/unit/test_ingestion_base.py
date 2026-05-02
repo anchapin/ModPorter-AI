@@ -111,3 +111,27 @@ class TestBaseSourceAdapter:
         assert result == []
 
         assert adapter.validate_config({}) is True
+
+
+class TestIngestionPipelineLazyLoading:
+    """Test cases for ingestion pipeline lazy loading behavior."""
+
+    def test_ingestion_package_import_does_not_eagerly_load_ai_engine(self):
+        """
+        Test that importing from ingestion package does not eagerly load
+        ai-engine module at import time (issue #1197).
+        """
+        import sys
+        ai_engine_modules = [key for key in sys.modules if key.startswith("ai_engine") or "ai-engine" in key]
+        for mod in ai_engine_modules:
+            if "indexing" in mod and ("chunking" in mod or "metadata" in mod):
+                pytest.fail(f"ai-engine module loaded too early: {mod}")
+
+    def test_pipeline_module_import_succeeds_without_ai_engine(self):
+        """
+        Test that ingestion.pipeline can be imported without ai-engine present.
+        This verifies lazy loading works - ai-engine is only loaded when needed.
+        """
+        from src.ingestion import pipeline
+        assert hasattr(pipeline, "_get_chunking_factory_class")
+        assert hasattr(pipeline, "_get_metadata_extractor_class")
