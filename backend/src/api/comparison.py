@@ -5,7 +5,7 @@ import uuid
 import logging
 
 # Import error handling framework
-from services.error_handler import (
+from errors import (
     ConversionError,
     AIEngineUnavailableError,
     categorize_error,

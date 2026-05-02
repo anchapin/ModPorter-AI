@@ -38,7 +38,7 @@ from services.report_models import (
     FullConversionReport,
 )  # For conversion report model
 from services.report_generator import ConversionReportGenerator
-from services.error_handlers import register_exception_handlers
+from errors import register_exception_handlers
 from services.rate_limiter import (
     RateLimitMiddleware,
     init_rate_limiter,

@@ -26,7 +26,7 @@ from concurrent.futures import ThreadPoolExecutor
 import heapq
 
 from models.conversion_mode import ConversionMode, ModeClassificationResult
-from services.error_handler import ConversionError, categorize_error, get_error_handler
+from errors import ConversionError, categorize_error, get_error_handler
 
 logger = logging.getLogger(__name__)
 

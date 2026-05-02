@@ -7,7 +7,7 @@ import asyncio
 from unittest.mock import MagicMock, patch
 import time
 
-from services.error_handler import (
+from errors import (
     ConversionError,
     AIEngineUnavailableError,
     ConversionTimeoutError,

@@ -18,7 +18,7 @@ class TestErrorCategories:
 
     def test_error_categories_defined(self):
         """Test that all required error categories are defined"""
-        from services.error_handlers import ERROR_CATEGORIES
+        from errors import ERROR_CATEGORIES
 
         required_categories = [
             "parse_error",
@@ -37,7 +37,7 @@ class TestErrorCategories:
 
     def test_custom_exceptions(self):
         """Test custom exception classes"""
-        from services.error_handlers import (
+        from errors import (
             PortkitException,
             ParseError,
             AssetError,
@@ -85,7 +85,7 @@ class TestErrorCategorization:
 
     def test_categorize_parse_error(self):
         """Test parse error categorization"""
-        from services.error_handlers import _categorize_error, ParseError
+        from errors import _categorize_error, ParseError
 
         # Test by exception type
         error = ParseError("test", "test")
@@ -93,21 +93,21 @@ class TestErrorCategorization:
 
     def test_categorize_asset_error(self):
         """Test asset error categorization"""
-        from services.error_handlers import _categorize_error, AssetError
+        from errors import _categorize_error, AssetError
 
         error = AssetError("test", "test")
         assert _categorize_error(error) == "asset_error"
 
     def test_categorize_logic_error(self):
         """Test logic error categorization"""
-        from services.error_handlers import _categorize_error, LogicError
+        from errors import _categorize_error, LogicError
 
         error = LogicError("test", "test")
         assert _categorize_error(error) == "logic_error"
 
     def test_categorize_package_error(self):
         """Test package error categorization"""
-        from services.error_handlers import _categorize_error, PackageError
+        from errors import _categorize_error, PackageError
 
         error = PackageError("test", "test")
         assert _categorize_error(error) == "package_error"

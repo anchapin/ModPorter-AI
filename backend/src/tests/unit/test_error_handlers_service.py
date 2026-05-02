@@ -8,7 +8,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
-from services.error_handlers import (
+from errors import (
     is_debug_mode,
     ErrorResponse,
     PortkitException,
