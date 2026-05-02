@@ -457,6 +457,7 @@ def get_feature_flag_manager() -> FeatureFlagManager:
     global _default_manager
     if _default_manager is None:
         _default_manager = FeatureFlagManager()
+        initialize_default_flags(_default_manager)
     return _default_manager
 
 
@@ -621,6 +622,16 @@ DEFAULT_FLAGS = {
         "flag_type": "boolean",
         "enabled": False,
         "description": "Enable API key generation and management (FEATURE_API_KEYS)",
+    },
+    "byok_enabled": {
+        "flag_type": "boolean",
+        "enabled": False,
+        "description": "Enable BYOK (Bring Your Own Key) functionality for users to supply their own LLM API keys",
+    },
+    "payg_credits": {
+        "flag_type": "boolean",
+        "enabled": False,
+        "description": "Enable PAYG credit pack purchases",
     },
 }
 

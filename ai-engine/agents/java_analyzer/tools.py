@@ -596,9 +596,7 @@ class JavaAnalyzerTools:
                 try:
                     data = json.loads(mod_data)
                     if "mod_data" in data:
-                        (
-                            data["mod_data"] if isinstance(data["mod_data"], dict) else {}
-                        )
+                        (data["mod_data"] if isinstance(data["mod_data"], dict) else {})
                     else:
                         data.get("mod_metadata", {})
                 except json.JSONDecodeError:
