@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 class QueuePriority(Enum):
     """Queue priority levels."""
+
     LOW = "low"
     NORMAL = "normal"
     HIGH = "high"
@@ -34,6 +35,7 @@ class QueuePriority(Enum):
 @dataclass
 class QueueMetrics:
     """Metrics for a single queue."""
+
     name: str
     depth: int = 0
     messages_enqueued: int = 0
@@ -46,6 +48,7 @@ class QueueMetrics:
 @dataclass
 class WorkerMetrics:
     """Metrics for Celery workers."""
+
     name: str
     online: bool = False
     active_tasks: int = 0
@@ -58,6 +61,7 @@ class WorkerMetrics:
 @dataclass
 class CeleryClusterMetrics:
     """Aggregated metrics for the Celery cluster."""
+
     total_queues: int = 0
     total_queue_depth: int = 0
     total_workers: int = 0
@@ -191,48 +195,58 @@ class CeleryQueueMonitor:
 
         if stats["total_queued"] > 1000:
             issues.append(f"Queue backlog is critically high: {stats['total_queued']} tasks")
-            alerts.append({
-                "type": "queue_backlog_critical",
-                "severity": "P1",
-                "value": stats["total_queued"],
-                "threshold": 1000,
-            })
+            alerts.append(
+                {
+                    "type": "queue_backlog_critical",
+                    "severity": "P1",
+                    "value": stats["total_queued"],
+                    "threshold": 1000,
+                }
+            )
 
         if stats["total_queued"] > 100:
             issues.append(f"Queue backlog is elevated: {stats['total_queued']} tasks")
-            alerts.append({
-                "type": "queue_backlog_warning",
-                "severity": "P2",
-                "value": stats["total_queued"],
-                "threshold": 100,
-            })
+            alerts.append(
+                {
+                    "type": "queue_backlog_warning",
+                    "severity": "P2",
+                    "value": stats["total_queued"],
+                    "threshold": 100,
+                }
+            )
 
         if stats["total_dead_letter"] > 50:
             issues.append(f"Dead letter queue has {stats['total_dead_letter']} tasks")
-            alerts.append({
-                "type": "dead_letter_queue_high",
-                "severity": "P2",
-                "value": stats["total_dead_letter"],
-                "threshold": 50,
-            })
+            alerts.append(
+                {
+                    "type": "dead_letter_queue_high",
+                    "severity": "P2",
+                    "value": stats["total_dead_letter"],
+                    "threshold": 50,
+                }
+            )
 
         if stats["total_processing"] == 0 and stats["total_queued"] > 0:
             issues.append("No workers processing but tasks are queued")
-            alerts.append({
-                "type": "workers_idle",
-                "severity": "P1",
-                "value": 0,
-                "threshold": 1,
-            })
+            alerts.append(
+                {
+                    "type": "workers_idle",
+                    "severity": "P1",
+                    "value": 0,
+                    "threshold": 1,
+                }
+            )
 
         if stats["retry_queue_size"] > 100:
             issues.append(f"Retry queue is building: {stats['retry_queue_size']} tasks")
-            alerts.append({
-                "type": "retry_queue_building",
-                "severity": "P2",
-                "value": stats["retry_queue_size"],
-                "threshold": 100,
-            })
+            alerts.append(
+                {
+                    "type": "retry_queue_building",
+                    "severity": "P2",
+                    "value": stats["retry_queue_size"],
+                    "threshold": 100,
+                }
+            )
 
         return {
             "healthy": len(issues) == 0,
@@ -309,13 +323,15 @@ class CeleryQueueMonitor:
         ]
 
         for queue_name, count in stats["queues"].items():
-            metrics.append({
-                "name": "celery_queue_size",
-                "type": "gauge",
-                "labels": {"queue": queue_name},
-                "value": count,
-                "help": f"Number of tasks in {queue_name} queue",
-            })
+            metrics.append(
+                {
+                    "name": "celery_queue_size",
+                    "type": "gauge",
+                    "labels": {"queue": queue_name},
+                    "value": count,
+                    "help": f"Number of tasks in {queue_name} queue",
+                }
+            )
 
         return metrics
 
@@ -386,8 +402,8 @@ class CeleryAlertRules:
             rules.append(f"      severity: {rule['severity']}")
             rules.append(f"      team: infrastructure")
             rules.append(f"    annotations:")
-            rules.append(f"      summary: \"{rule['summary']}\"")
-            rules.append(f"      description: \"{rule['description']}\"")
+            rules.append(f'      summary: "{rule["summary"]}"')
+            rules.append(f'      description: "{rule["description"]}"')
             rules.append("")
 
         return "\n".join(rules)

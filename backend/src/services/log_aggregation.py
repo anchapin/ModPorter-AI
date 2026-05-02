@@ -107,6 +107,7 @@ class BetterStackHandler(logging.Handler):
 
         try:
             import asyncio
+
             asyncio.create_task(self._send_logs_async(logs_to_send))
         except RuntimeError:
             self._send_logs_sync(logs_to_send)
@@ -174,7 +175,9 @@ class StructuredLogger:
         """Clear the log context."""
         self._context = {}
 
-    def _build_log_entry(self, level: str, message: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def _build_log_entry(
+        self, level: str, message: str, context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """Build a structured log entry."""
         trace_id = self._trace_id or TRACE_ID_CTX.get()
         span_id = self._span_id or SPAN_ID_CTX.get()
@@ -268,6 +271,7 @@ def setup_logging(
 
 def log_with_trace(func):
     """Decorator to automatically add trace context to log messages."""
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         trace_id = TRACE_ID_CTX.get()
@@ -283,6 +287,7 @@ def log_with_trace(func):
                 setattr(logging, key, value)
 
         return func(*args, **kwargs)
+
     return wrapper
 
 

@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 class AlertSeverity(Enum):
     """Alert severity levels."""
+
     P0_CRITICAL = "P0"
     P1_HIGH = "P1"
     P2_MEDIUM = "P2"
@@ -35,6 +36,7 @@ class AlertSeverity(Enum):
 
 class AlertStatus(Enum):
     """Alert status values."""
+
     TRIGGERED = "triggered"
     ACKNOWLEDGED = "acknowledged"
     RESOLVED = "resolved"
@@ -43,6 +45,7 @@ class AlertStatus(Enum):
 @dataclass
 class Alert:
     """Represents an alert incident."""
+
     name: str
     severity: AlertSeverity
     message: str
@@ -58,6 +61,7 @@ class Alert:
 @dataclass
 class AlertRule:
     """Alert rule definition."""
+
     name: str
     metric: str
     threshold: float
@@ -268,7 +272,11 @@ class OnCallAlertManager:
                         name=rule.name,
                         severity=rule.severity,
                         message=f"{rule.metric} {rule.operator} {rule.threshold} (current: {value})",
-                        metadata={"metric": rule.metric, "value": value, "threshold": rule.threshold},
+                        metadata={
+                            "metric": rule.metric,
+                            "value": value,
+                            "threshold": rule.threshold,
+                        },
                     )
                 )
 
@@ -298,50 +306,60 @@ def create_default_alert_manager() -> OnCallAlertManager:
     """Create alert manager with default alert rules."""
     manager = OnCallAlertManager()
 
-    manager.add_rule(AlertRule(
-        name="queue_backlog_critical",
-        metric="queue_depth",
-        threshold=1000,
-        operator=">",
-        severity=AlertSeverity.P0_CRITICAL,
-        duration_seconds=300,
-    ))
+    manager.add_rule(
+        AlertRule(
+            name="queue_backlog_critical",
+            metric="queue_depth",
+            threshold=1000,
+            operator=">",
+            severity=AlertSeverity.P0_CRITICAL,
+            duration_seconds=300,
+        )
+    )
 
-    manager.add_rule(AlertRule(
-        name="queue_backlog_warning",
-        metric="queue_depth",
-        threshold=100,
-        operator=">",
-        severity=AlertSeverity.P2_MEDIUM,
-        duration_seconds=300,
-    ))
+    manager.add_rule(
+        AlertRule(
+            name="queue_backlog_warning",
+            metric="queue_depth",
+            threshold=100,
+            operator=">",
+            severity=AlertSeverity.P2_MEDIUM,
+            duration_seconds=300,
+        )
+    )
 
-    manager.add_rule(AlertRule(
-        name="task_failure_rate_high",
-        metric="task_failure_rate",
-        threshold=10,
-        operator=">",
-        severity=AlertSeverity.P1_HIGH,
-        duration_seconds=300,
-    ))
+    manager.add_rule(
+        AlertRule(
+            name="task_failure_rate_high",
+            metric="task_failure_rate",
+            threshold=10,
+            operator=">",
+            severity=AlertSeverity.P1_HIGH,
+            duration_seconds=300,
+        )
+    )
 
-    manager.add_rule(AlertRule(
-        name="workers_offline",
-        metric="workers_online",
-        threshold=1,
-        operator="<",
-        severity=AlertSeverity.P0_CRITICAL,
-        duration_seconds=60,
-    ))
+    manager.add_rule(
+        AlertRule(
+            name="workers_offline",
+            metric="workers_online",
+            threshold=1,
+            operator="<",
+            severity=AlertSeverity.P0_CRITICAL,
+            duration_seconds=60,
+        )
+    )
 
-    manager.add_rule(AlertRule(
-        name="dead_letter_queue_high",
-        metric="dead_letter_size",
-        threshold=50,
-        operator=">",
-        severity=AlertSeverity.P2_MEDIUM,
-        duration_seconds=300,
-    ))
+    manager.add_rule(
+        AlertRule(
+            name="dead_letter_queue_high",
+            metric="dead_letter_size",
+            threshold=50,
+            operator=">",
+            severity=AlertSeverity.P2_MEDIUM,
+            duration_seconds=300,
+        )
+    )
 
     return manager
 

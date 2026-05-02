@@ -776,6 +776,7 @@ async def simulate_ai_conversion(job_id: str):
                 # Issue: #1156
                 try:
                     from services.celery_tasks import delete_input_file
+
                     file_id = str(job.input_data.get("file_id", ""))
                     if file_id:
                         delete_input_file.delay(job_id, file_id)
