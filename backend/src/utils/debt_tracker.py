@@ -62,7 +62,7 @@ class DebtItem:
     line_number: int
     category: DebtCategory
     severity: DebtSeverity
-    item_type: str = field(default="TODO")  # TODO, FIXME, DEBT
+    item_type: str = field(default="TODO")  # supported: TODO, FIXME, DEBT
     author: Optional[str] = None
     created_date: str = field(default_factory=lambda: datetime.now().isoformat())
     context: str = ""  # Code context around the debt item
