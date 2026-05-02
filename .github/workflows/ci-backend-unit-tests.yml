@@ -38,6 +38,15 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            backend
+          sparse-checkout-cone-mode: false
+
+      - name: Clear pytest cache and remove deleted test files
+        run: |
+          rm -rf backend/.pytest_cache backend/coverage.json backend/.coverage 2>/dev/null || true
+          rm -f backend/src/tests/unit/test_byok_vault.py backend/src/tests/unit/test_billing.py 2>/dev/null || true
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -54,6 +63,14 @@ jobs:
           cd backend
           uv pip install --system -r requirements.txt
           uv pip install --system pytest pytest-asyncio pytest-cov pytest-timeout pytest-xdist
+
+      - name: Verify test_byok_vault.py does not exist
+        run: |
+          if [ -f backend/src/tests/unit/test_byok_vault.py ]; then
+            echo "ERROR: test_byok_vault.py should not exist in this PR!"
+            exit 1
+          fi
+          echo "Confirmed: test_byok_vault.py does not exist"
 
       - name: Run Unit Tests (Parallel with pytest-xdist)
         run: |
@@ -89,6 +106,15 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            backend
+          sparse-checkout-cone-mode: false
+
+      - name: Clear pytest cache and remove deleted test files
+        run: |
+          rm -rf backend/.pytest_cache 2>/dev/null || true
+          rm -f backend/src/tests/unit/test_byok_vault.py backend/src/tests/unit/test_billing.py 2>/dev/null || true
 
       - name: Set up Python
         uses: actions/setup-python@v6
