@@ -4,6 +4,17 @@ from unittest.mock import MagicMock, patch
 from services import tracing
 
 
+@pytest.fixture(autouse=True)
+def reset_tracing_state():
+    tracing._initialized = False
+    tracing._tracer_provider = None
+    tracing._tracer = None
+    yield
+    tracing._initialized = False
+    tracing._tracer_provider = None
+    tracing._tracer = None
+
+
 def test_get_service_name_default():
     with patch.dict(os.environ, {}, clear=True):
         assert tracing.get_service_name() == "portkit-backend"
