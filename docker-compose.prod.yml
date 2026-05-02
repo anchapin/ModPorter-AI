@@ -193,6 +193,25 @@ services:
     depends_on:
       - postgres
 
+  # Celery exporter for Celery queue monitoring
+  celery-exporter:
+    image: danihodovic/celery-exporter:latest
+    ports:
+      - '9540:9540'
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - BROKER_URL=redis://redis:6379
+      - METRICS_PORT=9540
+    networks:
+      - portkit-network
+    restart: unless-stopped
+    depends_on:
+      - redis
+    command:
+      - '--redis-url=redis://redis:6379'
+      - '--broker-url=redis://redis:6379'
+      - '--port=9540'
+
   # cAdvisor for container metrics
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
