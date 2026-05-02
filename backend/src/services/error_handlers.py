@@ -1,10 +1,16 @@
 """
 Error Handlers - backward compatibility re-export.
 
-This module now imports from errors.handler.
+This module re-exports the canonical error handling components from errors/.
+
+All error handling has been consolidated into the errors/ package:
+- errors/handler.py: Exception classes and FastAPI handlers
+- errors/classifier.py: Error type classification
+- errors/models.py: Recovery strategies
+- errors/recovery.py: Error recovery system
 """
 
-from errors.handler import (
+from errors import (
     ErrorResponse,
     PortkitException,
     ConversionException,

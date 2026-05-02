@@ -360,25 +360,25 @@ class TestErrorHandlersExtraCoverage:
         """Test is_debug_mode returns true when DEBUG=true."""
         with patch.dict(os.environ, {"DEBUG": "true"}):
             from importlib import reload
-            import services.error_handlers
+            import errors
 
-            reload(services.error_handlers)
+            reload(errors)
 
-            assert services.error_handlers.is_debug_mode() is True
+            assert errors.is_debug_mode() is True
 
     def test_is_debug_mode_false(self):
         """Test is_debug_mode returns false when DEBUG=false."""
         with patch.dict(os.environ, {"DEBUG": "false"}):
             from importlib import reload
-            import services.error_handlers
+            import errors
 
-            reload(services.error_handlers)
+            reload(errors)
 
-            assert services.error_handlers.is_debug_mode() is False
+            assert errors.is_debug_mode() is False
 
     def test_error_response_model(self):
         """Test ErrorResponse model."""
-        from services.error_handlers import ErrorResponse
+        from errors import ErrorResponse, PortkitException, ConversionException, FileProcessingException, ValidationException, NotFoundException, RateLimitException, ParseError, AssetError, LogicError, PackageError, ERROR_CATEGORIES, _categorize_error
 
         response = ErrorResponse(
             error_id="abc123",
@@ -396,7 +396,7 @@ class TestErrorHandlersExtraCoverage:
 
     def test_mod_porter_exception_defaults(self):
         """Test PortkitException with default values."""
-        from services.error_handlers import PortkitException
+        from errors import PortkitException
 
         exc = PortkitException("Test message")
         assert exc.message == "Test message"
@@ -405,7 +405,7 @@ class TestErrorHandlersExtraCoverage:
 
     def test_conversion_exception_defaults(self):
         """Test ConversionException with default values."""
-        from services.error_handlers import ConversionException
+        from errors import ConversionException
 
         exc = ConversionException("Conversion failed")
         assert exc.error_type == "conversion_error"
@@ -413,7 +413,7 @@ class TestErrorHandlersExtraCoverage:
 
     def test_file_processing_exception_defaults(self):
         """Test FileProcessingException with default values."""
-        from services.error_handlers import FileProcessingException
+        from errors import FileProcessingException
 
         exc = FileProcessingException("File error")
         assert exc.error_type == "file_processing_error"
@@ -421,7 +421,7 @@ class TestErrorHandlersExtraCoverage:
 
     def test_validation_exception_defaults(self):
         """Test ValidationException with default values."""
-        from services.error_handlers import ValidationException
+        from errors import ValidationException
 
         exc = ValidationException("Validation error")
         assert exc.error_type == "validation_error"
@@ -429,7 +429,7 @@ class TestErrorHandlersExtraCoverage:
 
     def test_not_found_exception_defaults(self):
         """Test NotFoundException with default values."""
-        from services.error_handlers import NotFoundException
+        from errors import NotFoundException
 
         exc = NotFoundException("Mod", "mod123")
         assert exc.error_type == "not_found_error"
@@ -438,7 +438,7 @@ class TestErrorHandlersExtraCoverage:
 
     def test_rate_limit_exception_defaults(self):
         """Test RateLimitException with default values."""
-        from services.error_handlers import RateLimitException
+        from errors import RateLimitException
 
         exc = RateLimitException()
         assert exc.error_type == "rate_limit_error"
@@ -446,28 +446,28 @@ class TestErrorHandlersExtraCoverage:
 
     def test_rate_limit_exception_with_retry_after(self):
         """Test RateLimitException with retry_after."""
-        from services.error_handlers import RateLimitException
+        from errors import RateLimitException
 
         exc = RateLimitException(retry_after=60)
         assert exc.details["retry_after"] == 60
 
     def test_parse_error_defaults(self):
         """Test ParseError with default values."""
-        from services.error_handlers import ParseError
+        from errors import ParseError
 
         exc = ParseError("Parse error")
         assert exc.error_type == "parse_error"
 
     def test_asset_error_defaults(self):
         """Test AssetError with default values."""
-        from services.error_handlers import AssetError
+        from errors import AssetError
 
         exc = AssetError("Asset error")
         assert exc.error_type == "asset_error"
 
     def test_logic_error_defaults(self):
         """Test LogicError with default values."""
-        from services.error_handlers import LogicError
+        from errors import LogicError
 
         exc = LogicError("Logic error")
         assert exc.error_type == "logic_error"
@@ -475,7 +475,7 @@ class TestErrorHandlersExtraCoverage:
 
     def test_package_error_defaults(self):
         """Test PackageError with default values."""
-        from services.error_handlers import PackageError
+        from errors import PackageError
 
         exc = PackageError("Package error")
         assert exc.error_type == "package_error"
@@ -483,7 +483,7 @@ class TestErrorHandlersExtraCoverage:
 
     def test_error_categories_dict(self):
         """Test ERROR_CATEGORIES dictionary."""
-        from services.error_handlers import ERROR_CATEGORIES
+        from errors import ERROR_CATEGORIES
 
         assert "parse_error" in ERROR_CATEGORIES
         assert "asset_error" in ERROR_CATEGORIES
@@ -492,7 +492,7 @@ class TestErrorHandlersExtraCoverage:
 
     def test_categorize_error_parse_error(self):
         """Test _categorize_error for parse errors."""
-        from services.error_handlers import _categorize_error, ParseError
+        from errors import _categorize_error, ParseError
 
         error = ParseError("parse failed")
         result = _categorize_error(error)
@@ -500,7 +500,7 @@ class TestErrorHandlersExtraCoverage:
 
     def test_categorize_error_asset_error(self):
         """Test _categorize_error for asset errors."""
-        from services.error_handlers import _categorize_error, AssetError
+        from errors import _categorize_error, AssetError
 
         error = AssetError("asset failed")
         result = _categorize_error(error)
@@ -508,7 +508,7 @@ class TestErrorHandlersExtraCoverage:
 
     def test_categorize_error_message_pattern(self):
         """Test _categorize_error with error message patterns."""
-        from services.error_handlers import _categorize_error
+        from errors import _categorize_error
 
         error = ValueError("timeout occurred")
         result = _categorize_error(error)
