@@ -81,6 +81,7 @@ def _get_metadata_extractor_class():
         _DocumentMetadataExtractor = _get_metadata_extractor().DocumentMetadataExtractor
     return _DocumentMetadataExtractor
 
+
 # Import CRUD operations
 from db import crud
 
