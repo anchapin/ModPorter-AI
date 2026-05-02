@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/root/.npm \
 # =============================================================================
 # Stage 2: Python dependencies (with cache mount for pip)
 # =============================================================================
-FROM python:3.11-slim AS python-builder
+FROM python:3.14-slim AS python-builder
 WORKDIR /tmp
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -60,7 +60,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ln -sf python3 /usr/bin/python
 
 # Copy Python packages from builder (using correct Python 3.11 path)
-COPY --from=python-builder /usr/local/lib/python3.11/site-packages /usr/lib/python3.11/site-packages
+COPY --from=python-builder /usr/local/lib/python3.14/site-packages /usr/lib/python3.14/site-packages
 
 # Copy application source code
 COPY backend/ /app/backend/
