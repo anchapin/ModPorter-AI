@@ -652,15 +652,16 @@ def initialize_default_flags(
         manager = get_feature_flag_manager()
 
     for flag_name, flag_config in DEFAULT_FLAGS.items():
-        flag_type = flag_config.get("flag_type", "boolean")
-        if isinstance(flag_type, str):
-            flag_type = FeatureFlagType(flag_type)
-        manager.register_flag(
-            name=flag_name,
-            flag_type=flag_type,
-            enabled=flag_config.get("enabled", False),
-            percentage=flag_config.get("percentage", 0.0),
-            description=flag_config.get("description", ""),
-        )
+        if flag_name not in manager._flags:
+            flag_type = flag_config.get("flag_type", "boolean")
+            if isinstance(flag_type, str):
+                flag_type = FeatureFlagType(flag_type)
+            manager.register_flag(
+                name=flag_name,
+                flag_type=flag_type,
+                enabled=flag_config.get("enabled", False),
+                percentage=flag_config.get("percentage", 0.0),
+                description=flag_config.get("description", ""),
+            )
 
     return manager
