@@ -21,6 +21,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            backend
+          sparse-checkout-cone-mode: false
+
+      - name: Remove files deleted in this branch
+        run: |
+          rm -f backend/src/services/byok_integration.py backend/src/services/byok_vault.py 2>/dev/null || true
 
       - name: Set up Python
         uses: actions/setup-python@v6
