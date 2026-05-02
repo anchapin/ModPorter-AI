@@ -4,12 +4,12 @@ httpx==0.28.1
 # Core Framework (updated for CI fix)
 fastapi==0.136.0
 uvicorn[standard]==0.44.0
-pydantic~=2.13.2
+pydantic~=2.13.3
 pydantic-settings~=2.11.0
 python-dateutil==2.9.0.post0
 
 # Database
-sqlalchemy>=2.0.23
+sqlalchemy>=2.0.49
 asyncpg>=0.29
 psycopg2-binary>=2.9.7
 alembic==1.18.4
@@ -18,7 +18,7 @@ aiosqlite>=0.19.0  # For SQLite async support in tests
 
 # Caching
 redis>=7.1.0
-async-timeout>=4.0.0
+async-timeout>=5.0.1
 
 # Task Queue (Celery for distributed task processing - Issue #1098)
 celery>=5.3.0
@@ -31,25 +31,25 @@ javalang==0.13.0  # Java source code parsing for JavaAnalyzerAgent
 
 # Document processing for ingestion pipeline
 markdown==3.10.2
-beautifulsoup4>=4.12.0
+beautifulsoup4>=4.14.3
 
 # HTTP Client for file downloads
 httpx==0.28.1
 
 # Monitoring
-prometheus_client>=0.17.0
+prometheus_client>=0.25.0
 sentry-sdk[fastapi]>=2.0.0
 structlog>=24.0.0
 
 # Testing
-pytest>=8.2
+pytest>=8.4.2
 pytest-asyncio==1.3.0
 pytest-cov==7.1.0
 pytest-timeout==2.4.0
 pytest-xdist>=3.5
 
 # Code Quality
-ruff==0.15.11
+ruff==0.15.12
 black==26.3.1
 
 # Utilities
@@ -58,20 +58,20 @@ PyJWT>=2.8.0
 bcrypt>=4.1.0
 psutil>=5.9.0
 email-validator>=2.0.0
-Pillow>=10.0.0
+Pillow>=11.3.0
 setuptools>=65.0.0  # Required by opentelemetry-instrumentation packages for pkg_resources
 stripe>=8.0.0  # Stripe payment integration (Issue #970)
 resend>=2.0.0  # Transactional email sending (switched from SendGrid)
 
 # Distributed Tracing - OpenTelemetry
 # Note: opentelemetry-exporter-jaeger 1.21.0 is the latest version compatible with Python 3.11
-opentelemetry-api>=1.24.0
-opentelemetry-sdk>=1.24.0
-opentelemetry-exporter-otlp>=1.24.0
+opentelemetry-api>=1.41.1
+opentelemetry-sdk>=1.41.1
+opentelemetry-exporter-otlp>=1.41.1
 opentelemetry-exporter-jaeger==1.21.0
-opentelemetry-instrumentation-fastapi>=0.45b0
-opentelemetry-instrumentation-httpx>=0.45b0
-opentelemetry-instrumentation-redis>=0.45b0
+opentelemetry-instrumentation-fastapi>=0.62b1
+opentelemetry-instrumentation-httpx>=0.62b1
+opentelemetry-instrumentation-redis>=0.62b1
 
 # Optional Secrets Management Dependencies
 # Install only what you need:
