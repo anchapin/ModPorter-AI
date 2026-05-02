@@ -203,7 +203,7 @@ jobs:
 
       - name: Check API endpoints
         run: |
-          URL="${{ github.event.inputs.environment == 'production' && 'https://portkit.cloud' || 'https://staging.portkit.cloud' }}"
+          URL="${{ github.event.inputs.environment == 'production' && 'https://api.portkit.cloud' || 'https://staging-api.portkit.cloud' }}"
 
           # Check critical endpoints
           ENDPOINTS=(
