@@ -9,7 +9,7 @@ pydantic-settings~=2.11.0
 python-dateutil==2.9.0.post0
 
 # Database
-sqlalchemy>=2.0.23
+sqlalchemy>=2.0.49
 asyncpg>=0.29
 psycopg2-binary>=2.9.7
 alembic==1.18.4
