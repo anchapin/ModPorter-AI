@@ -378,7 +378,21 @@ class TestErrorHandlersExtraCoverage:
 
     def test_error_response_model(self):
         """Test ErrorResponse model."""
-        from errors import ErrorResponse, PortkitException, ConversionException, FileProcessingException, ValidationException, NotFoundException, RateLimitException, ParseError, AssetError, LogicError, PackageError, ERROR_CATEGORIES, _categorize_error
+        from errors import (
+            ErrorResponse,
+            PortkitException,
+            ConversionException,
+            FileProcessingException,
+            ValidationException,
+            NotFoundException,
+            RateLimitException,
+            ParseError,
+            AssetError,
+            LogicError,
+            PackageError,
+            ERROR_CATEGORIES,
+            _categorize_error,
+        )
 
         response = ErrorResponse(
             error_id="abc123",
