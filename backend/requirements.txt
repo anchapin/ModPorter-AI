@@ -67,7 +67,6 @@ resend>=2.0.0  # Transactional email sending (switched from SendGrid)
 opentelemetry-api>=1.41.1
 opentelemetry-sdk>=1.41.1
 opentelemetry-exporter-otlp>=1.41.1
-opentelemetry-exporter-jaeger>=1.25.0
 opentelemetry-instrumentation-fastapi>=0.62b1
 opentelemetry-instrumentation-httpx>=0.62b1
 opentelemetry-instrumentation-redis>=0.62b1
