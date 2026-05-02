@@ -4,7 +4,7 @@ httpx==0.28.1
 # Core Framework (updated for CI fix)
 fastapi==0.136.0
 uvicorn[standard]==0.44.0
-pydantic>=2.13.3
+pydantic~=2.13.3
 pydantic-settings~=2.11.0
 python-dateutil==2.9.0.post0
 
