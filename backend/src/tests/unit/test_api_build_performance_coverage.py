@@ -30,13 +30,13 @@ def _full_response(**overrides):
         "build_id": overrides.get("build_id", "bld-001"),
         "conversion_id": overrides.get("conversion_id", "conv-001"),
         "status": overrides.get("status", "running"),
-        "total_duration_ms": overrides.get("total_duration_ms", None),
-        "performance_score": overrides.get("performance_score", None),
+        "total_duration_ms": overrides.get("total_duration_ms"),
+        "performance_score": overrides.get("performance_score"),
         "stages": overrides.get("stages", []),
-        "resource_usage": overrides.get("resource_usage", None),
+        "resource_usage": overrides.get("resource_usage"),
         "metadata": overrides.get("metadata", {}),
         "created_at": overrides.get("created_at", datetime.now(timezone.utc).isoformat()),
-        "completed_at": overrides.get("completed_at", None),
+        "completed_at": overrides.get("completed_at"),
     }
 
 
@@ -48,8 +48,8 @@ def _full_snapshot(**overrides):
         "current_stage": overrides.get("current_stage", "analysis"),
         "progress_percent": overrides.get("progress_percent", 0.5),
         "elapsed_ms": overrides.get("elapsed_ms", 1200.0),
-        "estimated_remaining_ms": overrides.get("estimated_remaining_ms", None),
-        "resource_usage": overrides.get("resource_usage", None),
+        "estimated_remaining_ms": overrides.get("estimated_remaining_ms"),
+        "resource_usage": overrides.get("resource_usage"),
     }
 
 

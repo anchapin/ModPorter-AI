@@ -1,376 +1,154 @@
-# Portkit Observability Runbook
+# PortKit Incident Response Runbook
+
+**Issue**: [#1211](https://github.com/anchapin/portkit/issues/1211)
 
 ## Overview
 
-This runbook documents the observability stack for Portkit, including log aggregation, Celery queue monitoring, distributed tracing, and on-call alerting.
-
-**Issue**: [#1212](https://github.com/anchapin/portkit/issues/1212) - Pre-beta: Full observability stack
-
----
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        Portkit Stack                               │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌─────────────┐     ┌─────────────┐     ┌─────────────────────┐   │
-│  │   FastAPI   │────▶│    Redis    │────▶│  Celery Workers     │   │
-│  │   Backend  │     │             │     │                     │   │
-│  └──────┬──────┘     └─────────────┘     └─────────────────────┘   │
-│         │                                            │               │
-│         ▼                                            ▼               │
-│  ┌─────────────┐                              ┌─────────────────┐   │
-│  │   Better    │                              │  celery-exporter │   │
-│  │   Stack    │                              │   (:9540)       │   │
-│  │  Logtail   │                              └────────┬────────┘   │
-│  └─────────────┘                                       │               │
-│                                                        ▼               │
-│                                               ┌─────────────────┐   │
-│  ┌─────────────┐                              │   Prometheus    │   │
-│  │   Open     │───────────────────────────────▶│                 │   │
-│  │ Telemetry  │                              └────────┬────────┘   │
-│  │ (OTLP)     │                                       │               │
-│  └─────────────┘                                       ▼               │
-│                                                ┌─────────────────┐   │
-│  ┌─────────────┐                              │    Grafana      │   │
-│  │  Better     │                              │                 │   │
-│  │  Stack      │                              └─────────────────┘   │
-│  │  Incidents  │                                                      │
-│  └─────────────┘                                                      │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
-```
+This runbook defines PortKit's incident response process for production incidents during beta and post-launch. It answers three questions:
+1. How do I know something is broken?
+2. What do I do when it breaks?
+3. How do I communicate to users during an incident?
 
 ---
 
-## 1. Log Aggregation (Better Stack Logtail)
+## 1. Severity Levels
 
-### Purpose
-- Searchable, persistent log storage with 30-day retention
-- Alertable logs (not just real-time tail like `flyctl logs`)
-- Structured logging with trace correlation
-
-### Configuration
-
-**Environment Variables**:
-```bash
-BETTERSTACK_SOURCE_TOKEN=<your-source-token>
-BETTERSTACK_API_TOKEN=<your-api-token>
-```
-
-### Quick Start
-
-1. Create a Better Stack account at https://betterstack.com
-2. Create a new source of type "Cloudflare Logpush" or "HTTP"
-3. Copy the source token
-4. Set `BETTERSTACK_SOURCE_TOKEN` in Fly.io secrets
-
-### Fly.io Log Shipping
-
-For Fly.io, logs are typically shipped via the Better Stack logshipper or directly via the `BetterStackHandler` in `backend/src/services/log_aggregation.py`.
-
-Reference: https://betterstack.com/docs/logs/fly-io/
-
-### Using the Structured Logger
-
-```python
-from backend.src.services.log_aggregation import StructuredLogger
-
-logger = StructuredLogger("portkit")
-
-# Set trace context for correlation
-logger.set_trace_context(trace_id="abc123", span_id="def456")
-
-# Log with context
-logger.info("Processing conversion", context={"job_id": "job123", "file_id": "file456"})
-
-# Log with additional context
-logger.set_context(user_id="user123")
-logger.info("User action triggered")  # Includes user_id in context
-```
-
-### Log Query Examples
-
-```sql
--- Find all errors for a specific trace
-SELECT * FROM logs WHERE trace_id = 'abc123' AND level = 'ERROR'
-
--- Find all conversions with duration > 60s
-SELECT * FROM logs WHERE message LIKE '%conversion%' AND context->>'duration' > 60
-
--- Error rate by minute
-SELECT date_trunc('minute', timestamp) as minute, count(*)
-FROM logs WHERE level = 'ERROR'
-GROUP BY minute ORDER BY minute DESC
-```
+| Level | Definition | Response SLA | Example |
+|-------|-----------|--------------|---------|
+| **P0 — Critical** | Service is down or data is at risk | Respond within 15 min, 24/7 | API returns 5xx to all users; DB unreachable; Stripe webhooks failing |
+| **P1 — High** | Core feature broken for a subset of users | Respond within 1 hour during waking hours | Conversion pipeline stalled; auth broken for new signups |
+| **P2 — Medium** | Non-core feature degraded | Next business day | Conversion report PDF export failing; email notifications delayed |
+| **P3 — Low** | Cosmetic / minor UX issue | Next planned sprint | Landing page typo; dark mode rendering glitch |
 
 ---
 
-## 2. Celery Queue Monitoring
+## 2. Alert Sources and Response
 
-### Purpose
-- Queue depth visibility
-- Task failure rate monitoring
-- Worker utilization tracking
-- Stuck job detection
+| Alert Source | Tool | Triggers On | First Action |
+|-------------|------|-------------|--------------|
+| Uptime monitor | Better Stack / UptimeRobot | API endpoint down | Check Fly.io dashboard → `flyctl status` → check app logs |
+| Error rate spike | Sentry | 5xx error rate > 5% in 5 min | Review Sentry error feed → check recent deploy → rollback if needed |
+| Celery queue depth | Flower / custom metric | Queue depth > 100 jobs for > 5 min | Check worker logs → scale workers → check for stuck jobs |
+| LLM cost spike | OpenRouter / custom | Daily spend > $X | Check for runaway retry loops → disable LLM conversion feature flag |
+| Payment failures | Stripe webhook | Consecutive failed payment | Check Stripe dashboard → verify webhook endpoint health |
+| DB connection failures | Sentry / Fly.io | `asyncpg` connection errors | Check Fly.io Postgres status → restart DB proxy if needed |
+| Disk / memory pressure | Fly.io metrics | Memory > 90% | Scale VM → identify memory leak → restart worker |
 
-### Components
+### First-Response Checklist
 
-1. **celery-exporter** - Exports Celery metrics in Prometheus format
-2. **CeleryQueueMonitor** - Python client for queue metrics
-3. **Prometheus** - Scrapes and stores metrics
-4. **Grafana** - Dashboards and alerting
-
-### Metrics Available
-
-| Metric | Type | Description |
-|--------|------|-------------|
-| `celery_queue_depth` | Gauge | Total tasks in all queues |
-| `celery_queue_size` | Gauge | Tasks per queue (with `queue` label) |
-| `celery_workers_online` | Gauge | Number of online workers |
-| `celery_tasks_total` | Counter | Total tasks by state |
-| `celery_task_runtime_seconds` | Histogram | Task duration |
-| `celery_dead_letter_queue_size` | Gauge | Failed tasks in DLQ |
-
-### CeleryQueueMonitor Usage
-
-```python
-from backend.src.services.celery_monitoring import get_celery_monitor
-
-monitor = get_celery_monitor()
-
-# Get queue stats
-stats = monitor.get_queue_stats()
-
-# Check queue health
-health = monitor.check_queue_health()
-if not health["healthy"]:
-    for issue in health["issues"]:
-        print(f"Issue: {issue}")
-
-# Get Prometheus-format metrics
-metrics = monitor.get_queue_depth_prometheus()
-```
-
-### Grafana Dashboard
-
-Import dashboard ID **10026** from Grafana.com (Celery Monitoring).
-
-Reference: https://grafana.com/grafana/dashboards/10026
-
-### Alert Rules
-
-See `monitoring/alert_rules.yml` for configured alert rules:
-
-| Alert | Severity | Condition |
-|-------|----------|-----------|
-| `CeleryQueueDepthHigh` | P1 | Queue > 100 for 5m |
-| `CeleryTaskFailureRateHigh` | P1 | Failure rate > 10% over 5m |
-| `CeleryWorkersOffline` | P0 | Workers == 0 for 1m |
-| `CeleryTaskDurationP95High` | P2 | P95 duration > 120s |
-| `CeleryDeadLetterQueueHigh` | P2 | DLQ > 50 for 5m |
+1. **Acknowledge** the alert within SLA window
+2. **Assess** severity and impact
+3. **Communicate** on status page if P0/P1
+4. **Diagnose** using runbooks below
+5. **Resolve** and verify recovery
+6. **Document** in post-mortem if P0/P1
 
 ---
 
-## 3. Distributed Tracing (OpenTelemetry)
+## 3. Runbooks Per Failure Mode
 
-### Purpose
-- Trace requests across API → Redis → Celery → converter
-- Identify which step causes slow conversions
-- Correlate logs with traces
+### Runbook: API is Returning 5xx
 
-### Configuration
+1. Check Fly.io status page (status.fly.io) for platform-level incidents
+2. `flyctl logs -a portkit-api` — look for exception traceback
+3. Check recent deploys: `flyctl releases -a portkit-api`
+4. If caused by a deploy: `flyctl deploy --image <previous-image-tag>` to roll back
+5. Verify recovery: hit `/health` endpoint, check Sentry error rate drops
+6. File a post-mortem in `docs/post-mortems/YYYY-MM-DD-[short-title].md`
 
-**Environment Variables**:
-```bash
-TRACING_EXPORTER=betterstack
-BETTERSTACK_OTLP_ENDPOINT=https://otlp.betterstack.com/v1/traces
-BETTERSTACK_API_TOKEN=<your-api-token>
-```
+### Runbook: Conversion Pipeline Stalled (Jobs Not Processing)
 
-### Instrumented Components
-
-- **FastAPI** - HTTP request/response tracing
-- **HTTPX** - External API call tracing
-- **Redis** - Cache operation tracing
-- **Celery** - Task execution tracing
-
-### Trace Context Propagation
-
-```python
-from backend.src.services.tracing import inject_trace_context, extract_trace_context
-
-# Inject trace context into carrier (e.g., HTTP headers)
-headers = {}
-inject_trace_context(headers)
-
-# Extract trace context from carrier
-context = extract_trace_context(headers)
-```
-
-### Trace ID in Logs
-
-The trace ID is automatically added to log context:
-
-```python
-from backend.src.services.tracing import get_trace_id
-
-trace_id = get_trace_id()  # Get current trace ID
-logger.info(f"Processing request", extra={"trace_id": trace_id})
-```
-
----
-
-## 4. On-Call Alerting (Better Stack Incidents)
-
-### Purpose
-- P0/P1 alerts reach a human at 3am
-- Phone/SMS escalation for critical incidents
-- On-call schedule management
-
-### Alert Severity Levels
-
-| Severity | Description | Escalation |
-|----------|-------------|------------|
-| P0 | All systems down, data loss | Immediate phone call |
-| P1 | Major feature broken | SMS + push in 5min |
-| P2 | Degraded performance | Push notification |
-| P3 | Minor issue | Email next business day |
-
-### Alert Manager Usage
-
-```python
-from backend.src.services.alerting import get_alert_manager, AlertSeverity
-
-manager = get_alert_manager()
-
-# Trigger an alert
-await manager.trigger_alert(
-    name="queue_backlog_critical",
-    message="Queue backlog exceeded 1000 tasks",
-    severity=AlertSeverity.P0_CRITICAL,
-    metadata={"queue_depth": 1500}
-)
-
-# Resolve an alert
-await manager.resolve_alert("queue_backlog_critical")
-```
-
-### On-Call Schedule Setup
-
-1. Go to Better Stack → Incidents → On-Call Schedules
-2. Create a schedule for Alex
-3. Add escalation policy:
-   - P0: Phone call immediately
-   - P1: SMS in 5 minutes, phone in 15 minutes
-   - P2: Push notification
-   - P3: Email next business day
-
-### LLM Cost Alert Integration
-
-Alert for cost spikes (#1205) should route through the same on-call system:
-
-```python
-# When LLM cost exceeds threshold
-await manager.trigger_alert(
-    name="llm_cost_spike",
-    message=f"LLM cost rate: ${cost_rate}/hour",
-    severity=AlertSeverity.P1_HIGH,
-    metadata={"cost_rate": cost_rate, "budget": budget}
-)
-```
-
----
-
-## 5. Quick Reference
-
-### Environment Variables
-
-```bash
-# Better Stack
-BETTERSTACK_SOURCE_TOKEN=    # Log source token
-BETTERSTACK_API_TOKEN=        # API token for incidents
-
-# Tracing
-TRACING_EXPORTER=betterstack  # jaeger, otlp, betterstack, all
-BETTERSTACK_OTLP_ENDPOINT=    # Better Stack OTLP endpoint
-
-# Celery
-REDIS_URL=redis://localhost:6379/0
-CELERY_NAMESPACE=portkit
-```
-
-### Service Endpoints
-
-| Service | URL | Purpose |
-|---------|-----|---------|
-| Prometheus | http://localhost:9090 | Metrics storage |
-| Grafana | http://localhost:3001 | Dashboards |
-| celery-exporter | http://localhost:9540/metrics | Celery metrics |
-| Better Stack | https://betterstack.com | Logs & Incidents |
-
-### Common Queries
-
-```sql
--- Find conversion errors in last hour
-SELECT * FROM logs
-WHERE level = 'ERROR'
-  AND message LIKE '%conversion%'
-  AND timestamp > NOW() - INTERVAL '1 hour'
-
--- Queue depth over time
-SELECT date_trunc('minute', timestamp) as minute,
-       avg(value) as avg_depth
-FROM metrics
-WHERE name = 'celery_queue_depth'
-  AND timestamp > NOW() - INTERVAL '1 day'
-GROUP BY minute ORDER BY minute DESC
-
--- Failed tasks by type
-SELECT metric_labels->>'task_name' as task_name,
-       sum(value) as failures
-FROM metrics
-WHERE name = 'celery_tasks_total'
-  AND labels->>'state' = 'failure'
-  AND timestamp > NOW() - INTERVAL '1 hour'
-GROUP BY task_name
-```
-
----
-
-## Troubleshooting
-
-### Logs not appearing in Better Stack
-
-1. Check `BETTERSTACK_SOURCE_TOKEN` is set correctly
-2. Verify network access to `in.logs.betterstack.com`
-3. Check if structured logger is properly configured
-
-### Celery metrics not showing
-
-1. Verify celery-exporter is running: `curl localhost:9540/metrics`
+1. Check Celery worker status (Flower dashboard or `celery inspect active`)
 2. Check Redis connectivity: `redis-cli ping`
-3. Verify Prometheus is scraping celery-exporter
+3. Check for stuck jobs: `celery inspect reserved`
+4. Restart workers if unresponsive: `flyctl restart -a portkit-worker`
+5. Check for DB connection exhaustion (asyncpg pool limit hit)
+6. Verify recovery: submit a test conversion job, monitor queue depth
 
-### Alerts not firing
+### Runbook: Database Unreachable
 
-1. Check Prometheus targets: http://localhost:9090/targets
-2. Verify alert rules loaded: http://localhost:9090/rules
-3. Check alert history in Better Stack
+1. Check Fly.io Postgres status: `flyctl status -a portkit-db`
+2. Check connection string / secrets: `flyctl secrets list -a portkit-api`
+3. Restart Postgres proxy: `flyctl postgres restart -a portkit-db`
+4. If data loss suspected: verify latest backup timestamp, initiate restore if needed
+5. Notify affected users if downtime > 5 minutes
 
-### Tracing not working
+### Runbook: Stripe Webhook Failures
 
-1. Set `TRACING_CONSOLE=true` to enable console exporter for debugging
-2. Check `BETTERSTACK_OTLP_ENDPOINT` is accessible
-3. Verify OpenTelemetry packages installed
+1. Check Stripe dashboard → Developers → Webhooks → recent delivery attempts
+2. Verify endpoint is reachable: `curl -X POST https://portkit.ai/api/webhooks/stripe`
+3. Replay failed webhook events from the Stripe dashboard
+4. If subscription state is inconsistent: use Stripe dashboard to manually correct
+
+### Runbook: Security Incident (Suspected Breach / Unauthorized Access)
+
+1. Immediately rotate all secrets: `flyctl secrets set ...` for all credentials
+2. Revoke and reissue all API keys (Stripe, OpenRouter, etc.)
+3. Review access logs for the past 24-48 hours
+4. Notify affected users within 72 hours (GDPR requirement)
+5. Document the incident in `docs/post-mortems/`
 
 ---
 
-## Dependencies
+## 4. Communication Templates
 
-- **#1150** - Sentry error tracking (complementary)
-- **#1153** - Status page (Better Stack includes status page)
-- **#1205** - LLM cost monitoring (uses same alerting)
-- **#1211** - Incident response runbook (this document)
+### Status Page Incident Template
+
+```
+[HH:MM ET] Investigating reports of [issue description]. Updates every 30 minutes.
+[HH:MM ET] Identified: [root cause]. Working on fix.
+[HH:MM ET] Fix deployed. Monitoring for full recovery.
+[HH:MM ET] Resolved. [brief summary of impact and fix]. Post-mortem to follow.
+```
+
+### Email to Affected Beta Users (P0/P1 Incidents)
+
+```
+Subject: PortKit service disruption — [date]
+
+We experienced [brief description] from [start time] to [end time] ET.
+
+Impact: [what was affected — conversions, login, etc.]
+Root cause: [one sentence]
+What we did: [one sentence]
+What we're doing to prevent recurrence: [one sentence]
+
+We're sorry for the disruption. Your in-progress conversions [status].
+
+— Alex @ PortKit
+```
+
+---
+
+## 5. Post-Mortem Template
+
+File in `docs/post-mortems/YYYY-MM-DD-[title].md`:
+
+- **Date/time**: When did it start? When was it resolved?
+- **Impact**: How many users affected? How long?
+- **Root cause**: The actual technical cause (not symptoms)
+- **Timeline**: Detection → first response → diagnosis → resolution (with timestamps)
+- **What went well**: What helped contain or resolve the incident
+- **What went wrong**: What made it harder
+- **Action items**: Specific follow-up issues filed (link to GitHub issues)
+
+---
+
+## 6. Fly.io Alert Configuration
+
+Configure the following alert rules in Fly.io:
+
+| Metric | Threshold | Severity |
+|--------|-----------|----------|
+| CPU | > 90% for 5m | P1 |
+| Memory | > 90% for 5m | P1 |
+| Error rate | > 5% in 5m | P0 |
+| Disk | > 85% | P2 |
+
+---
+
+## Related Documentation
+
+- **Status Page**: See [#1153](https://github.com/anchapin/portkit/issues/1153) for public status page
+- **Error Monitoring**: Sentry integration per [#1150](https://github.com/anchapin/portkit/issues/1150)
+- **Post-Mortems**: See `docs/post-mortems/` directory

@@ -76,10 +76,7 @@ class TestLogAggregation:
         """Test Better Stack handler initializes."""
         from src.services.log_aggregation import BetterStackHandler
 
-        handler = BetterStackHandler(
-            api_token="test-token",
-            source_token="source-token"
-        )
+        handler = BetterStackHandler(api_token="test-token", source_token="source-token")
 
         assert handler.source_token == "source-token"
         assert handler._buffer_size == 100
@@ -89,10 +86,7 @@ class TestLogAggregation:
         from src.services.log_aggregation import BetterStackHandler
         import logging
 
-        handler = BetterStackHandler(
-            api_token="test-token",
-            source_token="source-token"
-        )
+        handler = BetterStackHandler(api_token="test-token", source_token="source-token")
 
         record = logging.LogRecord(
             name="test",
@@ -101,7 +95,7 @@ class TestLogAggregation:
             lineno=10,
             msg="Test message",
             args=(),
-            exc_info=None
+            exc_info=None,
         )
 
         entry = handler._format_log_entry(record)
@@ -119,10 +113,7 @@ class TestCeleryMonitoring:
         """Test monitor initializes with defaults."""
         from src.services.celery_monitoring import CeleryQueueMonitor
 
-        monitor = CeleryQueueMonitor(
-            redis_url="redis://localhost:6379/0",
-            namespace="test-portkit"
-        )
+        monitor = CeleryQueueMonitor(redis_url="redis://localhost:6379/0", namespace="test-portkit")
 
         assert monitor.redis_url == "redis://localhost:6379/0"
         assert monitor.namespace == "test-portkit"
@@ -199,11 +190,7 @@ class TestAlerting:
         """Test Alert dataclass."""
         from src.services.alerting import Alert, AlertSeverity
 
-        alert = Alert(
-            name="test-alert",
-            severity=AlertSeverity.P1_HIGH,
-            message="Test message"
-        )
+        alert = Alert(name="test-alert", severity=AlertSeverity.P1_HIGH, message="Test message")
 
         assert alert.name == "test-alert"
         assert alert.severity == AlertSeverity.P1_HIGH
@@ -219,7 +206,7 @@ class TestAlerting:
             metric="error_rate",
             threshold=0.05,
             operator=">",
-            severity=AlertSeverity.P1_HIGH
+            severity=AlertSeverity.P1_HIGH,
         )
 
         assert rule.name == "high_error_rate"
@@ -473,7 +460,7 @@ class TestObservabilityIntegration:
         alert = await manager.trigger_alert(
             name="integration_test_alert",
             message="Integration test alert",
-            severity=AlertSeverity.P2_MEDIUM
+            severity=AlertSeverity.P2_MEDIUM,
         )
 
         assert alert.name == "integration_test_alert"
@@ -489,13 +476,15 @@ class TestObservabilityIntegration:
         from src.services.alerting import OnCallAlertManager, AlertRule, AlertSeverity
 
         manager = OnCallAlertManager()
-        manager.add_rule(AlertRule(
-            name="queue_depth_high",
-            metric="queue_depth",
-            threshold=100,
-            operator=">",
-            severity=AlertSeverity.P1_HIGH
-        ))
+        manager.add_rule(
+            AlertRule(
+                name="queue_depth_high",
+                metric="queue_depth",
+                threshold=100,
+                operator=">",
+                severity=AlertSeverity.P1_HIGH,
+            )
+        )
 
         metrics = {"queue_depth": 150}
         alerts = manager.evaluate_rules(metrics)

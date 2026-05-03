@@ -231,6 +231,7 @@ app.include_router(email_webhooks.router, prefix="/api/v1/webhooks", tags=["Emai
 app.include_router(waitlist.router, prefix="/api/v1", tags=["waitlist"])
 app.include_router(mode_classification.router, tags=["mode-classification"])
 app.include_router(automation_metrics.router, prefix="/api/v1", tags=["automation-metrics"])
+app.include_router(version_info.router, prefix="/api/v1", tags=["version-info"])
 
 # Health check endpoints (no prefix - used for Kubernetes probes)
 app.include_router(health.router)
