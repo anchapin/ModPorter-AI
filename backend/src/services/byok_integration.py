@@ -103,27 +103,15 @@ def format_byok_error(status_code: int, error_message: str) -> str:
     Returns:
         User-friendly error message
     """
-    if status_code == 401:
-        return (
-            "Your API key is invalid or has been revoked. "
-            "Please check your API key settings or submit a new key."
-        )
-    elif status_code == 403:
-        return (
-            "Your API key does not have permission for this operation. "
-            "Please check your API key settings."
-        )
-    elif status_code == 429:
-        return (
-            "Your API key is rate-limited. Please check your API key settings or try again later."
-        )
-    elif status_code == 500:
-        return "The LLM provider is experiencing issues. Please try again in a few minutes."
-    else:
-        return (
-            f"Your API key failed during conversion: {error_message}. "
-            "Please check your API key settings."
-        )
+    ERROR_MESSAGES: dict[int, str] = {
+        401: "Your API key is invalid or has been revoked. Please check your API key settings or submit a new key.",
+        403: "Your API key does not have permission for this operation. Please check your API key settings.",
+        429: "Your API key is rate-limited. Please check your API key settings or try again later.",
+        500: "The LLM provider is experiencing issues. Please try again in a few minutes.",
+    }
+    if status_code in ERROR_MESSAGES:
+        return ERROR_MESSAGES[status_code]
+    return f"Your API key failed during conversion: {error_message}. Please check your API key settings."
 
 
 def get_byok_headers(ctx: BYOKContext) -> dict:

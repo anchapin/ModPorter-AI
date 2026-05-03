@@ -840,14 +840,9 @@ jobs:
         run: |
           cd ${{ matrix.project }}
 
-          # Configure mutmut for the project
-          # Note: We use the local .mutmut.toml which already has proper exclusions
-          # The CI creates a minimal config only if .mutmut.toml doesn't exist
-
-          # Run mutation tests
-          # Note: pytest-xdist and pytest-cov can have compatibility issues
-          # Use --no-cov if available, otherwise try without coverage plugin
-          mutmut run || true
+          # Run mutation tests without coverage plugins that conflict with mutmut
+          # Use --no-cov and disable addopts that load conflicting plugins
+          mutmut run --no-cov || true
 
           # Show results
           mutmut results || true
