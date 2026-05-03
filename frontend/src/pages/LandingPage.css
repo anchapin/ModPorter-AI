@@ -108,6 +108,18 @@
   margin-bottom: 1.5rem;
 }
 
+.hero-version-badge {
+  display: inline-block;
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
 .hero-title {
   font-size: 3rem;
   font-weight: 800;
