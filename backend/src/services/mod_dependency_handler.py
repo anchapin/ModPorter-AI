@@ -165,6 +165,8 @@ class ModDependencyHandler:
         dependencies = self._parse_dependencies_from_metadata(metadata)
 
         # Check if dependencies are resolved by bundle JARs
+        if bundle_jars is None:
+            bundle_jars = []
         resolved_modids = {jar.modid for jar in bundle_jars if jar.modid}
         for dep in dependencies:
             if dep.modid in resolved_modids or dep.modid in self.BUILTIN_MODS:
