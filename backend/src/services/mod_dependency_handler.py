@@ -78,9 +78,8 @@ class DependencyChainReport:
     @property
     def has_missing_critical_deps(self) -> bool:
         return any(
-            w.severity == DependencySeverity.CRITICAL
-            for w in self.warnings
-            if not w.dependency.is_optional
+            not d.is_optional and not d.is_builtin
+            for d in self.missing_dependencies
         )
 
     @property
@@ -543,16 +542,6 @@ class ModDependencyHandler:
         }
 
 
-class ModMetadata:
-    """Internal metadata representation for dependency analysis"""
-
-    def __init__(self):
-        self.modid: Optional[str] = None
-        self.name: Optional[str] = None
-        self.version: Optional[str] = None
-        self.dependencies: list[str] = []
-
-
 mod_dependency_handler = ModDependencyHandler()
 
 __all__ = [
@@ -563,5 +552,4 @@ __all__ = [
     "DependencyChainReport",
     "DependencySeverity",
     "BundleJar",
-    "ModMetadata",
 ]
