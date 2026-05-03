@@ -5,8 +5,8 @@ Version Information API endpoints.
 from fastapi import APIRouter, status
 from pydantic import BaseModel
 
-from src.services.minecraft_version_tracker import version_tracker
-from src.services.minecraft_release_monitor import release_monitor
+from services.minecraft_version_tracker import version_tracker
+from services.minecraft_release_monitor import release_monitor
 
 router = APIRouter(prefix="/info", tags=["info"])
 
