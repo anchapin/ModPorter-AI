@@ -747,6 +747,22 @@ class PortkitConversionCrew:
             # Generate comprehensive assumption report using enhanced engine
             conversion_report = self._format_conversion_report(result, plan_components)
 
+            # Run QA pipeline including logic_auditor on default conversion path
+            try:
+                from qa.hooks import QAIntegrationHook
+                qa_hook = QAIntegrationHook(enabled=True)
+                job_dir = Path(output_path).parent if output_path else Path(temp_dir) if temp_dir else Path(".")
+                qa_results = qa_hook.run_post_conversion_qa(job_dir)
+                conversion_report["qa_results"] = qa_results
+                logger.info(
+                    "QA pipeline completed on original crew path",
+                    agents_run=qa_results.get("agents_run", []),
+                    overall_success=qa_results.get("overall_success", False),
+                )
+            except Exception as qa_error:
+                logger.warning(f"QA pipeline failed on original crew path: {qa_error}")
+                conversion_report["qa_results"] = {"skipped": True, "reason": str(qa_error)}
+
             logger.info("Original crew conversion completed successfully")
             return conversion_report
 

@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from uuid import UUID
+from enum import Enum
 
 from fastapi import (
     APIRouter,
@@ -54,7 +55,7 @@ from security.file_security import (
     FileSecurityScanner,
     SecurityScanResult,
 )
-from security.auth import verify_token
+from security.auth import verify_token, verify_api_key
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,32 @@ def get_security_scanner() -> FileSecurityScanner:
     if _security_scanner is None:
         _security_scanner = FileSecurityScanner()
     return _security_scanner
+
+
+async def get_api_key_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[User]:
+    """Optional API key authentication - supports both Bearer tokens and API keys."""
+    if not credentials:
+        return None
+
+    # Try JWT token first
+    token = credentials.credentials
+    user_id = verify_token(token)
+    if user_id:
+        try:
+            user_uuid = UUID(user_id)
+            result = await db.execute(select(User).where(User.id == user_uuid))
+            return result.scalar_one_or_none()
+        except (ValueError, TypeError):
+            return None
+
+    # Try API key (Bearer format with mpk_ prefix)
+    if credentials.scheme.lower() == "bearer" and token.startswith("mpk_"):
+        return await verify_api_key(db, token)
+
+    return None
 
 
 async def get_optional_user(
@@ -171,6 +198,16 @@ class StructuredError(BaseModel):
     details: Optional[Dict[str, Any]] = Field(None, description="Additional error details")
 
 
+class ConversionStage(str, Enum):
+    """Conversion pipeline stages for progress indicator."""
+
+    QUEUED = "queued"
+    ANALYZING = "analyzing"
+    CONVERTING = "converting"
+    PACKAGING = "packaging"
+    COMPLETE = "complete"
+
+
 class ConversionStatusResponse(BaseModel):
     """Response model for conversion status."""
 
@@ -183,6 +220,10 @@ class ConversionStatusResponse(BaseModel):
     result_url: Optional[str] = Field(None, description="Download URL if completed")
     error: Optional[str] = Field(None, description="Error message if failed")
     original_filename: Optional[str] = Field(None, description="Original uploaded filename")
+    current_stage: Optional[str] = Field(
+        None,
+        description="Current conversion stage: queued, analyzing, converting, packaging, complete",
+    )
     # Issue #1087: Enhanced error and partial result handling
     structured_error: Optional[StructuredError] = Field(
         None, description="Structured error with code and retryability"
@@ -519,7 +560,8 @@ async def create_conversion(
     options: str = Form(default="{}", description="JSON string of conversion options"),
     background_tasks: BackgroundTasks = None,
     db: AsyncSession = Depends(get_db),
-    user: Optional[User] = Depends(get_optional_user),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    user: Optional[User] = Depends(get_api_key_user),
 ):
     """
     Start a new mod conversion job.
@@ -559,9 +601,14 @@ async def create_conversion(
     - GET /api/v1/conversions/{id}/download - Download result
     """
     # Metering check for subscription tier limits (Issue #977)
+    # Use API usage metering for API key auth, web usage metering for JWT
+    is_api_key_auth = user and credentials and credentials.credentials.startswith("mpk_")
     if user:
         metering_service = MeteringService(db)
-        metering_result = await metering_service.check_and_increment_web_usage(user)
+        if is_api_key_auth:
+            metering_result = await metering_service.check_and_increment_api_usage(user)
+        else:
+            metering_result = await metering_service.check_and_increment_web_usage(user)
 
         if not metering_result.allowed:
             raise HTTPException(

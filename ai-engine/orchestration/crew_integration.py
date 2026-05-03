@@ -517,6 +517,22 @@ class EnhancedConversionCrew:
                 task_graph, execution_results, mod_path, output_path, execution_time
             )
 
+            # Run QA pipeline including logic_auditor on default conversion path
+            from qa.hooks import QAIntegrationHook
+            qa_hook = QAIntegrationHook(enabled=True)
+            try:
+                job_dir = Path(output_path).parent
+                qa_results = qa_hook.run_post_conversion_qa(job_dir)
+                formatted_results["qa_results"] = qa_results
+                logger.info(
+                    "QA pipeline completed",
+                    agents_run=qa_results.get("agents_run", []),
+                    overall_success=qa_results.get("overall_success", False),
+                )
+            except Exception as qa_error:
+                logger.warning(f"QA pipeline failed: {qa_error}")
+                formatted_results["qa_results"] = {"skipped": True, "reason": str(qa_error)}
+
             logger.info("Enhanced conversion completed successfully")
             return formatted_results
 
