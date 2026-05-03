@@ -24,6 +24,8 @@ from src.services.celery_tasks import (
     handle_java_analysis_task,
     handle_texture_extraction_task,
     handle_model_conversion_task,
+    delete_input_file,
+    purge_orphaned_files,
 )
 
 
