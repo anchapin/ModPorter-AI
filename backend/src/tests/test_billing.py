@@ -211,7 +211,10 @@ def test_byok_feature_flag_registered():
     flag = manager.get_flag("byok_enabled")
 
     assert flag is not None
-    assert flag.description == "Enable BYOK (Bring Your Own Key) functionality for users to supply their own LLM API keys"
+    assert (
+        flag.description
+        == "Enable BYOK (Bring Your Own Key) functionality for users to supply their own LLM API keys"
+    )
 
 
 def test_payg_credits_feature_flag_registered():
