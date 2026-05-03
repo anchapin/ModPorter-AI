@@ -12,7 +12,7 @@ from dataclasses import dataclass
 logger = logging.getLogger(__name__)
 
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "https://portkit.cloud")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://portkit.ai")
 
 
 @dataclass
@@ -23,7 +23,7 @@ class EmailMessage:
     subject: str
     template: str
     context: Dict[str, Any]
-    from_email: str = "noreply@portkit.cloud"
+    from_email: str = "noreply@portkit.ai"
     cc: Optional[List[str]] = None
     bcc: Optional[List[str]] = None
 
@@ -34,8 +34,8 @@ class ResendEmailService:
     def __init__(
         self,
         api_key: str,
-        from_email: str = "noreply@portkit.cloud",
-        from_name: str = "Portkit",
+        from_email: str = "noreply@portkit.ai",
+        from_name: str = "PortKit",
     ):
         self.api_key = api_key
         self.from_email = from_email
@@ -84,6 +84,9 @@ class ResendEmailService:
                 "subject": message.subject,
                 "text": plain_text,
                 "html": html_content,
+                "headers": {
+                    "X-Entity-Ref-ID": f"portkit-{message.to.split('@')[0]}-{hash(message.subject) % 1000000}",
+                },
             }
 
             if message.cc:
@@ -163,8 +166,8 @@ Thanks,
 The Portkit Team
 
 ---
-Portkit - Java to Bedrock Mod Converter
-https://portkit.cloud
+PortKit - Java to Bedrock Mod Converter
+https://portkit.ai
 """
 
     def _email_verification_html(
@@ -236,8 +239,8 @@ Thanks,
 The Portkit Team
 
 ---
-Portkit - Java to Bedrock Mod Converter
-https://portkit.cloud
+PortKit - Java to Bedrock Mod Converter
+https://portkit.ai
 """
 
     def _password_reset_html(
@@ -316,8 +319,8 @@ The Portkit Team
 Unsubscribe: {unsubscribe}
 
 ---
-Portkit - Java to Bedrock Mod Converter
-https://portkit.cloud
+PortKit - Java to Bedrock Mod Converter
+https://portkit.ai
 """
 
     def _welcome_html(
@@ -432,8 +435,8 @@ Thanks,
 The Portkit Team
 
 ---
-Portkit - Java to Bedrock Mod Converter
-https://portkit.cloud
+PortKit - Java to Bedrock Mod Converter
+https://portkit.ai
 """
 
     def _conversion_complete_html(
@@ -519,7 +522,7 @@ _email_service = None
 
 def get_email_service(
     api_key: Optional[str] = None,
-    from_email: str = "noreply@portkit.cloud",
+    from_email: str = "noreply@portkit.ai",
 ) -> ResendEmailService:
     """Get or create email service singleton."""
     global _email_service
