@@ -374,7 +374,7 @@ jobs:
           # Add deployment commands here
           echo "✅ Deployment complete"
 
-# ============================================
+  # ============================================
   # AI REVIEW NOTIFICATION
   # ============================================
   notify-ai-review-failure:
@@ -387,7 +387,3 @@ jobs:
         run: |
           echo "❌ AI Code Review Failed"
           echo "Check the workflow run at: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-
-  
->>>>>>> 2ac30a46 (test(e2e): add production smoke tests for beta go/no-go checklist (#1165))

@@ -29,6 +29,7 @@ class SummaryReport(TypedDict):
     processing_time_seconds: float
     download_url: Optional[str]
     quick_statistics: Dict[str, Any]  # e.g., features_converted, time_taken, file_size
+    minecraft_version_info: Optional[Dict[str, str]]  # e.g., {"java_range": "1.18-1.21", "bedrock_target": "1.21.0"}
 
 
 class FeatureConversionDetail(TypedDict):
