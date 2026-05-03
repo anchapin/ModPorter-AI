@@ -10,9 +10,7 @@ export const IPPolicyPage: React.FC = () => {
     <div className={styles.container}>
       <header className={styles.header}>
         <h1 className={styles.title}>DMCA / Copyright / IP Policy</h1>
-        <p className={styles.subtitle}>
-          Last updated: May 3, 2026
-        </p>
+        <p className={styles.subtitle}>Last updated: May 3, 2026</p>
       </header>
 
       <nav className={styles.navigation}>
@@ -49,13 +47,15 @@ export const IPPolicyPage: React.FC = () => {
             conversion.
           </li>
           <li>
-            <strong>Converting someone else&apos;s mod without permission may
-            constitute copyright infringement.</strong> "No license" does not
-            mean "free to use."
+            <strong>
+              Converting someone else&apos;s mod without permission may
+              constitute copyright infringement.
+            </strong>{' '}
+            "No license" does not mean "free to use."
           </li>
           <li>
-            <strong>You are responsible</strong> for ensuring you have the
-            legal right to convert any mod you upload.
+            <strong>You are responsible</strong> for ensuring you have the legal
+            right to convert any mod you upload.
           </li>
         </ul>
       </section>
@@ -74,27 +74,27 @@ export const IPPolicyPage: React.FC = () => {
         </ul>
         <p>
           Mods with <strong>All Rights Reserved (ARR)</strong> or other
-          restrictive licenses are flagged with a warning. You must confirm
-          you have authorization before proceeding with such conversions.
+          restrictive licenses are flagged with a warning. You must confirm you
+          have authorization before proceeding with such conversions.
         </p>
         <p>
-          <strong>Permissive licenses</strong> (MIT, Apache 2.0, BSD, CC0,
-          GPL 3.0+, Unlicense) are generally safe to convert.
+          <strong>Permissive licenses</strong> (MIT, Apache 2.0, BSD, CC0, GPL
+          3.0+, Unlicense) are generally safe to convert.
         </p>
       </section>
 
       <section id="user-warranties" className={styles.section}>
-        <h2 className={styles.sectionTitle}>3. User Conversion Authorization Warranty</h2>
-        <p>
-          By using PortKit, you represent and warrant that:
-        </p>
+        <h2 className={styles.sectionTitle}>
+          3. User Conversion Authorization Warranty
+        </h2>
+        <p>By using PortKit, you represent and warrant that:</p>
         <ul>
           <li>
             You are the <strong>original mod author</strong>, OR
           </li>
           <li>
-            You have <strong>explicit written permission</strong> from the
-            mod author to convert their mod, OR
+            You have <strong>explicit written permission</strong> from the mod
+            author to convert their mod, OR
           </li>
           <li>
             The mod is licensed under a <strong>permissive license</strong> that
@@ -110,8 +110,8 @@ export const IPPolicyPage: React.FC = () => {
       <section id="dmca" className={styles.section}>
         <h2 className={styles.sectionTitle}>4. DMCA Takedown Procedure</h2>
         <p>
-          PortKit complies with the Digital Millennium Copyright Act (DMCA).
-          If you believe your copyrighted work has been infringed:
+          PortKit complies with the Digital Millennium Copyright Act (DMCA). If
+          you believe your copyrighted work has been infringed:
         </p>
         <h3 className={styles.sectionTitle}>Submit a Takedown Notice</h3>
         <p>
@@ -120,8 +120,8 @@ export const IPPolicyPage: React.FC = () => {
         <p>
           Valid notices must include: (1) identification of copyrighted work,
           (2) identification of infringing material, (3) good faith belief
-          statement, (4) accuracy attestation under penalty of perjury,
-          (5) contact information, and (6) signature.
+          statement, (4) accuracy attestation under penalty of perjury, (5)
+          contact information, and (6) signature.
         </p>
         <h3 className={styles.sectionTitle}>Our Response</h3>
         <ul>
@@ -138,10 +138,12 @@ export const IPPolicyPage: React.FC = () => {
       </section>
 
       <section id="attribution" className={styles.section}>
-        <h2 className={styles.sectionTitle}>5. Attribution in Converted Output</h2>
+        <h2 className={styles.sectionTitle}>
+          5. Attribution in Converted Output
+        </h2>
         <p>
-          All converted .mcaddon files include original mod attribution in
-          the manifest:
+          All converted .mcaddon files include original mod attribution in the
+          manifest:
         </p>
         <p>
           <em>
@@ -150,25 +152,29 @@ export const IPPolicyPage: React.FC = () => {
           </em>
         </p>
         <p>
-          If the original license cannot be determined, the manifest includes
-          a note directing copyright holders to contact us.
+          If the original license cannot be determined, the manifest includes a
+          note directing copyright holders to contact us.
         </p>
       </section>
 
       <section id="related-docs" className={styles.section}>
         <h2 className={styles.sectionTitle}>6. Related Documents</h2>
         <ul>
-          <li><a href="/terms">Terms of Service</a></li>
-          <li><a href="/privacy">Privacy Policy</a></li>
-          <li><a href="/cookies">Cookie Policy</a></li>
+          <li>
+            <a href="/terms">Terms of Service</a>
+          </li>
+          <li>
+            <a href="/privacy">Privacy Policy</a>
+          </li>
+          <li>
+            <a href="/cookies">Cookie Policy</a>
+          </li>
         </ul>
       </section>
 
       <section id="contact" className={styles.section}>
         <h2 className={styles.sectionTitle}>7. Contact</h2>
-        <p>
-          For IP-related inquiries:
-        </p>
+        <p>For IP-related inquiries:</p>
         <p>
           <strong>General IP questions:</strong> ip@portkit.example-portkit.com
           <br />
