@@ -3,7 +3,7 @@ import os
 import subprocess
 import tempfile
 import json
-from typing import Dict, Tuple, List
+from typing import Tuple, List
 
 class CodeValidator:
     """
@@ -79,8 +79,6 @@ class CodeValidator:
             try:
                 # Basic cleanup for comments which Minecraft JSON often has
                 clean_json = re.sub(r"//.*", "", block)
-                data = json.loads(clean_json)
-                
                 # Basic Bedrock structure check
                 if "format_version" not in clean_json and "header" not in clean_json:
                     # Might be a partial block or non-manifest
