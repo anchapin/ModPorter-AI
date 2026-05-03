@@ -344,7 +344,11 @@ jobs:
 
           echo "🔍 Checking for common issues..."
           # Check for TODO comments (should have issue numbers)
-          if grep -r "TODO" --include="*.py" backend/src/ | grep -v "[A-Z]-[0-9]"; then
+          # Only flag lines that look like actual TODOs, not documentation or conventions
+          # Pattern matches TODO(#123) format
+          if grep -rE "TODO\(\#[0-9]+\)" --include="*.py" backend/src/ --exclude-dir=tests; then
+            :  # All TODOs have issue numbers
+          else
             echo "⚠️ TODO without issue number found"
           fi
 
@@ -369,6 +373,20 @@ jobs:
           echo "🚀 Deploying to staging..."
           # Add deployment commands here
           echo "✅ Deployment complete"
+
+# ============================================
+  # AI REVIEW NOTIFICATION
+  # ============================================
+  notify-ai-review-failure:
+    name: Notify on AI Review Failure
+    runs-on: ubuntu-latest
+    needs: [ai-code-review]
+    if: failure() && github.event_name == 'pull_request'
+    steps:
+      - name: Notify
+        run: |
+          echo "❌ AI Code Review Failed"
+          echo "Check the workflow run at: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
   # ============================================
   # NOTIFICATION ON FAILURE

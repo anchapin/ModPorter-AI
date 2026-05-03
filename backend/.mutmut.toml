@@ -1,6 +1,7 @@
-[mutmut]
+ [mutmut]
 # Test command to run (required for mutation testing)
-test_command = python -m pytest
+# Use -p no:cov to disable coverage plugin which conflicts with mutmut
+test_command = python -m pytest -p no:cov --no-cov -q
 
 # Number of times to run each mutation
 runs = 2
