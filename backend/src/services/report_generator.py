@@ -297,6 +297,7 @@ class ConversionReportGenerator:
             processing_time_seconds=conversion_result.get("processing_time_seconds", 0.0),
             download_url=conversion_result.get("download_url"),
             quick_statistics=conversion_result.get("quick_statistics", {}),
+            minecraft_version_info=conversion_result.get("minecraft_version_info"),
         )
 
     def generate_feature_analysis(self, features_data: List[Dict[str, Any]]) -> FeatureAnalysis:

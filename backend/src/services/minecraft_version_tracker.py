@@ -24,7 +24,7 @@ class MinecraftVersions:
 
 
 class MinecraftVersionTracker:
-    _instance: Optional['MinecraftVersionTracker'] = None
+    _instance: Optional["MinecraftVersionTracker"] = None
 
     def __init__(self):
         self._versions = MinecraftVersions(
@@ -33,11 +33,11 @@ class MinecraftVersionTracker:
             bedrock_target_version="1.21.0",
             last_updated=datetime.now(),
             update_source="manual",
-            notes="Initial version tracking setup"
+            notes="Initial version tracking setup",
         )
 
     @classmethod
-    def get_instance(cls) -> 'MinecraftVersionTracker':
+    def get_instance(cls) -> "MinecraftVersionTracker":
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
@@ -63,7 +63,7 @@ class MinecraftVersionTracker:
         java_max: Optional[str] = None,
         bedrock: Optional[str] = None,
         source: str = "manual",
-        notes: Optional[str] = None
+        notes: Optional[str] = None,
     ) -> None:
         if java_min:
             self._versions.java_min_version = java_min
@@ -88,7 +88,7 @@ class MinecraftVersionTracker:
             "display_string": self.get_version_display(),
             "last_updated": self._versions.last_updated.isoformat(),
             "update_source": self._versions.update_source,
-            "notes": self._versions.notes
+            "notes": self._versions.notes,
         }
 
 
