@@ -388,6 +388,16 @@ jobs:
           echo "❌ AI Code Review Failed"
           echo "Check the workflow run at: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-
-  
->>>>>>> 2ac30a46 (test(e2e): add production smoke tests for beta go/no-go checklist (#1165))
+# ============================================
+  # AI REVIEW NOTIFICATION
+  # ============================================
+  notify-ai-review-failure:
+    name: Notify on AI Review Failure
+    runs-on: ubuntu-latest
+    needs: [ai-code-review]
+    if: failure() && github.event_name == 'pull_request'
+    steps:
+      - name: Notify
+        run: |
+          echo "❌ AI Code Review Failed"
+          echo "Check the workflow run at: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
