@@ -467,3 +467,68 @@ class TestAsyncExtractModMetadata:
 
         assert report.primary_modid == "unknown"
         assert len(report.warnings) >= 1
+
+    @pytest.mark.asyncio
+    async def test_analyze_mod_file_with_none_bundle_jars(
+        self, handler, tmp_path, sample_fabric_mod
+    ):
+        """Test that bundle_jars=None doesn't cause silent failures."""
+        jar_path = tmp_path / "create.jar"
+        with zipfile.ZipFile(jar_path, "w") as zf:
+            zf.writestr("fabric.mod.json", json.dumps(sample_fabric_mod))
+
+        report = await handler.analyze_mod_file(
+            str(jar_path),
+            bundle_jars=None,
+        )
+
+        assert report.primary_modid == "create"
+        assert len(report.missing_dependencies) == 1
+        assert report.missing_dependencies[0].modid == "flywheel"
+        assert len(report.warnings) == 1
+        assert "Required dependency" in report.warnings[0].message
+        assert report.estimated_conversion_coverage == 70.0
+
+    @pytest.mark.asyncio
+    async def test_analyze_mod_file_with_empty_bundle_jars(
+        self, handler, tmp_path, sample_fabric_mod
+    ):
+        """Test that empty bundle_jars doesn't cause silent failures."""
+        jar_path = tmp_path / "create.jar"
+        with zipfile.ZipFile(jar_path, "w") as zf:
+            zf.writestr("fabric.mod.json", json.dumps(sample_fabric_mod))
+
+        report = await handler.analyze_mod_file(
+            str(jar_path),
+            bundle_jars=[],
+        )
+
+        assert report.primary_modid == "create"
+        assert len(report.missing_dependencies) == 1
+        assert report.missing_dependencies[0].modid == "flywheel"
+        assert len(report.warnings) == 1
+        assert "Required dependency" in report.warnings[0].message
+
+    @pytest.mark.asyncio
+    async def test_analyze_mod_file_no_builtin_deps_skipped(
+        self, handler, tmp_path, sample_fabric_mod
+    ):
+        """Test that builtin deps (minecraft, fabricloader) don't cause silent failures."""
+        jar_path = tmp_path / "create.jar"
+        with zipfile.ZipFile(jar_path, "w") as zf:
+            zf.writestr("fabric.mod.json", json.dumps(sample_fabric_mod))
+
+        report = await handler.analyze_mod_file(
+            str(jar_path),
+            bundle_jars=None,
+        )
+
+        builtin_deps = [d for d in report.dependencies if d.modid in handler.BUILTIN_MODS]
+        assert len(builtin_deps) == 2
+        assert all(d.is_builtin for d in builtin_deps)
+        assert all(d.resolved for d in builtin_deps)
+
+        non_builtin_deps = [d for d in report.dependencies if not d.is_builtin]
+        assert len(non_builtin_deps) == 1
+        assert non_builtin_deps[0].modid == "flywheel"
+        assert non_builtin_deps[0].resolved is False
