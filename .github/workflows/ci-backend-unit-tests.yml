@@ -90,6 +90,10 @@ jobs:
             --ignore=src/tests/unit/test_task_worker_coverage.py \
             --ignore=src/tests/unit/test_performance_api.py
 
+      - name: Copy coverage to repository root
+        run: |
+          cp backend/coverage.json coverage.json
+
       - name: Upload coverage report
         uses: actions/upload-artifact@v7
         with:
