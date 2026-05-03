@@ -66,11 +66,17 @@ jobs:
             -n 2 \
             --dist=loadscope
 
+      - name: Copy coverage to repository root
+        run: |
+          cp ai-engine/coverage.json coverage.json
+
       - name: Upload coverage report
         uses: actions/upload-artifact@v7
         with:
           name: ai-engine-coverage
-          path: ai-engine/coverage.json
+          path: |
+            ai-engine/coverage.json
+            coverage.json
           if-no-files-found: error
 
       - name: Comment coverage on PR
