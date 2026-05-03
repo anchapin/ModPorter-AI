@@ -22,6 +22,7 @@ from celery.exceptions import SoftTimeLimitExceeded
 import redis.asyncio as aioredis
 
 from services.celery_config import celery_app, REDIS_URL
+from services.audit_logger import get_audit_logger
 
 import logging
 
@@ -603,7 +604,11 @@ def purge_orphaned_files(max_age_hours: int = 24) -> Dict[str, Any]:
     from core.storage import storage_manager
     import os
 
-    audit = get_audit_logger()
+    try:
+        audit = get_audit_logger()
+    except Exception:
+        audit = None
+
     r = _get_redis_sync()
     cutoff = datetime.now(timezone.utc) - timedelta(hours=max_age_hours)
     max_age_days = 7  # For output files (.mcaddon)
@@ -638,12 +643,13 @@ def purge_orphaned_files(max_age_hours: int = 24) -> Dict[str, Any]:
                             job_id = path_parts[1]
                             if job_id not in active_jobs:
                                 os.remove(file_path)
-                                audit.log_file_deleted(
-                                    job_id=job_id,
-                                    filename=filename,
-                                    deleted_by="system",
-                                    reason="orphaned_file_24h",
-                                )
+                                if audit:
+                                    audit.log_file_deleted(
+                                        job_id=job_id,
+                                        filename=filename,
+                                        deleted_by="system",
+                                        reason="orphaned_file_24h",
+                                    )
                                 deleted_input += 1
                 except OSError as e:
                     logger.error(f"Error purging {file_path}: {e}")
@@ -665,12 +671,13 @@ def purge_orphaned_files(max_age_hours: int = 24) -> Dict[str, Any]:
                             job_id = path_parts[1]
                             if job_id not in active_jobs:
                                 os.remove(file_path)
-                                audit.log_file_deleted(
-                                    job_id=job_id,
-                                    filename=filename,
-                                    deleted_by="system",
-                                    reason="orphaned_output_7d",
-                                )
+                                if audit:
+                                    audit.log_file_deleted(
+                                        job_id=job_id,
+                                        filename=filename,
+                                        deleted_by="system",
+                                        reason="orphaned_output_7d",
+                                    )
                                 deleted_output += 1
                 except OSError as e:
                     logger.error(f"Error purging {file_path}: {e}")
@@ -695,18 +702,23 @@ def delete_input_file(job_id: str, file_id: str) -> Dict[str, Any]:
     """
     import os
 
-    audit = get_audit_logger()
+    try:
+        audit = get_audit_logger()
+    except Exception:
+        audit = None
+
     file_path = os.path.join(os.getenv("TEMP_UPLOADS_DIR", "temp_uploads"), f"{file_id}.jar")
 
     try:
         if os.path.exists(file_path):
             os.remove(file_path)
-            audit.log_file_deleted(
-                job_id=job_id,
-                filename=f"{file_id}.jar",
-                deleted_by="system",
-                reason="conversion_complete",
-            )
+            if audit:
+                audit.log_file_deleted(
+                    job_id=job_id,
+                    filename=f"{file_id}.jar",
+                    deleted_by="system",
+                    reason="conversion_complete",
+                )
             logger.info(f"Deleted input file: {file_path}")
             return {"deleted": True, "file_path": file_path}
         else:
