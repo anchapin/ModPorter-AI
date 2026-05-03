@@ -122,7 +122,10 @@ class TestIngestionPipelineLazyLoading:
         ai-engine module at import time (issue #1197).
         """
         import sys
-        ai_engine_modules = [key for key in sys.modules if key.startswith("ai_engine") or "ai-engine" in key]
+
+        ai_engine_modules = [
+            key for key in sys.modules if key.startswith("ai_engine") or "ai-engine" in key
+        ]
         for mod in ai_engine_modules:
             if "indexing" in mod and ("chunking" in mod or "metadata" in mod):
                 pytest.fail(f"ai-engine module loaded too early: {mod}")
@@ -133,5 +136,6 @@ class TestIngestionPipelineLazyLoading:
         This verifies lazy loading works - ai-engine is only loaded when needed.
         """
         from src.ingestion import pipeline
+
         assert hasattr(pipeline, "_get_chunking_factory_class")
         assert hasattr(pipeline, "_get_metadata_extractor_class")

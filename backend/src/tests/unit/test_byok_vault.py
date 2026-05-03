@@ -107,7 +107,7 @@ class TestBYOKKeyVault:
 class TestGetEncryptionKey:
     """Tests for encryption key retrieval"""
 
-    @patch('security.byok_vault.get_secret')
+    @patch("security.byok_vault.get_secret")
     def test_get_encryption_key_from_byok_master_key(self, mock_get_secret):
         """Test key derivation from BYOK_MASTER_KEY"""
         mock_get_secret.return_value = "test-master-key-32-bytes-long!!"
@@ -115,21 +115,23 @@ class TestGetEncryptionKey:
         assert len(key) == 44  # Fernet key is 44 bytes base64
         assert isinstance(key, bytes)
 
-    @patch('security.byok_vault.get_secret')
+    @patch("security.byok_vault.get_secret")
     def test_get_encryption_key_fallback_to_secret_key(self, mock_get_secret):
         """Test fallback to SECRET_KEY when BYOK_MASTER_KEY not set"""
+
         def secret_side_effect(key):
             if key == "BYOK_MASTER_KEY":
                 return None
             elif key == "SECRET_KEY":
                 return "secret_key_for_fallback_32bytes!"
             return None
+
         mock_get_secret.side_effect = secret_side_effect
         key = get_encryption_key()
         assert len(key) == 44
         assert isinstance(key, bytes)
 
-    @patch('security.byok_vault.get_secret')
+    @patch("security.byok_vault.get_secret")
     def test_get_encryption_key_raises_when_no_key_available(self, mock_get_secret):
         """Test that ValueError is raised when no encryption key available"""
         mock_get_secret.return_value = None
@@ -208,14 +210,14 @@ class TestLLMProvider:
 class TestBYOKVaultSingleton:
     """Tests for the byok_vault singleton instance"""
 
-    @patch('security.byok_vault.get_encryption_key')
+    @patch("security.byok_vault.get_encryption_key")
     def test_byok_vault_is_byokkeyvault_instance(self, mock_get_key):
         """Test that byok_vault is an instance of BYOKKeyVault"""
         mock_get_key.return_value = Fernet.generate_key()
         vault = BYOKKeyVault()
         assert isinstance(vault, BYOKKeyVault)
 
-    @patch('security.byok_vault.get_encryption_key')
+    @patch("security.byok_vault.get_encryption_key")
     def test_byok_vault_can_encrypt_and_decrypt(self, mock_get_key):
         """Test that the vault can encrypt and decrypt"""
         mock_get_key.return_value = Fernet.generate_key()
@@ -260,6 +262,7 @@ class TestLoggingFilter:
     def test_filter_returns_true(self):
         """Test that filter returns True to allow logging"""
         import logging
+
         filter_obj = PIIScrubbingFilter()
         record = logging.LogRecord(
             name="test",
