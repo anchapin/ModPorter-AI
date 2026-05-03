@@ -83,7 +83,9 @@ class TestBetaGoNoGoSmokeTests:
                 if response.status_code == 200:
                     self.log_result("portkit.ai live", True, f"Status: {response.status_code}")
                 else:
-                    self.log_result("portkit.ai live", False, f"Health check: {response.status_code}")
+                    self.log_result(
+                        "portkit.ai live", False, f"Health check: {response.status_code}"
+                    )
             except Exception as e:
                 self.log_result("portkit.ai live", False, str(e)[:100])
 
@@ -92,7 +94,9 @@ class TestBetaGoNoGoSmokeTests:
     async def test_python_311_in_docker(self):
         """Verify Python 3.11 is used in production Docker image"""
         dockerfile_path = Path(__file__).parent.parent.parent.parent.parent / "Dockerfile"
-        backend_dockerfile = Path(__file__).parent.parent.parent.parent.parent / "backend" / "Dockerfile"
+        backend_dockerfile = (
+            Path(__file__).parent.parent.parent.parent.parent / "backend" / "Dockerfile"
+        )
 
         found_311 = False
         checked_files = []
@@ -111,7 +115,12 @@ class TestBetaGoNoGoSmokeTests:
                     break
 
         if not found_311:
-            ci_file = Path(__file__).parent.parent.parent.parent.parent / ".github" / "workflows" / "ci.yml"
+            ci_file = (
+                Path(__file__).parent.parent.parent.parent.parent
+                / ".github"
+                / "workflows"
+                / "ci.yml"
+            )
             if ci_file.exists():
                 checked_files.append(str(ci_file))
                 content = ci_file.read_text()
@@ -254,7 +263,9 @@ class TestBetaGoNoGoSmokeTests:
 
             if response["status"] in [200, 201]:
                 self.uploaded_file_id = response["data"].get("file_id")
-                self.log_result("JAR File Upload", True, f"File ID: {self.uploaded_file_id[:20]}...")
+                self.log_result(
+                    "JAR File Upload", True, f"File ID: {self.uploaded_file_id[:20]}..."
+                )
             else:
                 self.log_result("JAR File Upload", False, f"Status: {response['status']}")
         finally:
