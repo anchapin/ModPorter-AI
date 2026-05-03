@@ -120,6 +120,56 @@ export const TermsPage: React.FC = () => {
         </p>
       </section>
 
+      <section id="conversion-authorization" className={styles.section}>
+        <h2 className={styles.sectionTitle}>3a. Conversion Authorization Warranty</h2>
+        <p>
+          <strong>Important:</strong> Before converting any mod, you must have
+          the legal right to do so. By submitting a mod for conversion, you
+          represent and warrant that:
+        </p>
+        <ul>
+          <li>
+            You are the original author of the mod, OR
+          </li>
+          <li>
+            You have received explicit written permission from the mod author
+            to convert their mod to Bedrock Edition, OR
+          </li>
+          <li>
+            The mod is licensed under a permissive license (MIT, Apache 2.0, BSD,
+            CC0, GPL 3.0+, or Unlicense) that permits derivative works
+          </li>
+        </ul>
+        <p>
+          <strong>You agree to indemnify and hold harmless Portkit</strong> from
+          any claims, damages, or expenses arising from unauthorized conversion
+          of any mod you upload or convert using the Service.
+        </p>
+        <p>
+          Portkit reserves the right to block conversion of mods that appear to
+          use All Rights Reserved (ARR) or other restrictive licenses without
+          verified authorization.
+        </p>
+      </section>
+
+      <section id="dmca" className={styles.section}>
+        <h2 className={styles.sectionTitle}>3b. DMCA Compliance</h2>
+        <p>
+          Portkit complies with the Digital Millennium Copyright Act (DMCA).
+          If you believe your copyrighted work has been infringed on our
+          Service, please contact our designated DMCA agent:
+        </p>
+        <p>
+          <strong>Email:</strong> dmca@portkit.example-portkit.com
+        </p>
+        <p>
+          Upon receiving a valid DMCA takedown notice, we will remove the
+          infringing content within 24 hours and notify the affected user.
+          Users may submit a counter-notice if they believe their content was
+          wrongly removed.
+        </p>
+      </section>
+
       <section id="availability" className={styles.section}>
         <h2 className={styles.sectionTitle}>4. Service Availability</h2>
         <h3 className={styles.sectionTitle}>Free and Paid Tiers</h3>
