@@ -202,7 +202,7 @@ class TestModDependencyHandler:
         assert handler.BUILTIN_MODS["forge"] == "Forge"
 
     def test_parse_dependencies_from_metadata(self, handler):
-        from services.file_handler import ModMetadata
+        from services.mod_dependency_handler import ModMetadata
 
         metadata = ModMetadata()
         metadata.dependencies = ["minecraft", "fabricloader", "flywheel", "create"]
