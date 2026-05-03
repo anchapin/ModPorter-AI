@@ -148,6 +148,9 @@ const LandingPage: React.FC = () => {
       <section className="hero-section">
         <div className="hero-container">
           <div className="hero-badge">Coming Soon — Join the Waitlist</div>
+          <div className="hero-version-badge">
+            Converts Java 1.18-1.21 → Bedrock 1.21.0
+          </div>
           <h1 className="hero-title">
             Get Your Java Mods on the
             <br />
