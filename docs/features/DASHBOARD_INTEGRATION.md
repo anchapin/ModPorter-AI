@@ -86,7 +86,7 @@ A lightweight test backend (`test_backend.py`) provides:
 
 ### Start Test Backend
 ```bash
-cd /path/to/ModPorter-AI
+cd /path/to/portkit
 python test_backend.py
 ```
 
@@ -120,7 +120,7 @@ The existing `docker-compose.yml` includes proper networking and CORS configurat
 
 ## Next Steps
 
-1. **Full Backend**: Replace test backend with full ModPorter AI backend
+1. **Full Backend**: Replace test backend with full Portkit backend
 2. **WebSocket Integration**: Add real-time updates via WebSocket  
 3. **Error Recovery**: Add retry mechanisms for failed conversions
 4. **Progress Details**: Show detailed conversion steps and agent status

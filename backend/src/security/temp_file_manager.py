@@ -17,11 +17,11 @@ import shutil
 import tempfile
 import threading
 import uuid
-from contextlib import contextmanager
-from dataclasses import dataclass, field
+from contextlib import contextmanager, suppress
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Generator, Any
+from typing import Dict, List, Optional, Generator, Any
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ class TempFileConfig:
     base_dir: Optional[Path] = None
 
     # Prefix for temp directories
-    directory_prefix: str = "modporter_"
+    directory_prefix: str = "portkit_"
 
     # Maximum age of temp files before cleanup (in hours)
     max_file_age_hours: int = 24
@@ -93,7 +93,7 @@ class SecureTempFileManager:
         if self.config.base_dir:
             self._base_dir = Path(self.config.base_dir)
         else:
-            self._base_dir = Path(tempfile.gettempdir()) / "modporter_conversions"
+            self._base_dir = Path(tempfile.gettempdir()) / "portkit_conversions"
 
         # Ensure base directory exists
         self._base_dir.mkdir(parents=True, exist_ok=True)
@@ -161,7 +161,10 @@ class SecureTempFileManager:
         if self.config.track_files:
             with self._lock:
                 self._tracked_files[str(dir_path)] = TempFileInfo(
-                    path=dir_path, created_at=datetime.utcnow(), job_id=job_id, is_directory=True
+                    path=dir_path,
+                    created_at=datetime.now(timezone.utc),
+                    job_id=job_id,
+                    is_directory=True,
                 )
 
         logger.debug(f"Created temp directory: {dir_path}")
@@ -213,7 +216,10 @@ class SecureTempFileManager:
         if self.config.track_files:
             with self._lock:
                 self._tracked_files[str(file_path)] = TempFileInfo(
-                    path=file_path, created_at=datetime.utcnow(), job_id=job_id, is_directory=False
+                    path=file_path,
+                    created_at=datetime.now(timezone.utc),
+                    job_id=job_id,
+                    is_directory=False,
                 )
 
         logger.debug(f"Created temp file: {file_path}")
@@ -359,7 +365,7 @@ class SecureTempFileManager:
             Number of files/directories cleaned
         """
         max_age = max_age_hours or self.config.max_file_age_hours
-        cutoff = datetime.utcnow() - timedelta(hours=max_age)
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=max_age)
         cleaned = 0
 
         with self._lock:
@@ -439,10 +445,8 @@ class SecureTempFileManager:
 
         for entry in self._base_dir.rglob("*"):
             if entry.is_file():
-                try:
+                with suppress(Exception):
                     total_size += entry.stat().st_size
-                except Exception:
-                    pass
 
         return total_size
 

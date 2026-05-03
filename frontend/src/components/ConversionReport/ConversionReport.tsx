@@ -313,16 +313,18 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
                 className={`${styles.feedbackButton} ${feedbackType === 'thumbs_up' ? styles.feedbackButtonActive : ''}`}
                 aria-pressed={feedbackType === 'thumbs_up'}
                 title="Thumbs Up"
+                aria-label="Thumbs Up"
               >
-                👍
+                <span aria-hidden="true">👍</span>
               </button>
               <button
                 onClick={() => handleFeedbackTypeChange('thumbs_down')}
                 className={`${styles.feedbackButton} ${feedbackType === 'thumbs_down' ? styles.feedbackButtonActive : ''}`}
                 aria-pressed={feedbackType === 'thumbs_down'}
                 title="Thumbs Down"
+                aria-label="Thumbs Down"
               >
-                👎
+                <span aria-hidden="true">👎</span>
               </button>
             </div>
             <textarea

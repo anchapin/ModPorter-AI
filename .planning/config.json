@@ -1,0 +1,96 @@
+{
+  "version": "1.0",
+  "created": "2026-03-13",
+  "lastUpdated": "2026-03-13",
+  "workflow": {
+    "mode": "interactive",
+    "granularity": "standard",
+    "parallelization": true,
+    "gates": {
+      "humanVerify": true,
+      "decision": true,
+      "humanAction": true
+    },
+    "_auto_chain_active": false
+  },
+  "automation": {
+    "research": true,
+    "planCheck": true,
+    "verifier": true,
+    "integrationCheck": true
+  },
+  "checkpoints": {
+    "afterPhase": true,
+    "afterMilestone": true,
+    "beforeHumanVerify": true,
+    "beforeDecision": true,
+    "beforeHumanAction": true
+  },
+  "notifications": {
+    "phaseComplete": true,
+    "milestoneComplete": true,
+    "checkpointReached": true,
+    "errorThreshold": 0.05
+  },
+  "profiles": {
+    "default": {
+      "model": "claude-sonnet-4-20250514",
+      "temperature": 0.7,
+      "maxTokens": 4096
+    },
+    "research": {
+      "model": "claude-sonnet-4-20250514",
+      "temperature": 0.5,
+      "maxTokens": 8192
+    },
+    "planning": {
+      "model": "claude-sonnet-4-20250514",
+      "temperature": 0.3,
+      "maxTokens": 4096
+    },
+    "execution": {
+      "model": "claude-sonnet-4-20250514",
+      "temperature": 0.7,
+      "maxTokens": 4096
+    },
+    "verification": {
+      "model": "claude-sonnet-4-20250514",
+      "temperature": 0.3,
+      "maxTokens": 2048
+    }
+  },
+  "project": {
+    "name": "portkit",
+    "description": "AI-powered Java to Bedrock Minecraft mod converter",
+    "repository": "/home/alex/Projects/portkit",
+    "planningDirectory": ".planning",
+    "phasesDirectory": ".planning/phases",
+    "milestonesDirectory": ".planning/milestones",
+    "todosDirectory": ".planning/todos",
+    "debugDirectory": ".planning/debug"
+  },
+  "milestones": {
+    "current": "v0.1",
+    "target": "v1.0",
+    "timeline": {
+      "v0.1": "2026-03-13 to 2026-04-10",
+      "v0.2": "2026-04-10 to 2026-05-08",
+      "v0.3": "2026-05-08 to 2026-06-05",
+      "v1.0": "2026-06-05 to 2026-07-03"
+    }
+  },
+  "features": {
+    "todoTracking": true,
+    "checkpointProtocol": true,
+    "stateManagement": true,
+    "deviationHandling": true,
+    "atomicCommits": true
+  },
+  "integrations": {
+    "git": true,
+    "github": true,
+    "docker": true,
+    "ollama": true,
+    "modal": false
+  }
+}

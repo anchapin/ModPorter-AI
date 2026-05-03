@@ -200,6 +200,51 @@ const mockFetch = vi.fn((url: string, options?: any) => {
 // Replace global fetch
 global.fetch = mockFetch;
 
+// Mock WebSocket for testing - supports both absolute and relative URLs
+class MockWebSocket {
+  static instances: MockWebSocket[] = [];
+
+  url: string;
+  readyState: number = 0; // CONNECTING
+  onopen: ((event: any) => void) | null = null;
+  onclose: ((event: any) => void) | null = null;
+  onerror: ((event: any) => void) | null = null;
+  onmessage: ((event: any) => void) | null = null;
+
+  constructor(url: string | URL) {
+    // Handle both string and URL objects
+    const urlStr = url.toString();
+
+    // If relative URL, prepend a dummy host for jsdom compatibility
+    if (urlStr.startsWith('/')) {
+      this.url = 'ws://localhost' + urlStr;
+    } else {
+      this.url = urlStr;
+    }
+
+    MockWebSocket.instances.push(this);
+
+    // Simulate async connection - but check if already closed first
+    setTimeout(() => {
+      this.readyState = 1; // OPEN
+      if (this.onopen) {
+        this.onopen({ type: 'open' });
+      }
+    }, 0);
+  }
+
+  send(_data: string): void {}
+  close(): void {
+    this.readyState = 3; // CLOSED
+    if (this.onclose) {
+      this.onclose({ type: 'close' });
+    }
+  }
+}
+
+// Replace global WebSocket
+global.WebSocket = MockWebSocket as any;
+
 export const server = {
   listen: () => {
     console.log('Test setup: Fetch mocking enabled');

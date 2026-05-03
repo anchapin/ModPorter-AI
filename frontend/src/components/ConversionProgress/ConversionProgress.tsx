@@ -104,9 +104,18 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
   const MAX_RECONNECT_ATTEMPTS = 5;
   const RECONNECT_DELAY_BASE = 1000; // 1 second base delay
 
-  const API_BASE_URL =
-    import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-  const WS_BASE_URL = API_BASE_URL.replace(/^http/, 'ws');
+  // Use same logic as api.ts for consistency
+  // Priority: VITE_API_BASE_URL > VITE_API_URL > default to relative path
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+    ? import.meta.env.VITE_API_BASE_URL + '/api/v1'
+    : import.meta.env.VITE_API_URL
+      ? import.meta.env.VITE_API_URL.replace(/\/api\/v1$/, '') + '/api/v1'
+      : '/api/v1';
+
+  // Extract base URL (without /api/v1) and convert to WebSocket protocol
+  const wsBaseUrl = API_BASE_URL.replace(/\/api\/v1$/, '')
+    .replace(/^http:/, 'ws:')
+    .replace(/^https:/, 'wss:');
 
   const stopPolling = () => {
     if (pollingIntervalRef.current) {
@@ -220,7 +229,7 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
         return;
       }
 
-      const wsUrl = `${WS_BASE_URL}/ws/v1/convert/${jobId}/progress`;
+      const wsUrl = `${wsBaseUrl}/ws/v1/convert/${jobId}/progress`;
       console.log(
         `Attempting to connect WebSocket (attempt ${attempt + 1}/${MAX_RECONNECT_ATTEMPTS}): ${wsUrl}`
       );
@@ -307,7 +316,7 @@ const ConversionProgress: React.FC<ConversionProgressProps> = ({
     return cleanup; // Return the cleanup function
   }, [
     jobId,
-    WS_BASE_URL,
+    wsBaseUrl,
     updateProgressData,
     startPolling,
     message,

@@ -6,10 +6,9 @@ Issue: #379 - Implement async task queue (Phase 3)
 """
 
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 from services.task_queue import (
-    AsyncTaskQueue,
     TaskStatus,
     TaskPriority,
     get_task_queue,
@@ -95,8 +94,8 @@ async def create_task(request: TaskEnqueueRequest):
             retry_count=task.retry_count,
             max_retries=task.max_retries,
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to enqueue task: {str(e)}")
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to enqueue task")
 
 
 @router.get("/{task_id}", response_model=TaskResponse)
@@ -204,5 +203,7 @@ async def get_queue_statistics():
     stats = await get_queue_stats()
 
     return QueueStatsResponse(
-        queues=stats["queues"], total_tasks=stats["total_tasks"], by_status=stats["by_status"]
+        queues=stats["queues"],
+        total_tasks=stats["total_tasks"],
+        by_status=stats["by_status"],
     )

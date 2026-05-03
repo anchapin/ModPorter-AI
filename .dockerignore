@@ -1,2 +1,133 @@
-# Skip pytest tests for this branch to avoid collection issues
-**/tests/
+# =============================================================================
+# Comprehensive .dockerignore for Portkit
+# Dramatically reduces Fly.io build context size by excluding unnecessary files
+# =============================================================================
+
+# ---- Git --------------------------------------------------------------------
+.git/
+.gitattributes
+.gitconfig
+.gitmessage
+.githooks/
+.github/
+.worktrees/
+
+# ---- Python Virtual Environments (HUGE) -------------------------------------
+**/.venv/
+**/venv/
+**/.env/
+
+# ---- Node.js / Frontend -----------------------------------------------------
+**/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/.stryker-tmp/
+
+# ---- Python Cache & Build Artifacts -----------------------------------------
+**/__pycache__/
+**/.mypy_cache/
+**/.pytest_cache/
+**/.ruff_cache/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.coverage
+**/coverage.json
+**/htmlcov/
+**/mutants/
+**/.hypothesis/
+
+# ---- AI Engine Specific -----------------------------------------------------
+ai-engine/.venv/
+ai-engine/.mypy_cache/
+ai-engine/htmlcov/
+ai-engine/tests/
+ai-engine/.pytest_cache/
+ai-engine/mutants/
+ai-engine/__pycache__/
+
+# ---- Backend Specific -------------------------------------------------------
+backend/.venv/
+backend/.mypy_cache/
+backend/htmlcov/
+backend/temp_uploads/
+backend/conversion_outputs/
+backend/coverage.json
+backend/test.db
+backend/openapi.json
+backend/IMPLEMENTATION_SUMMARY.md
+backend/WEBSOCKET_CLIENT_EXAMPLES.md
+backend/WEBSOCKET_API_IMPLEMENTATION.md
+backend/QUICKSTART.md
+
+# ---- Temporary & Runtime Files ----------------------------------------------
+temp_uploads/
+conversion_outputs/
+temp_uploads/
+*.log
+*.tmp
+*.swp
+*.swo
+*~
+
+# ---- Documentation & Planning (not needed at runtime) -----------------------
+docs/
+.planning/
+CLAUDE.md
+DEVELOPMENT.md
+CONTRIBUTING.md
+CHANGELOG.md
+SECURITY.md
+MILESTONE-v2.5-PLAN.md
+RAG.md
+
+# ---- IDE / Editor / Agent Artifacts -----------------------------------------
+.claude/
+.cursor/
+.opencode/
+.cursorignore
+.claudeignore
+.clineignore
+.idx/
+.factory/
+.devcontainer/
+.vscode/
+.idea/
+
+# ---- CI / Testing Infrastructure --------------------------------------------
+.github/
+.husky/
+.pytest_cache/
+pytest-of-alex/
+
+# ---- Monitoring (not needed in app image) -----------------------------------
+monitoring/
+prometheus/
+grafana/
+
+# ---- Large Binary Installers ------------------------------------------------
+node-installer.msi
+verification_spinner.png
+
+# ---- Training & Database ----------------------------------------------------
+training_data/
+database/
+
+# ---- Scripts not needed in container ----------------------------------------
+scripts/optimize-*.py
+scripts/sanitize-*.py
+scripts/performance-analysis.py
+scripts/run_*_audit.py
+scripts/fix.patch
+scripts/FIX_CI_README.md
+
+# ---- Misc -------------------------------------------------------------------
+6ByLntZdir8UwV2KplisY/
+node-compile-cache/
+__pycache__/
+.actrc
+.gitignore
+.pre-commit-config.yaml
+.trivyignore
+.trivy.yml
+.gitleaks.toml

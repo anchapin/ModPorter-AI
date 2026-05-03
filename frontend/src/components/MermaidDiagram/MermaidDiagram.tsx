@@ -15,7 +15,7 @@ interface MermaidDiagramProps {
 
 export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
   chart,
-  id = `mermaid-${Math.random().toString(36).substr(2, 9)}`,
+  id = `mermaid-${crypto.randomUUID()}`,
   className = '',
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
@@ -64,14 +64,16 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
 
       // Render the diagram
       if (chartRef.current) {
-        chartRef.current.innerHTML = chart;
+        // 🛡️ Sentinel: Prevent XSS by using textContent instead of innerHTML
+        chartRef.current.textContent = chart;
         mermaid.init(undefined, chartRef.current);
       }
     } catch (error) {
       console.error('Error initializing or rendering Mermaid diagram:', error);
       // Gracefully handle errors by showing the chart content as plain text
       if (chartRef.current) {
-        chartRef.current.innerHTML = chart;
+        // 🛡️ Sentinel: Prevent XSS by using textContent instead of innerHTML
+        chartRef.current.textContent = chart;
       }
     }
   }, [chart]);

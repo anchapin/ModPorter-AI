@@ -1,6 +1,7 @@
 """
 Integration tests for the texture conversion pipeline with file saving
 """
+
 import json
 import os
 import sys
@@ -8,7 +9,7 @@ import tempfile
 from pathlib import Path
 
 # Add parent directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from PIL import Image
 
@@ -16,8 +17,8 @@ from PIL import Image
 def create_test_texture(path: Path, size=(64, 64), color=(128, 128, 128, 255)):
     """Helper to create test texture files"""
     path.parent.mkdir(parents=True, exist_ok=True)
-    img = Image.new('RGBA', size, color)
-    img.save(path, 'PNG')
+    img = Image.new("RGBA", size, color)
+    img.save(path, "PNG")
 
 
 def test_full_texture_conversion_pipeline():
@@ -59,7 +60,7 @@ def test_full_texture_conversion_pipeline():
                 {"path": str(input_dir / "diamond_sword.png"), "usage": "item"},
                 {"path": str(input_dir / "custom_block.png"), "usage": "block"},
             ],
-            "output_dir": str(output_dir)
+            "output_dir": str(output_dir),
         }
 
         # Convert textures
@@ -67,33 +68,30 @@ def test_full_texture_conversion_pipeline():
         result = json.loads(result_json)
 
         # Verify results
-        print(f"\n=== Texture Conversion Results ===")
-        print(f"Total textures: {result['total_textures']}")
-        print(f"Successful: {result['successful_conversions']}")
-        print(f"Failed: {result['failed_conversions']}")
 
-        assert result['total_textures'] == 5, f"Expected 5 textures, got {result['total_textures']}"
-        assert result['successful_conversions'] == 5, f"Expected 5 successful conversions, got {result['successful_conversions']}"
-        assert result['failed_conversions'] == 0, f"Expected 0 failures, got {result['failed_conversions']}"
+        assert result["total_textures"] == 5, f"Expected 5 textures, got {result['total_textures']}"
+        assert result["successful_conversions"] == 5, (
+            f"Expected 5 successful conversions, got {result['successful_conversions']}"
+        )
+        assert result["failed_conversions"] == 0, (
+            f"Expected 0 failures, got {result['failed_conversions']}"
+        )
 
         # Verify output files exist
-        for converted in result['converted_textures']:
-            output_path = Path(converted['converted_path'])
+        for converted in result["converted_textures"]:
+            output_path = Path(converted["converted_path"])
             assert output_path.exists(), f"Output file not created: {output_path}"
-            print(f"✓ Created: {output_path.relative_to(temp_path)}")
 
             # Verify the file is a valid PNG
             img = Image.open(output_path)
-            assert img.format == 'PNG', f"Output file is not PNG: {output_path}"
-            assert img.mode == 'RGBA', f"Output file is not RGBA: {output_path}"
+            assert img.format == "PNG", f"Output file is not PNG: {output_path}"
+            assert img.mode == "RGBA", f"Output file is not RGBA: {output_path}"
 
             # Verify dimensions
-            dimensions = converted['dimensions']
-            assert list(img.size) == dimensions, f"Dimension mismatch for {output_path}: expected {dimensions}, got {img.size}"
-
-            print(f"  - Dimensions: {dimensions}")
-            print(f"  - Resized: {converted['resized']}")
-            print(f"  - Optimizations: {', '.join(converted.get('optimizations', []))}")
+            dimensions = converted["dimensions"]
+            assert list(img.size) == dimensions, (
+                f"Dimension mismatch for {output_path}: expected {dimensions}, got {img.size}"
+            )
 
         # Verify Bedrock directory structure
         expected_structure = [
@@ -106,15 +104,15 @@ def test_full_texture_conversion_pipeline():
 
         for expected_file in expected_structure:
             assert expected_file.exists(), f"Expected file not found: {expected_file}"
-            print(f"✓ Structure verified: {expected_file.relative_to(output_dir)}")
 
         # Verify power-of-2 resizing was applied to custom_block.png
-        custom_block_result = next(r for r in result['converted_textures'] if 'custom_block' in r['converted_path'])
-        assert custom_block_result['resized'] is True, "custom_block.png should have been resized"
-        assert tuple(custom_block_result['dimensions']) == (64, 64), f"Expected (64, 64), got {custom_block_result['dimensions']}"
-        print(f"✓ Power-of-2 resizing verified: 33x45 → {custom_block_result['dimensions']}")
-
-        print("\n=== All Tests Passed ===")
+        custom_block_result = next(
+            r for r in result["converted_textures"] if "custom_block" in r["converted_path"]
+        )
+        assert custom_block_result["resized"] is True, "custom_block.png should have been resized"
+        assert tuple(custom_block_result["dimensions"]) == (64, 64), (
+            f"Expected (64, 64), got {custom_block_result['dimensions']}"
+        )
 
 
 def test_fallback_texture_generation():
@@ -133,32 +131,24 @@ def test_fallback_texture_generation():
             "textures": [
                 {"path": "/nonexistent/texture.png", "usage": "block"},
             ],
-            "output_dir": str(output_dir)
+            "output_dir": str(output_dir),
         }
 
         result_json = agent.convert_textures(json.dumps(texture_data), str(output_dir))
         result = json.loads(result_json)
 
-        print(f"\n=== Fallback Texture Test ===")
-        print(f"Total textures: {result['total_textures']}")
-        print(f"Successful: {result['successful_conversions']}")
-
-        assert result['successful_conversions'] == 1, "Fallback should be generated successfully"
+        assert result["successful_conversions"] == 1, "Fallback should be generated successfully"
 
         # Verify fallback file was created
-        fallback_file = next(r for r in result['converted_textures'] if r['success'])
-        output_path = Path(fallback_file['converted_path'])
+        fallback_file = next(r for r in result["converted_textures"] if r["success"])
+        output_path = Path(fallback_file["converted_path"])
 
         assert output_path.exists(), f"Fallback file not created: {output_path}"
-        print(f"✓ Fallback created: {output_path.relative_to(temp_path)}")
 
         # Verify it's a valid PNG
         img = Image.open(output_path)
-        assert img.format == 'PNG'
-        assert img.mode == 'RGBA'
-        print(f"✓ Fallback is valid PNG: {img.size} RGBA")
-
-        print("\n=== Fallback Test Passed ===")
+        assert img.format == "PNG"
+        assert img.mode == "RGBA"
 
 
 def test_texture_atlas_detection():
@@ -185,24 +175,18 @@ def test_texture_atlas_detection():
 
         texture_data = {
             "textures": [{"path": str(input_dir / t), "usage": "block"} for t in textures],
-            "output_dir": str(output_dir)
+            "output_dir": str(output_dir),
         }
 
         result_json = agent.convert_textures(json.dumps(texture_data), str(output_dir))
         result = json.loads(result_json)
 
-        print(f"\n=== Texture Atlas Test ===")
-        print(f"Converted {result['successful_conversions']} textures")
-
         # All conversions should succeed
-        assert result['successful_conversions'] == 3
+        assert result["successful_conversions"] == 3
 
         # Verify all files exist
-        for converted in result['converted_textures']:
-            assert Path(converted['converted_path']).exists()
-            print(f"✓ {Path(converted['converted_path']).name}")
-
-        print("\n=== Atlas Test Passed ===")
+        for converted in result["converted_textures"]:
+            assert Path(converted["converted_path"]).exists()
 
 
 def test_performance_benchmark():
@@ -219,7 +203,15 @@ def test_performance_benchmark():
         textures = []
 
         for i in range(num_textures):
-            size = (16, 16) if i % 4 == 0 else (32, 32) if i % 4 == 1 else (64, 64) if i % 4 == 2 else (128, 128)
+            size = (
+                (16, 16)
+                if i % 4 == 0
+                else (32, 32)
+                if i % 4 == 1
+                else (64, 64)
+                if i % 4 == 2
+                else (128, 128)
+            )
             filename = f"texture_{i}.png"
             create_test_texture(input_dir / filename, size, (128, 128, 128, 255))
             textures.append({"path": str(input_dir / filename), "usage": "block"})
@@ -229,10 +221,7 @@ def test_performance_benchmark():
 
         agent = AssetConverterAgent.get_instance()
 
-        texture_data = {
-            "textures": textures,
-            "output_dir": str(output_dir)
-        }
+        texture_data = {"textures": textures, "output_dir": str(output_dir)}
 
         # Measure conversion time
         start_time = time.time()
@@ -242,37 +231,19 @@ def test_performance_benchmark():
         result = json.loads(result_json)
         total_time = end_time - start_time
 
-        print(f"\n=== Performance Benchmark ===")
-        print(f"Textures processed: {num_textures}")
-        print(f"Total time: {total_time:.3f} seconds")
-        print(f"Average time per texture: {(total_time / num_textures) * 1000:.2f} ms")
-        print(f"Successful: {result['successful_conversions']}")
-        print(f"Failed: {result['failed_conversions']}")
-
         # Verify success rate
-        success_rate = result['successful_conversions'] / num_textures
-        print(f"Success rate: {success_rate * 100:.1f}%")
+        success_rate = result["successful_conversions"] / num_textures
 
-        assert result['successful_conversions'] == num_textures
+        assert result["successful_conversions"] == num_textures
         assert success_rate >= 0.95, f"Success rate {success_rate:.2%} is below 95% threshold"
 
         # Verify performance meets requirements (<1s per texture)
         avg_time_ms = (total_time / num_textures) * 1000
         assert avg_time_ms < 1000, f"Average time {avg_time_ms:.2f}ms exceeds 1000ms threshold"
 
-        print("\n=== Performance Benchmark Passed ===")
 
-
-if __name__ == '__main__':
-    print("=" * 60)
-    print("Texture Conversion Pipeline Integration Tests")
-    print("=" * 60)
-
+if __name__ == "__main__":
     test_full_texture_conversion_pipeline()
     test_fallback_texture_generation()
     test_texture_atlas_detection()
     test_performance_benchmark()
-
-    print("\n" + "=" * 60)
-    print("ALL INTEGRATION TESTS PASSED")
-    print("=" * 60)

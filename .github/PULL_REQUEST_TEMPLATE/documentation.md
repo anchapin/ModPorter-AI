@@ -1,6 +1,6 @@
 ---
 name: Documentation
-about: Improve documentation for ModPorter AI
+about: Improve documentation for Portkit
 title: '[DOCS] '
 labels: documentation
 assignees: ''

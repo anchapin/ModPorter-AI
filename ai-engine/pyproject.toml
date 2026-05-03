@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=82.0.1", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.ruff]
@@ -16,21 +16,24 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-# Enable pycodestyle (E), Pyflakes (F), isort (I), flake8-quotes (Q), flake8-naming (N), pydocstyle (D), pyupgrade (UP)
-select = ["E", "F", "I", "Q", "N", "D", "UP"]
+# Enable pycodestyle (E), Pyflakes (F), warnings (W), isort (I), flake8-quotes (Q), flake8-naming (N), pydocstyle (D), pyupgrade (UP), mccabe (C901)
+select = ["E", "F", "W", "I", "Q", "N", "D", "UP", "C901"]
 ignore = [
     "E402",  # module level import not at top of file
     "E501",  # line too long (handled by formatter)
+    # W (pycodestyle warnings) ignores for legacy code
+    "W291",  # trailing whitespace (legacy code has inconsistent whitespace)
+    "W292",  # no newline at end of file (legacy code has inconsistent newlines)
+    "W293",  # blank line contains whitespace (legacy code has inconsistent blank lines)
     "Q000",  # bad quote marks
     "Q001",  # bad quote marks in multiline strings
     "Q002",  # bad quote marks in strings
     "N999",  # invalid module name (allow hyphenated names like ai-engine)
+    "N818",  # Exception name should end with Error (legacy code style)
     "I001",  # import block is un-sorted (legacy code has inconsistent import order)
-    "F401",  # imported but unused (legacy code has many unused imports)
     "F541",  # f-string without placeholders (legacy code uses f-strings for comments)
     "F601",  # duplicate dictionary key (legacy code has intentional overrides)
     "F811",  # redefinition of function (legacy code has intentional overrides)
-    "F841",  # unused variables (legacy code has many unused variables)
     "Q003",  # unnecessary escape on inner quote character
     "Q004",  # unnecessary escape on inner quote character
     "E702",  # multiple statements on one line (semicolon)
@@ -73,16 +76,35 @@ ignore = [
     "UP045",  # use X | None instead of Optional[X]
     "UP017",  # use datetime.UTC instead of datetime.now(timezone.utc)
     "UP042",  # inherit from enum.StrEnum instead of str, Enum
+    "T201",  # print statements (legacy debug code)
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["E402", "F401"]  # Allow imports not at top and unused imports in tests
+"scripts/*" = ["E402", "F401", "F841"]  # Allow imports not at top, unused imports, and unused variables in scripts
 "__init__.py" = ["E402", "N999"]  # Invalid module name (hyphenated names like ai-engine)
 "__main__.py" = ["N999"]  # Invalid module name (hyphenated names like ai-engine)
-"agents/asset_converter.py" = ["F811", "F841"]  # Allow duplicate function definitions and unused variables in legacy code
+"agents/asset_converter.py" = ["F811", "F841", "C901"]  # Allow duplicate function definitions and unused variables in legacy code
+"agents/qa_validator.py" = ["C901"]
+"agents/recipe_converter.py" = ["C901"]
+"agents/validation_agent.py" = ["C901"]
+"benchmarking/performance_system.py" = ["C901"]
 "crew/__init__.py" = ["N802"]  # Function name should be lowercase (factory functions RAGTasks, RAGCrew)
-"agents/java_analyzer.py" = ["N806"]  # Variable in function should be lowercase (RuntimeVisibleAnnotations)
+"agents/java_analyzer/" = ["N806"]  # Variable in function should be lowercase (RuntimeVisibleAnnotations) - split into submodules
+"agents/logic_translator/" = ["N806", "C901"]  # Split into submodules per Issue #1141
 "tools/search_tool.py" = ["N806"]  # Variable in function should be lowercase (FallbackToolClass)
+"agents/audio_converter.py" = ["F401", "F822"]  # Optional converter_utils import, __all__ references private functions
+"agents/model_converter/" = ["F401", "C901", "F822"]  # Package re-exports, complex module
+"agents/texture_converter/" = ["F401", "C901", "F822"]  # Package re-exports, complex module
+"agents/model_converter.py" = ["F401", "C901", "F822"]  # Optional converter_utils import, __all__ references private functions
+"agents/texture_converter.py" = ["F401", "C901", "F822"]  # Optional converter_utils import, __all__ references private functions
+"agents/packaging_agent.py" = ["C901"]  # Legacy complexity
+"orchestration/orchestrator.py" = ["C901"]  # Legacy complexity
+"learning/correction_store.py" = ["N806"]  # Variable naming convention (CorrectionSubmission class)
+"qa/translator.py" = ["F841"]  # Unused local variable (logic_translator)
+"search/hybrid_search_engine.py" = ["C901"]  # Legacy complexity
+"search/reranking/" = ["F401", "C901"]  # Split reranking_engine.py into subpackage per Issue #1140
+"utils/texture_metadata_extractor.py" = ["F841"]  # Unused local variable (result)
+"converters/*.py" = ["F401", "F841"]  # Legacy unused imports/variables
 # Naming convention per-file ignores (legacy code)
 "src/utils/validators.py" = ["N805"]  # First arg of method should be self (validators use cls)
 "src/models/types.py" = ["N811"]  # constant imported as non-constant (PyUUID, SQLiteJSON)
@@ -93,6 +115,9 @@ ignore = [
 [tool.ruff.lint.isort]
 known-first-party = ["src"]
 force-single-line = false
+
+[tool.ruff.lint.mccabe]
+max-complexity = 20
 
 [tool.mutmut]
 paths_to_mutate = ["src"]
@@ -163,11 +188,11 @@ ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = "redis.*"
-ignore_errors = true
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = "httpx.*"
-ignore_errors = true
+module = "celery.*"
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "openai.*"
@@ -189,7 +214,7 @@ ignore_errors = true
 name = "ai-engine"
 version = "0.1.0"
 description = "AI Engine with GPU acceleration support"
-authors = [{name = "ModPorter AI", email = "ai@modporter.dev"}]
+authors = [{name = "PortKit", email = "ai@portkit.ai"}]
 license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.8"
@@ -212,25 +237,32 @@ dependencies = [
 
     # AI Framework
     "crewai>=0.11.0",  # Latest available is 0.11.2
-    "langchain>=0.3.0",
-    "langchain-openai>=0.2.0",
-    "langchain-ollama>=0.1.0",
-    "openai>=1.0.0",
+    "langchain>=0.3.28",
+    "langchain-openai>=0.3.35",
+    "langchain-ollama>=0.3.10",
+    "openai>=2.32.0",
     "sentence-transformers",
 
     # Vector Database (pin version for embedchain compatibility)
 
-    "chromadb<1.5.0",
+    "chromadb<1.6.0",
     
     # Data Processing
     "numpy",
     "python-dotenv",
 
     # Java analysis
-    "javalang>=0.13.0",
+    "tree-sitter>=0.23.2",
+    "tree-sitter-java",
+
+    # Minecraft data for item mappings
+    "minecraft-data>=3.20.0",
+
+    # BM25 keyword search
+    "rank-bm25>=0.2.2",
 
     # File processing
-    "Pillow>=10.0.0",  # For texture conversion
+    "Pillow>=11.3.0",  # For texture conversion
     "pydub",
     
     # HTTP Client
@@ -240,45 +272,45 @@ dependencies = [
     "redis>=4.5.0",
     
     # Configuration Management
-    "pydantic>=2.0.0",
+    "pydantic>=2.13.3",
     "pydantic-settings",
     
     # Monitoring
     "prometheus-client",
     "psutil",
-    "structlog>=24.0.0",
+    "structlog>=25.5.0",
 ]
 
 [project.optional-dependencies]
 # NVIDIA GPU acceleration (CUDA)
 gpu-nvidia = [
-    "torch>=2.5.0",
-    "torchvision>=0.20.0",
-    "torchaudio>=2.5.0", 
-    "onnxruntime-gpu>=1.19.0",
-    "accelerate>=0.24.0",
+    "torch>=2.8.0",
+    "torchvision>=0.23.0",
+    "torchaudio>=2.11.0", 
+    "onnxruntime-gpu>=1.20.2",
+    "accelerate>=1.10.1",
 ]
 
 # AMD GPU acceleration (ROCm for Linux, DirectML for Windows)
 # Note: Install with specific index URL when needed:
 # pip install .[gpu-amd] -f https://download.pytorch.org/whl/rocm6.0 
 gpu-amd = [
-    "torch>=2.5.0",
-    "torchvision>=0.20.0", 
-    "torchaudio>=2.5.0",
+    "torch>=2.8.0",
+    "torchvision>=0.23.0", 
+    "torchaudio>=2.11.0",
     "onnxruntime-rocm>=1.19.0; sys_platform == 'linux'",
-    "onnxruntime-directml>=1.19.0; sys_platform == 'win32'",
-    "accelerate>=0.24.0",
+    "onnxruntime-directml>=1.20.1; sys_platform == 'win32'",
+    "accelerate>=1.10.1",
 ]
 
 # CPU-only (explicit CPU versions)  
 # Note: Install with specific index URL when needed:
 # pip install .[cpu-only] -f https://download.pytorch.org/whl/cpu
 cpu-only = [
-    "torch>=2.5.0",
-    "torchvision>=0.20.0", 
-    "torchaudio>=2.5.0",
-    "onnxruntime>=1.19.0",
+    "torch>=2.8.0",
+    "torchvision>=0.23.0", 
+    "torchaudio>=2.11.0",
+    "onnxruntime>=1.20.1",
 ]
 
 # Development dependencies
@@ -309,3 +341,51 @@ Issues = "https://github.com/your-org/ai-engine/issues"
 
 [tool.setuptools.package-dir]
 
+
+
+[tool.coverage.run]
+source = ["."]
+parallel = true
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/node_modules/*",
+    "*/.venv/*",
+    "*/site-packages/*",
+    "*/dist-packages/*",
+    "*/egg-info/*",
+    "*/htmlcov/*",
+    "*/mutants/*",
+    "*/examples/*",
+    "*/templates/*",
+    "*/docs/*",
+    "*/scripts/*",
+    "*/setup.py",
+    "*/conftest.py",
+    "*/crewai/**",
+    "*/mcp/**",
+    "*/mcp_server/**",
+    "benchmarking/**",
+    "tracing.py",
+    "training_manager.py",
+    "main.py",
+    "__main__.py",
+    "demo_*.py",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = false
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    'def __repr__',
+    "raise NotImplementedError",
+    'if __name__ == .__main__.:',
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"

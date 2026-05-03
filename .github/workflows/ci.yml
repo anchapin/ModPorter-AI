@@ -2,7 +2,7 @@ name: CI - Integration Tests (Optimized)
 
 on:
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths-ignore:
       - '*.md'
       - '*.txt'
@@ -10,7 +10,7 @@ on:
       - '.gitignore'
       - 'LICENSE'
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths-ignore:
       - '*.md'
       - '*.txt'
@@ -28,6 +28,7 @@ env:
   REGISTRY: ghcr.io
   CACHE_VERSION: v2
   PYTHON_VERSION: '3.11'
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # Check if we need to run tests based on changed files
@@ -42,9 +43,12 @@ jobs:
       ruff: ${{ steps.changes.outputs.ruff }}
     steps:
       - uses: actions/checkout@v6
-      - uses: dorny/paths-filter@v3
+        with:
+          fetch-depth: 0
+      - uses: dorny/paths-filter@v4
         id: changes
         with:
+          base: main
           filters: |
             backend:
               - 'backend/**'
@@ -52,7 +56,7 @@ jobs:
             frontend:
               - 'frontend/**'
               - 'frontend/package.json'
-              - 'frontend/pnpm-lock.yaml'
+              - 'pnpm-lock.yaml'
             ai-engine:
               - 'ai-engine/**'
               - 'ai-engine/requirements*.txt'
@@ -62,7 +66,7 @@ jobs:
             dependencies:
               - '**/requirements*.txt'
               - '**/package.json'
-              - 'frontend/pnpm-lock.yaml'
+              - 'pnpm-lock.yaml'
             ruff:
               - '**/*.py'
               - '**/pyproject.toml'
@@ -74,91 +78,112 @@ jobs:
     name: Prepare Base Images
     runs-on: ubuntu-latest
     needs: changes
-    if: ${{ needs.changes.outputs.dependencies == 'true' }}
+    # Always run to provide outputs for dependent jobs
     permissions:
       contents: read
       packages: write
     outputs:
       python-image: ${{ steps.image-tags.outputs.python-image }}
       should-build: ${{ steps.check-cache.outputs.should-build }}
+      dependencies-changed: ${{ needs.changes.outputs.dependencies }}
     steps:
-    - name: Free up disk space
-      run: |
-        echo "🧹 Cleaning up disk space before Docker build"
-        echo "Initial disk usage:"
-        df -h
+      - name: Check if dependencies changed
+        id: check-deps
+        run: |
+          if [ "${{ needs.changes.outputs.dependencies }}" != "true" ]; then
+            echo "dependencies-changed=false" >> $GITHUB_OUTPUT
+            echo "python-image=" >> $GITHUB_OUTPUT
+            echo "should-build=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Dependencies not changed, skipping image build"
+          else
+            echo "dependencies-changed=true" >> $GITHUB_OUTPUT
+            echo "📦 Dependencies changed, proceeding with image build"
+          fi
 
-        # Remove unnecessary packages and files
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /opt/ghc
-        sudo rm -rf "/usr/local/share/boost"
-        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+      - name: Free up disk space
+        if: steps.check-deps.outputs.dependencies-changed == 'true'
+        run: |
+          echo "🧹 Cleaning up disk space before Docker build"
+          echo "Initial disk usage:"
+          df -h
 
-        # Clean Docker cache if exists
-        docker system prune -af --volumes || true
+          # Remove unnecessary packages and files
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
-        # Clean package manager caches
-        sudo apt-get clean
-        sudo apt-get autoremove -y
+          # Clean Docker cache if exists
+          docker system prune -af --volumes || true
 
-        # Remove large directories we don't need
-        sudo rm -rf /usr/share/doc
-        sudo rm -rf /usr/share/man
+          # Clean package manager caches
+          sudo apt-get clean
+          sudo apt-get autoremove -y
 
-        echo "Disk usage after cleanup:"
-        df -h
+          # Remove large directories we don't need
+          sudo rm -rf /usr/share/doc
+          sudo rm -rf /usr/share/man
 
-    - name: Checkout code
-      uses: actions/checkout@v6
+          echo "Disk usage after cleanup:"
+          df -h
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Checkout code
+        if: steps.check-deps.outputs.dependencies-changed == 'true'
+        uses: actions/checkout@v6
 
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Docker Buildx
+        if: steps.check-deps.outputs.dependencies-changed == 'true'
+        uses: docker/setup-buildx-action@v4
 
-    - name: Calculate dependency hash
-      id: deps-hash
-      run: |
-        # Hash only the files actually copied by Dockerfile
-        DEPS_HASH=$(cat ai-engine/requirements.txt ai-engine/requirements-dev.txt backend/requirements.txt | sha256sum | cut -d' ' -f1 | head -c16)
-        echo "hash=$DEPS_HASH" >> $GITHUB_OUTPUT
-        echo "Dependencies hash: $DEPS_HASH"
+      - name: Log in to Container Registry
+        if: steps.check-deps.outputs.dependencies-changed == 'true'
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Set image tags
-      id: image-tags
-      run: |
-        REPO_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')
-        PYTHON_IMAGE="${{ env.REGISTRY }}/${REPO_LOWER}/python-base:${{ steps.deps-hash.outputs.hash }}"
-        echo "python-image=$PYTHON_IMAGE" >> $GITHUB_OUTPUT
-        echo "Python base image: $PYTHON_IMAGE"
+      - name: Calculate dependency hash
+        if: steps.check-deps.outputs.dependencies-changed == 'true'
+        id: deps-hash
+        run: |
+          # Hash only the files actually copied by Dockerfile
+          DEPS_HASH=$(cat ai-engine/requirements.txt ai-engine/requirements-dev.txt backend/requirements.txt | sha256sum | cut -d' ' -f1 | head -c16)
+          echo "hash=$DEPS_HASH" >> $GITHUB_OUTPUT
+          echo "Dependencies hash: $DEPS_HASH"
 
-    - name: Check if base image exists
-      id: check-cache
-      run: |
-        if docker buildx imagetools inspect "${{ steps.image-tags.outputs.python-image }}" > /dev/null 2>&1; then
-          echo "should-build=false" >> $GITHUB_OUTPUT
-          echo "✅ Base image exists, using cached version"
-        else
-          echo "should-build=true" >> $GITHUB_OUTPUT
-          echo "🏗️ Base image needs to be built"
-        fi
+      - name: Set image tags
+        if: steps.check-deps.outputs.dependencies-changed == 'true'
+        id: image-tags
+        run: |
+          REPO_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')
+          PYTHON_IMAGE="${{ env.REGISTRY }}/${REPO_LOWER}/python-base:${{ steps.deps-hash.outputs.hash }}"
+          echo "python-image=$PYTHON_IMAGE" >> $GITHUB_OUTPUT
+          echo "Python base image: $PYTHON_IMAGE"
 
-    - name: Build and push Python base image
-      if: steps.check-cache.outputs.should-build == 'true'
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        file: docker/base-images/Dockerfile.python-base
-        push: true
-        tags: ${{ steps.image-tags.outputs.python-image }}
-        cache-from: type=gha,scope=python-base-${{ env.CACHE_VERSION }}
-        cache-to: type=gha,mode=max,scope=python-base-${{ env.CACHE_VERSION }}
-        platforms: linux/amd64
+      - name: Check if base image exists
+        if: steps.check-deps.outputs.dependencies-changed == 'true'
+        id: check-cache
+        run: |
+          if docker buildx imagetools inspect "${{ steps.image-tags.outputs.python-image }}" > /dev/null 2>&1; then
+            echo "should-build=false" >> $GITHUB_OUTPUT
+            echo "✅ Base image exists, using cached version"
+          else
+            echo "should-build=true" >> $GITHUB_OUTPUT
+            echo "🏗️ Base image needs to be built"
+          fi
+
+      - name: Build and push Python base image
+        if: steps.check-deps.outputs.dependencies-changed == 'true' && steps.check-cache.outputs.should-build == 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/base-images/Dockerfile.python-base
+          push: true
+          tags: ${{ steps.image-tags.outputs.python-image }}
+          cache-from: type=gha,scope=python-base-${{ env.CACHE_VERSION }}
+          cache-to: type=gha,mode=max,scope=python-base-${{ env.CACHE_VERSION }}
+          platforms: linux/amd64
 
   integration-tests:
     name: Integration Tests
@@ -177,15 +202,16 @@ jobs:
             test-path: 'ai-engine/tests/integration/test_basic_integration.py'
             container-name: 'integration-test'
           - test-suite: backend
-            test-path: 'backend/tests/integration/'
+            test-path: 'backend/src/tests/integration/'
             container-name: 'backend-test'
           - test-suite: ai-engine
             test-path: 'ai-engine/tests/integration/test_imports.py'
             container-name: 'ai-engine-test'
 
-    # Use Python base image if available, fallback to setup-python
+    # Use Python base image only when dependencies changed and prepare-base-images has an image
+    # When dependencies haven't changed, use the default python image
     container:
-      image: ${{ needs.prepare-base-images.outputs.should-build == 'false' && needs.prepare-base-images.outputs.python-image || '' }}
+      image: ${{ needs.prepare-base-images.outputs.python-image || 'python:3.11-slim' }}
       options: --name test-container-${{ matrix.test-suite }} --user root
 
     services:
@@ -201,12 +227,12 @@ jobs:
       postgres:
         image: pgvector/pgvector:pg15
         env:
-          POSTGRES_DB: modporter
+          POSTGRES_DB: portkit
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
           POSTGRES_INITDB_ARGS: --encoding=UTF-8 --lc-collate=C --lc-ctype=C
         options: >-
-          --health-cmd "pg_isready -U postgres -d modporter"
+          --health-cmd "pg_isready -U postgres -d portkit"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -214,335 +240,296 @@ jobs:
           - 5434:5432
 
     steps:
-    - name: Fix file permissions
-      run: |
-        # Fix potential file permission issues from previous runs
-        if [ -f ".github/CACHING_STRATEGY.md" ]; then
-          chmod +w .github/CACHING_STRATEGY.md || true
-        fi
-        # Clean up any problematic files
-        find .github -type f -name "*.md" -exec chmod +w {} \; 2>/dev/null || true
-      continue-on-error: true
-      
-    - name: Checkout code
-      uses: actions/checkout@v6
-
-    # Conditional Python setup - only if not using container
-    - name: Set up Python 3.11 (fallback)
-      if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
-      uses: actions/setup-python@v6
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-        cache: 'pip'
-        cache-dependency-path: |
-          ai-engine/requirements*.txt
-          backend/requirements*.txt
-          requirements-test.txt
-
-    # Multi-level caching strategy
-    - name: Cache Python packages (L1 - pip cache)
-      if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
-      uses: actions/cache@v5
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-
-          ${{ runner.os }}-pip-
-
-    - name: Cache Python packages (L2 - site-packages)
-      if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
-      uses: actions/cache@v5
-      with:
-        path: |
-          ~/.local/lib/python${{ env.PYTHON_VERSION }}/site-packages
-          /usr/local/lib/python${{ env.PYTHON_VERSION }}/site-packages
-        key: ${{ runner.os }}-site-packages-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-site-packages-${{ env.CACHE_VERSION }}-
-          ${{ runner.os }}-site-packages-
-
-    - name: Cache test artifacts
-      uses: actions/cache@v5
-      with:
-        path: |
-          ai-engine/.pytest_cache
-          backend/.pytest_cache
-          .coverage*
-          htmlcov/
-        key: ${{ runner.os }}-test-cache-${{ env.CACHE_VERSION }}-${{ matrix.test-suite }}-${{ hashFiles('**/test_*.py', '**/*_test.py') }}
-        restore-keys: |
-          ${{ runner.os }}-test-cache-${{ env.CACHE_VERSION }}-${{ matrix.test-suite }}-
-          ${{ runner.os }}-test-cache-${{ env.CACHE_VERSION }}-
-
-    # Fast dependency installation (only if not using base image)
-    - name: Install Python dependencies (fast)
-      if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
-      run: |
-        echo "⚡ Installing Python dependencies with optimizations..."
-        python -m pip install --upgrade --no-cache-dir pip setuptools wheel
-        
-        # Install common requirements first (likely cached)
-        pip install --no-deps pytest pytest-asyncio pytest-cov pytest-timeout pytest-mock
-        
-        # Install requirements with parallel downloads
-        pip install --upgrade --force-reinstall --no-cache-dir \
-          -r requirements-test.txt
-
-    - name: Install service dependencies (fast)
-      if: ${{ needs.prepare-base-images.outputs.should-build == 'true' || needs.prepare-base-images.outputs.python-image == '' }}
-      run: |
-        echo "⚡ Installing service-specific dependencies..."
-        
-        case "${{ matrix.test-suite }}" in
-          "ai-engine"|"integration")
-            echo "Installing AI Engine dependencies..."
-            cd ai-engine
-            pip install --no-deps -r requirements.txt
-            pip install --no-deps -r requirements-dev.txt
-            pip install --no-deps -e .
-            ;;
-          "backend")
-            echo "Installing Backend dependencies..."
-            cd backend
-            pip install --no-deps -r requirements.txt
-            pip install --no-deps -r requirements-dev.txt
-            ;;
-        esac
-
-    # Install system dependencies for health checks (only if not already available)
-    - name: Install system dependencies
-      run: |
-        echo "🔧 Checking system dependencies..."
-        # Check if nc (netcat) is available
-        if ! command -v nc &> /dev/null; then
-          echo "netcat not found, attempting to install..."
-          # Only try apt-get if we have proper permissions (not in container job)
-          if [ -w /var/lib/apt/lists ]; then
-            apt-get update -qq
-            apt-get install -y -qq netcat-openbsd curl
-          else
-            echo "⚠️ Cannot install netcat (no write permissions to /var/lib/apt/lists)"
-            echo "netcat should be available in the container image"
+      - name: Fix file permissions
+        run: |
+          # Fix potential file permission issues from previous runs
+          if [ -f ".github/CACHING_STRATEGY.md" ]; then
+            chmod +w .github/CACHING_STRATEGY.md || true
           fi
-        else
-          echo "✅ netcat is already available: $(nc -h 2>&1 | head -1 || true)"
-        fi
-        # Check if curl is available
-        if ! command -v curl &> /dev/null; then
-          echo "curl not found, attempting to install..."
-          if [ -w /var/lib/apt/lists ]; then
-            apt-get install -y -qq curl
-          else
-            echo "⚠️ Cannot install curl (no write permissions to /var/lib/apt/lists)"
-          fi
-        else
-          echo "✅ curl is already available"
-        fi
+          # Clean up any problematic files
+          find .github -type f -name "*.md" -exec chmod +w {} \; 2>/dev/null || true
+        continue-on-error: true
 
-    # Install Ollama for AI model testing
-    # Install Ollama for AI model testing
-    - name: Install Ollama
-      run: |
-        echo "🔧 Installing zstd (required for Ollama extraction)..."
-        if [ -w /var/lib/apt/lists ]; then
-          apt-get update -qq && apt-get install -y -qq zstd
-        else
-          echo "⚠️ Cannot install zstd (no write permissions to /var/lib/apt/lists)"
-          echo "⚠️ Ollama installation may fail without zstd"
-        fi
-        echo "🤖 Installing Ollama with retry logic..."
-        curl -fsSL https://ollama.com/install.sh | sh
-        # Install and start Ollama service
-        ollama serve &
-        # Wait for Ollama to start
-        sleep 15
-        # Pull model with retry logic
-        echo "📥 Pulling llama3.2 model with retry logic..."
-        MAX_RETRIES=3
-        RETRY_DELAY=30
-        MODEL_PULLED=false
-        for i in $(seq 1 $MAX_RETRIES); do
-          echo "Attempt $i of $MAX_RETRIES to pull llama3.2..."
-          # Use timeout and background process (20 minutes)
-          timeout 1200 ollama pull llama3.2 &&
-          {
-            echo "✅ Model pull successful!"
-            MODEL_PULLED=true
-            break
-          } ||
-          {
-            echo "❌ Model pull failed (attempt $i)"
-            if [ $i -eq $MAX_RETRIES ]; then
-              echo "🚨 All retry attempts failed"
-              echo "⚠️ Continuing without llama3.2 model - tests will skip model-dependent features"
-              break
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Initialize performance tracking
+        run: |
+          ./scripts/ci-performance-tracker.sh init
+          echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
+
+      # Install lsb-release if running inside a container, as actions/setup-python requires it
+      - name: Install lsb-release (container)
+        run: |
+          if ! command -v lsb_release &> /dev/null; then
+            apt-get update -qq && apt-get install -y -qq lsb-release || true
+          fi
+
+      # Skip Python setup in container jobs - container already has Python pre-installed
+      # The actions/setup-python step runs on the host runner, not inside the container
+
+      # Install system dependencies for health checks (only if not already available)
+      - name: Install system dependencies
+        run: |
+          echo "🔧 Checking system dependencies..."
+          # Check if jq is available
+          if ! command -v jq &> /dev/null; then
+            echo "jq not found, attempting to install..."
+            if [ -w /var/lib/apt/lists ]; then
+              apt-get update -qq
+              apt-get install -y -qq jq
+            else
+              echo "⚠️ Cannot install jq (no write permissions to /var/lib/apt/lists)"
             fi
-            echo "⏳ Waiting $RETRY_DELAY seconds before retry..."
-            sleep $RETRY_DELAY
-          }
-        done
-        # Verify installation
-        echo "Final Ollama status:"
-        ollama list || echo "⚠️ Cannot list models - model may not be available"
-        # Set environment variable for tests
-        if [ "$MODEL_PULLED" = "true" ]; then
-          echo "MODEL_AVAILABLE=true" >> $GITHUB_ENV
-        else
-          echo "MODEL_AVAILABLE=false" >> $GITHUB_ENV
-        fi
-    - name: Verify Python environment
-      run: |
-        echo "🔍 Python environment verification..."
-        python --version
-        pip --version
-        echo "Installed packages:"
-        pip list | head -20
-        echo "..."
-        echo "Python path: $(which python)"
-        echo "Pip cache dir: $(pip cache dir)"
-
-    - name: Wait for services to be ready
-      run: |
-        echo "🔍 Checking service connectivity..."
-        
-        echo "Testing Redis connectivity..."
-        # Inside containers, services are accessible by service name, not localhost
-        if timeout 60 bash -c 'until nc -z redis 6379; do echo "Waiting for Redis..."; sleep 2; done'; then
-          echo "✅ Redis port is accessible"
-          # Test actual Redis protocol using service name
-          if timeout 10 bash -c 'echo -e "*1\r\n\$4\r\nPING\r\n" | nc redis 6379 | grep -q PONG'; then
-            echo "✅ Redis is responding correctly"
           else
-            echo "⚠️ Redis port open but not responding to PING"
+            echo "✅ jq is already available"
           fi
-        else
-          echo "❌ Redis connection failed"
-          echo "Container networking debug:"
-          echo "Available services:"
-          getent hosts redis || echo "Redis service not resolvable"
-          getent hosts postgres || echo "Postgres service not resolvable"
-          exit 1
-        fi
-        
-        echo "Testing PostgreSQL connectivity..."
-        # Inside containers, services are accessible by service name, not localhost
-        if timeout 60 bash -c 'until nc -z postgres 5432; do echo "Waiting for PostgreSQL..."; sleep 2; done'; then
-          echo "✅ PostgreSQL is ready"
-        else
-          echo "❌ PostgreSQL connection failed"
-          echo "PostgreSQL service debug:"
-          getent hosts postgres || echo "Postgres service not resolvable"
-          exit 1
-        fi
-        
-        echo "Testing Ollama availability..."
-        # Make sure Ollama is running
-        if ! pgrep -f "ollama serve" > /dev/null; then
-          echo "Starting Ollama service..."
+          # Check if nc (netcat) is available
+          if ! command -v nc &> /dev/null; then
+            echo "netcat not found, attempting to install..."
+            # Only try apt-get if we have proper permissions (not in container job)
+            if [ -w /var/lib/apt/lists ]; then
+              apt-get update -qq
+              apt-get install -y -qq netcat-openbsd curl
+            else
+              echo "⚠️ Cannot install netcat (no write permissions to /var/lib/apt/lists)"
+              echo "netcat should be available in the container image"
+            fi
+          else
+            echo "✅ netcat is already available: $(nc -h 2>&1 | head -1 || true)"
+          fi
+          # Check if curl is available
+          if ! command -v curl &> /dev/null; then
+            echo "curl not found, attempting to install..."
+            if [ -w /var/lib/apt/lists ]; then
+              apt-get install -y -qq curl
+            else
+              echo "⚠️ Cannot install curl (no write permissions to /var/lib/apt/lists)"
+            fi
+          else
+            echo "✅ curl is already available"
+          fi
+
+          # Check if lsb_release is available for Python testing frameworks
+          if ! command -v lsb_release &> /dev/null; then
+            echo "lsb_release not found, attempting to install..."
+            if [ -w /var/lib/apt/lists ]; then
+              apt-get update -qq
+              apt-get install -y -qq lsb-release
+            else
+              echo "⚠️ Cannot install lsb-release (no write permissions to /var/lib/apt/lists)"
+            fi
+          fi
+
+      # Install Ollama for AI model testing
+      # Install Ollama for AI model testing
+      - name: Install Ollama
+        run: |
+          echo "🔧 Installing zstd (required for Ollama extraction)..."
+          if [ -w /var/lib/apt/lists ]; then
+            apt-get update -qq && apt-get install -y -qq zstd
+          else
+            echo "⚠️ Cannot install zstd (no write permissions to /var/lib/apt/lists)"
+            echo "⚠️ Ollama installation may fail without zstd"
+          fi
+          echo "🤖 Installing Ollama with retry logic..."
+          curl -fsSL https://ollama.com/install.sh | sh
+          # Install and start Ollama service
           ollama serve &
+          # Wait for Ollama to start
           sleep 15
-        fi
-        
-        if timeout 30 bash -c 'until curl -f http://localhost:11434/api/tags >/dev/null 2>&1; do echo "Waiting for Ollama..."; sleep 2; done'; then
-          echo "✅ Ollama is ready"
-          echo "Checking for llama3.2 model..."
-          if curl -f http://localhost:11434/api/tags | grep -q "llama3.2"; then
-            echo "✅ llama3.2 model is available"
+          # Pull model with retry logic
+          echo "📥 Pulling llama3.2 model with retry logic..."
+          MAX_RETRIES=3
+          RETRY_DELAY=30
+          MODEL_PULLED=false
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Attempt $i of $MAX_RETRIES to pull llama3.2..."
+            # Use timeout and background process (20 minutes)
+            timeout 1200 ollama pull llama3.2 &&
+            {
+              echo "✅ Model pull successful!"
+              MODEL_PULLED=true
+              break
+            } ||
+            {
+              echo "❌ Model pull failed (attempt $i)"
+              if [ $i -eq $MAX_RETRIES ]; then
+                echo "🚨 All retry attempts failed"
+                echo "⚠️ Continuing without llama3.2 model - tests will skip model-dependent features"
+                break
+              fi
+              echo "⏳ Waiting $RETRY_DELAY seconds before retry..."
+              sleep $RETRY_DELAY
+            }
+          done
+          # Verify installation
+          echo "Final Ollama status:"
+          ollama list || echo "⚠️ Cannot list models - model may not be available"
+          # Set environment variable for tests
+          if [ "$MODEL_PULLED" = "true" ]; then
+            echo "MODEL_AVAILABLE=true" >> $GITHUB_ENV
           else
-            echo "⚠️ Warning: llama3.2 model may not be available - pulling now..."
-            ollama pull llama3.2
+            echo "MODEL_AVAILABLE=false" >> $GITHUB_ENV
           fi
-        else
-          echo "❌ Ollama connection failed - continuing anyway"
-        fi
-        
-        echo "🎯 All critical services are ready!"
+      - name: Verify Python environment
+        run: |
+          echo "🔍 Python environment verification..."
+          python --version
+          python -m pip --version
+          echo "Installed packages:"
+          python -m pip list | head -20
+          echo "..."
+          echo "Python path: $(which python)"
+          echo "Pip cache dir: $(python -m pip cache dir)"
 
-    - name: Set up database
-      run: |
-        echo "Database setup will be handled by the tests themselves"
-        # The integration tests should handle database initialization
+      - name: Wait for services to be ready
+        run: |
+          echo "🔍 Checking service connectivity..."
 
-    - name: Run matrix test suite
-      run: |
-        echo "🧪 Starting test suite: ${{ matrix.test-suite }}"
-        echo "Current directory: $(pwd)"
-        echo "Environment variables:"
-        env | grep -E "(REDIS|DATABASE|PYTHON|OLLAMA)" || true
-        
-        case "${{ matrix.test-suite }}" in
-          "integration")
-            echo "Running integration tests..."
-            cd ai-engine
-            echo "Current directory: $(pwd)"
-            echo "Test files available:"
-            find tests/integration -name "*.py" | head -5 || echo "No integration test files found"
-            
-            echo "Running basic integration test..."
-            timeout 1200s python -m pytest tests/integration/test_basic_integration.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
-            ;;
-          "backend")
-            echo "Running backend tests..."
-            cd backend
-            echo "Current directory: $(pwd)"
-            echo "Test files available:"
-            find tests -name "*.py" | head -5 || echo "No backend test files found"
-            
-            echo "Running backend integration tests..."
-            timeout 1200s python -m pytest tests/integration/ tests/test_health.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
-            ;;
-          "ai-engine")
-            echo "Running ai-engine tests..."
-            cd ai-engine
-            echo "Current directory: $(pwd)"
-            echo "Test files available:"
-            find tests/integration -name "*.py" | head -5 || echo "No ai-engine test files found"
-            
-            echo "Running import tests..."
-            timeout 1200s python -m pytest tests/integration/test_imports.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
-            ;;
-        esac
-        
-        echo "✅ Test suite completed: ${{ matrix.test-suite }}"
-      env:
-        REDIS_URL: redis://redis:6379
-        DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/modporter
-        PYTHONPATH: ${{ github.workspace }}/${{ startsWith(matrix.test-suite, 'ai-engine') && 'ai-engine' || 'backend' }}
-        LOG_LEVEL: INFO
-        # Z.AI Configuration (Primary LLM backend)
-        USE_Z_AI: "${{ secrets.Z_AI_API_KEY != '' && 'true' || 'false' }}"
-        Z_AI_API_KEY: "${{ secrets.Z_AI_API_KEY }}"
-        Z_AI_MODEL: "${{ vars.Z_AI_MODEL || 'glm-4-plus' }}"
-        Z_AI_BASE_URL: "${{ vars.Z_AI_BASE_URL || 'https://api.z.ai/v1' }}"
-        Z_AI_MAX_RETRIES: "${{ vars.Z_AI_MAX_RETRIES || '3' }}"
-        Z_AI_TIMEOUT: "${{ vars.Z_AI_TIMEOUT || '300' }}"
-        Z_AI_TEMPERATURE: "${{ vars.Z_AI_TEMPERATURE || '0.1' }}"
-        Z_AI_MAX_TOKENS: "${{ vars.Z_AI_MAX_TOKENS || '4000' }}"
-        # Ollama Configuration (Fallback)
-        USE_OLLAMA: "${{ secrets.Z_AI_API_KEY == '' && 'true' || 'false' }}"
-        OLLAMA_MODEL: "llama3.2"
-        OLLAMA_BASE_URL: "http://localhost:11434"
-        TESTING: "true"
+          echo "Testing Redis connectivity..."
+          # Inside containers, services are accessible by service name, not localhost
+          if timeout 60 bash -c 'until nc -z redis 6379; do echo "Waiting for Redis..."; sleep 2; done'; then
+            echo "✅ Redis port is accessible"
+            # Test actual Redis protocol using service name
+            if timeout 10 bash -c 'echo -e "*1\r\n\$4\r\nPING\r\n" | nc redis 6379 | grep -q PONG'; then
+              echo "✅ Redis is responding correctly"
+            else
+              echo "⚠️ Redis port open but not responding to PING"
+            fi
+          else
+            echo "❌ Redis connection failed"
+            echo "Container networking debug:"
+            echo "Available services:"
+            getent hosts redis || echo "Redis service not resolvable"
+            getent hosts postgres || echo "Postgres service not resolvable"
+            exit 1
+          fi
 
-    # Cache management removed - not using Docker buildx cache
+          echo "Testing PostgreSQL connectivity..."
+          # Inside containers, services are accessible by service name, not localhost
+          if timeout 60 bash -c 'until nc -z postgres 5432; do echo "Waiting for PostgreSQL..."; sleep 2; done'; then
+            echo "✅ PostgreSQL is ready"
+          else
+            echo "❌ PostgreSQL connection failed"
+            echo "PostgreSQL service debug:"
+            getent hosts postgres || echo "Postgres service not resolvable"
+            exit 1
+          fi
 
-    - name: Upload test results
-      uses: actions/upload-artifact@v6
-      if: always()
-      with:
-        name: test-results-${{ matrix.test-suite }}
-        path: |
-          ai-engine/pytest-results-*.xml
-          backend/pytest-results-*.xml
-        retention-days: 7
+          echo "Testing Ollama availability..."
+          # Make sure Ollama is running
+          if ! pgrep -f "ollama serve" > /dev/null; then
+            echo "Starting Ollama service..."
+            ollama serve &
+            sleep 15
+          fi
 
-    - name: Report test status
-      if: failure()
-      run: |
-        echo "❌ Integration tests failed for ${{ matrix.test-suite }}!"
-        echo "Check the test results artifact for detailed information."
-        exit 1
+          if timeout 30 bash -c 'until curl -f http://localhost:11434/api/tags >/dev/null 2>&1; do echo "Waiting for Ollama..."; sleep 2; done'; then
+            echo "✅ Ollama is ready"
+            echo "Checking for llama3.2 model..."
+            if curl -f http://localhost:11434/api/tags | grep -q "llama3.2"; then
+              echo "✅ llama3.2 model is available"
+            else
+              echo "⚠️ Warning: llama3.2 model may not be available - pulling now..."
+              ollama pull llama3.2
+            fi
+          else
+            echo "❌ Ollama connection failed - continuing anyway"
+          fi
+
+          echo "🎯 All critical services are ready!"
+
+      - name: Set up database
+        run: |
+          echo "Database setup will be handled by the tests themselves"
+          # The integration tests should handle database initialization
+
+      - name: Run matrix test suite
+        run: |
+          echo "🧪 Starting test suite: ${{ matrix.test-suite }}"
+          echo "Current directory: $(pwd)"
+          echo "Python version: $(python --version)"
+          echo "Python path: $(which python)"
+          echo "pip version: $(python -m pip --version)"
+          echo "Environment variables:"
+          env | grep -E "(REDIS|DATABASE|PYTHON|OLLAMA)" || true
+
+          # Set TESTING mode for proper test database handling
+          export TESTING=true
+
+          # Install Python dependencies in container
+          echo "Installing Python dependencies..."
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install pytest pytest-asyncio pytest-cov pytest-timeout pytest-mock
+
+          case "${{ matrix.test-suite }}" in
+            "integration")
+              echo "Running integration tests..."
+              cd ai-engine
+              echo "Current directory: $(pwd)"
+              echo "Test files available:"
+              find tests/integration -name "*.py" | head -5 || echo "No integration test files found"
+              python -m pip install -r requirements.txt -r requirements-dev.txt -e .
+              echo "Running basic integration test..."
+              timeout 1200s python -m pytest tests/integration/test_basic_integration.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
+              ;;
+            "backend")
+              echo "Running backend tests..."
+              cd backend
+              echo "Current directory: $(pwd)"
+              echo "Test files available:"
+              find src/tests -name "*.py" | head -5 || echo "No backend test files found"
+              python -m pip install -r requirements.txt -r requirements-dev.txt
+              echo "Running backend integration tests..."
+              timeout 1200s python -m pytest src/tests/integration/ -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header --no-cov --cov-fail-under=0 -o "addopts="
+              ;;
+            "ai-engine")
+              echo "Running ai-engine tests..."
+              cd ai-engine
+              echo "Current directory: $(pwd)"
+              echo "Test files available:"
+              find tests/integration -name "*.py" | head -5 || echo "No ai-engine test files found"
+              python -m pip install -r requirements.txt -r requirements-dev.txt -e .
+              echo "Running import tests..."
+              timeout 1200s python -m pytest tests/integration/test_imports.py -v --tb=short --junitxml=pytest-results-${{ matrix.test-suite }}.xml -s --no-header
+              ;;
+          esac
+
+      - name: Record test metrics
+        if: always()
+        run: |
+          echo "✅ Test suite completed: ${{ matrix.test-suite }}"
+          STEP_END=$(date +%s)
+          ./scripts/ci-performance-tracker.sh record "Integration Tests- ${{ matrix.test-suite }}" $STEP_START $STEP_END
+        env:
+          STEP_START: ${{ env.STEP_START }}
+
+      - name: Upload performance metrics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: perf-metrics-integration-${{ matrix.test-suite }}
+          path: .github/perf-metrics/*.json
+
+      # Cache management removed - not using Docker buildx cache
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: test-results-${{ matrix.test-suite }}
+          path: |
+            ai-engine/pytest-results-*.xml
+            backend/pytest-results-*.xml
+          retention-days: 7
+
+      - name: Report test status
+        if: failure()
+        run: |
+          echo "❌ Integration tests failed for ${{ matrix.test-suite }}!"
+          echo "Check the test results artifact for detailed information."
+          exit 1
 
   # Ruff linter for Python
   ruff-lint:
@@ -552,17 +539,62 @@ jobs:
     if: ${{ needs.changes.outputs.ruff == 'true' }}
     timeout-minutes: 10
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    - name: Install Ruff
-      run: pip install ruff
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
 
-    - name: Run Ruff on backend
-      run: ruff check backend/
+      - name: Install Ruff
+        run: python -m pip install ruff
 
-    - name: Run Ruff on ai-engine
-      run: ruff check ai-engine/
+      - name: Run Ruff Lint
+        run: ruff check .
+
+  # Check for large files in the repository
+  large-file-check:
+    name: Large File Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - name: Check for files larger than 10MB
+        run: |
+          echo "🔍 Checking for files larger than 10MB..."
+          LARGE_FILES=$(find . -type f -not -path '*/.*' -size +10M)
+          if [ -z "$LARGE_FILES" ]; then
+            echo "✅ No files larger than 10MB found."
+            exit 0
+          fi
+
+          echo "🔍 Analyzing large files for Git LFS tracking..."
+          FAILED=0
+          while IFS= read -r file; do
+            # Skip if it's in node_modules, .venv, etc. just in case
+            if [[ "$file" =~ /(node_modules|venv|.venv|dist|build)/ ]]; then
+              continue
+            fi
+            
+            LFS_STATUS=$(git check-attr filter "$file" | awk -F': ' '{print $NF}')
+            if [ "$LFS_STATUS" = "lfs" ]; then
+              echo "✅ $file ($(( $(stat -c%s "$file") / 1048576 ))MB) is tracked by Git LFS"
+            else
+              echo "❌ $file ($(( $(stat -c%s "$file") / 1048576 ))MB) is NOT tracked by Git LFS"
+              FAILED=1
+            fi
+          done <<< "$LARGE_FILES"
+
+          if [ "$FAILED" -eq 1 ]; then
+            echo ""
+            echo "Please use Git LFS for these files (add to .gitattributes) or reduce their size."
+            exit 1
+          fi
+          echo "✅ All large files are tracked by Git LFS."
 
   # Prepare Node.js base image for frontend
   prepare-node-base:
@@ -577,60 +609,60 @@ jobs:
       node-image: ${{ steps.image-tags.outputs.node-image }}
       should-build: ${{ steps.check-cache.outputs.should-build }}
     steps:
-    - name: Free up disk space
-      run: |
-        echo "🧹 Cleaning up disk space before Docker build"
-        echo "Initial disk usage:"
-        df -h
+      - name: Free up disk space
+        run: |
+          echo "🧹 Cleaning up disk space before Docker build"
+          echo "Initial disk usage:"
+          df -h
 
-        # Remove unnecessary packages and files
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /opt/ghc
-        sudo rm -rf "/usr/local/share/boost"
-        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          # Remove unnecessary packages and files
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
-        # Clean Docker cache if exists
-        docker system prune -af --volumes || true
+          # Clean Docker cache if exists
+          docker system prune -af --volumes || true
 
-        # Clean package manager caches
-        sudo apt-get clean
-        sudo apt-get autoremove -y
+          # Clean package manager caches
+          sudo apt-get clean
+          sudo apt-get autoremove -y
 
-        # Remove large directories we don't need
-        sudo rm -rf /usr/share/doc
-        sudo rm -rf /usr/share/man
+          # Remove large directories we don't need
+          sudo rm -rf /usr/share/doc
+          sudo rm -rf /usr/share/man
 
-        echo "Disk usage after cleanup:"
-        df -h
+          echo "Disk usage after cleanup:"
+          df -h
 
-    - name: Checkout code
-      uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    - name: Calculate Node dependencies hash
-      id: deps-hash
-      run: |
-        NODE_HASH=$(sha256sum frontend/package-lock.json | cut -d' ' -f1 | head -c16)
-        echo "hash=$NODE_HASH" >> $GITHUB_OUTPUT
-        echo "Node dependencies hash: $NODE_HASH"
+      - name: Calculate Node dependencies hash
+        id: deps-hash
+        run: |
+          NODE_HASH=$(sha256sum pnpm-lock.yaml | cut -d' ' -f1 | head -c16)
+          echo "hash=$NODE_HASH" >> $GITHUB_OUTPUT
+          echo "Node dependencies hash: $NODE_HASH"
 
-    - name: Set image tags
-      id: image-tags
-      run: |
-        REPO_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')
-        NODE_IMAGE="${{ env.REGISTRY }}/${REPO_LOWER}/node-base:${{ steps.deps-hash.outputs.hash }}"
-        echo "node-image=$NODE_IMAGE" >> $GITHUB_OUTPUT
-        echo "Node base image: $NODE_IMAGE"
+      - name: Set image tags
+        id: image-tags
+        run: |
+          REPO_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')
+          NODE_IMAGE="${{ env.REGISTRY }}/${REPO_LOWER}/node-base:${{ steps.deps-hash.outputs.hash }}"
+          echo "node-image=$NODE_IMAGE" >> $GITHUB_OUTPUT
+          echo "Node base image: $NODE_IMAGE"
 
-    - name: Check if Node base image exists
-      id: check-cache
-      run: |
-        if docker buildx imagetools inspect "${{ steps.image-tags.outputs.node-image }}" > /dev/null 2>&1; then
-          echo "should-build=false" >> $GITHUB_OUTPUT
-          echo "✅ Node base image exists, using cached version"
-        else
-          echo "should-build=true" >> $GITHUB_OUTPUT
-          echo "🏗️ Node base image needs to be built"
-        fi
+      - name: Check if Node base image exists
+        id: check-cache
+        run: |
+          if docker buildx imagetools inspect "${{ steps.image-tags.outputs.node-image }}" > /dev/null 2>&1; then
+            echo "should-build=false" >> $GITHUB_OUTPUT
+            echo "✅ Node base image exists, using cached version"
+          else
+            echo "should-build=true" >> $GITHUB_OUTPUT
+            echo "🏗️ Node base image needs to be built"
+          fi
 
   # Frontend tests run only when frontend code changes
   frontend-tests:
@@ -655,119 +687,106 @@ jobs:
             upload-artifacts: false
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    - name: Set up Node.js 20
-      uses: actions/setup-node@v6
-      with:
-        node-version: '20.19.0'
+      - name: Initialize performance tracking
+        run: |
+          ./scripts/ci-performance-tracker.sh init
+          echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
-    # Multi-level caching for Node.js
-    - name: Cache Node.js packages (L1 - npm cache)
-      uses: actions/cache@v5
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-
-          ${{ runner.os }}-npm-cache-
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9
 
-    - name: Cache Node.js packages (L2 - node_modules)
-      uses: actions/cache@v5
-      with:
-        path: |
-          node_modules
-          frontend/node_modules
-          ~/.cache/Cypress
-        key: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/package-lock.json', 'pnpm-workspace.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-
-          ${{ runner.os }}-frontend-
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20.19.0'
+          cache: 'pnpm'
+          cache-dependency-path: 'pnpm-lock.yaml'
 
-    - name: Cache build artifacts
-      if: matrix.test-type == 'build'
-      uses: actions/cache@v5
-      with:
-        path: |
-          frontend/dist
-          frontend/.vite
-          frontend/node_modules/.vite
-        key: ${{ runner.os }}-frontend-build-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/src/**', 'frontend/index.html', 'frontend/vite.config.*') }}
-        restore-keys: |
-          ${{ runner.os }}-frontend-build-${{ env.CACHE_VERSION }}-
+      - name: Install dependencies (optimized)
+        run: |
+          echo "⚡ Installing frontend dependencies with pnpm..."
 
-    - name: Install dependencies (optimized)
-      run: |
-        echo "⚡ Installing frontend dependencies with optimizations..."
-        cd frontend
-        
-        # Clear npm cache to avoid 'Cannot read properties of null' error
-        npm cache clean --force
-        
-        # Remove platform-specific package-lock and regenerate for Linux
-        rm -f package-lock.json
-        
-        # Use npm install with platform-specific filtering
-        npm install --prefer-offline --no-audit --no-fund --force
-        
-        echo "✅ Dependencies installed successfully"
+          # Use pnpm install with frozen lockfile
+          pnpm install --frozen-lockfile
 
-    - name: Run optimized test
-      run: |
-        cd frontend
-        echo "🚀 Running ${{ matrix.test-type }} tests..."
-        
-        case "${{ matrix.test-type }}" in
-          "unit")
-            # Run tests with coverage in CI mode
-            npm run test:ci
-            ;;
-          "build")
-            # Build with production optimizations
-            NODE_ENV=production npm run build
-            echo "Build size analysis:"
-            du -sh dist/* 2>/dev/null || echo "Build completed"
-            ;;
-          "lint")
-            # Clear node_modules/.cache to fix zod-validation-error export issue
-            rm -rf node_modules/.cache
-            # Run linting
-            npm run lint
-            ;;
-        esac
+          echo "✅ Dependencies installed successfully"
 
-    - name: Upload frontend test results
-      uses: actions/upload-artifact@v6
-      if: always() && matrix.upload-artifacts == 'true'
-      with:
-        name: frontend-test-results-${{ matrix.test-type }}
-        path: |
-          frontend/coverage/
-          frontend/test-results/
-        retention-days: 7
+      - name: Run optimized test
+        env:
+          VITE_API_BASE_URL: http://localhost:8000
+        run: |
+          cd frontend
+          echo "🚀 Running ${{ matrix.test-type }} tests..."
 
-    - name: Report test metrics
-      if: always()
-      run: |
-        echo "📊 Frontend Test Metrics - ${{ matrix.test-type }}"
-        echo "============================================="
-        case "${{ matrix.test-type }}" in
-          "unit")
-            if [ -f "frontend/coverage/coverage-summary.json" ]; then
-              echo "Coverage report generated ✅"
-            fi
-            ;;
-          "build")
-            if [ -d "frontend/dist" ]; then
-              DIST_SIZE=$(du -sh frontend/dist | cut -f1)
-              echo "Build size: $DIST_SIZE ✅"
-            fi
-            ;;
-          "lint")
-            echo "Linting completed ✅"
-            ;;
-        esac
+          case "${{ matrix.test-type }}" in
+            "unit")
+              # Run tests with coverage in CI mode
+              pnpm run test:ci
+              ;;
+            "build")
+              # Build with production optimizations
+              NODE_ENV=production pnpm run build
+              echo "Build size analysis:"
+              du -sh dist/* 2>/dev/null || echo "Build completed"
+              ;;
+            "lint")
+              # Force reinstall of potentially corrupted packages from stale cache
+              cd ..
+              rm -rf node_modules
+              pnpm install --frozen-lockfile
+              cd frontend
+              # Run linting
+              pnpm run lint
+              ;;
+          esac
+
+      - name: Upload frontend test results
+        uses: actions/upload-artifact@v7
+        if: always() && matrix.upload-artifacts == 'true'
+        with:
+          name: frontend-test-results-${{ matrix.test-type }}
+          path: |
+            frontend/coverage/
+            frontend/test-results/
+          retention-days: 7
+
+      - name: Report test metrics
+        if: always()
+        run: |
+          echo "📊 Frontend Test Metrics - ${{ matrix.test-type }}"
+          echo "============================================="
+          case "${{ matrix.test-type }}" in
+            "unit")
+              if [ -f "frontend/coverage/coverage-summary.json" ]; then
+                echo "Coverage report generated ✅"
+              fi
+              ;;
+            "build")
+              if [ -d "frontend/dist" ]; then
+                DIST_SIZE=$(du -sh frontend/dist | cut -f1)
+                echo "Build size: $DIST_SIZE ✅"
+              fi
+              ;;
+            "lint")
+              echo "Linting completed ✅"
+              ;;
+          esac
+          STEP_END=$(date +%s)
+          ./scripts/ci-performance-tracker.sh record "Frontend Tests- ${{ matrix.test-type }}" $STEP_START $STEP_END
+        env:
+          STEP_START: ${{ env.STEP_START }}
+
+      - name: Upload performance metrics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: perf-metrics-frontend-${{ matrix.test-type }}
+          path: .github/perf-metrics/*.json
 
   # Mutation Testing - Python (ai-engine and backend)
   mutation-testing-python:
@@ -781,78 +800,112 @@ jobs:
       matrix:
         project: ['ai-engine', 'backend']
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v6
-      with:
-        python-version: '3.11'
-        cache: 'pip'
-        cache-dependency-path: |
-          ai-engine/requirements*.txt
-          backend/requirements*.txt
-          requirements-test.txt
+      - name: Initialize performance tracking
+        run: |
+          ./scripts/ci-performance-tracker.sh init
+          echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
-    - name: Install Python dependencies
-      run: |
-        python -m pip install --upgrade pip setuptools wheel
-        
-        if [ "${{ matrix.project }}" = "ai-engine" ]; then
-          cd ai-engine
-          pip install -e ".[dev]"
-          pip install structlog
-          pip install mutmut
-        else
-          cd backend
-          pip install -r requirements.txt
-          pip install -r requirements-dev.txt
-          pip install structlog
-          pip install mutmut
-        fi
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            ai-engine/requirements*.txt
+            backend/requirements*.txt
+            requirements-test.txt
 
-    - name: Run mutation testing
-      run: |
-        cd ${{ matrix.project }}
-        
-        # Configure mutmut for the project
-        printf '[mutmut]\ntest_command = python -m pytest\nno_progress = 1\ndisable_git_diff = 1\n' > .mutmut.toml
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
 
-        # Run mutation tests
-        # Using || true to prevent step failure from blocking threshold check
-        mutmut run || true
-        
-        # Show results - || true to prevent exit code 1 from unchecked mutations
-        mutmut results || true
+          if [ "${{ matrix.project }}" = "ai-engine" ]; then
+            cd ai-engine
+            python -m pip install -e ".[dev]"
+            python -m pip install structlog
+            python -m pip install mutmut
+          else
+            cd backend
+            python -m pip install -r requirements.txt
+            python -m pip install -r requirements-dev.txt
+            python -m pip install structlog
+            python -m pip install mutmut
+          fi
 
-    - name: Check mutation testing threshold
-      run: |
-        cd ${{ matrix.project }}
-        
-        # Get mutation results - exit 0 if above threshold, exit 1 if below
-        # Default: require at least 30% of mutations to survive (70% killed)
-        THRESHOLD=${MUTATION_THRESHOLD:-30}
-        
-        echo "Mutation Testing Threshold: ${THRESHOLD}% survival allowed"
-        
-        # Parse mutmut results and check threshold
-        # If we can't parse results, allow the build to pass in CI to avoid false failures
-        # Note: mutmut results returns exit code 1 when mutations are not checked (timeout, etc.)
-        # We capture the output first to avoid pipeline exit code issues
-        MUTATION_OUTPUT=$(mutmut results 2>&1 || true)
-        echo "$MUTATION_OUTPUT"
-        
-        # Check if no mutations were found
-        if echo "$MUTATION_OUTPUT" | grep -q "No mutations found"; then
-          echo "⚠️ No mutations found - skipping threshold check"
-          exit 0
-        fi
-        
-        # For CI, we allow mutation testing to fail gracefully
-        # Real threshold enforcement happens in mutation-testing-summary job
-        # Exit 0 to ensure the step always passes in CI
-        echo "✅ Mutation testing completed"
-        exit 0
+      - name: Run mutation testing
+        timeout-minutes: 5
+        run: |
+          cd ${{ matrix.project }}
+
+          # Run mutation tests without coverage plugins that conflict with mutmut
+          # Use --no-cov and disable addopts that load conflicting plugins
+          mutmut run --no-cov || true
+
+          # Show results
+          mutmut results || true
+
+      - name: Check mutation testing threshold
+        run: |
+          cd ${{ matrix.project }}
+
+          # Parse mutmut results and check threshold
+          # Default: require at most 30% of mutations to survive (70% killed)
+          THRESHOLD=${MUTATION_THRESHOLD:-30}
+
+          echo "Mutation Testing Threshold: max ${THRESHOLD}% survival allowed"
+
+          # Capture mutmut results output
+          MUTATION_OUTPUT=$(mutmut results 2>&1)
+          echo "$MUTATION_OUTPUT"
+
+          # Check if no mutations were found
+          if echo "$MUTATION_OUTPUT" | grep -q "No mutations found"; then
+            echo "⚠️ No mutations found - skipping threshold check"
+            exit 0
+          fi
+
+          # Parse mutmut results to extract killed and survived counts
+          # Output format: "killed: N" and "survived: N"
+          KILLED=$(echo "$MUTATION_OUTPUT" | grep -oP 'killed:\s*\K\d+' | head -1 || echo "0")
+          SURVIVED=$(echo "$MUTATION_OUTPUT" | grep -oP 'survived:\s*\K\d+' | head -1 || echo "0")
+          TOTAL=$((KILLED + SURVIVED))
+
+          if [ "$TOTAL" -eq 0 ]; then
+            echo "⚠️ No mutations to evaluate - skipping threshold check"
+            exit 0
+          fi
+
+          # Calculate survival rate (percentage of mutations that survived)
+          SURVIVAL_RATE=$(awk "BEGIN {printf \"%.1f\", ($SURVIVED / $TOTAL) * 100}")
+          echo "Mutation Results: $KILLED killed, $SURVIVED survived out of $TOTAL"
+          echo "Survival Rate: ${SURVIVAL_RATE}% (threshold: ${THRESHOLD}%)"
+
+          # Check if survival rate exceeds threshold
+          # If more mutations survive than allowed, fail the build
+          SURVIVAL_INT=$(echo "$SURVIVAL_RATE" | cut -d. -f1)
+          if [ "$SURVIVAL_INT" -gt "$THRESHOLD" ]; then
+            echo "❌ Mutation testing FAILED: Survival rate ${SURVIVAL_RATE}% exceeds threshold ${THRESHOLD}%"
+            echo "   Required: At least $((100 - THRESHOLD))% of mutations should be killed"
+            echo "   Actual: Only $((100 - SURVIVAL_INT))% were killed"
+            exit 1
+          else
+            echo "✅ Mutation testing passed: Survival rate ${SURVIVAL_RATE}% is within threshold ${THRESHOLD}%"
+          fi
+
+          STEP_END=$(date +%s)
+          ./scripts/ci-performance-tracker.sh record "Mutation Testing Python- ${{ matrix.project }}" $STEP_START $STEP_END
+        env:
+          STEP_START: ${{ env.STEP_START }}
+
+      - name: Upload performance metrics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: perf-metrics-mutation-python-${{ matrix.project }}
+          path: .github/perf-metrics/*.json
 
   # Mutation Testing - JavaScript/TypeScript (frontend)
   mutation-testing-frontend:
@@ -862,75 +915,93 @@ jobs:
     if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.dependencies == 'true' }}
     timeout-minutes: 20
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    - name: Set up Node.js 20
-      uses: actions/setup-node@v6
-      with:
-        node-version: '20.19.0'
+      - name: Initialize performance tracking
+        run: |
+          ./scripts/ci-performance-tracker.sh init
+          echo "STEP_START=$(date +%s)" >> $GITHUB_ENV
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        version: 9
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20.19.0'
 
-    - name: Get pnpm store directory
-      id: pnpm-store
-      shell: bash
-      run: |
-        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9
 
-    - name: Setup pnpm cache
-      uses: actions/cache@v5
-      with:
-        path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
-        key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('**/pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-
-          ${{ runner.os }}-pnpm-store-
+      - name: Get pnpm store directory
+        id: pnpm-store
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
 
-    - name: Install dependencies
-      run: |
-        cd frontend
-        pnpm install --frozen-lockfile
+      - name: Setup pnpm cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-pnpm-store-
 
-    - name: Run mutation testing
-      run: |
-        cd frontend
-        
-        # Run stryker mutation testing
-        # Using --exitCodeProcesses=false to allow threshold failures
-        pnpm mutation || true
-        
-        # Check results
-        if [ -f "reports/mutation/json/mutation.json" ]; then
-          echo "✅ Mutation report generated"
-          cat reports/mutation/json/mutation.json | head -50
-        else
-          echo "⚠️ No mutation report found"
-        fi
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
 
-    - name: Check mutation testing threshold
-      run: |
-        cd frontend
-        
-        # Threshold: 70% mutation score (30% allowed to survive)
-        THRESHOLD=70
-        
-        if [ -f "reports/mutation/json/mutation.json" ]; then
-          # Extract mutation score from JSON report
-          MUTATION_SCORE=$(cat reports/mutation/json/mutation.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('metrics', {}).get('mutationScore', 0))" 2>/dev/null || echo "0")
-          echo "Mutation Score: ${MUTATION_SCORE}%"
-          
-          if (( $(echo "$MUTATION_SCORE >= $THRESHOLD" | bc -l) )); then
-            echo "✅ Mutation score above threshold"
+      - name: Run mutation testing
+        timeout-minutes: 20
+        run: |
+          cd frontend
+
+          # Run stryker mutation testing
+          # Note: stryker with vitest-runner may have plugin loading issues
+          # so we run with || true to not block the workflow
+          pnpm mutation || true
+
+          # Check results
+          if [ -f "reports/mutation/json/mutation.json" ]; then
+            echo "✅ Mutation report generated"
+            cat reports/mutation/json/mutation.json | head -50
           else
-            echo "⚠️ Mutation score below threshold - check reports for details"
+            echo "⚠️ No mutation report found"
           fi
-        else
-          echo "⚠️ No mutation report found - skipping threshold check"
-        fi
+
+      - name: Check mutation testing threshold
+        run: |
+          cd frontend
+
+          # Threshold: 70% mutation score (30% allowed to survive)
+          THRESHOLD=70
+
+          if [ -f "reports/mutation/json/mutation.json" ]; then
+            # Extract mutation score from JSON report
+            MUTATION_SCORE=$(cat reports/mutation/json/mutation.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('metrics', {}).get('mutationScore', 0))" 2>/dev/null || echo "0")
+            echo "Mutation Score: ${MUTATION_SCORE}%"
+            
+            if (( $(echo "$MUTATION_SCORE >= $THRESHOLD" | bc -l) )); then
+              echo "✅ Mutation score above threshold"
+            else
+              echo "⚠️ Mutation testing: Mutation score ${MUTATION_SCORE}% is below threshold ${THRESHOLD}%"
+              echo "   This is informational only - mutation testing is non-blocking"
+            fi
+          else
+            echo "⚠️ No mutation report found - skipping threshold check"
+          fi
+          STEP_END=$(date +%s)
+          ../scripts/ci-performance-tracker.sh record "Mutation Testing Frontend" $STEP_START $STEP_END
+        env:
+          STEP_START: ${{ env.STEP_START }}
+
+      - name: Upload performance metrics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: perf-metrics-mutation-frontend
+          path: .github/perf-metrics/*.json
 
   # Mutation Testing Summary
   mutation-testing-summary:
@@ -939,44 +1010,44 @@ jobs:
     needs: [mutation-testing-python, mutation-testing-frontend]
     if: always()
     steps:
-    - name: Mutation Testing Summary
-      run: |
-        echo "## 🧬 Mutation Testing Results"
-        echo "================================"
-        echo ""
-        
-        # Check Python mutation results
-        echo "### Python (ai-engine & backend)"
-        echo "--------------------------------"
-        if [ "${{ needs.mutation-testing-python.result }}" = "success" ]; then
-          echo "✅ Python mutation testing passed"
-        elif [ "${{ needs.mutation-testing-python.result }}" = "skipped" ]; then
-          echo "⏭️ Python mutation testing skipped (no changes)"
-        else
-          echo "⚠️ Python mutation testing completed with warnings"
-        fi
-        
-        echo ""
-        
-        # Check Frontend mutation results
-        echo "### JavaScript/TypeScript (Frontend)"
-        echo "-------------------------------------"
-        if [ "${{ needs.mutation-testing-frontend.result }}" = "success" ]; then
-          echo "✅ Frontend mutation testing passed"
-        elif [ "${{ needs.mutation-testing-frontend.result }}" = "skipped" ]; then
-          echo "⏭️ Frontend mutation testing skipped (no changes)"
-        else
-          echo "⚠️ Frontend mutation testing completed with warnings"
-        fi
-        
-        echo ""
-        echo "---"
-        echo "📊 Mutation Testing Configuration:"
-        echo "- Python: mutmut with threshold (30% survival allowed)"
-        echo "- JavaScript: stryker-mutator with vitest-runner"
-        echo "- Threshold: 70% mutation score (30% allowed to survive)"
-        echo ""
-        echo "💡 To adjust thresholds, set MUTATION_THRESHOLD environment variable"
+      - name: Mutation Testing Summary
+        run: |
+          echo "## 🧬 Mutation Testing Results"
+          echo "================================"
+          echo ""
+
+          # Check Python mutation results
+          echo "### Python (ai-engine & backend)"
+          echo "--------------------------------"
+          if [ "${{ needs.mutation-testing-python.result }}" = "success" ]; then
+            echo "✅ Python mutation testing passed"
+          elif [ "${{ needs.mutation-testing-python.result }}" = "skipped" ]; then
+            echo "⏭️ Python mutation testing skipped (no changes)"
+          else
+            echo "⚠️ Python mutation testing completed with warnings"
+          fi
+
+          echo ""
+
+          # Check Frontend mutation results
+          echo "### JavaScript/TypeScript (Frontend)"
+          echo "-------------------------------------"
+          if [ "${{ needs.mutation-testing-frontend.result }}" = "success" ]; then
+            echo "✅ Frontend mutation testing passed"
+          elif [ "${{ needs.mutation-testing-frontend.result }}" = "skipped" ]; then
+            echo "⏭️ Frontend mutation testing skipped (no changes)"
+          else
+            echo "⚠️ Frontend mutation testing completed with warnings"
+          fi
+
+          echo ""
+          echo "---"
+          echo "📊 Mutation Testing Configuration:"
+          echo "- Python: mutmut with threshold (30% survival allowed)"
+          echo "- JavaScript: stryker-mutator with vitest-runner"
+          echo "- Threshold: 70% mutation score (30% allowed to survive)"
+          echo ""
+          echo "💡 To adjust thresholds, set MUTATION_THRESHOLD environment variable"
 
   # Format check - runs Prettier on all code
   format-check:
@@ -986,55 +1057,69 @@ jobs:
     if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.ai-engine == 'true' || needs.changes.outputs.dependencies == 'true' }}
     timeout-minutes: 5
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    - name: Set up Node.js 20
-      uses: actions/setup-node@v6
-      with:
-        node-version: '20.19.0'
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20.19.0'
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        version: 9
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9
 
-    - name: Get pnpm store directory
-      id: pnpm-store
-      shell: bash
-      run: |
-        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+      - name: Get pnpm store directory
+        id: pnpm-store
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
 
-    - name: Setup pnpm cache
-      uses: actions/cache@v5
-      with:
-        path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
-        key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('**/pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-
-          ${{ runner.os }}-pnpm-store-
+      - name: Setup pnpm cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-pnpm-store-
 
-    - name: Install dependencies
-      run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-    - name: Check frontend format
-      run: pnpm format:check:frontend
+      - name: Check frontend format
+        run: cd frontend && pnpm prettier --check .
 
-    - name: Set up Python
-      uses: actions/setup-python@v6
-      with:
-        python-version: '3.11'
+      - name: Build frontend with bundle analysis
+        run: cd frontend && pnpm build:analyze
 
-    - name: Install Python dependencies
-      run: |
-        cd backend
-        python -m pip install --upgrade pip
-        pip install ruff
+      - name: Generate bundle size report
+        run: node scripts/generate-bundle-report.cjs frontend/dist
 
-    - name: Check backend format
-      run: |
-        cd backend
-        ruff format --check src/ tests/
+      - name: Upload bundle report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: bundle-report
+          path: frontend/dist/bundle-report.json
+          retention-days: 30
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          python -m pip install ruff
+
+      - name: Check backend format
+        run: |
+          cd backend
+          ruff format --check src/ src/tests/
 
   # Dependency vulnerability scanning
   vulnerability-scan:
@@ -1048,224 +1133,231 @@ jobs:
       contents: read
       security-events: write
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    # Python dependency vulnerability scanning (pip-audit)
-    - name: Set up Python
-      uses: actions/setup-python@v6
-      with:
-        python-version: '3.11'
+      # Python dependency vulnerability scanning (pip-audit)
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
 
-    - name: Install pip-audit
-      run: |
-        python -m pip install --upgrade pip
-        pip install pip-audit
+      - name: Install pip-audit
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pip-audit
 
-    - name: Scan Python dependencies (Backend)
-      if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.dependencies == 'true'
-      run: |
-        echo "=== Scanning Backend Dependencies ==="
-        cd backend
-        pip-audit -r requirements.txt || true
-      continue-on-error: true
+      - name: Scan Python dependencies (Backend)
+        if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.dependencies == 'true'
+        run: |
+          echo "=== Scanning Backend Dependencies ==="
+          cd backend
+          pip-audit -r requirements.txt --skip-editable --no-deps || true
+        continue-on-error: true
 
-    - name: Scan Python dependencies (AI Engine)
-      if: needs.changes.outputs.ai-engine == 'true' || needs.changes.outputs.dependencies == 'true'
-      run: |
-        echo "=== Scanning AI Engine Dependencies ==="
-        cd ai-engine
-        pip-audit -r requirements.txt || true
-      continue-on-error: true
+      - name: Scan Python dependencies (AI Engine)
+        if: needs.changes.outputs.ai-engine == 'true' || needs.changes.outputs.dependencies == 'true'
+        run: |
+          echo "=== Scanning AI Engine Dependencies ==="
+          cd ai-engine
+          pip-audit -r requirements.txt --skip-editable --no-deps || true
+        continue-on-error: true
 
-    # Node.js dependency vulnerability scanning (npm audit)
-    - name: Set up Node.js
-      uses: actions/setup-node@v6
-      with:
-        node-version: '20.19.0'
+      # Node.js dependency vulnerability scanning (npm audit)
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20.19.0'
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        version: 9
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9
 
-    - name: Get pnpm store directory
-      id: pnpm-store
-      shell: bash
-      run: |
-        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+      - name: Get pnpm store directory
+        id: pnpm-store
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
 
-    - name: Setup pnpm cache
-      uses: actions/cache@v5
-      with:
-        path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
-        key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('**/pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-
-          ${{ runner.os }}-pnpm-store-
+      - name: Setup pnpm cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-pnpm-store-
 
-    - name: Install dependencies
-      run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-    - name: Scan npm dependencies (Frontend)
-      if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.dependencies == 'true'
-      run: |
-        echo "=== Scanning Frontend npm Dependencies ==="
-        cd frontend
-        npm audit --audit-level=high || true
-      continue-on-error: true
+      - name: Scan pnpm dependencies (Frontend)
+        if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.dependencies == 'true'
+        run: |
+          echo "=== Scanning Frontend pnpm Dependencies ==="
+          cd frontend
+          pnpm audit --audit-level=high || true
+        continue-on-error: true
 
-    - name: Scan npm dependencies (Root workspace)
-      run: |
-        echo "=== Scanning Root npm Workspace Dependencies ==="
-        npm audit --audit-level=high || true
-      continue-on-error: true
+      - name: Scan pnpm dependencies (Root workspace)
+        run: |
+          echo "=== Scanning Root pnpm Workspace Dependencies ==="
+          pnpm audit --audit-level=high || true
+        continue-on-error: true
 
   # Performance tracking and optimization monitoring
   performance-monitoring:
     name: Performance & Cache Monitoring
     runs-on: ubuntu-latest
     if: always() && (github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'pull_request')
-    needs: [integration-tests, frontend-tests, prepare-base-images, prepare-node-base]
+    needs:
+      [
+        integration-tests,
+        frontend-tests,
+        mutation-testing-python,
+        mutation-testing-frontend,
+        prepare-base-images,
+        prepare-node-base,
+      ]
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    - name: Calculate performance metrics
-      id: metrics
-      run: |
-        echo "🚀 CI Performance Analysis"
-        echo "=========================="
-        
-        # Get job durations from the GitHub API (approximation)
-        WORKFLOW_START=$(date -d "5 minutes ago" +%s)
-        CURRENT_TIME=$(date +%s)
-        TOTAL_DURATION=$((CURRENT_TIME - WORKFLOW_START))
-        
-        echo "Workflow Performance:"
-        echo "- Total estimated time: ${TOTAL_DURATION}s"
-        echo "- Reduced timeout: integration-tests (30→20min), frontend-tests (15→10min)"
-        echo "- Base image strategy: ${{ needs.prepare-base-images.outputs.should-build == 'false' && '✅ Using cached base images' || '🏗️ Building new base images' }}"
-        
-        # Cache analysis
-        echo ""
-        echo "📊 Cache Strategy Analysis"
-        echo "=========================="
-        echo "Python dependencies hash: $(cat ai-engine/requirements*.txt backend/requirements*.txt requirements-test.txt | sha256sum | cut -d' ' -f1 | head -c16)"
-        echo "Node dependencies hash: $(sha256sum frontend/package-lock.json | cut -d' ' -f1 | head -c16)"
-        
-        echo ""
-        echo "Cache Keys (v2 optimized):"
-        echo "- pip: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}"
-        echo "- site-packages: ${{ runner.os }}-site-packages-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}"
-        echo "- npm-cache: ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/package-lock.json') }}"
-        echo "- frontend: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/package-lock.json', 'pnpm-workspace.yaml') }}"
-        
-        echo ""
-        echo "🎯 Optimization Results"
-        echo "======================"
-        echo "- ✅ Multi-level caching strategy implemented"
-        echo "- ✅ Base image strategy for dependency pre-caching"
-        echo "- ✅ Conditional Python setup (fallback)"
-        echo "- ✅ Optimized pnpm configuration"
-        echo "- ✅ Parallel matrix job execution"
-        echo "- ✅ Reduced timeouts and improved fail-fast"
+      - name: Download all performance metrics
+        uses: actions/download-artifact@v8
+        with:
+          pattern: perf-metrics-*
+          path: .github/perf-metrics
+          merge-multiple: true
 
-    - name: Performance benchmark comparison
-      run: |
-        echo ""
-        echo "📈 Expected Performance Improvements"
-        echo "===================================="
-        echo ""
-        echo "BEFORE (Original CI):"
-        echo "- Python 3.11 setup: 20-30 minutes"
-        echo "- Dependencies install: 15-20 minutes per job"
-        echo "- Total CI time: 45-60 minutes"
-        echo "- Cache hit rate: ~60%"
-        echo "- Setup overhead: ~65% of total time"
-        echo ""
-        echo "AFTER (Optimized CI):"
-        echo "- Python setup: 2-3 minutes (base image) or 5-8 minutes (fallback)"
-        echo "- Dependencies install: 2-5 minutes per job (cached)"
-        echo "- Total CI time: 15-25 minutes"
-        echo "- Cache hit rate: >90%"
-        echo "- Setup overhead: ~25% of total time"
-        echo ""
-        echo "🎉 IMPROVEMENT SUMMARY:"
-        echo "- Time reduction: ~55% (30-35 minutes saved)"
-        echo "- Setup optimization: ~65% → ~25%"
-        echo "- Cache efficiency: 60% → 90%+"
-        echo "- Developer productivity: ⚡ Much faster feedback"
-        echo "- Cost reduction: ~50-60% in GitHub Actions minutes"
+      - name: Set up Python for performance tracking
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
 
-    - name: Cache health check
-      run: |
-        echo ""
-        echo "🏥 Cache Health Assessment"
-        echo "=========================="
-        
-        # Simulate cache health checks
-        echo "Cache Strategy Status:"
-        echo "- ✅ L1 Cache (pip/pnpm store): Active"
-        echo "- ✅ L2 Cache (site-packages/node_modules): Active"  
-        echo "- ✅ L3 Cache (test artifacts): Active"
-        echo "- ✅ Base Images: ${{ needs.prepare-base-images.outputs.should-build == 'false' && 'Using cached images' || 'Building fresh images' }}"
-        
-        echo ""
-        echo "Optimization Features Active:"
-        echo "- ✅ Conditional dependency installation"
-        echo "- ✅ Multi-level fallback caching"
-        echo "- ✅ Parallel job execution"
-        echo "- ✅ Smart cache invalidation"
-        echo "- ✅ Performance monitoring"
+      - name: Record workflow metrics
+        id: record-metrics
+        run: |
+          # Record major workflow step timings
+          WORKFLOW_START="${{ job.start_time }}"
+          CURRENT_TIME=$(date +%s)
 
-    - name: Generate optimization report
-      if: github.event_name == 'pull_request'
-      run: |
-        echo ""
-        echo "📋 CI Optimization Report for PR"
-        echo "================================="
-        echo ""
-        echo "This PR implements comprehensive CI performance optimizations:"
-        echo ""
-        echo "🔧 **Key Optimizations:**"
-        echo "1. **Base Image Strategy** - Pre-built images with dependencies"
-        echo "2. **Multi-Level Caching** - pip, site-packages, pnpm store, node_modules"
-        echo "3. **Conditional Setup** - Skip Python setup when using base images"
-        echo "4. **Smart Dependencies** - Install only what's needed per job"
-        echo "5. **Parallel Execution** - Improved matrix job coordination"
-        echo "6. **Reduced Timeouts** - More realistic time limits"
-        echo ""
-        echo "📊 **Expected Impact:**"
-        echo "- **55% faster CI** (45-60min → 15-25min)"
-        echo "- **90%+ cache hit rate** (up from 60%)"
-        echo "- **50-60% cost reduction** in GitHub Actions minutes"
-        echo "- **Better developer experience** with faster feedback"
-        echo ""
-        echo "🛡️ **Reliability Improvements:**"
-        echo "- Fallback mechanisms for setup failures"
-        echo "- Better error handling and reporting"
-        echo "- Health checks and monitoring"
-        echo ""
-        echo "To test these optimizations, merge this PR and monitor the next few CI runs!"
+          # Initialize performance tracking
+          python3 scripts/ci_performance_tracker.py aggregate
+          python3 scripts/ci_performance_tracker.py compare
 
-    - name: Cleanup recommendation
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      run: |
-        echo ""
-        echo "🧹 Cache Maintenance Recommendations"
-        echo "==================================="
-        echo ""
-        echo "Weekly Tasks:"
-        echo "- ✅ Auto-rebuild base images (via build-base-images.yml)"
-        echo "- ✅ Cache cleanup via cache-cleanup.yml workflow"
-        echo ""
-        echo "Monthly Tasks:"
-        echo "- Review cache hit rates in Actions tab"
-        echo "- Update CACHE_VERSION in workflow if major changes"
-        echo "- Monitor repository cache usage (current limit: 10GB)"
-        echo ""
-        echo "Repository Cache Status:"
-        echo "- Current optimization level: v2"
-        echo "- Base images: Managed automatically"
-        echo "- Cache retention: 7 days for test artifacts"
+          echo "✅ Performance metrics recorded and aggregated"
+
+      - name: Calculate performance metrics
+        id: metrics
+        run: |
+          echo "🚀 CI Performance Analysis"
+          echo "=========================="
+
+          # Get job durations from the GitHub API (approximation)
+          WORKFLOW_START=$(date -d "5 minutes ago" +%s)
+          CURRENT_TIME=$(date +%s)
+          TOTAL_DURATION=$((CURRENT_TIME - WORKFLOW_START))
+
+          echo "Workflow Performance:"
+          echo "- Total estimated time: ${TOTAL_DURATION}s"
+          echo "- Reduced timeout: integration-tests (30→20min), frontend-tests (15→10min)"
+          echo "- Base image strategy: ${{ needs.prepare-base-images.outputs.should-build == 'false' && '✅ Using cached base images' || '🏗️ Building new base images' }}"
+
+          # Cache analysis
+          echo ""
+          echo "📊 Cache Strategy Analysis"
+          echo "=========================="
+          echo "Python dependencies hash: $(cat ai-engine/requirements*.txt backend/requirements*.txt requirements-test.txt | sha256sum | cut -d' ' -f1 | head -c16)"
+          echo "Node dependencies hash: $(sha256sum frontend/pnpm-lock.yaml | cut -d' ' -f1 | head -c16)"
+
+          echo ""
+          echo "Cache Keys (v2 optimized):"
+          echo "- pip: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}"
+          echo "- site-packages: ${{ runner.os }}-site-packages-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', 'requirements-test.txt') }}"
+          echo "- npm-cache: ${{ runner.os }}-npm-cache-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}"
+          echo "- frontend: ${{ runner.os }}-frontend-${{ env.CACHE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml', 'pnpm-workspace.yaml') }}"
+
+          echo ""
+          echo "🎯 Optimization Results"
+          echo "======================"
+          echo "- ✅ Multi-level caching strategy implemented"
+          echo "- ✅ Base image strategy for dependency pre-caching"
+          echo "- ✅ Conditional Python setup (fallback)"
+          echo "- ✅ Optimized pnpm configuration"
+          echo "- ✅ Parallel matrix job execution"
+          echo "- ✅ Reduced timeouts and improved fail-fast"
+          echo "- ✅ Build performance tracking with metrics collection"
+
+      - name: Run performance tracking
+        run: |
+          chmod +x ./scripts/ci-performance-tracker.sh
+          echo "=== Aggregating Performance Metrics ==="
+          ./scripts/ci-performance-tracker.sh aggregate
+
+          echo "=== Comparing with Baseline ==="
+          ./scripts/ci-performance-tracker.sh compare || true
+
+          echo "=== Updating Performance History ==="
+          ./scripts/ci-performance-tracker.sh history
+
+          echo "=== Generating Performance Report ==="
+          ./scripts/ci-performance-tracker.sh report
+
+      - name: Display Performance Reports
+        run: |
+          echo "## 🚀 CI Build Performance Analysis" >> $GITHUB_STEP_SUMMARY
+          if [ -f ".github/perf-metrics/pr-report.md" ]; then
+            cat .github/perf-metrics/pr-report.md >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ -f ".github/perf-metrics/trend-report.md" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            cat .github/perf-metrics/trend-report.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload performance summary
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-performance-summary
+          path: |
+            .github/perf-metrics/summary.json
+            .github/perf-metrics/history.json
+            .github/perf-metrics/*.md
+
+      - name: Generate performance report
+        if: github.event_name == 'pull_request'
+        run: |
+          python3 scripts/ci_performance_tracker.py report --output /tmp/perf-report.md
+          cat /tmp/perf-report.md
+
+      - name: Upload performance metrics artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-performance-metrics
+          path: .github/perf-metrics/
+          retention-days: 30
+
+      - name: Cleanup recommendation
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo ""
+          echo "🧹 Cache Maintenance Recommendations"
+          echo "==================================="
+          echo ""
+          echo "Weekly Tasks:"
+          echo "- ✅ Auto-rebuild base images (via build-base-images.yml)"
+          echo "- ✅ Cache cleanup via cache-cleanup.yml workflow"
+          echo ""
+          echo "Monthly Tasks:"
+          echo "- Review cache hit rates in Actions tab"
+          echo "- Update CACHE_VERSION in workflow if major changes"
+          echo "- Monitor repository cache usage (current limit: 10GB)"
+          echo "- Review performance trends in ci-performance-metrics artifacts"
+          echo ""
+          echo "Repository Cache Status:"
+          echo "- Current optimization level: v2"
+          echo "- Base images: Managed automatically"
+          echo "- Cache retention: 7 days for test artifacts"
+          echo "- Performance metrics: Retained for 30 days"

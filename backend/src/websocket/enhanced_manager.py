@@ -17,12 +17,12 @@ import time
 import weakref
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from enum import Enum
-from typing import Dict, Set, List, Optional, Any, Callable
-import json
+from typing import Dict, List, Optional, Any
 
-from fastapi import WebSocket, WebSocketDisconnect
+from fastapi import WebSocket
+import contextlib
 
 logger = logging.getLogger(__name__)
 
@@ -72,9 +72,9 @@ class ConnectionInfo:
 
     websocket: WebSocket
     conversion_id: str
-    connected_at: datetime = field(default_factory=datetime.utcnow)
-    last_activity: datetime = field(default_factory=datetime.utcnow)
-    last_heartbeat: datetime = field(default_factory=datetime.utcnow)
+    connected_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    last_activity: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    last_heartbeat: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     state: ConnectionState = ConnectionState.CONNECTED
     messages_sent: int = 0
     messages_received: int = 0
@@ -243,17 +243,13 @@ class EnhancedConnectionManager:
 
         if self._heartbeat_task:
             self._heartbeat_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._heartbeat_task
-            except asyncio.CancelledError:
-                pass
 
         if self._cleanup_task:
             self._cleanup_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._cleanup_task
-            except asyncio.CancelledError:
-                pass
 
         logger.info("Stopped WebSocket connection manager")
 
@@ -346,7 +342,7 @@ class EnhancedConnectionManager:
         if not info:
             return {"type": MessageType.ERROR.value, "data": {"error": "Not connected"}}
 
-        info.last_activity = datetime.utcnow()
+        info.last_activity = datetime.now(timezone.utc)
         info.messages_received += 1
         self._total_messages_received += 1
 
@@ -366,7 +362,10 @@ class EnhancedConnectionManager:
 
         elif message_type == MessageType.SUBSCRIBE.value:
             # Already subscribed via connect
-            return {"type": MessageType.CONNECTED.value, "data": {"conversion_id": conversion_id}}
+            return {
+                "type": MessageType.CONNECTED.value,
+                "data": {"conversion_id": conversion_id},
+            }
 
         elif message_type == MessageType.UNSUBSCRIBE.value:
             self.disconnect(websocket, conversion_id)
@@ -398,7 +397,7 @@ class EnhancedConnectionManager:
 
         # Add timestamp if not present
         if "timestamp" not in message:
-            message["timestamp"] = datetime.utcnow().isoformat()
+            message["timestamp"] = datetime.now(timezone.utc).isoformat()
 
         sent_count = 0
         disconnected = []
@@ -463,7 +462,7 @@ class EnhancedConnectionManager:
             self._total_messages_sent += 1
             return True
         except Exception as e:
-            logger.error(f"Failed to send personal message: {e}")
+            logger.error("Failed to send personal message: %s", e, exc_info=True)
             return False
 
     def get_connection_count(self, conversion_id: str) -> int:
@@ -507,7 +506,7 @@ class EnhancedConnectionManager:
         if conversion_id not in self._connections:
             return {"healthy": False, "reason": "No connections"}
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         stale_threshold = timedelta(seconds=self._health_config.stale_connection_seconds)
         issues = []
         healthy_count = 0
@@ -544,7 +543,7 @@ class EnhancedConnectionManager:
             try:
                 await asyncio.sleep(self._health_config.heartbeat_interval_seconds)
 
-                now = datetime.utcnow()
+                now = datetime.now(timezone.utc)
                 heartbeat_msg = {
                     "type": MessageType.HEARTBEAT.value,
                     "data": {"timestamp": now.isoformat()},
@@ -563,7 +562,7 @@ class EnhancedConnectionManager:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"Error in heartbeat loop: {e}")
+                logger.error("Error in heartbeat loop: %s", e, exc_info=True)
 
     async def _cleanup_loop(self) -> None:
         """Background task for cleaning up stale connections."""
@@ -571,7 +570,7 @@ class EnhancedConnectionManager:
             try:
                 await asyncio.sleep(60)  # Check every minute
 
-                now = datetime.utcnow()
+                now = datetime.now(timezone.utc)
                 stale_threshold = timedelta(seconds=self._health_config.stale_connection_seconds)
 
                 to_disconnect = []
@@ -594,7 +593,7 @@ class EnhancedConnectionManager:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"Error in cleanup loop: {e}")
+                logger.error("Error in cleanup loop: %s", e, exc_info=True)
 
 
 # Global enhanced connection manager instance

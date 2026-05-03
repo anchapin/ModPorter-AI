@@ -1,5 +1,5 @@
 """
-WebSocket Client Examples for ModPorter-AI
+WebSocket Client Examples for portkit
 
 This file provides practical examples for connecting to and using
 the WebSocket API from various client implementations.

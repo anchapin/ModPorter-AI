@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, HTTPException, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict, Any
@@ -5,6 +7,8 @@ from pydantic import BaseModel, Field
 from db.base import get_db
 from db import crud
 import uuid
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -115,23 +119,24 @@ async def get_conversion_behavior_files(
             "children": {},
         }
 
-    def dict_to_tree_nodes(node_dict: Dict[str, Any]) -> List[BehaviorFileTreeNode]:
-        """Convert dictionary structure to tree nodes"""
-        nodes = []
-        for key, value in node_dict.items():
-            children = dict_to_tree_nodes(value["children"]) if value["children"] else []
-            node = BehaviorFileTreeNode(
-                id=value.get("id", ""),
-                name=value["name"],
-                path=value["path"],
-                type=value["type"],
-                file_type=value.get("file_type", ""),
-                children=children,
-            )
-            nodes.append(node)
-        return sorted(nodes, key=lambda x: (x.type == "file", x.name))
-
     return dict_to_tree_nodes(tree_root)
+
+
+def dict_to_tree_nodes(node_dict: Dict[str, Any]) -> List[BehaviorFileTreeNode]:
+    """Convert dictionary structure to tree nodes"""
+    nodes = []
+    for key, value in node_dict.items():
+        children = dict_to_tree_nodes(value["children"]) if value["children"] else []
+        node = BehaviorFileTreeNode(
+            id=value.get("id", ""),
+            name=value["name"],
+            path=value["path"],
+            type=value["type"],
+            file_type=value.get("file_type", ""),
+            children=children,
+        )
+        nodes.append(node)
+    return sorted(nodes, key=lambda x: (x.type == "file", x.name))
 
 
 @router.get(
@@ -240,9 +245,15 @@ async def create_behavior_file(
             content=request.content,
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Request error: {str(e)}", exc_info=True)
+
+        raise HTTPException(status_code=400, detail="Invalid request. Please check your input.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create behavior file: {str(e)}")
+        logger.error(f"Failed to create behavior file: {str(e)}", exc_info=True)
+
+        raise HTTPException(
+            status_code=500, detail="Failed to create behavior file: Please try again."
+        )
 
     return BehaviorFileResponse(
         id=str(behavior_file.id),

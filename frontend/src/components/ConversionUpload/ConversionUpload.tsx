@@ -426,7 +426,7 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
                 disabled={isProcessing || isCompleted}
                 aria-label={`Remove ${selectedFile.name}`}
               >
-                ✕
+                <span aria-hidden="true">✕</span>
               </button>
             </div>
           ) : (
@@ -448,6 +448,9 @@ export const ConversionUpload: React.FC<ConversionUploadProps> = ({
               </button>
               <p className="supporting-text">
                 Supports .jar files and .zip modpack archives
+              </p>
+              <p className="privacy-note">
+                Your .jar file is automatically deleted within 24 hours
               </p>
             </div>
           )}

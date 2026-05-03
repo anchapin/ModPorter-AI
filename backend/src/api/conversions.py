@@ -10,14 +10,16 @@ This module provides REST endpoints for managing conversion jobs:
 - WS /api/v1/conversions/{id}/ws - WebSocket progress endpoint
 """
 
+import json
 import logging
 import os
 import shutil
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from uuid import UUID
+from enum import Enum
 
 from fastapi import (
     APIRouter,
@@ -31,22 +33,29 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
     status,
+    Request,
 )
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field, validator
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel, Field, field_validator, validator
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.base import get_db
 from db import crud
-from websocket.manager import manager
-from websocket.progress_handler import ProgressHandler
+from db.models import User
+from src.websocket.manager import manager
+from src.websocket.progress_handler import ProgressHandler
 from services.cache import CacheService
 from services.task_queue import enqueue_task, TaskPriority
 from services.conversion_service import get_conversion_service
+from services.metering_service import MeteringService
+from services.report_exporter import ReportExporter
 from security.file_security import (
     FileSecurityScanner,
     SecurityScanResult,
 )
+from security.auth import verify_token, verify_api_key
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +74,9 @@ cache = CacheService()
 # Security scanner instance
 _security_scanner: Optional[FileSecurityScanner] = None
 
+# HTTP Bearer security scheme
+security = HTTPBearer(auto_error=False)
+
 
 def get_security_scanner() -> FileSecurityScanner:
     """Get or create the global security scanner instance."""
@@ -72,6 +84,54 @@ def get_security_scanner() -> FileSecurityScanner:
     if _security_scanner is None:
         _security_scanner = FileSecurityScanner()
     return _security_scanner
+
+
+async def get_api_key_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[User]:
+    """Optional API key authentication - supports both Bearer tokens and API keys."""
+    if not credentials:
+        return None
+
+    # Try JWT token first
+    token = credentials.credentials
+    user_id = verify_token(token)
+    if user_id:
+        try:
+            user_uuid = UUID(user_id)
+            result = await db.execute(select(User).where(User.id == user_uuid))
+            return result.scalar_one_or_none()
+        except (ValueError, TypeError):
+            return None
+
+    # Try API key (Bearer format with mpk_ prefix)
+    if credentials.scheme.lower() == "bearer" and token.startswith("mpk_"):
+        return await verify_api_key(db, token)
+
+    return None
+
+
+async def get_optional_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[User]:
+    """Optional authentication - returns None if no valid token provided."""
+    if not credentials:
+        return None
+
+    token = credentials.credentials
+    user_id = verify_token(token)
+    if not user_id:
+        return None
+
+    try:
+        user_uuid = UUID(user_id)
+    except (ValueError, TypeError):
+        return None
+
+    result = await db.execute(select(User).where(User.id == user_uuid))
+    return result.scalar_one_or_none()
 
 
 # Pydantic Models
@@ -87,7 +147,8 @@ class ConversionOptions(BaseModel):
         description="Target Minecraft Bedrock version",
     )
 
-    @validator("assumptions")
+    @field_validator("assumptions")
+    @classmethod
     def validate_assumptions(cls, v):
         if v not in ("conservative", "aggressive"):
             raise ValueError("assumptions must be 'conservative' or 'aggressive'")
@@ -114,6 +175,39 @@ class ConversionCreateResponse(BaseModel):
     )
 
 
+class AssetCategoryStatus(BaseModel):
+    """Per-asset category conversion status (Issue #1087)."""
+
+    category: str = Field(..., description="Category name: textures, models, recipes, etc.")
+    status: str = Field(..., description="converted, partial, failed, or pending")
+    total: int = Field(default=0, description="Total items in this category")
+    converted: int = Field(default=0, description="Successfully converted items")
+    partial: int = Field(default=0, description="Partially converted items")
+    failed: int = Field(default=0, description="Failed items")
+    percentage: float = Field(default=0.0, description="Conversion percentage")
+    error_message: Optional[str] = Field(None, description="Error message if failed")
+
+
+class StructuredError(BaseModel):
+    """Structured error with code and retry info (Issue #1087)."""
+
+    error_code: str = Field(..., description="Short error code: INVALID_FILE, PARSE_ERROR, etc.")
+    error_type: str = Field(..., description="Error type: conversion_error, validation_error, etc.")
+    message: str = Field(..., description="Error message")
+    is_retryable: bool = Field(..., description="Whether client can retry this operation")
+    details: Optional[Dict[str, Any]] = Field(None, description="Additional error details")
+
+
+class ConversionStage(str, Enum):
+    """Conversion pipeline stages for progress indicator."""
+
+    QUEUED = "queued"
+    ANALYZING = "analyzing"
+    CONVERTING = "converting"
+    PACKAGING = "packaging"
+    COMPLETE = "complete"
+
+
 class ConversionStatusResponse(BaseModel):
     """Response model for conversion status."""
 
@@ -126,6 +220,31 @@ class ConversionStatusResponse(BaseModel):
     result_url: Optional[str] = Field(None, description="Download URL if completed")
     error: Optional[str] = Field(None, description="Error message if failed")
     original_filename: Optional[str] = Field(None, description="Original uploaded filename")
+    current_stage: Optional[str] = Field(
+        None,
+        description="Current conversion stage: queued, analyzing, converting, packaging, complete",
+    )
+    # Issue #1087: Enhanced error and partial result handling
+    structured_error: Optional[StructuredError] = Field(
+        None, description="Structured error with code and retryability"
+    )
+    asset_results: Optional[List[AssetCategoryStatus]] = Field(
+        None, description="Per-asset category breakdown for partial results"
+    )
+    overall_percentage: Optional[float] = Field(
+        None, description="Overall conversion percentage across all assets"
+    )
+    # Issue #979: Conversion history with per-user stats
+    complexity_tier: Optional[str] = Field(
+        None, description="Complexity tier: simple, moderate, complex"
+    )
+    features_converted: Optional[List[str]] = Field(
+        None, description="List of features successfully converted"
+    )
+    features_skipped: Optional[List[str]] = Field(
+        None, description="List of features that were skipped"
+    )
+    warnings: Optional[List[str]] = Field(None, description="List of warnings during conversion")
 
 
 class ConversionListResponse(BaseModel):
@@ -135,6 +254,13 @@ class ConversionListResponse(BaseModel):
     total: int = Field(..., description="Total number of conversions")
     page: int = Field(..., description="Current page number")
     page_size: int = Field(..., description="Number of items per page")
+
+
+class ConversionReportDownloadResponse(BaseModel):
+    """Response model for conversion report download."""
+
+    download_url: str = Field(..., description="URL to download the report")
+    format: str = Field(..., description="Report format: json, html, csv")
 
 
 # Resumable Upload Models
@@ -246,7 +372,10 @@ def validate_file_type(filename: str) -> tuple[bool, str]:
     _, ext = os.path.splitext(filename.lower())
 
     if ext not in ALLOWED_EXTENSIONS:
-        return False, f"File type {ext} not supported. Allowed: {', '.join(ALLOWED_EXTENSIONS)}"
+        return (
+            False,
+            f"File type {ext} not supported. Allowed: {', '.join(ALLOWED_EXTENSIONS)}",
+        )
 
     return True, ""
 
@@ -396,7 +525,18 @@ async def websocket_conversion_progress(websocket: WebSocket, conversion_id: str
             # Receive any messages from client (for future bidirectional support)
             try:
                 data = await websocket.receive_text()
-                # Currently just echo back, but could handle client commands
+                try:
+                    msg = json.loads(data)
+                    if msg.get("type") == "ping":
+                        await websocket.send_json(
+                            {
+                                "type": "pong",
+                                "data": {"timestamp": datetime.now(timezone.utc).isoformat()},
+                            }
+                        )
+                        continue
+                except (json.JSONDecodeError, AttributeError):
+                    pass
                 logger.debug(f"Received WebSocket message for {conversion_id}: {data}")
             except WebSocketDisconnect:
                 logger.info(f"WebSocket disconnected for conversion {conversion_id}")
@@ -420,6 +560,8 @@ async def create_conversion(
     options: str = Form(default="{}", description="JSON string of conversion options"),
     background_tasks: BackgroundTasks = None,
     db: AsyncSession = Depends(get_db),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    user: Optional[User] = Depends(get_api_key_user),
 ):
     """
     Start a new mod conversion job.
@@ -458,6 +600,38 @@ async def create_conversion(
     - WS /api/v1/conversions/{id}/ws - Real-time progress
     - GET /api/v1/conversions/{id}/download - Download result
     """
+    # Metering check for subscription tier limits (Issue #977)
+    # Use API usage metering for API key auth, web usage metering for JWT
+    is_api_key_auth = user and credentials and credentials.credentials.startswith("mpk_")
+    if user:
+        metering_service = MeteringService(db)
+        if is_api_key_auth:
+            metering_result = await metering_service.check_and_increment_api_usage(user)
+        else:
+            metering_result = await metering_service.check_and_increment_web_usage(user)
+
+        if not metering_result.allowed:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "error": "usage_limit_exceeded",
+                    "message": metering_result.error_message,
+                    "upgrade_cta": metering_result.upgrade_cta,
+                    "usage": {
+                        "tier": metering_result.usage_info.tier,
+                        "web_conversions": metering_result.usage_info.web_conversions,
+                        "monthly_limit": metering_result.usage_info.monthly_limit,
+                        "remaining": metering_result.usage_info.remaining,
+                    },
+                },
+            )
+
+        if metering_result.usage_info.should_upgrade:
+            logger.info(
+                f"User {user.id} approaching conversion limit: "
+                f"{metering_result.usage_info.web_conversions}/{metering_result.usage_info.monthly_limit}"
+            )
+
     # Validate file was provided
     if not file.filename:
         raise HTTPException(
@@ -536,12 +710,14 @@ async def create_conversion(
 
     # Create conversion job in database
     try:
+        user_id = str(user.id) if user else None
         job = await crud.create_job(
             session=db,
             file_id=file_id,
             original_filename=safe_filename,
             target_version=conversion_options.target_version,
-            options=conversion_options.dict(),
+            options=conversion_options.model_dump(),
+            user_id=user_id,
             commit=True,
         )
 
@@ -570,7 +746,7 @@ async def create_conversion(
                 "file_path": file_path,
                 "original_filename": safe_filename,
                 "target_version": conversion_options.target_version,
-                "options": conversion_options.dict(),
+                "options": conversion_options.model_dump(),
             },
             priority=TaskPriority.NORMAL,
         )
@@ -585,7 +761,7 @@ async def create_conversion(
                 file_path=file_path,
                 original_filename=safe_filename,
                 target_version=conversion_options.target_version,
-                options=conversion_options.dict(),
+                options=conversion_options.model_dump(),
             )
             logger.info(f"AI Engine conversion started in background for job: {conversion_id}")
 
@@ -690,10 +866,13 @@ async def get_conversion(
         result_url=result_url,
         error=None,
         original_filename=job.input_data.get("original_filename"),
+        structured_error=None,
+        asset_results=None,
+        overall_percentage=None,
     )
 
     # Update cache
-    await cache.set_job_status(conversion_id, response.dict())
+    await cache.set_job_status(conversion_id, response.model_dump())
 
     return response
 
@@ -708,11 +887,13 @@ async def list_conversions(
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     status: Optional[str] = Query(None, description="Filter by status"),
     db: AsyncSession = Depends(get_db),
+    user: Optional[User] = Depends(get_optional_user),
 ):
     """
     List conversion jobs with pagination.
 
-    Returns a paginated list of conversions, optionally filtered by status.
+    Returns a paginated list of conversions for the authenticated user.
+    If not authenticated, returns only jobs without user_id (public/anonymous conversions).
 
     **Query Parameters:**
     - page: Page number (default: 1)
@@ -729,27 +910,23 @@ async def list_conversions(
     }
     ```
     """
-    # Get all jobs
-    jobs = await crud.list_jobs(db)
+    user_id = str(user.id) if user else None
+    jobs, total = await crud.list_jobs(
+        db, skip=(page - 1) * page_size, limit=page_size, user_id=user_id
+    )
 
-    # Filter by status if provided
     if status:
         jobs = [job for job in jobs if job.status == status]
 
-    # Pagination
-    total = len(jobs)
-    start = (page - 1) * page_size
-    end = start + page_size
-    paginated_jobs = jobs[start:end]
-
-    # Build response
     conversions = []
-    for job in paginated_jobs:
+    for job in jobs:
         progress = job.progress.progress if job.progress else 0
         result_url = None
 
         if job.status == "completed":
             result_url = f"/api/v1/conversions/{job.id}/download"
+
+        input_data = job.input_data or {}
 
         conversions.append(
             ConversionStatusResponse(
@@ -761,7 +938,14 @@ async def list_conversions(
                 updated_at=job.updated_at,
                 result_url=result_url,
                 error=None,
-                original_filename=job.input_data.get("original_filename"),
+                original_filename=input_data.get("original_filename"),
+                structured_error=None,
+                asset_results=None,
+                overall_percentage=None,
+                complexity_tier=input_data.get("complexity_tier"),
+                features_converted=input_data.get("features_converted", []),
+                features_skipped=input_data.get("features_skipped", []),
+                warnings=input_data.get("warnings", []),
             )
         )
 
@@ -877,6 +1061,149 @@ async def download_conversion(conversion_id: str, db: AsyncSession = Depends(get
     return FileResponse(
         path=file_path,
         media_type="application/zip",
+        filename=download_filename,
+    )
+
+
+@router.get(
+    "/api/v1/conversions/{conversion_id}/report",
+    response_model=ConversionReportDownloadResponse,
+    tags=["conversions"],
+)
+async def download_conversion_report(
+    conversion_id: str,
+    format: str = Query("json", description="Report format: json, html, csv"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Download conversion report in specified format.
+
+    The job must have status "completed" and have report data available.
+
+    **Query Parameters:**
+    - format: Report format - "json", "html", or "csv" (default: json)
+
+    **Response:**
+    ```json
+    {
+      "download_url": "/api/v1/conversions/{id}/report/download?format=json",
+      "format": "json"
+    }
+    ```
+
+    **Error Responses:**
+    - 404: Conversion not found or no report available
+    - 400: Invalid format specified
+    """
+    job = await crud.get_job(db, conversion_id)
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Conversion {conversion_id} not found",
+        )
+
+    if job.status != "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Conversion is not completed. Current status: {job.status}",
+        )
+
+    if format not in ("json", "html", "csv"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid format: {format}. Allowed: json, html, csv",
+        )
+
+    download_url = f"/api/v1/conversions/{conversion_id}/report/download?format={format}"
+
+    return ConversionReportDownloadResponse(
+        download_url=download_url,
+        format=format,
+    )
+
+
+@router.get(
+    "/api/v1/conversions/{conversion_id}/report/download",
+    tags=["conversions"],
+)
+async def get_report_file(
+    conversion_id: str,
+    format: str = Query("json", description="Report format: json, html, csv"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get the actual report file for download.
+
+    Returns the report content in the specified format.
+
+    **Query Parameters:**
+    - format: Report format - "json", "html", or "csv" (default: json)
+
+    **Response:** Binary file download with appropriate Content-Type
+    """
+    job = await crud.get_job(db, conversion_id)
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Conversion {conversion_id} not found",
+        )
+
+    if job.status != "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Conversion is not completed. Current status: {job.status}",
+        )
+
+    input_data = job.input_data or {}
+
+    original_filename = input_data.get("original_filename", "conversion_report")
+    base_name = os.path.splitext(original_filename)[0]
+
+    results = job.results[0].output_data if job.results else {}
+    metadata = {
+        "job_id": str(job.id),
+        "original_filename": original_filename,
+        "created_at": job.created_at.isoformat() if job.created_at else None,
+        "status": job.status,
+        "complexity_tier": input_data.get("complexity_tier", "unknown"),
+        "features_converted": input_data.get("features_converted", []),
+        "features_skipped": input_data.get("features_skipped", []),
+        "warnings": input_data.get("warnings", []),
+    }
+
+    report_data = {
+        "metadata": metadata,
+        "results": results,
+        "input_data": {k: v for k, v in input_data.items() if k not in ("user_id", "file_id")},
+    }
+
+    exporter = ReportExporter()
+
+    if format == "json":
+        content = exporter.export_to_json(report_data)
+        media_type = "application/json"
+        download_filename = f"{base_name}_report.json"
+    elif format == "html":
+        content = exporter.export_to_html(report_data)
+        media_type = "text/html"
+        download_filename = f"{base_name}_report.html"
+    else:
+        content = exporter.export_to_csv(report_data)
+        media_type = "text/csv"
+        download_filename = f"{base_name}_report.csv"
+
+    import tempfile
+    import os as os_module
+
+    temp_dir = tempfile.gettempdir()
+    temp_path = os_module.path.join(temp_dir, download_filename)
+
+    with open(temp_path, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    return FileResponse(
+        path=temp_path,
+        media_type=media_type,
         filename=download_filename,
     )
 
@@ -1226,7 +1553,8 @@ async def complete_chunked_upload(
             os.remove(file_path)
         shutil.rmtree(chunks_dir, ignore_errors=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to complete upload"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to complete upload",
         )
 
 

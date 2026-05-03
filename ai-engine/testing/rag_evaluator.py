@@ -1,6 +1,6 @@
 import json
 import os
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 # Adjust the import path based on the project structure and how it's run.
 # This assumes rag_evaluator.py might be run as a script from the project root,
@@ -11,9 +11,10 @@ try:
 except ImportError:
     # Fallback for direct script execution from within `ai-engine/src/testing`
     import sys
+
     # Add 'ai-engine' to sys.path, assuming 'ai-engine' is the project root.
     # This is a common way to handle relative imports when running scripts directly.
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
     from agents.knowledge_base_agent import KnowledgeBaseAgent
@@ -35,7 +36,7 @@ class RagEvaluator:
 
     def _load_evaluation_set(self) -> List[Dict[str, Any]]:
         try:
-            with open(self.eval_set_path, 'r') as f:
+            with open(self.eval_set_path, "r") as f:
                 data = json.load(f)
             return data.get("evaluation_queries", [])
         except FileNotFoundError:
@@ -62,7 +63,9 @@ class RagEvaluator:
             expected_snippet = item.get("expected_document_snippet")
 
             if not query or not expected_snippet:
-                print(f"Warning: Skipping query ID {query_id} due to missing 'query' or 'expected_document_snippet'.")
+                print(
+                    f"Warning: Skipping query ID {query_id} due to missing 'query' or 'expected_document_snippet'."
+                )
                 continue
 
             print(f"\nProcessing Query ID: {query_id} - '{query}'")
@@ -73,9 +76,13 @@ class RagEvaluator:
             # Using semantic_search method instead of private _run method
             retrieved_docs_json = await self.search_tool.semantic_search.func(query)
             retrieved_docs_data = json.loads(retrieved_docs_json)
-            retrieved_docs_text = " ".join([result.get("content", "") for result in retrieved_docs_data.get("results", [])])
+            retrieved_docs_text = " ".join(
+                [result.get("content", "") for result in retrieved_docs_data.get("results", [])]
+            )
 
-            print(f"  Retrieved: \"{retrieved_docs_text[:100]}...\"") # Print a snippet of retrieved text
+            print(
+                f'  Retrieved: "{retrieved_docs_text[:100]}..."'
+            )  # Print a snippet of retrieved text
 
             if expected_snippet in retrieved_docs_text:
                 self.retrieval_metrics["hits"] += 1
@@ -108,7 +115,7 @@ def main():
     # __file__ is the path to the current script (rag_evaluator.py)
     # e.g., /path/to/ai-engine/src/testing/rag_evaluator.py
     # We want /path/to/ai-engine/src/testing/scenarios/rag_evaluation_set.json
-    base_dir = os.path.dirname(__file__) # ai-engine/src/testing
+    base_dir = os.path.dirname(__file__)  # ai-engine/src/testing
     eval_set_file = os.path.join(base_dir, "scenarios", "rag_evaluation_set.json")
 
     print(f"Attempting to load evaluation set from: {eval_set_file}")
@@ -116,6 +123,7 @@ def main():
     evaluator = RagEvaluator(eval_set_path=eval_set_file)
     evaluator.evaluate_retrieval()
     evaluator.report_metrics()
+
 
 if __name__ == "__main__":
     main()

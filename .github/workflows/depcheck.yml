@@ -1,0 +1,351 @@
+# Dependency Check Workflow
+# Detects unused and vulnerable dependencies in the project
+# Run on: Pull requests and weekly schedule
+
+name: Dependency Check
+
+'on':
+  workflow_dispatch:
+    inputs:
+      full_audit:
+        description: 'Run full audit including all dependencies'
+        required: false
+        default: 'false'
+        type: boolean
+  schedule:
+    # Run weekly on Sunday at 3 AM UTC
+    - cron: '0 3 * * 0'
+  pull_request:
+    paths:
+      - '**/package.json'
+      - '**/package-lock.json'
+      - '**/pnpm-lock.yaml'
+      - '**/requirements*.txt'
+      - '**/pyproject.toml'
+      - '.github/workflows/depcheck.yml'
+
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Detect which parts of the project have changed
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+      ai-engine: ${{ steps.filter.outputs.ai-engine }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Filter paths
+        id: filter
+        run: |
+          echo "Checking for changes in frontend, backend, and ai-engine..."
+
+          # Check frontend changes
+          if git diff --name-only main...HEAD | grep -q "frontend/"; then
+            echo "frontend=true" >> $GITHUB_OUTPUT
+          else
+            echo "frontend=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Check backend changes
+          if git diff --name-only main...HEAD | grep -q "backend/"; then
+            echo "backend=true" >> $GITHUB_OUTPUT
+          else
+            echo "backend=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Check ai-engine changes
+          if git diff --name-only main...HEAD | grep -q "ai-engine/"; then
+            echo "ai-engine=true" >> $GITHUB_OUTPUT
+          else
+            echo "ai-engine=false" >> $GITHUB_OUTPUT
+          fi
+
+          echo "Frontend changed: ${{ steps.filter.outputs.frontend }}"
+          echo "Backend changed: ${{ steps.filter.outputs.backend }}"
+          echo "AI-Engine changed: ${{ steps.filter.outputs.ai-engine }}"
+
+  # Frontend: depcheck for npm/TypeScript dependencies
+  depcheck-frontend:
+    name: Depcheck - Frontend
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' || github.event.inputs.full_audit == 'true' }}
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: 'pnpm-lock.yaml'
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          pnpm install --no-frozen-lockfile --ignore-scripts
+
+      - name: Run depcheck
+        id: depcheck
+        continue-on-error: true
+        run: |
+          cd frontend
+          echo "Running depcheck to find unused dependencies..."
+
+          # Run depcheck and capture output
+          if pnpm depcheck 2>&1; then
+            echo "✅ No unused dependencies found"
+            echo "unused_deps_found=false" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Unused dependencies detected!"
+            echo "unused_deps_found=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run npm audit
+        id: npm-audit
+        continue-on-error: true
+        run: |
+          cd frontend
+          echo "Running npm audit to check for vulnerabilities..."
+
+          # Run npm audit and capture output
+          if pnpm audit --audit-level=moderate 2>&1 | tee /tmp/npm-audit-output; then
+            echo "✅ No vulnerabilities found"
+            echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Vulnerabilities detected!"
+            echo "vulnerabilities_found=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Report results
+        if: always()
+        run: |
+          if [ "${{ steps.depcheck.outputs.unused_deps_found }}" = "true" ]; then
+            echo "## ⚠️ Unused Dependencies Detected in Frontend"
+            echo "depcheck found unused dependencies in the frontend"
+            echo "Please review and remove unused packages from package.json"
+          else
+            echo "✅ Frontend depcheck passed - no unused dependencies"
+          fi
+
+          if [ "${{ steps.npm-audit.outputs.vulnerabilities_found }}" = "true" ]; then
+            echo "## ⚠️ Vulnerabilities Detected in Frontend"
+            echo "npm audit found security vulnerabilities"
+            echo "Please review and update dependencies to fix vulnerabilities"
+          else
+            echo "✅ Frontend npm audit passed - no vulnerabilities found"
+          fi
+
+  # Backend: pip-audit for Python dependencies
+  pip-audit-backend:
+    name: Pip Audit & Deptree - Backend
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' || github.event.inputs.full_audit == 'true' }}
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install pip-audit and pipdeptree
+        run: |
+          pip install pip-audit pipdeptree
+
+      - name: Run pip-audit and pipdeptree
+        id: pip-audit
+        run: |
+          cd backend
+          echo "Running pip-audit to check for vulnerabilities and unused dependencies..."
+
+          # First, install dependencies
+          pip install -r requirements.txt -r requirements-dev.txt
+
+          # Run pip-audit to check for vulnerabilities
+          if pip-audit --strict; then
+            echo "✅ No vulnerabilities found in dependencies"
+            echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Vulnerabilities detected in dependencies!"
+            echo "vulnerabilities_found=true" >> $GITHUB_OUTPUT
+          fi
+
+          # Run pipdeptree to check for unused dependencies
+          echo ""
+          echo "Running pipdeptree to check for unused dependencies..."
+          if pipdeptree --warn fail; then
+            echo "✅ No unused (undepended) packages found"
+            echo "unused_deps_found=false" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Unused dependencies detected!"
+            echo "unused_deps_found=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Report results
+        if: always()
+        run: |
+          if [ "${{ steps.pip-audit.outputs.vulnerabilities_found }}" = "true" ]; then
+            echo "## ⚠️ Vulnerabilities Detected in Backend Dependencies"
+            echo "Please review and update dependencies to fix vulnerabilities"
+          else
+            echo "✅ Backend pip-audit passed - no vulnerabilities found"
+          fi
+
+          if [ "${{ steps.pip-audit.outputs.unused_deps_found }}" = "true" ]; then
+            echo "## ⚠️ Unused Dependencies Detected in Backend"
+            echo "pipdeptree found packages that are not dependencies of any other package"
+            echo "Please review and remove unused packages from requirements.txt"
+          else
+            echo "✅ Backend pipdeptree passed - no unused dependencies"
+          fi
+
+  # AI-Engine: pip-audit for Python dependencies
+  pip-audit-ai-engine:
+    name: Pip Audit & Deptree - AI Engine
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ needs.changes.outputs.ai-engine == 'true' || github.event.inputs.full_audit == 'true' }}
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install pip-audit and pipdeptree
+        run: |
+          pip install pip-audit pipdeptree
+
+      - name: Run pip-audit and pipdeptree
+        id: pip-audit-ai
+        run: |
+          cd ai-engine
+          echo "Running pip-audit to check for vulnerabilities and unused dependencies..."
+
+          # First, install dependencies
+          pip install -r requirements.txt -r requirements-dev.txt
+
+          # Run pip-audit to check for vulnerabilities
+          if pip-audit --strict; then
+            echo "✅ No vulnerabilities found in dependencies"
+            echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Vulnerabilities detected in dependencies!"
+            echo "vulnerabilities_found=true" >> $GITHUB_OUTPUT
+          fi
+
+          # Run pipdeptree to check for unused dependencies
+          echo ""
+          echo "Running pipdeptree to check for unused dependencies..."
+          if pipdeptree --warn fail; then
+            echo "✅ No unused (undepended) packages found"
+            echo "unused_deps_found=false" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Unused dependencies detected!"
+            echo "unused_deps_found=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Report results
+        if: always()
+        run: |
+          if [ "${{ steps.pip-audit-ai.outputs.vulnerabilities_found }}" = "true" ]; then
+            echo "## ⚠️ Vulnerabilities Detected in AI Engine Dependencies"
+            echo "Please review and update dependencies to fix vulnerabilities"
+          else
+            echo "✅ AI Engine pip-audit passed - no vulnerabilities found"
+          fi
+
+          if [ "${{ steps.pip-audit-ai.outputs.unused_deps_found }}" = "true" ]; then
+            echo "## ⚠️ Unused Dependencies Detected in AI Engine"
+            echo "pipdeptree found packages that are not dependencies of any other package"
+            echo "Please review and remove unused packages from requirements.txt"
+          else
+            echo "✅ AI Engine pipdeptree passed - no unused dependencies"
+          fi
+
+  # Summary
+  summary:
+    name: Summary
+    runs-on: ubuntu-latest
+    needs: [depcheck-frontend, pip-audit-backend, pip-audit-ai-engine]
+    if: always()
+    steps:
+      - name: Summary
+        run: |
+          echo "## Dependency Check Summary"
+          echo ""
+
+          # Frontend results
+          echo "### Frontend"
+          if [ "${{ needs.depcheck-frontend.result }}" == "skipped" ]; then
+            echo "✅ Skipped (no frontend changes detected)"
+          elif [ "${{ needs.depcheck-frontend.result }}" == "success" ]; then
+            echo "✅ Passed"
+          elif [ "${{ needs.depcheck-frontend.result }}" == "failure" ]; then
+            echo "❌ Failed"
+          else
+            echo "⚠️ ${{ needs.depcheck-frontend.result }}"
+          fi
+          echo ""
+
+          # Backend results
+          echo "### Backend"
+          if [ "${{ needs.pip-audit-backend.result }}" == "skipped" ]; then
+            echo "✅ Skipped (no backend changes detected)"
+          elif [ "${{ needs.pip-audit-backend.result }}" == "success" ]; then
+            echo "✅ Passed"
+          elif [ "${{ needs.pip-audit-backend.result }}" == "failure" ]; then
+            echo "❌ Failed"
+          else
+            echo "⚠️ ${{ needs.pip-audit-backend.result }}"
+          fi
+          echo ""
+
+          # AI Engine results
+          echo "### AI Engine"
+          if [ "${{ needs.pip-audit-ai-engine.result }}" == "skipped" ]; then
+            echo "✅ Skipped (no ai-engine changes detected)"
+          elif [ "${{ needs.pip-audit-ai-engine.result }}" == "success" ]; then
+            echo "✅ Passed"
+          elif [ "${{ needs.pip-audit-ai-engine.result }}" == "failure" ]; then
+            echo "❌ Failed"
+          else
+            echo "⚠️ ${{ needs.pip-audit-ai-engine.result }}"
+          fi
+          echo ""
+
+          # Overall status
+          echo "## Overall Status"
+          if [ "${{ needs.depcheck-frontend.result }}" == "failure" ] || \
+             [ "${{ needs.pip-audit-backend.result }}" == "failure" ] || \
+             [ "${{ needs.pip-audit-ai-engine.result }}" == "failure" ]; then
+            echo "❌ Some checks failed - review results above"
+            exit 1
+          else
+            echo "✅ All dependency checks passed!"
+          fi

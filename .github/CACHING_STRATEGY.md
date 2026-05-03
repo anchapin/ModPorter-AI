@@ -123,10 +123,10 @@ strategy:
 ```yaml
 cache-from: |
   type=gha,scope=${{ matrix.service }}
-  type=registry,ref=ghcr.io/${{ github.repository }}/modporter-ai-${{ matrix.service }}:cache
+  type=registry,ref=ghcr.io/${{ github.repository }}/portkit-${{ matrix.service }}:cache
 cache-to: |
   type=gha,mode=max,scope=${{ matrix.service }}
-  type=registry,ref=ghcr.io/${{ github.repository }}/modporter-ai-${{ matrix.service }}:cache,mode=max
+  type=registry,ref=ghcr.io/${{ github.repository }}/portkit-${{ matrix.service }}:cache,mode=max
 ```
 
 #### Test Results Caching

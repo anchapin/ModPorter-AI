@@ -1,0 +1,244 @@
+# DNS Configuration Guide for PortKit
+
+This document provides DNS record configurations for email deliverability using Resend.
+
+## Domain: portkit.ai
+
+## Required DNS Records
+
+### A Records (Address Records)
+
+| Type | Name | Value | TTL | Description |
+|------|------|-------|-----|-------------|
+| A | @ (portkit.ai) | `<PRODUCTION_SERVER_IP>` | 3600 | Main domain |
+| A | www | `<PRODUCTION_SERVER_IP>` | 3600 | WWW subdomain |
+| A | api | `<PRODUCTION_SERVER_IP>` | 3600 | API subdomain |
+| A | grafana | `<PRODUCTION_SERVER_IP>` | 3600 | Grafana subdomain |
+
+### MX Records (Mail Exchange)
+
+| Type | Name | Value | Priority | TTL | Description |
+|------|------|-------|----------|-----|-------------|
+| MX | @ | smtp.sendgrid.net | 10 | 3600 | Resend (via SendGrid) |
+| MX | @ | smtp2.sendgrid.net | 20 | 3600 | Resend backup |
+
+### TXT Records (Text Records)
+
+| Type | Name | Value | TTL | Description |
+|------|------|-------|-----|-------------|
+| TXT | @ | `"v=spf1 include:sendgrid.net ~all"` | 3600 | SPF for email |
+| TXT | portkit.ai._domainkey | `<DKIM_KEY_FROM_RESEND>` | 3600 | DKIM signing |
+| TXT | @ | `"v=DMARC1; p=none; rua=mailto:dmarc@portkit.ai; pct=100"` | 3600 | DMARC policy |
+
+### CNAME Records (Canonical Name)
+
+| Type | Name | Value | TTL | Description |
+|------|------|-------|-----|-------------|
+| CNAME | email | sendgrid.ki | 3600 | SendGrid link branding |
+| CNAME | resend._domainkey | `<DKIM_CNAME_FROM_RESEND>` | 3600 | Resend DKIM |
+
+---
+
+## Email Authentication Setup
+
+### Resend Configuration
+
+PortKit uses Resend for transactional email. Resend handles SPF automatically, but DKIM requires DNS configuration.
+
+#### Step 1: Add Domain in Resend
+
+1. Log in to Resend dashboard: https://resend.com/domains
+2. Add `portkit.ai` as a verified domain
+3. Resend will provide:
+   - SPF TXT record (auto-generated)
+   - DKIM CNAME record (custom selector)
+
+#### Step 2: Configure DNS Records
+
+**SPF Record:**
+```
+TXT @ "v=spf1 include:sendgrid.net ~all"
+```
+
+**DKIM Record (from Resend dashboard):**
+```
+CNAME resend._domainkey.portkit.ai <DKIM_CNAME_FROM_RESEND>
+```
+
+**DMARC Record:**
+```
+TXT @ "v=DMARC1; p=none; rua=mailto:dmarc@portkit.ai; pct=100"
+```
+
+### SPF (Sender Policy Framework)
+
+SPF record tells receiving mail servers which servers are authorized to send email for your domain.
+
+```
+v=spf1 include:sendgrid.net ~all
+```
+
+**Explanation:**
+- `v=spf1` - SPF version 1
+- `include:sendgrid.net` - Authorize SendGrid (Resend's provider) servers
+- `~all` - Soft fail for unauthorized servers (use `-all` for hard fail after testing)
+
+### DKIM (DomainKeys Identified Mail)
+
+DKIM adds a digital signature to emails verifying the sender and content integrity.
+
+**Setup Steps:**
+1. Log in to Resend dashboard
+2. Navigate to Domains → portkit.ai
+3. Copy the DKIM CNAME record provided
+4. Add to your DNS provider
+
+### DMARC (Domain-based Message Authentication)
+
+DMARC tells receiving servers what to do if SPF or DKIM fails.
+
+```
+v=DMARC1; p=none; rua=mailto:dmarc@portkit.ai; pct=100
+```
+
+**Policy Options:**
+- `p=none` - Monitor only (start with this)
+- `p=quarantine` - Send failing emails to spam
+- `p=reject` - Reject failing emails
+
+**After monitoring period (1-2 weeks), update to:**
+```
+v=DMARC1; p=quarantine; rua=mailto:dmarc@portkit.ai; pct=100
+```
+
+---
+
+## DNS Provider Specific Instructions
+
+### Cloudflare
+
+1. Log in to Cloudflare Dashboard
+2. Select your domain (portkit.ai)
+3. Go to DNS settings
+4. Add records as above
+5. **Important**: Disable proxy (orange cloud) for initial SSL setup
+6. After SSL is working, you can enable proxy for DDoS protection
+
+**Cloudflare-specific settings:**
+- SSL/TLS Mode: Full (strict)
+- Always Use HTTPS: Enabled
+- HTTP Strict Transport Security (HSTS): Enabled
+- Auto Minify: Enabled for HTML, CSS, JS
+- Brotli Compression: Enabled
+
+### Namecheap
+
+1. Log in to Namecheap Dashboard
+2. Select Domain List → Manage for portkit.ai
+3. Go to Advanced DNS tab
+4. Add records as above
+
+**Namecheap-specific settings:**
+- Email Forwarding: Disabled (using Resend)
+- URL Redirect: Not needed
+
+### GoDaddy
+
+1. Log in to GoDaddy DNS Management
+2. Select portkit.ai
+3. Add records as above
+
+**GoDaddy-specific settings:**
+- DNS Zone File: Edit as needed
+- Nameservers: Use GoDaddy nameservers
+
+### Route53 (AWS)
+
+1. Log in to AWS Route53 Console
+2. Select Hosted Zone for portkit.ai
+3. Create Record Sets as above
+
+**Route53-specific settings:**
+- Use Alias records for root domain (@)
+- Create Alias to CloudFront/ALB if using AWS services
+
+---
+
+## Verification Commands
+
+### Check DNS Propagation
+
+```bash
+# Check A records
+dig portkit.ai +short
+dig www.portkit.ai +short
+dig api.portkit.ai +short
+
+# Check MX records
+dig portkit.ai MX +short
+
+# Check TXT records
+dig portkit.ai TXT +short
+
+# Check all records
+dig portkit.ai ANY
+```
+
+### Online Tools
+
+- **DNS Propagation**: https://dnschecker.org/
+- **MX Lookup**: https://mxtoolbox.com/
+- **SPF Check**: https://mxtoolbox.com/spf.aspx
+- **DKIM Check**: https://mxtoolbox.com/dkim.aspx
+- **DMARC Check**: https://mxtoolbox.com/dmarc.aspx
+
+---
+
+## Troubleshooting
+
+### DNS Not Propagating
+
+1. Wait up to 48 hours for full propagation
+2. Check with multiple DNS servers: `dig @8.8.8.8 portkit.ai`
+3. Clear local DNS cache: `sudo systemd-resolve --flush-caches`
+
+### SSL Certificate Issues
+
+1. Verify DNS is pointing to correct IP
+2. Ensure port 80 is open for ACME challenge
+3. Check certbot logs: `/var/log/letsencrypt/letsencrypt.log`
+
+### Email Deliverability Issues
+
+1. Verify SPF record: `dig portkit.ai TXT`
+2. Check DKIM setup in Resend dashboard
+3. Verify DMARC policy is correct
+4. Check IP reputation: https://talosintelligence.com/
+
+---
+
+## Post-Setup Checklist
+
+- [ ] All A records propagating correctly
+- [ ] MX records pointing to SendGrid/Resend
+- [ ] SPF record configured
+- [ ] DKIM CNAME records added
+- [ ] DMARC record configured
+- [ ] Domain verified in Resend dashboard
+- [ ] SSL certificate installed and valid
+- [ ] HTTPS redirect working
+- [ ] Email sending successfully
+- [ ] SSL Labs rating A or A+
+
+---
+
+## Contact Information
+
+For DNS issues:
+- Cloudflare Support: https://support.cloudflare.com/
+- Namecheap Support: https://www.namecheap.com/support/
+- GoDaddy Support: https://www.godaddy.com/help
+- AWS Route53: https://console.aws.amazon.com/route53/
+
+For email issues:
+- Resend Support: https://resend.com/support

@@ -1,6 +1,7 @@
 /**
  * ReportSummary Component - Enhanced summary section for conversion reports
  * Part of Issue #10 - Conversion Report Generation System
+ * Issue #1087 - Enhanced with category breakdown display
  */
 
 import React from 'react';
@@ -75,7 +76,7 @@ const StatCard: React.FC<{
   color?: string;
 }> = ({ title, value, icon = '', color = '#007bff' }) => (
   <div className={styles.statCard}>
-    <div className={styles.statIcon} style={{ color }}>
+    <div className={styles.statIcon} style={{ color }} aria-hidden="true">
       {icon}
     </div>
     <div className={styles.statContent}>
@@ -93,8 +94,9 @@ const DownloadButton: React.FC<{ url: string }> = ({ url }) => (
     download
     className={styles.downloadButton}
     title="Download converted add-on"
+    aria-label="Download converted add-on"
   >
-    📥 Download .mcaddon
+    <span aria-hidden="true">📥</span> Download .mcaddon
   </a>
 );
 
@@ -151,6 +153,102 @@ const RecommendedActions: React.FC<{ actions: string[] }> = ({ actions }) => {
   );
 };
 
+interface CategoryBreakdownProps {
+  categories: SummaryReport['category_breakdown'];
+}
+
+const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
+  categories,
+}) => {
+  if (!categories || categories.length === 0) return null;
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'converted':
+        return '#28a745';
+      case 'partial':
+        return '#ffc107';
+      case 'not_converted':
+      default:
+        return '#dc3545';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'converted':
+        return '✅';
+      case 'partial':
+        return '⚠️';
+      case 'not_converted':
+      default:
+        return '❌';
+    }
+  };
+
+  const formatCategoryName = (name: string) => {
+    return name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, ' ');
+  };
+
+  return (
+    <div className={styles.categoryBreakdown}>
+      <h4>📊 Coverage by Category</h4>
+      <div className={styles.categoriesGrid}>
+        {categories.map((cat, index) => (
+          <div key={index} className={styles.categoryCard}>
+            <div className={styles.categoryHeader}>
+              <span className={styles.categoryTitle}>
+                {getStatusIcon(cat.status)} {formatCategoryName(cat.category)}
+              </span>
+              <span
+                className={styles.categoryPercentage}
+                style={{ color: getStatusColor(cat.status) }}
+              >
+                {cat.percentage.toFixed(1)}%
+              </span>
+            </div>
+            <div className={styles.categoryCount}>
+              {cat.converted} / {cat.total} converted
+              {cat.partial > 0 && ` (+${cat.partial} partial)`}
+              {cat.failed > 0 && ` (-${cat.failed} failed)`}
+            </div>
+            {cat.notes && (
+              <div className={styles.categoryNotes}>{cat.notes}</div>
+            )}
+            {cat.manual_work_hours !== undefined &&
+              cat.manual_work_hours > 0 && (
+                <div className={styles.manualWork}>
+                  ~{cat.manual_work_hours.toFixed(1)} hrs manual work
+                </div>
+              )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const PriorityOrder: React.FC<{ priority: string[] }> = ({ priority }) => {
+  if (!priority || priority.length === 0) return null;
+
+  const formatCategoryName = (name: string) => {
+    return name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, ' ');
+  };
+
+  return (
+    <div className={styles.priorityOrder}>
+      <h4>🎯 Priority Order for Manual Work</h4>
+      <div className={styles.priorityList}>
+        {priority.map((cat, index) => (
+          <span key={index} className={styles.priorityItem}>
+            {index + 1}. {formatCategoryName(cat)}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const ReportSummary: React.FC<ReportSummaryProps> = ({ summary }) => {
   const {
     overall_success_rate,
@@ -165,6 +263,10 @@ export const ReportSummary: React.FC<ReportSummaryProps> = ({ summary }) => {
     output_size_mb,
     conversion_quality_score,
     recommended_actions,
+    time_saved_hours,
+    category_breakdown,
+    manual_work_estimate_hours,
+    priority_order,
   } = summary;
 
   return (
@@ -232,7 +334,34 @@ export const ReportSummary: React.FC<ReportSummaryProps> = ({ summary }) => {
           icon="⏱️"
           color="#17a2b8"
         />
+        {time_saved_hours !== undefined && time_saved_hours > 0 && (
+          <StatCard
+            title="Time Saved"
+            value={`~${time_saved_hours.toFixed(1)} hrs`}
+            icon="⚡"
+            color="#28a745"
+          />
+        )}
       </div>
+
+      {/* Issue #1004 & #1087 - Category Breakdown */}
+      <CategoryBreakdown categories={category_breakdown} />
+
+      {/* Issue #1004 - Manual Work Estimate */}
+      {manual_work_estimate_hours !== undefined &&
+        manual_work_estimate_hours > 0 && (
+          <div className={styles.manualWorkEstimate}>
+            <h4>⏱️ Estimated Manual Work</h4>
+            <p>
+              Approximately{' '}
+              <strong>{manual_work_estimate_hours.toFixed(1)} hours</strong> of
+              manual work may be needed for failed/partial conversions.
+            </p>
+          </div>
+        )}
+
+      {/* Issue #1004 - Priority Order */}
+      <PriorityOrder priority={priority_order || []} />
 
       {/* Additional Metrics */}
       {(total_files_processed > 0 || output_size_mb > 0) && (

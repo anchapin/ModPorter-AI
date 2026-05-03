@@ -7,8 +7,7 @@ API Documentation: https://curseforge.atlassian.net/wiki/spaces/CURSE/pages/2924
 
 import os
 import httpx
-from typing import Optional, List, Dict, Any
-from datetime import datetime
+from typing import Optional, Dict, Any
 import logging
 
 logger = logging.getLogger(__name__)

@@ -67,10 +67,10 @@ Run these commands to verify your configuration:
 gh repo view --json private
 
 # Check workflow permissions
-gh api repos/anchapin/ModPorter-AI/actions/permissions/workflow
+gh api repos/anchapin/portkit/actions/permissions/workflow
 
 # Check branch protection
-gh api repos/anchapin/ModPorter-AI/branches/main/protection
+gh api repos/anchapin/portkit/branches/main/protection
 ```
 
 ## Self-Hosted Runner Security
@@ -79,7 +79,7 @@ gh api repos/anchapin/ModPorter-AI/branches/main/protection
 ```bash
 # When setting up your runner, use a dedicated user account
 sudo useradd -m github-runner
-sudo -u github-runner ./config.sh --url https://github.com/anchapin/ModPorter-AI --token YOUR_TOKEN
+sudo -u github-runner ./config.sh --url https://github.com/anchapin/portkit --token YOUR_TOKEN
 
 # Use labels for isolation
 # Labels: self-hosted, ollama, local-dev
@@ -129,7 +129,7 @@ docker run -it --name github-runner \
 
 2. **Review runner logs**:
    ```bash
-   sudo journalctl -u actions.runner.anchapin-ModPorter-AI.YOUR_RUNNER_NAME
+   sudo journalctl -u actions.runner.anchapin-portkit.YOUR_RUNNER_NAME
    ```
 
 3. **Check for unauthorized changes**:
@@ -145,7 +145,7 @@ docker run -it --name github-runner \
    ```bash
    # Remove and reconfigure runner
    ./config.sh remove
-   ./config.sh --url https://github.com/anchapin/ModPorter-AI --token NEW_TOKEN
+   ./config.sh --url https://github.com/anchapin/portkit --token NEW_TOKEN
    sudo ./svc.sh start
    ```
 

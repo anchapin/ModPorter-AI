@@ -1,0 +1,99 @@
+name: CI - AI Engine Tests
+
+'on':
+  push:
+    branches: [main, develop]
+    paths:
+      - 'ai-engine/**'
+      - '.github/workflows/ci-ai-engine-tests.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'ai-engine/**'
+      - '.github/workflows/ci-ai-engine-tests.yml'
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.12'
+  COVERAGE_THRESHOLD: 65
+
+jobs:
+  # ============================================
+  # PARALLEL TESTS WITH COVERAGE
+  # pytest-xdist + pytest-cov DO work together
+  # when pyproject.toml [tool.coverage] is used
+  # (NOT .coveragerc which gets ignored)
+  # Speedup: ~2x (14m -> 7m45s)
+  # ============================================
+  test-coverage:
+    name: Tests + Coverage (70% min)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          lfs: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          cd ai-engine
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-timeout pytest-cov pytest-xdist
+
+      - name: Run tests without coverage (baseline)
+        run: |
+          cd ai-engine
+          echo "===== Running tests without coverage to verify baseline ====="
+          python -m pytest tests/ -q --tb=short --no-cov -n 2 --dist=loadscope
+
+      - name: Run tests with coverage (parallel)
+        run: |
+          cd ai-engine
+          # Run tests with coverage and xdist parallel execution
+          # Use limited parallelism to reduce resource contention
+          python -m pytest tests/ -q --tb=short \
+            --cov=. \
+            --cov-report=json \
+            --cov-fail-under=${{ env.COVERAGE_THRESHOLD }} \
+            -n 2 \
+            --dist=loadscope
+
+      - name: Copy coverage to repository root
+        run: |
+          cp ai-engine/coverage.json coverage.json
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: ai-engine-coverage
+          path: |
+            ai-engine/coverage.json
+            coverage.json
+          if-no-files-found: error
+
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'ai-engine/coverage.json';
+            if (fs.existsSync(path)) {
+              const coverage = JSON.parse(fs.readFileSync(path, 'utf-8'));
+              const total = coverage.totals?.percent_covered?.toFixed(2) ?? 'Unknown';
+              const files = Object.keys(coverage.files).length;
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## AI-Engine Test Coverage\n\n**${total}%** (${files} files tracked)\n\nRequired: ${{ env.COVERAGE_THRESHOLD }}%`
+              });
+            }

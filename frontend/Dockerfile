@@ -3,12 +3,16 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+# Copy root package files
+COPY package*.json ./
+RUN npm install -g pnpm && pnpm install --no-frozen-lockfile
 
-# Copy source code
-COPY . .
+# Copy frontend source
+COPY ./ ./
+
+# Set up frontend with its own dependencies
+WORKDIR /app
+RUN pnpm install --no-frozen-lockfile
 
 # Build arguments for environment variables
 ARG VITE_API_URL

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   Box,
   Tabs,
@@ -123,29 +123,68 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({
     onValidationChange?.(errors);
   }, [formData, fields, validationRules, onValidationChange]);
 
+  // ⚡ Bolt optimization: Pre-compute fields by category to avoid O(N*M) array filtering
+  // with .includes() on every render
+  const categoryFieldsMap = useMemo(() => {
+    const map = new Map<string, FormField[]>();
+    categories.forEach((category) => {
+      const fieldSet = new Set(category.fields);
+      map.set(
+        category.id,
+        fields.filter((field) => fieldSet.has(field.name))
+      );
+    });
+    return map;
+  }, [fields, categories]);
+
   // Get fields for specific category or all fields
   const getFieldsForCategory = useCallback(
     (categoryId?: string): FormField[] => {
       if (!categoryId || categories.length === 0) {
         return fields;
       }
-      const category = categories.find((c) => c.id === categoryId);
-      if (!category) return [];
-      return fields.filter((field) => category.fields.includes(field.name));
+      return categoryFieldsMap.get(categoryId) || [];
     },
-    [fields, categories]
+    [fields, categories, categoryFieldsMap]
   );
+
+  // ⚡ Bolt optimization: Group validation errors by field in a single O(M) pass
+  // instead of filtering the array inside a callback for every single field O(N*M).
+  const fieldErrorsMap = useMemo(() => {
+    return validationErrors.reduce(
+      (acc, error) => {
+        if (!acc[error.field]) {
+          acc[error.field] = [];
+        }
+        acc[error.field].push(error);
+        return acc;
+      },
+      {} as Record<string, ValidationRule[]>
+    );
+  }, [validationErrors]);
 
   // Get field errors
   const getFieldErrors = useCallback(
     (fieldName: string): ValidationRule[] => {
-      return validationErrors.filter((error) => error.field === fieldName);
+      return fieldErrorsMap[fieldName] || [];
     },
-    [validationErrors]
+    [fieldErrorsMap]
   );
 
   // Check if form has unsaved changes
   const hasUnsavedChanges = dirtyFields.size > 0;
+
+  // ⚡ Bolt optimization: Compute error/warning counts in a single pass O(N)
+  // instead of multiple array .filter() and .some() allocations O(3N).
+  const { errorCount, warningCount } = useMemo(() => {
+    let errors = 0;
+    let warnings = 0;
+    for (let i = 0; i < validationErrors.length; i++) {
+      if (validationErrors[i].severity === 'error') errors++;
+      else if (validationErrors[i].severity === 'warning') warnings++;
+    }
+    return { errorCount: errors, warningCount: warnings };
+  }, [validationErrors]);
 
   // Render content based on layout
   const renderContent = () => {
@@ -246,20 +285,10 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({
           <Box className="validation-summary">
             {validationErrors.length > 0 && (
               <Alert
-                severity={
-                  validationErrors.some((e) => e.severity === 'error')
-                    ? 'error'
-                    : 'warning'
-                }
+                severity={errorCount > 0 ? 'error' : 'warning'}
                 sx={{ mb: 2 }}
               >
-                {validationErrors.filter((e) => e.severity === 'error').length}{' '}
-                errors,
-                {
-                  validationErrors.filter((e) => e.severity === 'warning')
-                    .length
-                }{' '}
-                warnings
+                {errorCount} errors, {warningCount} warnings
               </Alert>
             )}
           </Box>

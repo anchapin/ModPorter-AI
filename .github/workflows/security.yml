@@ -1,0 +1,216 @@
+name: Security Scanning
+
+'on':
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 0 * * 0' # Weekly scan on Sunday
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  # =============================================================================
+  # SAST: Static Application Security Testing (Bandit)
+  # =============================================================================
+  bandit-sast:
+    name: Bandit SAST
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install Bandit
+        run: pip install --timeout=300 bandit
+
+      - name: Run Bandit SAST
+        run: |
+          bandit -r \
+            --severity-level=high \
+            --confidence-level=high \
+            --exclude="tests/,.venv/,node_modules/,frontend/,ai-engine/src/" \
+            --output "bandit-results.json" \
+            --format json \
+            . || true
+
+      - name: Publish Bandit results
+        if: always()
+        run: |
+          if [ -f bandit-results.json ]; then
+            # Count issues
+            HIGH=$(grep -o '"HIGH"' bandit-results.json | wc -l || echo "0")
+            MEDIUM=$(grep -o '"MEDIUM"' bandit-results.json | wc -l || echo "0")
+            echo "Bandit findings: HIGH=$HIGH, MEDIUM=$MEDIUM"
+            
+            # Convert to SARIF for GitHub annotations
+            bandit -r \
+              --severity-level=medium,high,critical \
+              --confidence-level=medium,high \
+              --exclude="tests/,.venv/,node_modules/,frontend/,ai-engine/src/" \
+              --output "bandit-sarif.json" \
+              --format sarif \
+              . 2>/dev/null || true
+          fi
+
+      - name: Upload Bandit results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: bandit-results
+          path: bandit-results.json
+
+  # =============================================================================
+  # Dependency Vulnerability Scanning (Trivy)
+  # =============================================================================
+  trivy-dependency-scan:
+    name: Trivy Dependency Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Clean up Docker disk space
+        run: |
+          docker system df
+          docker system prune -af --volumes || true
+          docker builder prune -af || true
+          rm -rf /tmp/trivy-* 2>/dev/null || true
+          df -h /
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build Docker images for scanning
+        run: |
+          docker build --no-cache -t portkit-backend:latest -f Dockerfile .
+          docker build --no-cache -t portkit-ai-engine:latest -f ai-engine/Dockerfile ai-engine/
+
+      - name: Run Trivy vulnerability scanner (image)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'portkit-backend:latest'
+          format: 'json'
+          output: 'trivy-backend-results.json'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0' # Report only, don't fail workflow
+          ignore-unfixed: true
+
+      - name: Run Trivy on AI Engine image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'portkit-ai-engine:latest'
+          format: 'json'
+          output: 'trivy-ai-engine-results.json'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0' # Report only, don't fail workflow
+          ignore-unfixed: true
+
+      - name: Run Trivy filesystem scan (Python deps)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'json'
+          output: 'trivy-fs-results.json'
+          severity: 'CRITICAL,HIGH'
+          scanners: 'vuln'
+          exit-code: '1'
+          ignore-unfixed: true
+
+      - name: Upload Trivy results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: trivy-results
+          path: |
+            trivy-*-results.json
+
+      - name: Clean up Docker images
+        if: always()
+        run: |
+          docker rmi portkit-backend:latest portkit-ai-engine:latest 2>/dev/null || true
+          docker system prune -af --volumes 2>/dev/null || true
+
+  # =============================================================================
+  # Secret Scanning (Gitleaks)
+  # =============================================================================
+  gitleaks-secret-scan:
+    name: Gitleaks Secret Detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        if: github.event_name == 'push'
+        uses: gitleaks/gitleaks-action@v2.3.9
+
+  # =============================================================================
+  # Dependency Review (check for vulnerable dependencies in PRs)
+  # =============================================================================
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: critical
+
+  # =============================================================================
+  # CodeQL Analysis
+  # =============================================================================
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['python', 'javascript']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          queries: +security-extended
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: '/language:${{ matrix.language }}'

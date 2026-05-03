@@ -13,7 +13,7 @@ export interface UndoRedoOptions {
 }
 
 export function useUndoRedo<T>(initialState: T, options: UndoRedoOptions = {}) {
-  const { maxHistory = 50, enableDebounce = true, debounceMs = 500 } = options;
+  const { maxHistory = 50, enableDebounce = false, debounceMs = 500 } = options;
 
   const [state, setState] = useState<T>(initialState);
   const [canUndo, setCanUndo] = useState(false);

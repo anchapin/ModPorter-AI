@@ -10,7 +10,7 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 
 Instead, please report them via one of the following methods:
 
-1. **GitHub Security Advisories**: Use the [GitHub Security Advisory](https://github.com/anchapin/ModPorter-AI/security/advisories/new) to report vulnerabilities privately.
+1. **GitHub Security Advisories**: Use the [GitHub Security Advisory](https://github.com/anchapin/portkit/security/advisories/new) to report vulnerabilities privately.
 
 2. **Email**: Contact us at **alex** (you can find the email associated with the GitHub account @anchapin).
 
@@ -49,7 +49,7 @@ We currently support the following versions with security updates:
 
 ## Security Best Practices
 
-When contributing to ModPorter-AI, please follow these security best practices:
+When contributing to portkit, please follow these security best practices:
 
 - Never commit sensitive information (API keys, passwords, tokens) to the repository
 - Use environment variables for configuration secrets
@@ -65,4 +65,4 @@ For deployment security configurations, see:
 
 ## Credits
 
-We appreciate the efforts of security researchers and contributors who help us keep ModPorter-AI secure. With your permission, we will acknowledge your contribution in the security advisory.
+We appreciate the efforts of security researchers and contributors who help us keep portkit secure. With your permission, we will acknowledge your contribution in the security advisory.

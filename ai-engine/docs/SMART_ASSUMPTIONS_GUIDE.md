@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Smart Assumptions Engine is a core component of ModPorter AI that bridges the gap between Java Edition and Bedrock Edition capabilities. When direct conversion is impossible due to API differences, the engine intelligently selects the best workaround using smart assumptions.
+The Smart Assumptions Engine is a core component of Portkit that bridges the gap between Java Edition and Bedrock Edition capabilities. When direct conversion is impossible due to API differences, the engine intelligently selects the best workaround using smart assumptions.
 
 ## Table of Smart Assumptions
 

@@ -4,12 +4,11 @@ Mod Import Service - Unified API for CurseForge and Modrinth
 Provides a unified interface for importing mods from both platforms.
 """
 
-import re
 from typing import Optional, Dict, Any, List
 from enum import Enum
 
-from .curseforge_service import curseforge_service, CurseForgeService
-from .modrinth_service import modrinth_service, ModrinthService
+from .curseforge_service import curseforge_service
+from .modrinth_service import modrinth_service
 
 
 class ModPlatform(Enum):
@@ -37,6 +36,9 @@ class ModImportService:
         Returns:
             ModPlatform enum value
         """
+        if url is None:
+            return ModPlatform.UNKNOWN
+
         url_lower = url.lower()
 
         if "curseforge.com" in url_lower:

@@ -10,8 +10,8 @@ import pytest
 import datetime
 from unittest.mock import patch
 
-from src.services.comprehensive_report_generator import ConversionReportGenerator
-from src.schemas.report_types import (
+from services.comprehensive_report_generator import ConversionReportGenerator
+from schemas.report_types import (
     SummaryReport,
     FeatureAnalysis,
     AssumptionsReport,
@@ -22,7 +22,7 @@ from src.schemas.report_types import (
     calculate_quality_score,
     FeatureAnalysisItem,
     ImpactLevel,
-    ConversionStatus
+    ConversionStatus,
 )
 
 # Temporarily skip all tests in this file due to import issues
@@ -55,7 +55,7 @@ def sample_conversion_result():
                 "assumptions_used": ["block_assumption_1"],
                 "impact_assessment": "Low impact conversion",
                 "visual_comparison": {"before": "Java block", "after": "Bedrock block"},
-                "technical_notes": "Direct translation possible"
+                "technical_notes": "Direct translation possible",
             },
             {
                 "feature_name": "EntityAI",
@@ -65,8 +65,8 @@ def sample_conversion_result():
                 "compatibility_score": 70.0,
                 "assumptions_used": ["ai_assumption_1", "ai_assumption_2"],
                 "impact_assessment": "Medium impact - behavior simplified",
-                "technical_notes": "Complex AI logic simplified for Bedrock"
-            }
+                "technical_notes": "Complex AI logic simplified for Bedrock",
+            },
         ],
         "assumptions_detail_data": [
             {
@@ -77,7 +77,7 @@ def sample_conversion_result():
                 "user_explanation": "Custom material mapped to closest Bedrock equivalent",
                 "technical_details": "Material properties approximated",
                 "confidence_score": 0.9,
-                "alternatives_considered": ["minecraft:dirt", "minecraft:cobblestone"]
+                "alternatives_considered": ["minecraft:dirt", "minecraft:cobblestone"],
             },
             {
                 "original_feature": "Entity AI Pathfinding",
@@ -87,8 +87,8 @@ def sample_conversion_result():
                 "user_explanation": "Complex pathfinding simplified for compatibility",
                 "technical_details": "Advanced algorithms replaced with basic navigation",
                 "confidence_score": 0.7,
-                "alternatives_considered": ["no_pathfinding", "custom_pathfinding"]
-            }
+                "alternatives_considered": ["no_pathfinding", "custom_pathfinding"],
+            },
         ],
         "developer_logs_data": {
             "code_translation_details": [
@@ -96,7 +96,10 @@ def sample_conversion_result():
                     "timestamp": "2023-01-01T12:00:00Z",
                     "level": "INFO",
                     "message": "Successfully translated CustomBlock.java",
-                    "details": {"source": "CustomBlock.java", "target": "custom_block.json"}
+                    "details": {
+                        "source": "CustomBlock.java",
+                        "target": "custom_block.json",
+                    },
                 }
             ],
             "api_mapping_issues": [
@@ -104,7 +107,10 @@ def sample_conversion_result():
                     "timestamp": "2023-01-01T12:00:00Z",
                     "level": "WARNING",
                     "message": "Java API has no direct Bedrock equivalent",
-                    "details": {"java_api": "getCustomProperty", "bedrock_equivalent": "none"}
+                    "details": {
+                        "java_api": "getCustomProperty",
+                        "bedrock_equivalent": "none",
+                    },
                 }
             ],
             "file_processing_log": [
@@ -112,16 +118,16 @@ def sample_conversion_result():
                     "timestamp": "2023-01-01T12:00:00Z",
                     "level": "INFO",
                     "message": "Processed texture file successfully",
-                    "details": {"file": "block_texture.png", "status": "converted"}
+                    "details": {"file": "block_texture.png", "status": "converted"},
                 }
             ],
             "performance_metrics": {
                 "total_time_seconds": 45.2,
                 "memory_peak_mb": 128,
-                "cpu_usage_avg_percentage": 30.5
+                "cpu_usage_avg_percentage": 30.5,
             },
-            "error_details": []
-        }
+            "error_details": [],
+        },
     }
 
 
@@ -167,7 +173,7 @@ class TestQualityScore:
             partially_converted_features=0,
             failed_features=0,
             assumptions_applied_count=0,
-            processing_time_seconds=30.0
+            processing_time_seconds=30.0,
         )
 
         score = calculate_quality_score(summary)
@@ -182,7 +188,7 @@ class TestQualityScore:
             partially_converted_features=2,
             failed_features=1,
             assumptions_applied_count=3,
-            processing_time_seconds=45.0
+            processing_time_seconds=45.0,
         )
 
         score = calculate_quality_score(summary)
@@ -198,7 +204,7 @@ class TestQualityScore:
             partially_converted_features=0,
             failed_features=0,
             assumptions_applied_count=0,
-            processing_time_seconds=10.0
+            processing_time_seconds=10.0,
         )
 
         score = calculate_quality_score(summary)
@@ -237,7 +243,7 @@ class TestSummaryReportGeneration:
             partially_converted_features=1,
             failed_features=0,
             assumptions_applied_count=2,
-            processing_time_seconds=30.0
+            processing_time_seconds=30.0,
         )
 
         actions = report_generator._generate_recommended_actions(summary)
@@ -252,7 +258,7 @@ class TestSummaryReportGeneration:
             partially_converted_features=2,
             failed_features=5,
             assumptions_applied_count=15,
-            processing_time_seconds=600.0
+            processing_time_seconds=600.0,
         )
 
         actions = report_generator._generate_recommended_actions(summary)
@@ -291,26 +297,20 @@ class TestFeatureAnalysisGeneration:
     def test_calculate_compatibility_score(self, report_generator):
         """Test compatibility score calculation."""
         # Test successful feature
-        feature_data = {
-            "status": "Success",
-            "assumptions_used": []
-        }
+        feature_data = {"status": "Success", "assumptions_used": []}
         score = report_generator._calculate_compatibility_score(feature_data)
         assert score == 100.0
 
         # Test feature with assumptions
         feature_data = {
             "status": "Success",
-            "assumptions_used": ["assumption1", "assumption2"]
+            "assumptions_used": ["assumption1", "assumption2"],
         }
         score = report_generator._calculate_compatibility_score(feature_data)
         assert score == 90.0  # 100 - (2 * 5)
 
         # Test failed feature
-        feature_data = {
-            "status": "Failed",
-            "assumptions_used": []
-        }
+        feature_data = {"status": "Failed", "assumptions_used": []}
         score = report_generator._calculate_compatibility_score(feature_data)
         assert score == 0.0
 
@@ -384,7 +384,7 @@ class TestDeveloperLogGeneration:
         log_data = {
             "performance_metrics": {
                 "memory_peak_mb": 600,  # High memory usage
-                "total_time_seconds": 400  # Long processing time
+                "total_time_seconds": 400,  # Long processing time
             },
             "api_mapping_issues": [
                 {"issue": "mapping1"},
@@ -392,8 +392,8 @@ class TestDeveloperLogGeneration:
                 {"issue": "mapping3"},
                 {"issue": "mapping4"},
                 {"issue": "mapping5"},
-                {"issue": "mapping6"}  # Many API issues
-            ]
+                {"issue": "mapping6"},  # Many API issues
+            ],
         }
 
         optimizations = report_generator._identify_optimizations(log_data)
@@ -478,7 +478,7 @@ class TestEdgeCases:
             "converted_features": 0,
             "features_data": [],
             "assumptions_detail_data": [],
-            "developer_logs_data": {}
+            "developer_logs_data": {},
         }
 
         report = report_generator.create_interactive_report(empty_result, "empty_job")
@@ -489,9 +489,7 @@ class TestEdgeCases:
 
     def test_missing_fields(self, report_generator):
         """Test handling of missing fields in conversion result."""
-        minimal_result = {
-            "job_id": "minimal_job"
-        }
+        minimal_result = {"job_id": "minimal_job"}
 
         # Should not raise exception
         report = report_generator.create_interactive_report(minimal_result, "minimal_job")
@@ -504,7 +502,7 @@ class TestEdgeCases:
         invalid_result = {
             "job_id": "invalid_job",
             "total_features": "not_a_number",  # Invalid type
-            "features_data": "not_a_list",     # Invalid type
+            "features_data": "not_a_list",  # Invalid type
         }
 
         # Should handle gracefully
@@ -521,7 +519,7 @@ class TestEdgeCases:
 class TestReportGenerationIntegration:
     """Integration tests for complete report generation workflow."""
 
-    @patch('time.time')
+    @patch("time.time")
     def test_full_workflow_integration(self, mock_time, report_generator, sample_conversion_result):
         """Test complete workflow from conversion result to interactive report."""
         mock_time.return_value = 1234567890
@@ -549,3 +547,90 @@ class TestReportGenerationIntegration:
         # Test categorization
         assert "Blocks" in report.feature_analysis.feature_categories
         assert "Material Mapping" in report.assumptions_report.category_breakdown
+
+
+class TestIssue1004CategoryBreakdown:
+    """Test Issue #1004 - B2B Conversion Report: per-mod breakdown."""
+
+    def test_generate_category_breakdown(self, report_generator):
+        """Test per-category conversion breakdown generation."""
+        category_data = [
+            {
+                "category": "textures",
+                "total": 52,
+                "converted": 45,
+                "partial": 4,
+                "failed": 3,
+                "notes": None,
+                "manual_work_hours": 1.0,
+            },
+            {
+                "category": "models",
+                "total": 30,
+                "converted": 15,
+                "partial": 8,
+                "failed": 7,
+                "notes": "Complex models need manual geometry adjustment",
+                "manual_work_hours": 3.0,
+            },
+            {
+                "category": "recipes",
+                "total": 54,
+                "converted": 0,
+                "partial": 0,
+                "failed": 54,
+                "notes": "Recipe converter not yet available",
+                "manual_work_hours": 6.0,
+            },
+        ]
+        breakdown = report_generator._generate_category_breakdown(category_data)
+
+        assert len(breakdown) == 10  # All ASSET_CATEGORIES
+        textures = next(c for c in breakdown if c["category"] == "textures")
+        assert textures["total"] == 52
+        assert textures["converted"] == 45
+        assert textures["percentage"] == 86.5
+        assert textures["status"] == "partial"
+
+        recipes = next(c for c in breakdown if c["category"] == "recipes")
+        assert recipes["percentage"] == 0.0
+        assert recipes["status"] == "not_converted"
+        assert "Recipe converter not yet available" in recipes["notes"]
+
+    def test_estimate_manual_work_hours(self, report_generator):
+        """Test manual work hours estimation based on failed/partial features."""
+        summary = SummaryReport(
+            overall_success_rate=50.0,
+            total_features=100,
+            converted_features=40,
+            partially_converted_features=30,
+            failed_features=30,
+            assumptions_applied_count=5,
+            processing_time_seconds=120.0,
+        )
+        hours = report_generator._estimate_manual_work_hours(summary)
+        # 30 failed * 0.25h + 30 partial * 0.1h = 7.5 + 3.0 = 10.5
+        assert hours == 10.5
+
+    def test_generate_priority_order(self, report_generator):
+        """Test priority order generation for manual work."""
+        category_breakdown = [
+            {"category": "textures", "status": "converted", "total": 50},
+            {"category": "recipes", "status": "not_converted", "total": 54},
+            {"category": "models", "status": "partial", "total": 30},
+            {"category": "sounds", "status": "not_converted", "total": 8},
+        ]
+        priority = report_generator._generate_priority_order(category_breakdown)
+        # Should include not_converted and partial categories
+        assert "recipes" in priority
+        assert "models" in priority
+        assert "sounds" in priority
+        # Should NOT include converted
+        assert "textures" not in priority
+
+    def test_category_breakdown_in_summary(self, report_generator, sample_conversion_result):
+        """Test that summary includes Issue #1004 fields after generation."""
+        summary = report_generator.generate_summary_report(sample_conversion_result)
+        assert isinstance(summary.category_breakdown, list)
+        assert summary.manual_work_estimate_hours is not None
+        assert isinstance(summary.priority_order, list)

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>QA Report - {{ report.job_id }}</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 40px; max-width: 1200px; }
+        h1 { color: #1f2937; }
+        .score { font-size: 48px; font-weight: bold; margin: 20px 0; }
+        .score-high { color: #22c55e; }
+        .score-medium { color: #f59e0b; }
+        .score-low { color: #ef4444; }
+        .metadata { color: #6b7280; margin-bottom: 20px; }
+        .issues-section { margin-top: 30px; }
+        .issue { padding: 12px; margin: 8px 0; border-left: 4px solid; border-radius: 4px; }
+        .issue-info { border-color: #3b82f6; background: #eff6ff; }
+        .issue-warning { border-color: #f59e0b; background: #fffbeb; }
+        .issue-error { border-color: #ef4444; background: #fef2f2; }
+        .issue-critical { border-color: #7f1d1d; background: #fef2f2; }
+        .issue-file { font-weight: bold; color: #374151; }
+        .issue-message { margin-top: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e5e7eb; }
+        th { background: #f9fafb; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <h1>QA Report</h1>
+    <div class="metadata">
+        <p><strong>Job:</strong> {{ report.job_id }}</p>
+        <p><strong>Generated:</strong> {{ report.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+    </div>
+    
+    <div class="score score-{% if report.quality_score >= 80 %}high{% elif report.quality_score >= 60 %}medium{% else %}low{% endif %}">
+        {{ "%.1f"|format(report.quality_score) }}%
+    </div>
+    
+    <h2>Summary</h2>
+    <table>
+        <tr><th>Agent</th><th>Score</th><th>Issues</th></tr>
+        {% for result in report.agent_results %}
+        <tr>
+            <td>{{ result.agent_name }}</td>
+            <td>{{ "%.1f"|format(result.score) }}%</td>
+            <td>{{ result.issues|length }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    
+    <div class="issues-section">
+        <h2>Issues ({{ report.total_issues }})</h2>
+        {% for severity, issues in report.issues_by_severity.items() %}
+            {% if issues %}
+            <h3>{{ severity.value|upper }} ({{ issues|length }})</h3>
+            {% for issue in issues %}
+            <div class="issue issue-{{ severity.value }}">
+                <span class="issue-file">{{ issue.location.file if issue.location else 'N/A' }}:{{ issue.location.line if issue.location else '0' }}</span>
+                <div class="issue-message">{{ issue.message }}</div>
+            </div>
+            {% endfor %}
+            {% endif %}
+        {% endfor %}
+    </div>
+</body>
+</html>

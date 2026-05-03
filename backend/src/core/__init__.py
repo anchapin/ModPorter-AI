@@ -1,5 +1,5 @@
 """
-Core module for ModPorter-AI backend.
+Core module for portkit backend.
 
 This module contains core functionality including:
 - Secrets management

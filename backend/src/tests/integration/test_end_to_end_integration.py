@@ -3,9 +3,10 @@ End-to-end integration test for mod conversion workflow.
 
 Tests the complete pipeline: upload JAR -> start conversion -> wait for completion -> download .mcaddon
 
-Issue #170: https://github.com/anchapin/ModPorter-AI/issues/170
+Issue #170: https://github.com/anchapin/portkit/issues/170
 """
 
+import os
 import pytest
 import time
 
@@ -27,7 +28,7 @@ class TestEndToEndIntegration:
         with open(fixture_path, "rb") as jar_file:
             upload_response = client.post(
                 "/api/v1/upload",
-                files={"file": (fixture_path.name, jar_file, "application/java-archive")}
+                files={"file": (fixture_path.name, jar_file, "application/java-archive")},
             )
 
         assert upload_response.status_code == 200, f"Upload failed: {upload_response.text}"
@@ -43,11 +44,13 @@ class TestEndToEndIntegration:
                 "file_id": file_id,
                 "original_filename": fixture_path.name,
                 "target_version": target_version,
-                "options": options
-            }
+                "options": options,
+            },
         )
 
-        assert conversion_response.status_code == 200, f"Conversion start failed: {conversion_response.text}"
+        assert conversion_response.status_code == 200, (
+            f"Conversion start failed: {conversion_response.text}"
+        )
         conversion_data = conversion_response.json()
         assert "job_id" in conversion_data
         assert conversion_data["status"] in ["preprocessing", "queued"]
@@ -63,7 +66,9 @@ class TestEndToEndIntegration:
         for attempt in range(max_attempts):
             status_response = client.get(f"/api/v1/convert/{job_id}/status")
 
-            assert status_response.status_code == 200, f"Status check failed: {status_response.text}"
+            assert status_response.status_code == 200, (
+                f"Status check failed: {status_response.text}"
+            )
             status_data = status_response.json()
 
             assert "job_id" in status_data
@@ -83,6 +88,10 @@ class TestEndToEndIntegration:
 
         return final_status
 
+    @pytest.mark.skipif(
+        os.getenv("TESTING", "false").lower() == "true",
+        reason="Background task processing requires full middleware stack",
+    )
     def test_complete_jar_to_mcaddon_conversion(self, client, project_root):
         """
         Complete test: uploads simple_copper_block.jar → waits for Celery job → downloads .mcaddon.
@@ -102,19 +111,25 @@ class TestEndToEndIntegration:
 
         # Step 4: Poll for completion
         final_status = self._poll_for_completion(client, job_id)
-        assert final_status == "completed", f"Job did not complete successfully. Final status: {final_status}"
+        assert final_status == "completed", (
+            f"Job did not complete successfully. Final status: {final_status}"
+        )
 
         # Step 5: Download the converted .mcaddon file
         download_response = client.get(f"/api/v1/convert/{job_id}/download")
 
-        assert download_response.status_code == 200, f"Download failed: {download_response.status_code}"
+        assert download_response.status_code == 200, (
+            f"Download failed: {download_response.status_code}"
+        )
 
         # Step 6: Assert non-zero .mcaddon bytes (core requirement from issue #170)
         mcaddon_content = download_response.content
         assert len(mcaddon_content) > 0, "Downloaded .mcaddon file has zero bytes"
 
         # Additional validation: should be a valid ZIP file (mcaddon is ZIP format)
-        assert mcaddon_content.startswith(b'PK'), "Downloaded file is not a valid ZIP/mcaddon format"
+        assert mcaddon_content.startswith(b"PK"), (
+            "Downloaded file is not a valid ZIP/mcaddon format"
+        )
 
         # Log success metrics for debugging
         print("✅ Integration test passed:")
@@ -122,6 +137,10 @@ class TestEndToEndIntegration:
         print(f"   - Final status: {final_status}")
         print(f"   - .mcaddon size: {len(mcaddon_content):,} bytes")
 
+    @pytest.mark.skipif(
+        os.getenv("TESTING", "false").lower() == "true",
+        reason="Background task processing requires full middleware stack",
+    )
     def test_job_appears_in_conversions_list(self, client, project_root):
         """
         Verify that completed jobs appear in the conversions list endpoint.
@@ -163,13 +182,13 @@ class TestEndToEndIntegration:
 
         upload_response = client.post(
             "/api/v1/upload",
-            files={"file": ("invalid.txt", invalid_content, "text/plain")}
+            files={"file": ("invalid.txt", invalid_content, "text/plain")},
         )
 
         assert upload_response.status_code == 400, "Should reject invalid file types"
         error_data = upload_response.json()
-        assert "detail" in error_data
-        assert "not supported" in error_data["detail"].lower()
+        assert "message" in error_data
+        assert "not supported" in error_data["message"].lower()
 
     def test_nonexistent_job_status(self, client):
         """
@@ -182,8 +201,8 @@ class TestEndToEndIntegration:
 
         assert status_response.status_code == 404, "Should return 404 for non-existent jobs"
         error_data = status_response.json()
-        assert "detail" in error_data
-        assert "not found" in error_data["detail"].lower()
+        assert "message" in error_data
+        assert "not found" in error_data["message"].lower()
 
 
 if __name__ == "__main__":

@@ -224,6 +224,13 @@ const bedrockDocs: BedrockDocItem[] = [
   },
 ];
 
+// Pre-computed search index for O(1) string allocations during search filtering
+const searchIndex = bedrockDocs.map((doc) => ({
+  doc,
+  searchText:
+    `${doc.title} ${doc.description} ${doc.syntax || ''} ${doc.category}`.toLowerCase(),
+}));
+
 // Group docs by category
 const categorizeDocs = (docs: BedrockDocItem[]) => {
   const categories: Record<string, BedrockDocItem[]> = {};
@@ -263,13 +270,11 @@ export const BedrockDocsPanel: React.FC<BedrockDocsPanelProps> = ({
   const filteredDocs = useMemo(() => {
     if (!searchQuery) return bedrockDocs;
     const query = searchQuery.toLowerCase();
-    return bedrockDocs.filter(
-      (doc) =>
-        doc.title.toLowerCase().includes(query) ||
-        doc.description.toLowerCase().includes(query) ||
-        doc.syntax?.toLowerCase().includes(query) ||
-        doc.category.toLowerCase().includes(query)
-    );
+
+    // ⚡ Bolt optimization: Use pre-computed lowercase search index to avoid O(N*4) string allocations during filtering
+    return searchIndex
+      .filter((item) => item.searchText.includes(query))
+      .map((item) => item.doc);
   }, [searchQuery]);
 
   // Group filtered docs by category

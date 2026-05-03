@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide explains how to set up and configure Z.AI as the primary LLM backend for ModPorter-AI's AI engine. Z.AI provides high-quality GLM models with no additional cost for existing Pro plan subscribers.
+This guide explains how to set up and configure Z.AI as the primary LLM backend for portkit's AI engine. Z.AI provides high-quality GLM models with no additional cost for existing Pro plan subscribers.
 
 ## Prerequisites
 
@@ -69,7 +69,7 @@ USE_OLLAMA=false
 
 ## Supported Models
 
-Z.AI supports several GLM models. Recommended models for ModPorter-AI:
+Z.AI supports several GLM models. Recommended models for portkit:
 
 - **glm-4-plus** (default): Best balance of performance and quality
 - **glm-4**: High-quality model for complex analysis
@@ -266,8 +266,8 @@ For Z.AI related issues:
 - Review the [Z.AI API Reference](https://api.z.ai/docs)
 - Contact Z.AI support for API-specific issues
 
-For ModPorter-AI integration issues:
+For portkit integration issues:
 
-- Create an issue in the [GitHub repository](https://github.com/anchapin/ModPorter-AI)
+- Create an issue in the [GitHub repository](https://github.com/anchapin/portkit)
 - Check existing issues for similar problems
 - Review CI/CD logs for detailed error information

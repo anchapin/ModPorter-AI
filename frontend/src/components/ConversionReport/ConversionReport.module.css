@@ -1509,8 +1509,9 @@
   transition: all 0.2s ease;
 }
 
-.globalSearchInput:focus {
-  outline: none;
+.globalSearchInput:focus-visible {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
   border-color: #007bff;
   background: white;
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
@@ -2207,4 +2208,120 @@
 
 .colorMuted {
   color: #6b7280;
+}
+
+/* Issue #1087 - Enhanced Category Breakdown Styles */
+.categoryBreakdown {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.categoryBreakdown h4 {
+  margin: 0 0 1rem 0;
+  color: #495057;
+  font-size: 1.1rem;
+}
+
+.categoriesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.categoryCard {
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.categoryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.categoryTitle {
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.95rem;
+}
+
+.categoryPercentage {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.categoryCount {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-bottom: 0.25rem;
+}
+
+.categoryNotes {
+  font-size: 0.75rem;
+  color: #856404;
+  font-style: italic;
+  margin-top: 0.25rem;
+}
+
+.manualWork {
+  font-size: 0.75rem;
+  color: #dc3545;
+  margin-top: 0.25rem;
+}
+
+.manualWorkEstimate {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #fff3cd;
+  border-radius: 8px;
+  border: 1px solid #ffeaa7;
+}
+
+.manualWorkEstimate h4 {
+  margin: 0 0 0.5rem 0;
+  color: #856404;
+  font-size: 1rem;
+}
+
+.manualWorkEstimate p {
+  margin: 0;
+  color: #856404;
+  font-size: 0.9rem;
+}
+
+.priorityOrder {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #e8f4f8;
+  border-radius: 8px;
+  border: 1px solid #b8daff;
+}
+
+.priorityOrder h4 {
+  margin: 0 0 0.75rem 0;
+  color: #1565c0;
+  font-size: 1rem;
+}
+
+.priorityList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.priorityItem {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  background: white;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  color: #1565c0;
+  font-weight: 500;
+  border: 1px solid #bbdefb;
 }

@@ -1,0 +1,105 @@
+name: Load Testing
+
+'on':
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Test type to run'
+        required: true
+        default: 'smoke'
+        type: choice
+        options:
+          - smoke
+          - load
+          - stress
+          - spike
+      base_url:
+        description: 'Base URL for testing'
+        required: false
+        default: 'http://localhost:8080'
+        type: string
+  schedule:
+    # Run smoke test nightly
+    - cron: '0 3 * * *'
+
+env:
+  K6_VERSION: 'v0.55.0'
+
+jobs:
+  load-test:
+    name: "${{ inputs.test_type || 'smoke' }} load test"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup k6
+        run: |
+          curl -sL https://github.com/grafana/k6/releases/download/${{ env.K6_VERSION }}/k6-${{ env.K6_VERSION }}-linux-amd64.tar.gz -o k6.tar.gz
+          tar -xzf k6.tar.gz
+          sudo mv k6-${{ env.K6_VERSION }}-linux-amd64/k6 /usr/local/bin/
+          rm -rf k6.tar.gz k6-${{ env.K6_VERSION }}-linux-amd64
+          k6 version
+
+      - name: Run smoke test
+        if: ${{ (inputs.test_type == 'smoke' || github.event_name == 'schedule') }}
+        run: |
+          k6 run load-tests/api-load-test.js \
+            --tag test_type=smoke \
+            --duration 30s \
+            --vus 1 \
+            --no-thresholds \
+            --summary-export=results/smoke.json
+        env:
+          BASE_URL: "${{ inputs.base_url || 'http://localhost:8080' }}"
+
+      - name: Run load test
+        if: ${{ inputs.test_type == 'load' }}
+        run: |
+          k6 run load-tests/api-load-test.js \
+            --tag test_type=load \
+            --env SCENARIO=load \
+            --no-thresholds \
+            --summary-export=results/load.json
+        env:
+          BASE_URL: '${{ inputs.base_url }}'
+
+      - name: Run stress test
+        if: ${{ inputs.test_type == 'stress' }}
+        run: |
+          k6 run load-tests/api-load-test.js \
+            --tag test_type=stress \
+            --env SCENARIO=stress \
+            --no-thresholds \
+            --summary-export=results/stress.json
+        env:
+          BASE_URL: '${{ inputs.base_url }}'
+
+      - name: Run spike test
+        if: ${{ inputs.test_type == 'spike' }}
+        run: |
+          k6 run load-tests/api-load-test.js \
+            --tag test_type=spike \
+            --env SCENARIO=spike \
+            --no-thresholds \
+            --summary-export=results/spike.json
+        env:
+          BASE_URL: '${{ inputs.base_url }}'
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: k6-results-${{ inputs.test_type || 'smoke' }}-${{ github.run_id }}
+          path: results/
+          retention-days: 7
+
+      - name: Check results
+        if: ${{ always() }}
+        run: |
+          if [ -f results/smoke.json ]; then
+            echo "=== Smoke Test Results ==="
+            cat results/smoke.json | head -50
+          fi

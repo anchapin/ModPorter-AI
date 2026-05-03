@@ -11,6 +11,11 @@ docker>=7.1.0
 mutmut>=2.4.0
 hypothesis>=6.0.0
 
+# Missing test dependencies (Issue #984)
+PyJWT>=2.8.0
+psutil>=5.9.0
+cryptography>=41.0.0
+
 # ML dependencies needed for tests
 scikit-learn>=1.3.0
 torch>=2.0.0

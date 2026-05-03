@@ -1,0 +1,45 @@
+# fly.toml app configuration file generated for portkit-backend on 2026-04-24T07:37:02-04:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'portkit-backend'
+primary_region = 'iad'
+
+[build]
+  dockerfile = 'Dockerfile.fly'
+
+  [build.args]
+    PYTHON_VERSION = '3.11'
+
+[env]
+  PYTHONUNBUFFERED = '1'
+
+[processes]
+  app = '/startup.sh'
+  worker = "sh -c 'cd /app/backend && PYTHONPATH=/usr/lib/python3.11/site-packages:/app/backend/src python -m celery -A src.services.celery_config worker --loglevel=info'"
+
+[[mounts]]
+  source = 'portkit_data'
+  destination = '/app/data'
+  initial_size = '1gb'
+
+[[services]]
+  protocol = 'tcp'
+  internal_port = 80
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ['app']
+
+  [[services.ports]]
+    port = 80
+    handlers = ['http']
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ['tls', 'http']
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory_mb = 1024

@@ -1,61 +1,69 @@
 services:
   frontend:
-    image: anchapin/modporter-ai-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
-      - "3000:80"
+      - '3000:80'
     depends_on:
       backend:
         condition: service_healthy
     networks:
-      - modporter-network
+      - portkit-network
     restart: unless-stopped
 
   backend:
-    image: anchapin/modporter-ai-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - '8000:8000'
     environment:
-      - PYTHONPATH=/app
+      - PYTHONPATH=/app/src
       - REDIS_URL=redis://redis:6379
-      - DATABASE_URL=postgresql://postgres:password@postgres:5432/modporter
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/portkit
       - LOG_LEVEL=INFO
-      # Add other necessary production environment variables here
+      - FEATURE_USER_ACCOUNTS=true
+      - SKIP_EMAIL_VERIFICATION=true
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-jwt-secret-change-in-production}
     depends_on:
       redis:
         condition: service_healthy
       postgres:
         condition: service_healthy
     volumes:
-      - conversion-cache:/app/cache # Or use a managed cloud storage service
+      - conversion-cache:/app/cache
     networks:
-      - modporter-network
+      - portkit-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:8000/api/v1/health']
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
 
   ai-engine:
-    image: anchapin/modporter-ai-ai-engine:latest
+    build:
+      context: ./ai-engine
+      dockerfile: Dockerfile
     environment:
       - PYTHONPATH=/app
       - REDIS_URL=redis://redis:6379
-      - OPENAI_API_KEY=${OPENAI_API_KEY} # Must be provided in the environment
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY} # Must be provided in the environment
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - LOG_LEVEL=INFO
-      # Add other necessary production environment variables here
     depends_on:
       redis:
         condition: service_healthy
     volumes:
-      - model-cache:/app/models # Or use a managed cloud storage service
+      - model-cache:/app/models
     networks:
-      - modporter-network
+      - portkit-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/api/v1/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:8001/api/v1/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -70,14 +78,14 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis-data:/data
     networks:
-      - modporter-network
+      - portkit-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 3s
       retries: 3
@@ -86,22 +94,21 @@ services:
   postgres:
     image: pgvector/pgvector:pg15
     ports:
-      - "5432:5432"
+      - '5432:5432'
     environment:
-      - POSTGRES_DB=modporter
+      - POSTGRES_DB=portkit
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password # Change for production
-      - POSTGRES_INITDB_ARGS="--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+      - POSTGRES_PASSWORD=password
     volumes:
       - postgres-data:/var/lib/postgresql/data
       # init.sql might not be needed if the image handles initialization
       # or if you manage schema migrations separately for production
       # - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
-      - modporter-network
+      - portkit-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d modporter"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d portkit']
       interval: 10s
       timeout: 3s
       retries: 3
@@ -110,12 +117,12 @@ services:
   prometheus:
     image: prom/prometheus:latest
     ports:
-      - "${PROMETHEUS_PORT:-9090}:9090"
+      - '${PROMETHEUS_PORT:-9090}:9090'
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus-data:/prometheus
     networks:
-      - modporter-network
+      - portkit-network
     restart: unless-stopped
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -127,7 +134,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     ports:
-      - "${GRAFANA_PORT:-3001}:3000"
+      - '${GRAFANA_PORT:-3001}:3000'
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
@@ -137,7 +144,7 @@ services:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
     networks:
-      - modporter-network
+      - portkit-network
     restart: unless-stopped
     depends_on:
       - prometheus
@@ -146,13 +153,13 @@ services:
   node-exporter:
     image: prom/node-exporter:latest
     ports:
-      - "9100:9100"
+      - '9100:9100'
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
     networks:
-      - modporter-network
+      - portkit-network
     restart: unless-stopped
     command:
       - '--path.procfs=/host/proc'
@@ -164,11 +171,11 @@ services:
   redis-exporter:
     image: oliver006/redis_exporter:latest
     ports:
-      - "9121:9121"
+      - '9121:9121'
     environment:
       - REDIS_ADDR=redis://redis:6379
     networks:
-      - modporter-network
+      - portkit-network
     restart: unless-stopped
     depends_on:
       - redis
@@ -177,20 +184,39 @@ services:
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter:latest
     ports:
-      - "9187:9187"
+      - '9187:9187'
     environment:
-      - DATA_SOURCE_NAME=postgresql://postgres:password@postgres:5432/modporter?sslmode=disable
+      - DATA_SOURCE_NAME=postgresql://postgres:password@postgres:5432/portkit?sslmode=disable
     networks:
-      - modporter-network
+      - portkit-network
     restart: unless-stopped
     depends_on:
       - postgres
+
+  # Celery exporter for Celery queue monitoring
+  celery-exporter:
+    image: danihodovic/celery-exporter:latest
+    ports:
+      - '9540:9540'
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - BROKER_URL=redis://redis:6379
+      - METRICS_PORT=9540
+    networks:
+      - portkit-network
+    restart: unless-stopped
+    depends_on:
+      - redis
+    command:
+      - '--redis-url=redis://redis:6379'
+      - '--broker-url=redis://redis:6379'
+      - '--port=9540'
 
   # cAdvisor for container metrics
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     ports:
-      - "8080:8080"
+      - '8080:8080'
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -198,7 +224,7 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
     networks:
-      - modporter-network
+      - portkit-network
     restart: unless-stopped
     privileged: true
     devices:
@@ -219,7 +245,7 @@ volumes:
     driver: local
 
 networks:
-  modporter-network:
+  portkit-network:
     driver: bridge
     ipam:
       config:

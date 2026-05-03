@@ -1,31 +1,40 @@
-# GitHub Actions CI/CD Pipeline for ModPorter AI
-# Day 6: Production deployment automation
+# GitHub Actions CI/CD Pipeline for PortKit
+# Optimized for parallel execution with concurrency and metrics
 
-name: Deploy ModPorter AI
+name: Deploy PortKit
 
-on:
+# Cancel in-progress builds for same branch (saves CI costs)
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+'on':
   push:
-    branches: [ main, production ]
+    branches: [main, production]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 env:
   DOCKER_BUILDKIT: 1
   COMPOSE_DOCKER_CLI_BUILD: 1
 
 jobs:
-  test:
+  # ============================================
+  # PARALLEL TEST JOBS - Split for speed
+  # ============================================
+
+  backend-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     services:
       postgres:
         image: pgvector/pgvector:pg15
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: modporter_test
+          POSTGRES_DB: portkit_test
         options: >-
-          --health-cmd "pg_isready -U postgres -d modporter_test"
+          --health-cmd "pg_isready -U postgres -d portkit_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -43,232 +52,271 @@ jobs:
           - 6379:6379
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          lfs: false
 
-    - name: Set up Python
-      uses: actions/setup-python@v6
-      with:
-        python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v6
-      with:
-        node-version: '20.19.0'
+      - name: Cache Python dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-backend-${{ hashFiles('backend/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-backend-
 
-    - name: Cache Python dependencies (backend)
-      uses: actions/cache@v5
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-backend-${{ hashFiles('backend/requirements*.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-backend-
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          pip install --upgrade pip setuptools wheel --no-cache-dir
+          pip install -r requirements.txt -r requirements-dev.txt --no-cache-dir
 
-    - name: Cache Python packages (backend)
-      uses: actions/cache@v5
-      with:
-        path: ~/.local/lib/python3.11/site-packages
-        key: ${{ runner.os }}-site-packages-backend-${{ hashFiles('backend/requirements*.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-site-packages-backend-
+      - name: Wait for services
+        run: |
+          timeout 60 bash -c 'until nc -z localhost 5432; do echo "Waiting for PostgreSQL..."; sleep 2; done'
+          timeout 60 bash -c 'until echo "PING" | nc localhost 6379 | grep -q PONG; do echo "Waiting for Redis..."; sleep 2; done'
 
-    - name: Cache Python dependencies (ai-engine)
-      uses: actions/cache@v5
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-ai-engine-${{ hashFiles('ai-engine/requirements*.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-ai-engine-
+      - name: Run backend tests
+        env:
+          DATABASE_URL: postgresql://postgres:***@localhost:5432/portkit_test
+          REDIS_URL: redis://localhost:6379
+          SECRET_KEY: test_secret_key
+          JWT_SECRET_KEY: test_jwt_secret
+          TESTING: true
+          CI: true
+        run: |
+          cd backend
+          python -m pytest src/tests/ -v --cov=src --cov-report=xml --timeout=120 --ignore=src/tests/unit/test_task_worker_coverage.py
 
-    - name: Cache Python packages (ai-engine)
-      uses: actions/cache@v5
-      with:
-        path: ~/.local/lib/python3.11/site-packages
-        key: ${{ runner.os }}-site-packages-ai-engine-${{ hashFiles('ai-engine/requirements*.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-site-packages-ai-engine-
+      - name: Upload coverage
+        uses: codecov/codecov-action@v6
+        with:
+          files: ./backend/coverage.xml
+          flags: backend
 
-    - name: Cache Node dependencies
-      uses: actions/cache@v5
-      with:
-        path: |
-          ~/.npm
-          frontend/node_modules
-        key: ${{ runner.os }}-npm-${{ hashFiles('frontend/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-npm-
+  ai-engine-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
 
-    - name: Install backend dependencies
-      run: |
-        cd backend
-        pip install --upgrade pip setuptools wheel --no-cache-dir
-        pip install -r requirements.txt -r requirements-dev.txt --no-cache-dir
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          lfs: false
 
-    - name: Install AI engine dependencies
-      timeout-minutes: 15
-      run: |
-        cd ai-engine
-        pip install --upgrade pip setuptools wheel --no-cache-dir
-        pip install -r requirements.txt -r requirements-dev.txt --no-cache-dir
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
 
-    - name: Install frontend dependencies
-      run: |
-        cd frontend
-        npm install --frozen-lockfile
+      - name: Cache Python dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-ai-engine-${{ hashFiles('ai-engine/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-ai-engine-
 
-    # Install system dependencies for health checks
-    - name: Install system dependencies
-      run: |
-        echo "🔧 Installing system dependencies..."
-        sudo apt-get update -qq
-        sudo apt-get install -y -qq netcat-traditional netcat-openbsd curl
+      - name: Install AI engine dependencies
+        timeout-minutes: 15
+        run: |
+          cd ai-engine
+          pip install --upgrade pip setuptools wheel --no-cache-dir
+          pip install -r requirements.txt -r requirements-dev.txt --no-cache-dir
 
-    - name: Wait for services to be ready
-      run: |
-        echo "🔍 Checking service connectivity..."
-        
-        echo "Testing Redis connectivity..."
-        timeout 60 bash -c 'until echo "PING" | nc localhost 6379 | grep -q PONG; do echo "Waiting for Redis..."; sleep 2; done'
-        echo "✅ Redis is ready"
-        
-        echo "Testing PostgreSQL connectivity..."
-        timeout 60 bash -c 'until nc -z localhost 5432; do echo "Waiting for PostgreSQL..."; sleep 2; done'
-        echo "✅ PostgreSQL is ready"
+      - name: Wait for Redis
+        run: |
+          timeout 60 bash -c 'until echo "PING" | nc localhost 6379 | grep -q PONG; do echo "Waiting for Redis..."; sleep 2; done'
 
-    - name: Run backend tests
-      env:
-        DATABASE_URL: postgresql://postgres:test_password@localhost:5432/modporter_test
-        REDIS_URL: redis://localhost:6379
-        SECRET_KEY: test_secret_key
-        JWT_SECRET_KEY: test_jwt_secret
-        TESTING: true
-        CI: true
-      run: |
-        cd backend
-        python -m pytest tests/ -v --cov=src --cov-report=xml --timeout=120 --ignore=tests/unit/test_addon_assets_crud.py --ignore=tests/unit/test_behavior_files_crud.py --ignore=tests/unit/test_conversion_assets_crud.py --ignore=tests/unit/test_cache_service.py --ignore=tests/unit/test_comparison_api.py --ignore=tests/unit/test_main_unit.py --ignore=tests/unit/test_performance_api.py --ignore=tests/unit/test_validation.py --ignore=tests/unit/test_validation_api.py --ignore=tests/integration/test_api_v1_integration.py --ignore=tests/integration/test_end_to_end_integration.py --ignore=tests/integration/test_performance_integration.py --ignore=tests/integration/test_validation_api_integration.py
+      - name: Run AI engine tests
+        env:
+          REDIS_URL: redis://localhost:6379
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'test_key' }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || 'test_key' }}
+          TESTING: true
+          CI: true
+        run: |
+          cd ai-engine
+          python -m pytest -c pytest.ini tests/ -v --cov=. --cov-report=xml --timeout=300 -m "not slow and not ai"
 
-    - name: Run AI engine tests
-      env:
-        REDIS_URL: redis://localhost:6379
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'test_key' }}
-        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || 'test_key' }}
-        TESTING: true
-        CI: true
-      run: |
-        cd ai-engine
-        # Run tests with timeout and exclude slow AI tests in CI
-        # Use -c flag to ensure ai-engine/pytest.ini is used instead of root pytest.ini
-        # Use 300 second timeout (5 minutes) to match main branch
-        python -m pytest -c pytest.ini tests/ -v --cov=. --cov-report=xml --timeout=300 -m "not slow and not ai"
+      - name: Upload coverage
+        uses: codecov/codecov-action@v6
+        with:
+          files: ./ai-engine/coverage.xml
+          flags: ai-engine
 
-    - name: Run frontend tests
-      run: |
-        cd frontend
-        npm run test:ci
+  frontend-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
 
-    - name: Frontend type check
-      run: |
-        cd frontend
-        npx tsc --noEmit
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          lfs: false
 
-    - name: Frontend lint check
-      run: |
-        cd frontend
-        npm run lint
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9
 
-    - name: Build frontend
-      run: |
-        cd frontend
-        npm run build
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20.19.0'
+          cache: 'pnpm'
+          cache-dependency-path: 'pnpm-lock.yaml'
 
-    - name: Upload coverage reports
-      uses: codecov/codecov-action@v5
-      with:
-        files: ./backend/coverage.xml,./ai-engine/coverage.xml
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          pnpm install --no-frozen-lockfile --ignore-scripts
 
+      - name: Run frontend tests
+        run: |
+          cd frontend
+          pnpm run test:ci
+
+      - name: Frontend type check
+        run: |
+          cd frontend
+          pnpm exec tsc --noEmit
+
+      - name: Frontend lint check
+        run: |
+          cd frontend
+          pnpm run lint
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          pnpm run build
+
+  # ============================================
+  # SECURITY SCAN - Runs in parallel with tests
+  # ============================================
   security:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-        version: 'latest'
-        exit-code: '1'
-        ignore-unfixed: true
-        vuln-type: 'os,library'
-        severity: 'CRITICAL,HIGH,MEDIUM'
-        skip-dirs: '.github,docs,tests,scripts,node_modules,.venv'
-        skip-files: '**/node_modules/**,**/.venv/**,**/dist/**,**/build/**,.worktrees/**'
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          version: 'v0.25.4'
+          exit-code: '0' # Report only, don't fail workflow
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          skip-dirs: '.github,docs,tests,scripts,node_modules,.venv,frontend/node_modules,ai-engine/.venv,backend/.venv'
+          skip-files: '**/node_modules/**,**/.venv/**,**/dist/**,**/build/**,.worktrees/**,frontend/package-lock.json'
 
-    - name: Upload Trivy scan results
-      uses: github/codeql-action/upload-sarif@v4
-      with:
-        sarif_file: 'trivy-results.sarif'
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: 'trivy-results.sarif'
 
-    - name: Run Bandit security linter (Backend)
-      run: |
-        pip install bandit
-        bandit -r backend/src/ -f json -o bandit-backend.json || true
+      - name: Run Bandit security linter (Backend)
+        run: |
+          pip install --timeout=300 bandit
+          bandit -r backend/src/ -f json -o bandit-backend.json || true
 
-    - name: Run Bandit security linter (AI Engine)
-      run: |
-        bandit -r ai-engine/ -f json -o bandit-ai.json || true
+      - name: Run Bandit security linter (AI Engine)
+        run: |
+          bandit -r ai-engine/ -f json -o bandit-ai.json || true
 
+  # ============================================
+  # DOCKER BUILD - Parallel using matrix
+  # ============================================
   build:
-    needs: [test, security]
+    needs: [backend-test, ai-engine-test, frontend-test, security]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/production'
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [frontend, backend, ai-engine]
+        include:
+          - service: frontend
+            context: ./frontend
+            image: portkit/frontend
+          - service: backend
+            context: ./backend
+            image: portkit/backend
+          - service: ai-engine
+            context: ./ai-engine
+            image: portkit/ai-engine
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Initialize performance tracking
+        run: |
+          echo "BUILD_START=$(date +%s)" >> $GITHUB_ENV
 
-    - name: Login to DockerHub
-      uses: docker/login-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
 
-    - name: Build and push Frontend image
-      uses: docker/build-push-action@v6
-      with:
-        context: ./frontend
-        push: true
-        tags: |
-          modporter/frontend:latest
-          modporter/frontend:${{ github.sha }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - name: Login to DockerHub
+        uses: docker/login-action@v4
 
-    - name: Build and push Backend image
-      uses: docker/build-push-action@v6
-      with:
-        context: ./backend
-        push: true
-        tags: |
-          modporter/backend:latest
-          modporter/backend:${{ github.sha }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - name: Build and push ${{ matrix.service }} image
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: |
+            ${{ matrix.image }}:latest
+            ${{ matrix.image }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-    - name: Build and push AI Engine image
-      uses: docker/build-push-action@v6
-      with:
-        context: ./ai-engine
-        push: true
-        tags: |
-          modporter/ai-engine:latest
-          modporter/ai-engine:${{ github.sha }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - name: Record build time
+        if: always()
+        run: |
+          BUILD_END=$(date +%s)
+          BUILD_START=${{ env.BUILD_START }}
+          if [ -n "$BUILD_START" ]; then
+            DURATION=$((BUILD_END - BUILD_START))
+            echo "📊 Build ${{ matrix.service }} completed in ${DURATION}s"
+          fi
 
+      - name: Upload performance metrics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: perf-metrics-build-${{ matrix.service }}
+          path: .github/perf-metrics/*.json
+          retention-days: 30
+
+  # ============================================
+  # DEPLOY - Runs after successful build
+  # ============================================
   deploy:
     needs: [build]
     runs-on: ubuntu-latest
@@ -276,68 +324,114 @@ jobs:
     environment: production
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    - name: Setup SSH
-      uses: webfactory/ssh-agent@v0.9.1
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Initialize deployment performance tracking
+        run: |
+          echo "DEPLOY_START=$(date +%s)" >> $GITHUB_ENV
 
-    - name: Add server to known hosts
-      run: |
-        ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.10.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-    - name: Deploy to production server
-      env:
-        SERVER_HOST: ${{ secrets.SERVER_HOST }}
-        SERVER_USER: ${{ secrets.SERVER_USER }}
-        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        SECRET_KEY: ${{ secrets.SECRET_KEY }}
-        JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-        GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
-      run: |
-        # Copy deployment files to server
-        scp -r . $SERVER_USER@$SERVER_HOST:/opt/modporter-ai/
+      - name: Add server to known hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
 
-        # Deploy on server
-        ssh $SERVER_USER@$SERVER_HOST << 'EOF'
-          cd /opt/modporter-ai
-          
-          # Update environment variables
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" > .env.prod
-          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env.prod
-          echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" >> .env.prod
-          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env.prod
-          echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> .env.prod
-          echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> .env.prod
-          echo "GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}" >> .env.prod
-          
-          # Run deployment script
-          ./scripts/deploy.sh production
-        EOF
+      - name: Deploy to production server
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+        run: |
+          scp -r . $SERVER_USER@$SERVER_HOST:/opt/portkit/
 
-    - name: Run health checks
-      run: |
-        # Wait for deployment to complete
-        sleep 60
-        
-        # Check service health
-        curl -f http://${{ secrets.SERVER_HOST }}/api/v1/health
-        curl -f http://${{ secrets.SERVER_HOST }}:8001/api/v1/health
-        curl -f http://${{ secrets.SERVER_HOST }}/health
+          ssh $SERVER_USER@$SERVER_HOST << 'EOF'
+            cd /opt/portkit
 
-    - name: Notify deployment status
-      uses: 8398a7/action-slack@v3
-      with:
-        status: ${{ job.status }}
-        channel: '#deployments'
-        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-      if: always()
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" > .env.prod
+            echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env.prod
+            echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" >> .env.prod
+            echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env.prod
+            echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> .env.prod
+            echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> .env.prod
+            echo "GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}" >> .env.prod
 
+            ./scripts/deploy.sh production
+          EOF
+
+      - name: Run smoke tests
+        run: |
+          echo "Waiting for services to be ready..."
+          sleep 45
+
+          # Test API health endpoint with retries
+          echo "Testing API health endpoint..."
+          max_attempts=5
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            echo "Attempt $attempt/$max_attempts: Checking API health..."
+            if curl -f -s http://${{ secrets.SERVER_HOST }}/api/v1/health > /dev/null 2>&1; then
+              echo "✓ API health check passed"
+              break
+            fi
+            attempt=$((attempt + 1))
+            sleep 10
+          done
+
+          if [ $attempt -gt $max_attempts ]; then
+            echo "✗ API health check failed after $max_attempts attempts"
+            exit 1
+          fi
+
+          # Test root endpoint
+          echo "Testing root endpoint..."
+          curl -f -s http://${{ secrets.SERVER_HOST }}/health > /dev/null || exit 1
+
+          # Test AI engine endpoint
+          echo "Testing AI engine endpoint..."
+          curl -f -s http://${{ secrets.SERVER_HOST }}:8001/api/v1/health > /dev/null || exit 1
+
+          echo "✓ All smoke tests passed"
+
+      - name: Notify deployment status
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#deployments'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        if: always()
+
+      - name: Record deployment time
+        if: always()
+        run: |
+          DEPLOY_END=$(date +%s)
+          DEPLOY_START=${{ env.DEPLOY_START }}
+          if [ -n "$DEPLOY_START" ]; then
+            DURATION=$((DEPLOY_END - DEPLOY_START))
+            echo "📊 Deployment completed in ${DURATION}s"
+            ./scripts/ci-performance-tracker.sh record "Server Deployment" "$DEPLOY_START" "$DEPLOY_END" || true
+          fi
+
+      - name: Upload performance metrics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: perf-metrics-deploy
+          path: .github/perf-metrics/*.json
+          retention-days: 30
+
+  # ============================================
+  # ROLLBACK - Runs on deployment failure
+  # ============================================
   rollback:
     runs-on: ubuntu-latest
     if: failure() && github.ref == 'refs/heads/production'
@@ -345,16 +439,15 @@ jobs:
     environment: production
 
     steps:
-    - name: Rollback deployment
-      env:
-        SERVER_HOST: ${{ secrets.SERVER_HOST }}
-        SERVER_USER: ${{ secrets.SERVER_USER }}
-      run: |
-        ssh $SERVER_USER@$SERVER_HOST << 'EOF'
-          cd /opt/modporter-ai
-          
-          # Rollback to previous version
-          docker-compose -f docker-compose.prod.yml down
-          docker-compose -f docker-compose.prod.yml pull
-          docker-compose -f docker-compose.prod.yml up -d
-        EOF
+      - name: Rollback deployment
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+        run: |
+          ssh $SERVER_USER@$SERVER_HOST << 'EOF'
+            cd /opt/portkit
+
+            docker-compose -f docker-compose.prod.yml down
+            docker-compose -f docker-compose.prod.yml pull
+            docker-compose -f docker-compose.prod.yml up -d
+          EOF

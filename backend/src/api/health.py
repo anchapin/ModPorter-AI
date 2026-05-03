@@ -10,9 +10,9 @@ Readiness Pillar: Debugging & Observability
 """
 
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, List
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from pydantic import BaseModel, Field
 import logging
 
@@ -154,10 +154,14 @@ async def readiness_check():
 
     return HealthStatus(
         status=status,
-        timestamp=datetime.utcnow().isoformat(),
+        timestamp=datetime.now(timezone.utc).isoformat(),
         checks={
             "dependencies": {
-                c.name: {"status": c.status, "latency_ms": c.latency_ms, "message": c.message}
+                c.name: {
+                    "status": c.status,
+                    "latency_ms": c.latency_ms,
+                    "message": c.message,
+                }
                 for c in checks
             }
         },
@@ -180,8 +184,13 @@ async def liveness_check():
     # No dependency checks - we don't want restart loops
     return HealthStatus(
         status="healthy",
-        timestamp=datetime.utcnow().isoformat(),
-        checks={"application": {"status": "running", "message": "Application process is running"}},
+        timestamp=datetime.now(timezone.utc).isoformat(),
+        checks={
+            "application": {
+                "status": "running",
+                "message": "Application process is running",
+            }
+        },
     )
 
 

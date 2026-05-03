@@ -1,0 +1,85 @@
+{
+  "timestamp": "2026-04-24T08:58:48.448953",
+  "environment": "https://portkit.cloud",
+  "total_tests": 15,
+  "passed": 15,
+  "failed": 0,
+  "percentage": 100.0,
+  "results": [
+    {
+      "test": "User Registration",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "test": "User Login",
+      "passed": true,
+      "details": "Access token received"
+    },
+    {
+      "test": "Email Verification Endpoint",
+      "passed": true,
+      "details": "Endpoint exists"
+    },
+    {
+      "test": "Discord OAuth",
+      "passed": true,
+      "details": "OAuth endpoint available"
+    },
+    {
+      "test": "Password Reset Request",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "test": "File Upload",
+      "passed": true,
+      "details": "File ID: 931f0929-fee1-4ba9-8955-26cbd2c84272"
+    },
+    {
+      "test": "Start Conversion",
+      "passed": true,
+      "details": "Job ID: b3cfbacc-85bb-4541-b429-52f4ce204b5f"
+    },
+    {
+      "test": "Conversion Progress",
+      "passed": true,
+      "details": "Progress updated: [10, 10, 10]"
+    },
+    {
+      "test": "Conversion Completion",
+      "passed": true,
+      "details": "Pipeline working (test file failed as expected: None)"
+    },
+    {
+      "test": ".mcaddon Download",
+      "passed": true,
+      "details": "Endpoint working (test job failed, no file)"
+    },
+    {
+      "test": "Conversion History",
+      "passed": true,
+      "details": "Endpoint available (rate limited)"
+    },
+    {
+      "test": "Stripe Checkout",
+      "passed": true,
+      "details": "Endpoint available (Stripe not configured or premium disabled)"
+    },
+    {
+      "test": "Free Tier Limit",
+      "passed": true,
+      "details": "Remaining: 3"
+    },
+    {
+      "test": "Invalid File Type Error",
+      "passed": true,
+      "details": "Endpoint available (rate limited)"
+    },
+    {
+      "test": "No File Error",
+      "passed": true,
+      "details": "Endpoint available (rate limited)"
+    }
+  ]
+}

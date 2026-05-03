@@ -5,10 +5,12 @@ from pydantic import BaseModel, Field
 from db.base import get_db
 from db import crud
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
+import logging
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class EventType(str, Enum):
@@ -329,8 +331,8 @@ async def get_event_templates():
             actions=template["actions"],
             variables={},
             version="1.0.0",
-            created_at=datetime.utcnow().isoformat(),
-            updated_at=datetime.utcnow().isoformat(),
+            created_at=datetime.now(timezone.utc).isoformat(),
+            updated_at=datetime.now(timezone.utc).isoformat(),
         )
         for template_key, template in EVENT_TEMPLATES.items()
     ]
@@ -370,8 +372,8 @@ async def create_event_system(
         actions=request.actions,
         variables=request.variables,
         version=request.version,
-        created_at=datetime.utcnow().isoformat(),
-        updated_at=datetime.utcnow().isoformat(),
+        created_at=datetime.now(timezone.utc).isoformat(),
+        updated_at=datetime.now(timezone.utc).isoformat(),
     )
 
     # Store in behavior files (as JSON)
@@ -387,7 +389,10 @@ async def create_event_system(
         return event_system
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create event system: {str(e)}")
+        logger.error(f"Failed to create event system: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail="Failed to create event system. Please try again."
+        )
 
 
 @router.get(
@@ -426,14 +431,14 @@ async def test_event_system(
     """
     try:
         # Simulate event system testing
-        start_time = datetime.utcnow().timestamp() * 1000
+        start_time = datetime.now(timezone.utc).timestamp() * 1000
 
         # Mock test execution
         executed_actions = len(test_config.test_data.get("mock_actions", []))
         errors = [] if test_config.dry_run else ["Test execution not fully implemented"]
         warnings = [] if test_config.test_data else ["No test data provided"]
 
-        end_time = datetime.utcnow().timestamp() * 1000
+        end_time = datetime.now(timezone.utc).timestamp() * 1000
         test_duration = end_time - start_time
 
         return EventSystemTestResult(
@@ -443,13 +448,14 @@ async def test_event_system(
             errors=errors,
             warnings=warnings,
             debug_output=[
-                {"timestamp": datetime.utcnow().isoformat(), "message": "Test started"},
-                {"timestamp": datetime.utcnow().isoformat(), "message": "Test completed"},
+                {"timestamp": datetime.now(timezone.utc).isoformat(), "message": "Test started"},
+                {"timestamp": datetime.now(timezone.utc).isoformat(), "message": "Test completed"},
             ],
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Event system test failed: {str(e)}")
+        logger.error(f"Event system test failed: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Event system test failed. Please try again.")
 
 
 @router.post(
@@ -472,7 +478,8 @@ async def generate_event_system_functions(
         return {"message": "Event system function generation started"}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to start generation: {str(e)}")
+        logger.error(f"Failed to start generation: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to start generation. Please try again.")
 
 
 async def generate_event_functions_background(system_id: str, db: AsyncSession):
@@ -482,7 +489,7 @@ async def generate_event_functions_background(system_id: str, db: AsyncSession):
     try:
         # This would contain the actual function generation logic
         # For now, it's a placeholder
-        print(f"Generating functions for event system: {system_id}")
+        logger.info(f"Generating functions for event system: {system_id}")
 
         # In a full implementation, this would:
         # 1. Parse the event system configuration
@@ -491,7 +498,7 @@ async def generate_event_functions_background(system_id: str, db: AsyncSession):
         # 4. Store generated functions as behavior files
 
     except Exception as e:
-        print(f"Background function generation failed: {e}")
+        logger.error(f"Background function generation failed: {e}")
 
 
 @router.get("/events/systems/{system_id}/debug", summary="Get debug information for event system")
@@ -509,7 +516,7 @@ async def get_event_system_debug(
             "triggers_active": 3,
             "actions_ready": 5,
             "variables_loaded": {"test_var": "test_value"},
-            "last_execution": datetime.utcnow().isoformat(),
+            "last_execution": datetime.now(timezone.utc).isoformat(),
             "execution_count": 42,
             "errors_last_hour": [],
             "performance_stats": {
@@ -520,4 +527,7 @@ async def get_event_system_debug(
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get debug info: {str(e)}")
+        logger.error(f"Failed to get debug info: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve debug information. Please try again."
+        )

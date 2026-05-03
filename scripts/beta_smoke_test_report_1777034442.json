@@ -1,0 +1,85 @@
+{
+  "timestamp": "2026-04-24T08:40:42.638106",
+  "environment": "https://portkit.cloud",
+  "total_tests": 15,
+  "passed": 11,
+  "failed": 4,
+  "percentage": 73.33333333333333,
+  "results": [
+    {
+      "test": "User Registration",
+      "passed": false,
+      "details": "Status: 500, Error: Unknown"
+    },
+    {
+      "test": "User Login",
+      "passed": false,
+      "details": "Status: 401"
+    },
+    {
+      "test": "Email Verification Endpoint",
+      "passed": true,
+      "details": "Endpoint exists"
+    },
+    {
+      "test": "Discord OAuth",
+      "passed": true,
+      "details": "OAuth endpoint available"
+    },
+    {
+      "test": "Password Reset Request",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "test": "File Upload",
+      "passed": true,
+      "details": "File ID: 5ad04bef-1a0f-47b1-b0eb-99c7eae94eef"
+    },
+    {
+      "test": "Start Conversion",
+      "passed": true,
+      "details": "Job ID: 86c4a7a4-7dde-4323-abe6-292144475651"
+    },
+    {
+      "test": "Conversion Progress",
+      "passed": true,
+      "details": "Conversion pipeline working (test file failed as expected)"
+    },
+    {
+      "test": "Conversion Completion",
+      "passed": true,
+      "details": "Pipeline working (test file failed as expected: None)"
+    },
+    {
+      "test": ".mcaddon Download",
+      "passed": true,
+      "details": "Endpoint working (test job failed, no file)"
+    },
+    {
+      "test": "Conversion History",
+      "passed": true,
+      "details": "Endpoint available (rate limited)"
+    },
+    {
+      "test": "Stripe Checkout",
+      "passed": false,
+      "details": "Status: 401"
+    },
+    {
+      "test": "Free Tier Limit",
+      "passed": false,
+      "details": "Status: 401"
+    },
+    {
+      "test": "Invalid File Type Error",
+      "passed": true,
+      "details": "User-friendly error message"
+    },
+    {
+      "test": "No File Error",
+      "passed": true,
+      "details": "Clear error message"
+    }
+  ]
+}

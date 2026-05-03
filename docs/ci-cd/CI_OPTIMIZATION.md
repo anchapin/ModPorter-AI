@@ -217,7 +217,7 @@ The `performance-monitoring` job provides:
 echo "Python deps hash: $(cat ai-engine/requirements.txt ai-engine/requirements-dev.txt backend/requirements.txt requirements-test.txt 2>/dev/null | sha256sum | cut -d' ' -f1 | head -c16)"
 
 # Check base image availability
-docker buildx imagetools inspect ghcr.io/anchapin/modporter-ai/python-base:latest
+docker buildx imagetools inspect ghcr.io/anchapin/portkit/python-base:latest
 
 # Test local builds
 docker build -f docker/base-images/Dockerfile.python-base -t test-python-base .

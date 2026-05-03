@@ -7,7 +7,6 @@ to prevent resource exhaustion attacks.
 Issue: #576 - Backend: File Processing Security
 """
 
-import asyncio
 import logging
 import os
 import resource
@@ -15,7 +14,7 @@ import shutil
 import threading
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional, Any, Generator
 
@@ -55,7 +54,7 @@ class ResourceUsage:
     open_files: int = 0
     cpu_time_seconds: float = 0.0
     processing_time_seconds: float = 0.0
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
@@ -110,7 +109,7 @@ class ResourceLimiter:
         Args:
             disk_path: Path to track disk usage for
         """
-        self._start_time = datetime.utcnow()
+        self._start_time = datetime.now(timezone.utc)
         self._disk_usage_path = disk_path
         logger.debug(f"Started resource tracking at {self._start_time}")
 
@@ -157,7 +156,7 @@ class ResourceLimiter:
 
         # Processing time
         if self._start_time:
-            elapsed = (datetime.utcnow() - self._start_time).total_seconds()
+            elapsed = (datetime.now(timezone.utc) - self._start_time).total_seconds()
             usage.processing_time_seconds = elapsed
 
         # CPU time
@@ -293,9 +292,9 @@ class ResourceLimiter:
                 signal.signal(signal.SIGALRM, old_handler)
         except (ImportError, ValueError):
             # Fallback for Windows or threads
-            start_time = datetime.utcnow()
+            start_time = datetime.now(timezone.utc)
             yield
-            elapsed = (datetime.utcnow() - start_time).total_seconds()
+            elapsed = (datetime.now(timezone.utc) - start_time).total_seconds()
             if elapsed > limit:
                 raise ResourceLimitExceeded("time", elapsed, limit)
 
@@ -409,3 +408,9 @@ def get_resource_limiter() -> ResourceLimiter:
     if _resource_limiter is None:
         _resource_limiter = ResourceLimiter()
     return _resource_limiter
+
+
+def reset_resource_limiter() -> None:
+    """Reset the global resource limiter instance. For testing purposes."""
+    global _resource_limiter
+    _resource_limiter = None

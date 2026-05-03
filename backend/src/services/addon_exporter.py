@@ -6,7 +6,9 @@ import os
 import datetime
 from typing import Dict, Any, List
 
-from models import addon_models as pydantic_addon_models  # For type hinting with Pydantic models
+from models import (
+    addon_models as pydantic_addon_models,
+)  # For type hinting with Pydantic models
 
 
 def _sanitize_filename(filename: str) -> str:
@@ -34,7 +36,9 @@ PACK_VERSION = [1, 0, 0]
 
 
 def generate_bp_manifest(
-    addon_pydantic: pydantic_addon_models.AddonDetails, module_uuid: str, header_uuid: str
+    addon_pydantic: pydantic_addon_models.AddonDetails,
+    module_uuid: str,
+    header_uuid: str,
 ) -> Dict[str, Any]:
     """Generates the behavior pack manifest.json content."""
     return {
@@ -64,7 +68,9 @@ def generate_bp_manifest(
 
 
 def generate_rp_manifest(
-    addon_pydantic: pydantic_addon_models.AddonDetails, module_uuid: str, header_uuid: str
+    addon_pydantic: pydantic_addon_models.AddonDetails,
+    module_uuid: str,
+    header_uuid: str,
 ) -> Dict[str, Any]:
     """Generates the resource pack manifest.json content."""
     return {
@@ -261,7 +267,9 @@ def generate_recipe_json(recipe: pydantic_addon_models.AddonRecipe) -> Dict[str,
     return recipe.data
 
 
-def generate_sounds_json(sound_assets: List[pydantic_addon_models.AddonAsset]) -> Dict[str, Any]:
+def generate_sounds_json(
+    sound_assets: List[pydantic_addon_models.AddonAsset],
+) -> Dict[str, Any]:
     """
     Generates the sounds.json file for the resource pack.
     This defines sound definitions that can be referenced in behavior pack.
@@ -345,7 +353,8 @@ def create_mcaddon_zip(
             )  # Fallback to recipe UUID
             recipe_filename = recipe_identifier.split(":")[-1] + ".json"
             zf.writestr(
-                f"{bp_folder_name}/recipes/{recipe_filename}", json.dumps(recipe_content, indent=2)
+                f"{bp_folder_name}/recipes/{recipe_filename}",
+                json.dumps(recipe_content, indent=2),
             )
 
         # Resource Pack (RP)
@@ -395,7 +404,7 @@ def create_mcaddon_zip(
                     zf.write(asset_disk_path, zip_path)
                 else:
                     # Log or handle missing asset file
-                    print(f"Warning: Asset file not found on disk: {asset_disk_path}")
+                    pass
 
         # Handle sound assets (.ogg, .wav files)
         sound_assets = [asset for asset in addon_pydantic.assets if asset.type == "sound"]
@@ -415,7 +424,7 @@ def create_mcaddon_zip(
                 if os.path.exists(asset_disk_path):
                     zf.write(asset_disk_path, zip_sound_path)
                 else:
-                    print(f"Warning: Sound asset file not found on disk: {asset_disk_path}")
+                    pass
 
             # Generate sounds.json for sound definitions
             sounds_json = generate_sounds_json(sound_assets)
@@ -439,7 +448,7 @@ def create_mcaddon_zip(
                 if os.path.exists(asset_disk_path):
                     zf.write(asset_disk_path, zip_model_path)
                 else:
-                    print(f"Warning: Model asset file not found on disk: {asset_disk_path}")
+                    pass
 
         # Handle entity/creeper geometry assets
         entity_assets = [asset for asset in addon_pydantic.assets if asset.type == "entity"]
@@ -457,7 +466,7 @@ def create_mcaddon_zip(
                 if os.path.exists(asset_disk_path):
                     zf.write(asset_disk_path, zip_entity_path)
                 else:
-                    print(f"Warning: Entity asset file not found on disk: {asset_disk_path}")
+                    pass
 
     zip_buffer.seek(0)
     return zip_buffer
@@ -480,7 +489,11 @@ if __name__ == "__main__":
                 id=mock_block_id,
                 addon_id=mock_addon_id,
                 identifier="custom:magic_brick",
-                properties={"luminance": 10, "friction": 0.8, "rp_texture_name": "magic_brick_tex"},
+                properties={
+                    "luminance": 10,
+                    "friction": 0.8,
+                    "rp_texture_name": "magic_brick_tex",
+                },
                 created_at=datetime.datetime.now(),
                 updated_at=datetime.datetime.now(),
                 behavior=pydantic_addon_models.AddonBehavior(
@@ -514,20 +527,12 @@ if __name__ == "__main__":
     bp_manifest = generate_bp_manifest(mock_addon, bp_manifest_uuid_module, bp_manifest_uuid_header)
     rp_manifest = generate_rp_manifest(mock_addon, rp_manifest_uuid_module, rp_manifest_uuid_header)
 
-    print("Behavior Pack Manifest:", json.dumps(bp_manifest, indent=2))
-    print("\\nResource Pack Manifest:", json.dumps(rp_manifest, indent=2))
-
     mock_block_instance = mock_addon.blocks[0]  # Get the block from the list
     block_behavior_content = generate_block_behavior_json(mock_block_instance)
-    print(
-        "\\nBlock Behavior JSON (custom:magic_brick):", json.dumps(block_behavior_content, indent=2)
-    )
 
     rp_blocks_json = generate_rp_block_definitions_json(mock_addon.blocks)
-    print("\\nRP blocks.json:", json.dumps(rp_blocks_json, indent=2))
 
     terrain_textures = generate_terrain_texture_json(mock_addon.assets)
-    print("\\nterrain_texture.json:", json.dumps(terrain_textures, indent=2))
 
     # Test ZIP creation (requires mock asset file on disk)
     # Create a dummy asset file for testing create_mcaddon_zip
@@ -539,15 +544,11 @@ if __name__ == "__main__":
     with open(mock_asset_on_disk_path, "w") as f:
         f.write("dummy texture content")
 
-    print(f"\\nAttempting to create ZIP for addon {mock_addon.id}...")
-    print(f"Mock asset created at: {mock_asset_on_disk_path}")
-
     try:
         zip_bytes_io = create_mcaddon_zip(mock_addon, mock_asset_base_path)
         zip_filename = f"{mock_addon.name.replace(' ', '_')}.mcaddon"
         with open(zip_filename, "wb") as f:
             f.write(zip_bytes_io.getvalue())
-        print(f"Successfully created {zip_filename}. Size: {len(zip_bytes_io.getvalue())} bytes.")
 
         # Clean up dummy file and dir
         os.remove(mock_asset_on_disk_path)
@@ -556,8 +557,7 @@ if __name__ == "__main__":
         if os.path.exists(zip_filename):  # remove the created zip
             os.remove(zip_filename)
 
-    except Exception as e:
-        print(f"Error during ZIP creation test: {e}")
+    except Exception:
         import traceback
 
         traceback.print_exc()

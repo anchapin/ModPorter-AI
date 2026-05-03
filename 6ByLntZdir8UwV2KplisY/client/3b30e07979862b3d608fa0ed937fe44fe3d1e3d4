@@ -1,0 +1,850 @@
+__vite_ssr_exportName__("AssumptionsReport", () => { try { return AssumptionsReport } catch {} });
+const __vite_ssr_import_0__ = await __vite_ssr_import__("/@fs/home/alex/Projects/ModPorter-AI/node_modules/.pnpm/react@19.2.4/node_modules/react/jsx-dev-runtime.js", {"importedNames":["jsxDEV"]});
+const __vite_ssr_import_1__ = await __vite_ssr_import__("/@fs/home/alex/Projects/ModPorter-AI/node_modules/.pnpm/react@19.2.4/node_modules/react/index.js", {"importedNames":["useState","useMemo"]});
+const __vite_ssr_import_2__ = await __vite_ssr_import__("/src/components/ConversionReport/ConversionReport.module.css", {"importedNames":["default"]});
+"use strict";
+
+
+
+const ImpactBadge = ({ impact }) => {
+  const getImpactInfo = (impact2) => {
+    const normalizedImpact = impact2.toLowerCase();
+    switch (normalizedImpact) {
+      case "high":
+        return { color: "#dc3545", icon: "🔴", bg: "#f8d7da" };
+      case "medium":
+        return { color: "#ffc107", icon: "🟡", bg: "#fff3cd" };
+      case "low":
+        return { color: "#28a745", icon: "🟢", bg: "#d4edda" };
+      default:
+        return { color: "#6c757d", icon: "⚪", bg: "#f8f9fa" };
+    }
+  };
+  const impactInfo = getImpactInfo(impact);
+  return /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+    "span",
+    {
+      className: __vite_ssr_import_2__.default.impactBadge,
+      style: {
+        backgroundColor: impactInfo.bg,
+        color: impactInfo.color,
+        border: `1px solid ${impactInfo.color}40`
+      },
+      children: [
+        impactInfo.icon,
+        " ",
+        impact
+      ]
+    },
+    void 0,
+    true,
+    {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+      lineNumber: 42,
+      columnNumber: 5
+    },
+    this
+  );
+};
+const ConfidenceIndicator = ({ score }) => {
+  const getConfidenceColor = (score2) => {
+    if (score2 >= 0.8) return "#28a745";
+    if (score2 >= 0.6) return "#ffc107";
+    return "#dc3545";
+  };
+  const confidencePercentage = Math.round(score * 100);
+  return /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.confidenceIndicator, children: [
+    /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.confidenceBar, children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+      "div",
+      {
+        className: __vite_ssr_import_2__.default.confidenceFill,
+        style: {
+          width: `${confidencePercentage}%`,
+          backgroundColor: getConfidenceColor(score)
+        }
+      },
+      void 0,
+      false,
+      {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 67,
+        columnNumber: 9
+      },
+      this
+    ) }, void 0, false, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+      lineNumber: 66,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("span", { className: __vite_ssr_import_2__.default.confidenceText, children: [
+      confidencePercentage,
+      "% confident"
+    ] }, void 0, true, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+      lineNumber: 75,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+    lineNumber: 65,
+    columnNumber: 5
+  }, this);
+};
+const AssumptionCard = ({ assumption }) => {
+  const [isExpanded, setIsExpanded] = (0,__vite_ssr_import_1__.useState)(false);
+  return /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.assumptionCard, children: [
+    /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+      "div",
+      {
+        className: __vite_ssr_import_2__.default.assumptionHeader,
+        onClick: () => setIsExpanded(!isExpanded),
+        children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.assumptionTitle, children: [
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h4", { className: __vite_ssr_import_2__.default.assumptionFeature, children: assumption.feature_affected }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+              lineNumber: 92,
+              columnNumber: 11
+            }, this),
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(ImpactBadge, { impact: assumption.impact_level }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+              lineNumber: 95,
+              columnNumber: 11
+            }, this)
+          ] }, void 0, true, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+            lineNumber: 91,
+            columnNumber: 9
+          }, this),
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.assumptionMetrics, children: [
+            assumption.confidence_score && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(ConfidenceIndicator, { score: assumption.confidence_score }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+              lineNumber: 99,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+              "button",
+              {
+                className: __vite_ssr_import_2__.default.expandButton,
+                "aria-label": isExpanded ? "Collapse" : "Expand",
+                children: isExpanded ? "▼" : "▶"
+              },
+              void 0,
+              false,
+              {
+                fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+                lineNumber: 101,
+                columnNumber: 11
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+            lineNumber: 97,
+            columnNumber: 9
+          }, this)
+        ]
+      },
+      void 0,
+      true,
+      {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 87,
+        columnNumber: 7
+      },
+      this
+    ),
+    /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.assumptionPreview, children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { className: __vite_ssr_import_2__.default.userExplanation, children: assumption.user_explanation }, void 0, false, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+      lineNumber: 111,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+      lineNumber: 110,
+      columnNumber: 7
+    }, this),
+    isExpanded && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.assumptionDetails, children: [
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.assumptionInfo, children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.assumptionInfoItem, children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("strong", { children: "Original Feature:" }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+            lineNumber: 118,
+            columnNumber: 15
+          }, this),
+          " ",
+          assumption.original_feature
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 117,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.assumptionInfoItem, children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("strong", { children: "Bedrock Equivalent:" }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+            lineNumber: 121,
+            columnNumber: 15
+          }, this),
+          " ",
+          assumption.bedrock_equivalent
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 120,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.assumptionInfoItem, children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("strong", { children: "Assumption Type:" }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+            lineNumber: 125,
+            columnNumber: 15
+          }, this),
+          " ",
+          assumption.assumption_type
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 124,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.assumptionInfoItem, children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("strong", { children: "Description:" }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+            lineNumber: 128,
+            columnNumber: 15
+          }, this),
+          " ",
+          assumption.description
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 127,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.assumptionInfoItem, children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("strong", { children: "Reasoning:" }, void 0, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+            lineNumber: 131,
+            columnNumber: 15
+          }, this),
+          " ",
+          assumption.reasoning
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 130,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 116,
+        columnNumber: 11
+      }, this),
+      assumption.technical_details && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.technicalDetails, children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("strong", { children: "Technical Details:" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 137,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { className: __vite_ssr_import_2__.default.technicalText, children: assumption.technical_details }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 138,
+          columnNumber: 15
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 136,
+        columnNumber: 13
+      }, this),
+      assumption.alternatives_considered && assumption.alternatives_considered.length > 0 && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.alternatives, children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("strong", { children: "Alternatives Considered:" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 147,
+          columnNumber: 17
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("ul", { className: __vite_ssr_import_2__.default.alternativesList, children: assumption.alternatives_considered.map(
+          (alternative, index) => /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("li", { className: __vite_ssr_import_2__.default.alternativeItem, children: alternative }, index, false, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+            lineNumber: 151,
+            columnNumber: 23
+          }, this)
+        ) }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 148,
+          columnNumber: 17
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 146,
+        columnNumber: 15
+      }, this),
+      assumption.visual_example && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.visualExample, children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("strong", { children: "Visual Example:" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 162,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.exampleContainer, children: [
+          assumption.visual_example.before && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.exampleItem, children: [
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h5", { children: "Before" }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+              lineNumber: 166,
+              columnNumber: 21
+            }, this),
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { children: assumption.visual_example.before }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+              lineNumber: 167,
+              columnNumber: 21
+            }, this)
+          ] }, void 0, true, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+            lineNumber: 165,
+            columnNumber: 19
+          }, this),
+          assumption.visual_example.after && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.exampleItem, children: [
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h5", { children: "After" }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+              lineNumber: 172,
+              columnNumber: 21
+            }, this),
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { children: assumption.visual_example.after }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+              lineNumber: 173,
+              columnNumber: 21
+            }, this)
+          ] }, void 0, true, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+            lineNumber: 171,
+            columnNumber: 19
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 163,
+          columnNumber: 15
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 161,
+        columnNumber: 13
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+      lineNumber: 115,
+      columnNumber: 9
+    }, this)
+  ] }, void 0, true, {
+    fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+    lineNumber: 86,
+    columnNumber: 5
+  }, this);
+};
+const ImpactDistribution = ({ distribution }) => {
+  const total = Object.values(distribution).reduce(
+    (sum, count) => sum + count,
+    0
+  );
+  if (total === 0) return null;
+  return /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.impactDistribution, children: [
+    /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h4", { children: "Impact Distribution" }, void 0, false, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+      lineNumber: 197,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.distributionChart, children: Object.entries(distribution).map(([level, count]) => {
+      const percentage = count / total * 100;
+      const getColor = (level2) => {
+        switch (level2.toLowerCase()) {
+          case "high":
+            return "#dc3545";
+          case "medium":
+            return "#ffc107";
+          case "low":
+            return "#28a745";
+          default:
+            return "#6c757d";
+        }
+      };
+      return /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.distributionItem, children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.distributionLabel, children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+            "span",
+            {
+              className: __vite_ssr_import_2__.default.distributionColor,
+              style: { backgroundColor: getColor(level) }
+            },
+            void 0,
+            false,
+            {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+              lineNumber: 217,
+              columnNumber: 17
+            },
+            this
+          ),
+          level,
+          " Impact"
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 216,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.distributionBar, children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+          "div",
+          {
+            className: __vite_ssr_import_2__.default.distributionFill,
+            style: {
+              width: `${percentage}%`,
+              backgroundColor: getColor(level)
+            }
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+            lineNumber: 224,
+            columnNumber: 17
+          },
+          this
+        ) }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 223,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.distributionCount, children: [
+          count,
+          " (",
+          percentage.toFixed(0),
+          "%)"
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 232,
+          columnNumber: 15
+        }, this)
+      ] }, level, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 215,
+        columnNumber: 13
+      }, this);
+    }) }, void 0, false, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+      lineNumber: 198,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+    lineNumber: 196,
+    columnNumber: 5
+  }, this);
+};
+const CategoryBreakdown = ({ categories }) => {
+  if (Object.keys(categories).length === 0) return null;
+  return /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.categoryBreakdown, children: [
+    /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h4", { children: "Assumptions by Category" }, void 0, false, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+      lineNumber: 250,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.categoriesGrid, children: Object.entries(categories).map(([category, assumptions]) => /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.categoryCard, children: [
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h5", { className: __vite_ssr_import_2__.default.categoryTitle, children: category }, void 0, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 254,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.categoryCount, children: [
+        assumptions.length,
+        " assumptions"
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 255,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.categoryImpacts, children: [
+        assumptions.slice(0, 3).map((assumption, index) => /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(ImpactBadge, { impact: assumption.impact_level }, index, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 260,
+          columnNumber: 17
+        }, this)),
+        assumptions.length > 3 && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("span", { className: __vite_ssr_import_2__.default.moreTag, children: [
+          "+",
+          assumptions.length - 3,
+          " more"
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 263,
+          columnNumber: 17
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 258,
+        columnNumber: 13
+      }, this)
+    ] }, category, true, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+      lineNumber: 253,
+      columnNumber: 11
+    }, this)) }, void 0, false, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+      lineNumber: 251,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+    lineNumber: 249,
+    columnNumber: 5
+  }, this);
+};
+const FilterControls = ({
+  onImpactFilter,
+  onCategoryFilter,
+  impactFilter,
+  categoryFilter,
+  categories
+}) => {
+  return /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.filterControls, children: [
+    /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.filterGroup, children: [
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("label", { children: "Impact Level:" }, void 0, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 291,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+        "select",
+        {
+          value: impactFilter,
+          onChange: (e) => onImpactFilter(e.target.value),
+          children: [
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("option", { value: "all", children: "All Impacts" }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+              lineNumber: 296,
+              columnNumber: 11
+            }, this),
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("option", { value: "high", children: "High Impact" }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+              lineNumber: 297,
+              columnNumber: 11
+            }, this),
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("option", { value: "medium", children: "Medium Impact" }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+              lineNumber: 298,
+              columnNumber: 11
+            }, this),
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("option", { value: "low", children: "Low Impact" }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+              lineNumber: 299,
+              columnNumber: 11
+            }, this)
+          ]
+        },
+        void 0,
+        true,
+        {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 292,
+          columnNumber: 9
+        },
+        this
+      )
+    ] }, void 0, true, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+      lineNumber: 290,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.filterGroup, children: [
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("label", { children: "Category:" }, void 0, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 304,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+        "select",
+        {
+          value: categoryFilter,
+          onChange: (e) => onCategoryFilter(e.target.value),
+          children: [
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("option", { value: "all", children: "All Categories" }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+              lineNumber: 309,
+              columnNumber: 11
+            }, this),
+            categories.map((category) => /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("option", { value: category, children: category }, category, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+              lineNumber: 311,
+              columnNumber: 13
+            }, this))
+          ]
+        },
+        void 0,
+        true,
+        {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 305,
+          columnNumber: 9
+        },
+        this
+      )
+    ] }, void 0, true, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+      lineNumber: 303,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+    lineNumber: 289,
+    columnNumber: 5
+  }, this);
+};
+const AssumptionsReport = ({
+  assumptions,
+  isExpanded,
+  onToggle
+}) => {
+  const [impactFilter, setImpactFilter] = (0,__vite_ssr_import_1__.useState)("all");
+  const [categoryFilter, setCategoryFilter] = (0,__vite_ssr_import_1__.useState)("all");
+  const categories = (0,__vite_ssr_import_1__.useMemo)(() => {
+    return Object.keys(assumptions.category_breakdown || {});
+  }, [assumptions.category_breakdown]);
+  const filteredAssumptions = (0,__vite_ssr_import_1__.useMemo)(() => {
+    let filtered = assumptions.assumptions || [];
+    if (impactFilter !== "all") {
+      filtered = filtered.filter(
+        (assumption) => assumption.impact_level?.toLowerCase() === impactFilter
+      );
+    };
+    if (categoryFilter !== "all") {
+      filtered = filtered.filter(
+        (assumption) => assumption.assumption_type === categoryFilter
+      );
+    };
+    return filtered;
+  }, [assumptions.assumptions, impactFilter, categoryFilter]);
+  const averageConfidence = (0,__vite_ssr_import_1__.useMemo)(() => {
+    if (!assumptions.assumptions || assumptions.assumptions.length === 0)
+      return 0;
+    const total = assumptions.assumptions.reduce(
+      (sum, assumption) => sum + (assumption.confidence_score || 0.8),
+      0
+    );
+    return total / assumptions.assumptions.length;
+  }, [assumptions.assumptions]);
+  if (!assumptions.assumptions || assumptions.assumptions.length === 0) {
+    return /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.section, children: [
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.sectionHeader, onClick: onToggle, children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h3", { className: __vite_ssr_import_2__.default.sectionTitle, children: "🧠 Smart Assumptions (0 applied)" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 367,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("button", { className: __vite_ssr_import_2__.default.toggleButton, children: isExpanded ? "▼" : "▶" }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 370,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 366,
+        columnNumber: 9
+      }, this),
+      isExpanded && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.sectionContent, children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { className: __vite_ssr_import_2__.default.noAssumptions, children: "No smart assumptions were required for this conversion. All features were directly translatable to Bedrock Edition." }, void 0, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 376,
+        columnNumber: 13
+      }, this) }, void 0, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 375,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+      lineNumber: 365,
+      columnNumber: 7
+    }, this);
+  };
+  return /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.section, children: [
+    /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.sectionHeader, onClick: onToggle, children: [
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("h3", { className: __vite_ssr_import_2__.default.sectionTitle, children: [
+        "🧠 Smart Assumptions (",
+        assumptions.total_assumptions_count,
+        " applied)"
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 389,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+        "button",
+        {
+          className: __vite_ssr_import_2__.default.toggleButton,
+          "aria-label": isExpanded ? "Collapse" : "Expand",
+          children: isExpanded ? "▼" : "▶"
+        },
+        void 0,
+        false,
+        {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 392,
+          columnNumber: 9
+        },
+        this
+      )
+    ] }, void 0, true, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+      lineNumber: 388,
+      columnNumber: 7
+    }, this),
+    isExpanded && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.sectionContent, children: [
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.assumptionsSummary, children: [
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.summaryCards, children: [
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.summaryCard, children: [
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.summaryValue, children: assumptions.total_assumptions_count }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+              lineNumber: 406,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.summaryLabel, children: "Total Assumptions" }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+              lineNumber: 409,
+              columnNumber: 17
+            }, this)
+          ] }, void 0, true, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+            lineNumber: 405,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.summaryCard, children: [
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.summaryValue, children: [
+              Math.round(averageConfidence * 100),
+              "%"
+            ] }, void 0, true, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+              lineNumber: 412,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.summaryLabel, children: "Avg. Confidence" }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+              lineNumber: 415,
+              columnNumber: 17
+            }, this)
+          ] }, void 0, true, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+            lineNumber: 411,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.summaryCard, children: [
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.summaryValue, children: categories.length }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+              lineNumber: 418,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.summaryLabel, children: "Categories" }, void 0, false, {
+              fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+              lineNumber: 419,
+              columnNumber: 17
+            }, this)
+          ] }, void 0, true, {
+            fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+            lineNumber: 417,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 404,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.summaryDescription, children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { children: "Smart assumptions were applied to bridge compatibility gaps between Java and Bedrock editions. Each assumption maintains functionality while adapting to Bedrock's constraints." }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 424,
+          columnNumber: 15
+        }, this) }, void 0, false, {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 423,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 403,
+        columnNumber: 11
+      }, this),
+      assumptions.impact_distribution && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+        ImpactDistribution,
+        {
+          distribution: assumptions.impact_distribution
+        },
+        void 0,
+        false,
+        {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 434,
+          columnNumber: 13
+        },
+        this
+      ),
+      assumptions.category_breakdown && Object.keys(assumptions.category_breakdown).length > 0 && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(CategoryBreakdown, { categories: assumptions.category_breakdown }, void 0, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 442,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+        FilterControls,
+        {
+          onImpactFilter: setImpactFilter,
+          onCategoryFilter: setCategoryFilter,
+          impactFilter,
+          categoryFilter,
+          categories
+        },
+        void 0,
+        false,
+        {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 446,
+          columnNumber: 11
+        },
+        this
+      ),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.resultsCount, children: [
+        filteredAssumptions.length,
+        " of",
+        " ",
+        assumptions.total_assumptions_count,
+        " assumptions"
+      ] }, void 0, true, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 454,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.assumptionsList, children: filteredAssumptions.map((assumption, index) => /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)(
+        AssumptionCard,
+        {
+          assumption
+        },
+        assumption.assumption_id || index,
+        false,
+        {
+          fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+          lineNumber: 462,
+          columnNumber: 15
+        },
+        this
+      )) }, void 0, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 460,
+        columnNumber: 11
+      }, this),
+      filteredAssumptions.length === 0 && /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("div", { className: __vite_ssr_import_2__.default.noResults, children: /* @__PURE__ */ (0,__vite_ssr_import_0__.jsxDEV)("p", { children: "No assumptions match the current filters." }, void 0, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 471,
+        columnNumber: 15
+      }, this) }, void 0, false, {
+        fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+        lineNumber: 470,
+        columnNumber: 13
+      }, this)
+    ] }, void 0, true, {
+      fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+      lineNumber: 401,
+      columnNumber: 9
+    }, this)
+  ] }, void 0, true, {
+    fileName: "/home/alex/Projects/ModPorter-AI/frontend/src/components/ConversionReport/AssumptionsReport.tsx",
+    lineNumber: 387,
+    columnNumber: 5
+  }, this);
+};
+//# sourceMappingSource=vite-generated
+//# sourceMappingURL=data:application/json;base64,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QUFBO0FBQUE7QUFBQSxhQUdBO0FBQUEsTUFHQSxpREFBQyxTQUFJLFdBQVcsOEJBQU8saUJBQ3BCLDhCQUFvQixJQUFJLENBQUMsWUFBWSxVQUNwQztBQUFBLFFBQUM7QUFBQTtBQUFBLFVBRUM7QUFBQTtBQUFBLFFBREssV0FBVyxpQkFBaUI7QUFBQSxRQURuQztBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBLE1BR0EsQ0FDRCxLQU5IO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFPQTtBQUFBLE1BRUMsb0JBQW9CLFdBQVcsS0FDOUIsaURBQUMsU0FBSSxXQUFXLDhCQUFPLFdBQ3JCLDJEQUFDLE9BQUUseURBQUg7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQUE0QyxLQUQ5QztBQUFBO0FBQUE7QUFBQTtBQUFBLGFBRUE7QUFBQSxTQXZFSjtBQUFBO0FBQUE7QUFBQTtBQUFBLFdBeUVBO0FBQUEsT0F2Rko7QUFBQTtBQUFBO0FBQUE7QUFBQSxTQXlGQTtBQUVKIiwibmFtZXMiOlsiaW1wYWN0Iiwic2NvcmUiLCJsZXZlbCJdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJBc3N1bXB0aW9uc1JlcG9ydC50c3giXSwic291cmNlc0NvbnRlbnQiOlsiLyoqXG4gKiBBc3N1bXB0aW9uc1JlcG9ydCBDb21wb25lbnQgLSBFbmhhbmNlZCBzbWFydCBhc3N1bXB0aW9ucyByZXBvcnRpbmdcbiAqIFBhcnQgb2YgSXNzdWUgIzEwIC0gQ29udmVyc2lvbiBSZXBvcnQgR2VuZXJhdGlvbiBTeXN0ZW1cbiAqL1xuXG5pbXBvcnQgUmVhY3QsIHsgdXNlU3RhdGUsIHVzZU1lbW8gfSBmcm9tICdyZWFjdCc7XG5pbXBvcnQgdHlwZSB7XG4gIEFzc3VtcHRpb25zUmVwb3J0IGFzIEFzc3VtcHRpb25zUmVwb3J0VHlwZSxcbiAgQXNzdW1wdGlvbkRldGFpbCxcbn0gZnJvbSAnLi4vLi4vdHlwZXMvYXBpJztcbmltcG9ydCBzdHlsZXMgZnJvbSAnLi9Db252ZXJzaW9uUmVwb3J0Lm1vZHVsZS5jc3MnO1xuXG5pbnRlcmZhY2UgQXNzdW1wdGlvbnNSZXBvcnRQcm9wcyB7XG4gIGFzc3VtcHRpb25zOiBBc3N1bXB0aW9uc1JlcG9ydFR5cGU7XG4gIGlzRXhwYW5kZWQ6IGJvb2xlYW47XG4gIG9uVG9nZ2xlOiAoKSA9PiB2b2lkO1xufVxuXG5pbnRlcmZhY2UgQXNzdW1wdGlvbkNhcmRQcm9wcyB7XG4gIGFzc3VtcHRpb246IEFzc3VtcHRpb25EZXRhaWw7XG59XG5cbmNvbnN0IEltcGFjdEJhZGdlOiBSZWFjdC5GQzx7IGltcGFjdDogc3RyaW5nIH0+ID0gKHsgaW1wYWN0IH0pID0+IHtcbiAgY29uc3QgZ2V0SW1wYWN0SW5mbyA9IChpbXBhY3Q6IHN0cmluZykgPT4ge1xuICAgIGNvbnN0IG5vcm1hbGl6ZWRJbXBhY3QgPSBpbXBhY3QudG9Mb3dlckNhc2UoKTtcblxuICAgIHN3aXRjaCAobm9ybWFsaXplZEltcGFjdCkge1xuICAgICAgY2FzZSAnaGlnaCc6XG4gICAgICAgIHJldHVybiB7IGNvbG9yOiAnI2RjMzU0NScsIGljb246ICfwn5S0JywgYmc6ICcjZjhkN2RhJyB9O1xuICAgICAgY2FzZSAnbWVkaXVtJzpcbiAgICAgICAgcmV0dXJuIHsgY29sb3I6ICcjZmZjMTA3JywgaWNvbjogJ/Cfn6EnLCBiZzogJyNmZmYzY2QnIH07XG4gICAgICBjYXNlICdsb3cnOlxuICAgICAgICByZXR1cm4geyBjb2xvcjogJyMyOGE3NDUnLCBpY29uOiAn8J+foicsIGJnOiAnI2Q0ZWRkYScgfTtcbiAgICAgIGRlZmF1bHQ6XG4gICAgICAgIHJldHVybiB7IGNvbG9yOiAnIzZjNzU3ZCcsIGljb246ICfimqonLCBiZzogJyNmOGY5ZmEnIH07XG4gICAgfVxuICB9O1xuXG4gIGNvbnN0IGltcGFjdEluZm8gPSBnZXRJbXBhY3RJbmZvKGltcGFjdCk7XG5cbiAgcmV0dXJuIChcbiAgICA8c3BhblxuICAgICAgY2xhc3NOYW1lPXtzdHlsZXMuaW1wYWN0QmFkZ2V9XG4gICAgICBzdHlsZT17e1xuICAgICAgICBiYWNrZ3JvdW5kQ29sb3I6IGltcGFjdEluZm8uYmcsXG4gICAgICAgIGNvbG9yOiBpbXBhY3RJbmZvLmNvbG9yLFxuICAgICAgICBib3JkZXI6IGAxcHggc29saWQgJHtpbXBhY3RJbmZvLmNvbG9yfTQwYCxcbiAgICAgIH19XG4gICAgPlxuICAgICAge2ltcGFjdEluZm8uaWNvbn0ge2ltcGFjdH1cbiAgICA8L3NwYW4+XG4gICk7XG59O1xuXG5jb25zdCBDb25maWRlbmNlSW5kaWNhdG9yOiBSZWFjdC5GQzx7IHNjb3JlOiBudW1iZXIgfT4gPSAoeyBzY29yZSB9KSA9PiB7XG4gIGNvbnN0IGdldENvbmZpZGVuY2VDb2xvciA9IChzY29yZTogbnVtYmVyKSA9PiB7XG4gICAgaWYgKHNjb3JlID49IDAuOCkgcmV0dXJuICcjMjhhNzQ1JztcbiAgICBpZiAoc2NvcmUgPj0gMC42KSByZXR1cm4gJyNmZmMxMDcnO1xuICAgIHJldHVybiAnI2RjMzU0NSc7XG4gIH07XG5cbiAgY29uc3QgY29uZmlkZW5jZVBlcmNlbnRhZ2UgPSBNYXRoLnJvdW5kKHNjb3JlICogMTAwKTtcblxuICByZXR1cm4gKFxuICAgIDxkaXYgY2xhc3NOYW1lPXtzdHlsZXMuY29uZmlkZW5jZUluZGljYXRvcn0+XG4gICAgICA8ZGl2IGNsYXNzTmFtZT17c3R5bGVzLmNvbmZpZGVuY2VCYXJ9PlxuICAgICAgICA8ZGl2XG4gICAgICAgICAgY2xhc3NOYW1lPXtzdHlsZXMuY29uZmlkZW5jZUZpbGx9XG4gICAgICAgICAgc3R5bGU9e3tcbiAgICAgICAgICAgIHdpZHRoOiBgJHtjb25maWRlbmNlUGVyY2VudGFnZX0lYCxcbiAgICAgICAgICAgIGJhY2tncm91bmRDb2xvcjogZ2V0Q29uZmlkZW5jZUNvbG9yKHNjb3JlKSxcbiAgICAgICAgICB9fVxuICAgICAgICAvPlxuICAgICAgPC9kaXY+XG4gICAgICA8c3BhbiBjbGFzc05hbWU9e3N0eWxlcy5jb25maWRlbmNlVGV4dH0+XG4gICAgICAgIHtjb25maWRlbmNlUGVyY2VudGFnZX0lIGNvbmZpZGVudFxuICAgICAgPC9zcGFuPlxuICAgIDwvZGl2PlxuICApO1xufTtcblxuY29uc3QgQXNzdW1wdGlvbkNhcmQ6IFJlYWN0LkZDPEFzc3VtcHRpb25DYXJkUHJvcHM+ID0gKHsgYXNzdW1wdGlvbiB9KSA9PiB7XG4gIGNvbnN0IFtpc0V4cGFuZGVkLCBzZXRJc0V4cGFuZGVkXSA9IHVzZVN0YXRlKGZhbHNlKTtcblxuICByZXR1cm4gKFxuICAgIDxkaXYgY2xhc3NOYW1lPXtzdHlsZXMuYXNzdW1wdGlvbkNhcmR9PlxuICAgICAgPGRpdlxuICAgICAgICBjbGFzc05hbWU9e3N0eWxlcy5hc3N1bXB0aW9uSGVhZGVyfVxuICAgICAgICBvbkNsaWNrPXsoKSA9PiBzZXRJc0V4cGFuZGVkKCFpc0V4cGFuZGVkKX1cbiAgICAgID5cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5hc3N1bXB0aW9uVGl0bGV9PlxuICAgICAgICAgIDxoNCBjbGFzc05hbWU9e3N0eWxlcy5hc3N1bXB0aW9uRmVhdHVyZX0+XG4gICAgICAgICAgICB7YXNzdW1wdGlvbi5mZWF0dXJlX2FmZmVjdGVkfVxuICAgICAgICAgIDwvaDQ+XG4gICAgICAgICAgPEltcGFjdEJhZGdlIGltcGFjdD17YXNzdW1wdGlvbi5pbXBhY3RfbGV2ZWx9IC8+XG4gICAgICAgIDwvZGl2PlxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT17c3R5bGVzLmFzc3VtcHRpb25NZXRyaWNzfT5cbiAgICAgICAgICB7YXNzdW1wdGlvbi5jb25maWRlbmNlX3Njb3JlICYmIChcbiAgICAgICAgICAgIDxDb25maWRlbmNlSW5kaWNhdG9yIHNjb3JlPXthc3N1bXB0aW9uLmNvbmZpZGVuY2Vfc2NvcmV9IC8+XG4gICAgICAgICAgKX1cbiAgICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgICBjbGFzc05hbWU9e3N0eWxlcy5leHBhbmRCdXR0b259XG4gICAgICAgICAgICBhcmlhLWxhYmVsPXtpc0V4cGFuZGVkID8gJ0NvbGxhcHNlJyA6ICdFeHBhbmQnfVxuICAgICAgICAgID5cbiAgICAgICAgICAgIHtpc0V4cGFuZGVkID8gJ+KWvCcgOiAn4pa2J31cbiAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgPC9kaXY+XG4gICAgICA8L2Rpdj5cblxuICAgICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5hc3N1bXB0aW9uUHJldmlld30+XG4gICAgICAgIDxwIGNsYXNzTmFtZT17c3R5bGVzLnVzZXJFeHBsYW5hdGlvbn0+e2Fzc3VtcHRpb24udXNlcl9leHBsYW5hdGlvbn08L3A+XG4gICAgICA8L2Rpdj5cblxuICAgICAge2lzRXhwYW5kZWQgJiYgKFxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT17c3R5bGVzLmFzc3VtcHRpb25EZXRhaWxzfT5cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT17c3R5bGVzLmFzc3VtcHRpb25JbmZvfT5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPXtzdHlsZXMuYXNzdW1wdGlvbkluZm9JdGVtfT5cbiAgICAgICAgICAgICAgPHN0cm9uZz5PcmlnaW5hbCBGZWF0dXJlOjwvc3Ryb25nPiB7YXNzdW1wdGlvbi5vcmlnaW5hbF9mZWF0dXJlfVxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT17c3R5bGVzLmFzc3VtcHRpb25JbmZvSXRlbX0+XG4gICAgICAgICAgICAgIDxzdHJvbmc+QmVkcm9jayBFcXVpdmFsZW50Ojwvc3Ryb25nPnsnICd9XG4gICAgICAgICAgICAgIHthc3N1bXB0aW9uLmJlZHJvY2tfZXF1aXZhbGVudH1cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5hc3N1bXB0aW9uSW5mb0l0ZW19PlxuICAgICAgICAgICAgICA8c3Ryb25nPkFzc3VtcHRpb24gVHlwZTo8L3N0cm9uZz4ge2Fzc3VtcHRpb24uYXNzdW1wdGlvbl90eXBlfVxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT17c3R5bGVzLmFzc3VtcHRpb25JbmZvSXRlbX0+XG4gICAgICAgICAgICAgIDxzdHJvbmc+RGVzY3JpcHRpb246PC9zdHJvbmc+IHthc3N1bXB0aW9uLmRlc2NyaXB0aW9ufVxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT17c3R5bGVzLmFzc3VtcHRpb25JbmZvSXRlbX0+XG4gICAgICAgICAgICAgIDxzdHJvbmc+UmVhc29uaW5nOjwvc3Ryb25nPiB7YXNzdW1wdGlvbi5yZWFzb25pbmd9XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgIHthc3N1bXB0aW9uLnRlY2huaWNhbF9kZXRhaWxzICYmIChcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPXtzdHlsZXMudGVjaG5pY2FsRGV0YWlsc30+XG4gICAgICAgICAgICAgIDxzdHJvbmc+VGVjaG5pY2FsIERldGFpbHM6PC9zdHJvbmc+XG4gICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT17c3R5bGVzLnRlY2huaWNhbFRleHR9PlxuICAgICAgICAgICAgICAgIHthc3N1bXB0aW9uLnRlY2huaWNhbF9kZXRhaWxzfVxuICAgICAgICAgICAgICA8L3A+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICApfVxuXG4gICAgICAgICAge2Fzc3VtcHRpb24uYWx0ZXJuYXRpdmVzX2NvbnNpZGVyZWQgJiZcbiAgICAgICAgICAgIGFzc3VtcHRpb24uYWx0ZXJuYXRpdmVzX2NvbnNpZGVyZWQubGVuZ3RoID4gMCAmJiAoXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPXtzdHlsZXMuYWx0ZXJuYXRpdmVzfT5cbiAgICAgICAgICAgICAgICA8c3Ryb25nPkFsdGVybmF0aXZlcyBDb25zaWRlcmVkOjwvc3Ryb25nPlxuICAgICAgICAgICAgICAgIDx1bCBjbGFzc05hbWU9e3N0eWxlcy5hbHRlcm5hdGl2ZXNMaXN0fT5cbiAgICAgICAgICAgICAgICAgIHthc3N1bXB0aW9uLmFsdGVybmF0aXZlc19jb25zaWRlcmVkLm1hcChcbiAgICAgICAgICAgICAgICAgICAgKGFsdGVybmF0aXZlLCBpbmRleCkgPT4gKFxuICAgICAgICAgICAgICAgICAgICAgIDxsaSBrZXk9e2luZGV4fSBjbGFzc05hbWU9e3N0eWxlcy5hbHRlcm5hdGl2ZUl0ZW19PlxuICAgICAgICAgICAgICAgICAgICAgICAge2FsdGVybmF0aXZlfVxuICAgICAgICAgICAgICAgICAgICAgIDwvbGk+XG4gICAgICAgICAgICAgICAgICAgIClcbiAgICAgICAgICAgICAgICAgICl9XG4gICAgICAgICAgICAgICAgPC91bD5cbiAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICApfVxuXG4gICAgICAgICAge2Fzc3VtcHRpb24udmlzdWFsX2V4YW1wbGUgJiYgKFxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy52aXN1YWxFeGFtcGxlfT5cbiAgICAgICAgICAgICAgPHN0cm9uZz5WaXN1YWwgRXhhbXBsZTo8L3N0cm9uZz5cbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5leGFtcGxlQ29udGFpbmVyfT5cbiAgICAgICAgICAgICAgICB7YXNzdW1wdGlvbi52aXN1YWxfZXhhbXBsZS5iZWZvcmUgJiYgKFxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5leGFtcGxlSXRlbX0+XG4gICAgICAgICAgICAgICAgICAgIDxoNT5CZWZvcmU8L2g1PlxuICAgICAgICAgICAgICAgICAgICA8cD57YXNzdW1wdGlvbi52aXN1YWxfZXhhbXBsZS5iZWZvcmV9PC9wPlxuICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgKX1cbiAgICAgICAgICAgICAgICB7YXNzdW1wdGlvbi52aXN1YWxfZXhhbXBsZS5hZnRlciAmJiAoXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT17c3R5bGVzLmV4YW1wbGVJdGVtfT5cbiAgICAgICAgICAgICAgICAgICAgPGg1PkFmdGVyPC9oNT5cbiAgICAgICAgICAgICAgICAgICAgPHA+e2Fzc3VtcHRpb24udmlzdWFsX2V4YW1wbGUuYWZ0ZXJ9PC9wPlxuICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgKX1cbiAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICApfVxuICAgICAgICA8L2Rpdj5cbiAgICAgICl9XG4gICAgPC9kaXY+XG4gICk7XG59O1xuXG5jb25zdCBJbXBhY3REaXN0cmlidXRpb246IFJlYWN0LkZDPHtcbiAgZGlzdHJpYnV0aW9uOiBSZWNvcmQ8c3RyaW5nLCBudW1iZXI+O1xufT4gPSAoeyBkaXN0cmlidXRpb24gfSkgPT4ge1xuICBjb25zdCB0b3RhbCA9IE9iamVjdC52YWx1ZXMoZGlzdHJpYnV0aW9uKS5yZWR1Y2UoXG4gICAgKHN1bSwgY291bnQpID0+IHN1bSArIGNvdW50LFxuICAgIDBcbiAgKTtcblxuICBpZiAodG90YWwgPT09IDApIHJldHVybiBudWxsO1xuXG4gIHJldHVybiAoXG4gICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5pbXBhY3REaXN0cmlidXRpb259PlxuICAgICAgPGg0PkltcGFjdCBEaXN0cmlidXRpb248L2g0PlxuICAgICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5kaXN0cmlidXRpb25DaGFydH0+XG4gICAgICAgIHtPYmplY3QuZW50cmllcyhkaXN0cmlidXRpb24pLm1hcCgoW2xldmVsLCBjb3VudF0pID0+IHtcbiAgICAgICAgICBjb25zdCBwZXJjZW50YWdlID0gKGNvdW50IC8gdG90YWwpICogMTAwO1xuICAgICAgICAgIGNvbnN0IGdldENvbG9yID0gKGxldmVsOiBzdHJpbmcpID0+IHtcbiAgICAgICAgICAgIHN3aXRjaCAobGV2ZWwudG9Mb3dlckNhc2UoKSkge1xuICAgICAgICAgICAgICBjYXNlICdoaWdoJzpcbiAgICAgICAgICAgICAgICByZXR1cm4gJyNkYzM1NDUnO1xuICAgICAgICAgICAgICBjYXNlICdtZWRpdW0nOlxuICAgICAgICAgICAgICAgIHJldHVybiAnI2ZmYzEwNyc7XG4gICAgICAgICAgICAgIGNhc2UgJ2xvdyc6XG4gICAgICAgICAgICAgICAgcmV0dXJuICcjMjhhNzQ1JztcbiAgICAgICAgICAgICAgZGVmYXVsdDpcbiAgICAgICAgICAgICAgICByZXR1cm4gJyM2Yzc1N2QnO1xuICAgICAgICAgICAgfVxuICAgICAgICAgIH07XG5cbiAgICAgICAgICByZXR1cm4gKFxuICAgICAgICAgICAgPGRpdiBrZXk9e2xldmVsfSBjbGFzc05hbWU9e3N0eWxlcy5kaXN0cmlidXRpb25JdGVtfT5cbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5kaXN0cmlidXRpb25MYWJlbH0+XG4gICAgICAgICAgICAgICAgPHNwYW5cbiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT17c3R5bGVzLmRpc3RyaWJ1dGlvbkNvbG9yfVxuICAgICAgICAgICAgICAgICAgc3R5bGU9e3sgYmFja2dyb3VuZENvbG9yOiBnZXRDb2xvcihsZXZlbCkgfX1cbiAgICAgICAgICAgICAgICAvPlxuICAgICAgICAgICAgICAgIHtsZXZlbH0gSW1wYWN0XG4gICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT17c3R5bGVzLmRpc3RyaWJ1dGlvbkJhcn0+XG4gICAgICAgICAgICAgICAgPGRpdlxuICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPXtzdHlsZXMuZGlzdHJpYnV0aW9uRmlsbH1cbiAgICAgICAgICAgICAgICAgIHN0eWxlPXt7XG4gICAgICAgICAgICAgICAgICAgIHdpZHRoOiBgJHtwZXJjZW50YWdlfSVgLFxuICAgICAgICAgICAgICAgICAgICBiYWNrZ3JvdW5kQ29sb3I6IGdldENvbG9yKGxldmVsKSxcbiAgICAgICAgICAgICAgICAgIH19XG4gICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPXtzdHlsZXMuZGlzdHJpYnV0aW9uQ291bnR9PlxuICAgICAgICAgICAgICAgIHtjb3VudH0gKHtwZXJjZW50YWdlLnRvRml4ZWQoMCl9JSlcbiAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICApO1xuICAgICAgICB9KX1cbiAgICAgIDwvZGl2PlxuICAgIDwvZGl2PlxuICApO1xufTtcblxuY29uc3QgQ2F0ZWdvcnlCcmVha2Rvd246IFJlYWN0LkZDPHtcbiAgY2F0ZWdvcmllczogUmVjb3JkPHN0cmluZywgQXNzdW1wdGlvbkRldGFpbFtdPjtcbn0+ID0gKHsgY2F0ZWdvcmllcyB9KSA9PiB7XG4gIGlmIChPYmplY3Qua2V5cyhjYXRlZ29yaWVzKS5sZW5ndGggPT09IDApIHJldHVybiBudWxsO1xuXG4gIHJldHVybiAoXG4gICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5jYXRlZ29yeUJyZWFrZG93bn0+XG4gICAgICA8aDQ+QXNzdW1wdGlvbnMgYnkgQ2F0ZWdvcnk8L2g0PlxuICAgICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5jYXRlZ29yaWVzR3JpZH0+XG4gICAgICAgIHtPYmplY3QuZW50cmllcyhjYXRlZ29yaWVzKS5tYXAoKFtjYXRlZ29yeSwgYXNzdW1wdGlvbnNdKSA9PiAoXG4gICAgICAgICAgPGRpdiBrZXk9e2NhdGVnb3J5fSBjbGFzc05hbWU9e3N0eWxlcy5jYXRlZ29yeUNhcmR9PlxuICAgICAgICAgICAgPGg1IGNsYXNzTmFtZT17c3R5bGVzLmNhdGVnb3J5VGl0bGV9PntjYXRlZ29yeX08L2g1PlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5jYXRlZ29yeUNvdW50fT5cbiAgICAgICAgICAgICAge2Fzc3VtcHRpb25zLmxlbmd0aH0gYXNzdW1wdGlvbnNcbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5jYXRlZ29yeUltcGFjdHN9PlxuICAgICAgICAgICAgICB7YXNzdW1wdGlvbnMuc2xpY2UoMCwgMykubWFwKChhc3N1bXB0aW9uLCBpbmRleCkgPT4gKFxuICAgICAgICAgICAgICAgIDxJbXBhY3RCYWRnZSBrZXk9e2luZGV4fSBpbXBhY3Q9e2Fzc3VtcHRpb24uaW1wYWN0X2xldmVsfSAvPlxuICAgICAgICAgICAgICApKX1cbiAgICAgICAgICAgICAge2Fzc3VtcHRpb25zLmxlbmd0aCA+IDMgJiYgKFxuICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT17c3R5bGVzLm1vcmVUYWd9PlxuICAgICAgICAgICAgICAgICAgK3thc3N1bXB0aW9ucy5sZW5ndGggLSAzfSBtb3JlXG4gICAgICAgICAgICAgICAgPC9zcGFuPlxuICAgICAgICAgICAgICApfVxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgICkpfVxuICAgICAgPC9kaXY+XG4gICAgPC9kaXY+XG4gICk7XG59O1xuXG5jb25zdCBGaWx0ZXJDb250cm9sczogUmVhY3QuRkM8e1xuICBvbkltcGFjdEZpbHRlcjogKGltcGFjdDogc3RyaW5nKSA9PiB2b2lkO1xuICBvbkNhdGVnb3J5RmlsdGVyOiAoY2F0ZWdvcnk6IHN0cmluZykgPT4gdm9pZDtcbiAgaW1wYWN0RmlsdGVyOiBzdHJpbmc7XG4gIGNhdGVnb3J5RmlsdGVyOiBzdHJpbmc7XG4gIGNhdGVnb3JpZXM6IHN0cmluZ1tdO1xufT4gPSAoe1xuICBvbkltcGFjdEZpbHRlcixcbiAgb25DYXRlZ29yeUZpbHRlcixcbiAgaW1wYWN0RmlsdGVyLFxuICBjYXRlZ29yeUZpbHRlcixcbiAgY2F0ZWdvcmllcyxcbn0pID0+IHtcbiAgcmV0dXJuIChcbiAgICA8ZGl2IGNsYXNzTmFtZT17c3R5bGVzLmZpbHRlckNvbnRyb2xzfT5cbiAgICAgIDxkaXYgY2xhc3NOYW1lPXtzdHlsZXMuZmlsdGVyR3JvdXB9PlxuICAgICAgICA8bGFiZWw+SW1wYWN0IExldmVsOjwvbGFiZWw+XG4gICAgICAgIDxzZWxlY3RcbiAgICAgICAgICB2YWx1ZT17aW1wYWN0RmlsdGVyfVxuICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gb25JbXBhY3RGaWx0ZXIoZS50YXJnZXQudmFsdWUpfVxuICAgICAgICA+XG4gICAgICAgICAgPG9wdGlvbiB2YWx1ZT1cImFsbFwiPkFsbCBJbXBhY3RzPC9vcHRpb24+XG4gICAgICAgICAgPG9wdGlvbiB2YWx1ZT1cImhpZ2hcIj5IaWdoIEltcGFjdDwvb3B0aW9uPlxuICAgICAgICAgIDxvcHRpb24gdmFsdWU9XCJtZWRpdW1cIj5NZWRpdW0gSW1wYWN0PC9vcHRpb24+XG4gICAgICAgICAgPG9wdGlvbiB2YWx1ZT1cImxvd1wiPkxvdyBJbXBhY3Q8L29wdGlvbj5cbiAgICAgICAgPC9zZWxlY3Q+XG4gICAgICA8L2Rpdj5cblxuICAgICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5maWx0ZXJHcm91cH0+XG4gICAgICAgIDxsYWJlbD5DYXRlZ29yeTo8L2xhYmVsPlxuICAgICAgICA8c2VsZWN0XG4gICAgICAgICAgdmFsdWU9e2NhdGVnb3J5RmlsdGVyfVxuICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gb25DYXRlZ29yeUZpbHRlcihlLnRhcmdldC52YWx1ZSl9XG4gICAgICAgID5cbiAgICAgICAgICA8b3B0aW9uIHZhbHVlPVwiYWxsXCI+QWxsIENhdGVnb3JpZXM8L29wdGlvbj5cbiAgICAgICAgICB7Y2F0ZWdvcmllcy5tYXAoKGNhdGVnb3J5KSA9PiAoXG4gICAgICAgICAgICA8b3B0aW9uIGtleT17Y2F0ZWdvcnl9IHZhbHVlPXtjYXRlZ29yeX0+XG4gICAgICAgICAgICAgIHtjYXRlZ29yeX1cbiAgICAgICAgICAgIDwvb3B0aW9uPlxuICAgICAgICAgICkpfVxuICAgICAgICA8L3NlbGVjdD5cbiAgICAgIDwvZGl2PlxuICAgIDwvZGl2PlxuICApO1xufTtcblxuZXhwb3J0IGNvbnN0IEFzc3VtcHRpb25zUmVwb3J0OiBSZWFjdC5GQzxBc3N1bXB0aW9uc1JlcG9ydFByb3BzPiA9ICh7XG4gIGFzc3VtcHRpb25zLFxuICBpc0V4cGFuZGVkLFxuICBvblRvZ2dsZSxcbn0pID0+IHtcbiAgY29uc3QgW2ltcGFjdEZpbHRlciwgc2V0SW1wYWN0RmlsdGVyXSA9IHVzZVN0YXRlKCdhbGwnKTtcbiAgY29uc3QgW2NhdGVnb3J5RmlsdGVyLCBzZXRDYXRlZ29yeUZpbHRlcl0gPSB1c2VTdGF0ZSgnYWxsJyk7XG5cbiAgY29uc3QgY2F0ZWdvcmllcyA9IHVzZU1lbW8oKCkgPT4ge1xuICAgIHJldHVybiBPYmplY3Qua2V5cyhhc3N1bXB0aW9ucy5jYXRlZ29yeV9icmVha2Rvd24gfHwge30pO1xuICB9LCBbYXNzdW1wdGlvbnMuY2F0ZWdvcnlfYnJlYWtkb3duXSk7XG5cbiAgY29uc3QgZmlsdGVyZWRBc3N1bXB0aW9ucyA9IHVzZU1lbW8oKCkgPT4ge1xuICAgIGxldCBmaWx0ZXJlZCA9IGFzc3VtcHRpb25zLmFzc3VtcHRpb25zIHx8IFtdO1xuXG4gICAgLy8gQXBwbHkgaW1wYWN0IGZpbHRlclxuICAgIGlmIChpbXBhY3RGaWx0ZXIgIT09ICdhbGwnKSB7XG4gICAgICBmaWx0ZXJlZCA9IGZpbHRlcmVkLmZpbHRlcihcbiAgICAgICAgKGFzc3VtcHRpb24pID0+IGFzc3VtcHRpb24uaW1wYWN0X2xldmVsPy50b0xvd2VyQ2FzZSgpID09PSBpbXBhY3RGaWx0ZXJcbiAgICAgICk7XG4gICAgfVxuXG4gICAgLy8gQXBwbHkgY2F0ZWdvcnkgZmlsdGVyXG4gICAgaWYgKGNhdGVnb3J5RmlsdGVyICE9PSAnYWxsJykge1xuICAgICAgZmlsdGVyZWQgPSBmaWx0ZXJlZC5maWx0ZXIoXG4gICAgICAgIChhc3N1bXB0aW9uKSA9PiBhc3N1bXB0aW9uLmFzc3VtcHRpb25fdHlwZSA9PT0gY2F0ZWdvcnlGaWx0ZXJcbiAgICAgICk7XG4gICAgfVxuXG4gICAgcmV0dXJuIGZpbHRlcmVkO1xuICB9LCBbYXNzdW1wdGlvbnMuYXNzdW1wdGlvbnMsIGltcGFjdEZpbHRlciwgY2F0ZWdvcnlGaWx0ZXJdKTtcblxuICBjb25zdCBhdmVyYWdlQ29uZmlkZW5jZSA9IHVzZU1lbW8oKCkgPT4ge1xuICAgIGlmICghYXNzdW1wdGlvbnMuYXNzdW1wdGlvbnMgfHwgYXNzdW1wdGlvbnMuYXNzdW1wdGlvbnMubGVuZ3RoID09PSAwKVxuICAgICAgcmV0dXJuIDA7XG4gICAgY29uc3QgdG90YWwgPSBhc3N1bXB0aW9ucy5hc3N1bXB0aW9ucy5yZWR1Y2UoXG4gICAgICAoc3VtLCBhc3N1bXB0aW9uKSA9PiBzdW0gKyAoYXNzdW1wdGlvbi5jb25maWRlbmNlX3Njb3JlIHx8IDAuOCksXG4gICAgICAwXG4gICAgKTtcbiAgICByZXR1cm4gdG90YWwgLyBhc3N1bXB0aW9ucy5hc3N1bXB0aW9ucy5sZW5ndGg7XG4gIH0sIFthc3N1bXB0aW9ucy5hc3N1bXB0aW9uc10pO1xuXG4gIGlmICghYXNzdW1wdGlvbnMuYXNzdW1wdGlvbnMgfHwgYXNzdW1wdGlvbnMuYXNzdW1wdGlvbnMubGVuZ3RoID09PSAwKSB7XG4gICAgcmV0dXJuIChcbiAgICAgIDxkaXYgY2xhc3NOYW1lPXtzdHlsZXMuc2VjdGlvbn0+XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPXtzdHlsZXMuc2VjdGlvbkhlYWRlcn0gb25DbGljaz17b25Ub2dnbGV9PlxuICAgICAgICAgIDxoMyBjbGFzc05hbWU9e3N0eWxlcy5zZWN0aW9uVGl0bGV9PlxuICAgICAgICAgICAg8J+noCBTbWFydCBBc3N1bXB0aW9ucyAoMCBhcHBsaWVkKVxuICAgICAgICAgIDwvaDM+XG4gICAgICAgICAgPGJ1dHRvbiBjbGFzc05hbWU9e3N0eWxlcy50b2dnbGVCdXR0b259PlxuICAgICAgICAgICAge2lzRXhwYW5kZWQgPyAn4pa8JyA6ICfilrYnfVxuICAgICAgICAgIDwvYnV0dG9uPlxuICAgICAgICA8L2Rpdj5cbiAgICAgICAge2lzRXhwYW5kZWQgJiYgKFxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPXtzdHlsZXMuc2VjdGlvbkNvbnRlbnR9PlxuICAgICAgICAgICAgPHAgY2xhc3NOYW1lPXtzdHlsZXMubm9Bc3N1bXB0aW9uc30+XG4gICAgICAgICAgICAgIE5vIHNtYXJ0IGFzc3VtcHRpb25zIHdlcmUgcmVxdWlyZWQgZm9yIHRoaXMgY29udmVyc2lvbi4gQWxsXG4gICAgICAgICAgICAgIGZlYXR1cmVzIHdlcmUgZGlyZWN0bHkgdHJhbnNsYXRhYmxlIHRvIEJlZHJvY2sgRWRpdGlvbi5cbiAgICAgICAgICAgIDwvcD5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgKX1cbiAgICAgIDwvZGl2PlxuICAgICk7XG4gIH1cblxuICByZXR1cm4gKFxuICAgIDxkaXYgY2xhc3NOYW1lPXtzdHlsZXMuc2VjdGlvbn0+XG4gICAgICA8ZGl2IGNsYXNzTmFtZT17c3R5bGVzLnNlY3Rpb25IZWFkZXJ9IG9uQ2xpY2s9e29uVG9nZ2xlfT5cbiAgICAgICAgPGgzIGNsYXNzTmFtZT17c3R5bGVzLnNlY3Rpb25UaXRsZX0+XG4gICAgICAgICAg8J+noCBTbWFydCBBc3N1bXB0aW9ucyAoe2Fzc3VtcHRpb25zLnRvdGFsX2Fzc3VtcHRpb25zX2NvdW50fSBhcHBsaWVkKVxuICAgICAgICA8L2gzPlxuICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgY2xhc3NOYW1lPXtzdHlsZXMudG9nZ2xlQnV0dG9ufVxuICAgICAgICAgIGFyaWEtbGFiZWw9e2lzRXhwYW5kZWQgPyAnQ29sbGFwc2UnIDogJ0V4cGFuZCd9XG4gICAgICAgID5cbiAgICAgICAgICB7aXNFeHBhbmRlZCA/ICfilrwnIDogJ+KWtid9XG4gICAgICAgIDwvYnV0dG9uPlxuICAgICAgPC9kaXY+XG5cbiAgICAgIHtpc0V4cGFuZGVkICYmIChcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5zZWN0aW9uQ29udGVudH0+XG4gICAgICAgICAgey8qIFN1bW1hcnkgSW5mb3JtYXRpb24gKi99XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5hc3N1bXB0aW9uc1N1bW1hcnl9PlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5zdW1tYXJ5Q2FyZHN9PlxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT17c3R5bGVzLnN1bW1hcnlDYXJkfT5cbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT17c3R5bGVzLnN1bW1hcnlWYWx1ZX0+XG4gICAgICAgICAgICAgICAgICB7YXNzdW1wdGlvbnMudG90YWxfYXNzdW1wdGlvbnNfY291bnR9XG4gICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5zdW1tYXJ5TGFiZWx9PlRvdGFsIEFzc3VtcHRpb25zPC9kaXY+XG4gICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT17c3R5bGVzLnN1bW1hcnlDYXJkfT5cbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT17c3R5bGVzLnN1bW1hcnlWYWx1ZX0+XG4gICAgICAgICAgICAgICAgICB7TWF0aC5yb3VuZChhdmVyYWdlQ29uZmlkZW5jZSAqIDEwMCl9JVxuICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPXtzdHlsZXMuc3VtbWFyeUxhYmVsfT5BdmcuIENvbmZpZGVuY2U8L2Rpdj5cbiAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPXtzdHlsZXMuc3VtbWFyeUNhcmR9PlxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPXtzdHlsZXMuc3VtbWFyeVZhbHVlfT57Y2F0ZWdvcmllcy5sZW5ndGh9PC9kaXY+XG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5zdW1tYXJ5TGFiZWx9PkNhdGVnb3JpZXM8L2Rpdj5cbiAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5zdW1tYXJ5RGVzY3JpcHRpb259PlxuICAgICAgICAgICAgICA8cD5cbiAgICAgICAgICAgICAgICBTbWFydCBhc3N1bXB0aW9ucyB3ZXJlIGFwcGxpZWQgdG8gYnJpZGdlIGNvbXBhdGliaWxpdHkgZ2Fwc1xuICAgICAgICAgICAgICAgIGJldHdlZW4gSmF2YSBhbmQgQmVkcm9jayBlZGl0aW9ucy4gRWFjaCBhc3N1bXB0aW9uIG1haW50YWluc1xuICAgICAgICAgICAgICAgIGZ1bmN0aW9uYWxpdHkgd2hpbGUgYWRhcHRpbmcgdG8gQmVkcm9jaydzIGNvbnN0cmFpbnRzLlxuICAgICAgICAgICAgICA8L3A+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgIHsvKiBJbXBhY3QgRGlzdHJpYnV0aW9uICovfVxuICAgICAgICAgIHthc3N1bXB0aW9ucy5pbXBhY3RfZGlzdHJpYnV0aW9uICYmIChcbiAgICAgICAgICAgIDxJbXBhY3REaXN0cmlidXRpb25cbiAgICAgICAgICAgICAgZGlzdHJpYnV0aW9uPXthc3N1bXB0aW9ucy5pbXBhY3RfZGlzdHJpYnV0aW9ufVxuICAgICAgICAgICAgLz5cbiAgICAgICAgICApfVxuXG4gICAgICAgICAgey8qIENhdGVnb3J5IEJyZWFrZG93biAqL31cbiAgICAgICAgICB7YXNzdW1wdGlvbnMuY2F0ZWdvcnlfYnJlYWtkb3duICYmXG4gICAgICAgICAgICBPYmplY3Qua2V5cyhhc3N1bXB0aW9ucy5jYXRlZ29yeV9icmVha2Rvd24pLmxlbmd0aCA+IDAgJiYgKFxuICAgICAgICAgICAgICA8Q2F0ZWdvcnlCcmVha2Rvd24gY2F0ZWdvcmllcz17YXNzdW1wdGlvbnMuY2F0ZWdvcnlfYnJlYWtkb3dufSAvPlxuICAgICAgICAgICAgKX1cblxuICAgICAgICAgIHsvKiBGaWx0ZXIgQ29udHJvbHMgKi99XG4gICAgICAgICAgPEZpbHRlckNvbnRyb2xzXG4gICAgICAgICAgICBvbkltcGFjdEZpbHRlcj17c2V0SW1wYWN0RmlsdGVyfVxuICAgICAgICAgICAgb25DYXRlZ29yeUZpbHRlcj17c2V0Q2F0ZWdvcnlGaWx0ZXJ9XG4gICAgICAgICAgICBpbXBhY3RGaWx0ZXI9e2ltcGFjdEZpbHRlcn1cbiAgICAgICAgICAgIGNhdGVnb3J5RmlsdGVyPXtjYXRlZ29yeUZpbHRlcn1cbiAgICAgICAgICAgIGNhdGVnb3JpZXM9e2NhdGVnb3JpZXN9XG4gICAgICAgICAgLz5cblxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPXtzdHlsZXMucmVzdWx0c0NvdW50fT5cbiAgICAgICAgICAgIHtmaWx0ZXJlZEFzc3VtcHRpb25zLmxlbmd0aH0gb2Z7JyAnfVxuICAgICAgICAgICAge2Fzc3VtcHRpb25zLnRvdGFsX2Fzc3VtcHRpb25zX2NvdW50fSBhc3N1bXB0aW9uc1xuICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgey8qIEFzc3VtcHRpb25zIExpc3QgKi99XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5hc3N1bXB0aW9uc0xpc3R9PlxuICAgICAgICAgICAge2ZpbHRlcmVkQXNzdW1wdGlvbnMubWFwKChhc3N1bXB0aW9uLCBpbmRleCkgPT4gKFxuICAgICAgICAgICAgICA8QXNzdW1wdGlvbkNhcmRcbiAgICAgICAgICAgICAgICBrZXk9e2Fzc3VtcHRpb24uYXNzdW1wdGlvbl9pZCB8fCBpbmRleH1cbiAgICAgICAgICAgICAgICBhc3N1bXB0aW9uPXthc3N1bXB0aW9ufVxuICAgICAgICAgICAgICAvPlxuICAgICAgICAgICAgKSl9XG4gICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICB7ZmlsdGVyZWRBc3N1bXB0aW9ucy5sZW5ndGggPT09IDAgJiYgKFxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e3N0eWxlcy5ub1Jlc3VsdHN9PlxuICAgICAgICAgICAgICA8cD5ObyBhc3N1bXB0aW9ucyBtYXRjaCB0aGUgY3VycmVudCBmaWx0ZXJzLjwvcD5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICl9XG4gICAgICAgIDwvZGl2PlxuICAgICAgKX1cbiAgICA8L2Rpdj5cbiAgKTtcbn07XG4iXSwiZmlsZSI6Ii9zcmMvY29tcG9uZW50cy9Db252ZXJzaW9uUmVwb3J0L0Fzc3VtcHRpb25zUmVwb3J0LnRzeCJ9
+
+//# vitestCache=W3siZmlsZSI6IjEiLCJpZCI6IjEiLCJ1cmwiOiIyIiwiaW1wb3J0ZWRVcmxzIjoiMyIsIm1hcHBpbmdzIjpmYWxzZX0sIi9ob21lL2FsZXgvUHJvamVjdHMvTW9kUG9ydGVyLUFJL2Zyb250ZW5kL3NyYy9jb21wb25lbnRzL0NvbnZlcnNpb25SZXBvcnQvQXNzdW1wdGlvbnNSZXBvcnQudHN4IiwiL3NyYy9jb21wb25lbnRzL0NvbnZlcnNpb25SZXBvcnQvQXNzdW1wdGlvbnNSZXBvcnQudHN4IixbXV0=

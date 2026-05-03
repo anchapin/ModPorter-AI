@@ -1,8 +1,8 @@
-# ModPorter AI
+# PortKit
 
 An AI-powered tool for converting Minecraft Java Edition mods to Bedrock Edition add-ons.
 
-[![codecov](https://codecov.io/gh/anchapin/ModPorter-AI/branch/main/graph/badge.svg)](https://codecov.io/gh/anchapin/ModPorter-AI)
+[![codecov](https://codecov.io/gh/anchapin/PortKit/branch/main/graph/badge.svg)](https://codecov.io/gh/anchapin/PortKit)
 
 ## 🎯 Vision
 Empower Minecraft players and creators with a "one-click" AI-powered tool that intelligently converts Java Edition mods into functional Bedrock Edition add-ons using smart assumptions to bridge technical gaps.
@@ -50,8 +50,8 @@ This option uses pre-built Docker images from Docker Hub for a production-like e
 
 ```bash
 # Clone the repository
-git clone https://github.com/anchapin/ModPorter-AI.git
-cd ModPorter-AI
+git clone https://github.com/anchapin/PortKit.git
+cd PortKit
 
 # Copy environment variables
 cp .env.example .env
@@ -77,8 +77,8 @@ docker compose ps
 #### Production Environment
 ```bash
 # Clone the repository
-git clone https://github.com/anchapin/ModPorter-AI.git
-cd ModPorter-AI
+git clone https://github.com/anchapin/PortKit.git
+cd PortKit
 
 # Copy environment variables
 cp .env.example .env
@@ -134,7 +134,7 @@ If you prefer to run services locally without Docker:
 ## 🐳 Docker Architecture
 
 ### Services Overview
-ModPorter AI uses a microservices architecture with the following containers:
+PortKit uses a microservices architecture with the following containers:
 
 | Service | Technology | Port | Purpose |
 |---------|------------|------|---------|
@@ -153,8 +153,8 @@ ANTHROPIC_API_KEY=your-anthropic-api-key
 
 # Database Configuration
 # For local development (auto-configured for Docker):
-DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/modporter
-POSTGRES_DB=modporter
+DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/portkit
+POSTGRES_DB=portkit
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=password
 
@@ -271,12 +271,25 @@ docker-compose -f docker-compose.test.yml up -d test-postgres
 ```
 
 ### Run Tests
+
+**Important:** The test suite uses a parallel/serial split architecture:
+- Most tests run in **parallel** for speed (2772 tests)
+- A few tests with module-level state pollution run **serially** (4 tests)
+
 ```bash
-# Run all tests
+# Run all tests (parallel + serial)
 pnpm run test
 
-# Backend tests
+# Backend tests - parallel run (default, ~2772 tests)
+# These run with: -n auto --dist=loadscope -m "not integration and not serial"
 cd backend && pytest
+
+# Backend tests - serial run (4 tests with module-level state issues)
+# These run with: -n0 -m serial
+cd backend && pytest -m serial
+
+# Backend tests - serial mode only (for debugging)
+cd backend && pytest -n0
 
 # Frontend tests
 cd frontend && pnpm test
@@ -284,6 +297,16 @@ cd frontend && pnpm test
 # AI Engine and RAG tests
 cd ai-engine && pytest
 ```
+
+**Test Stability:** The parallel test suite runs with ZERO flaky failures. The serial tests (`-m serial`) handle tests that pollute module-level state.
+
+### Test Markers
+| Marker | Description |
+|--------|-------------|
+| `integration` | Integration tests (excluded from default run) |
+| `serial` | Tests that must run serially (not in parallel) due to module-level state pollution |
+| `unit` | Unit tests |
+| `asyncio` | Async tests |
 
 ### Test Database Management
 ```bash
@@ -309,10 +332,14 @@ pytest tests/test_mvp_conversion.py
 
 ### Docker Tests
 ```bash
-# Run tests in Docker containers
+# Run tests in Docker containers (parallel mode - default)
 docker compose exec backend pytest
-docker compose exec frontend pnpm test
-docker compose exec ai-engine pytest
+
+# Run serial tests only
+docker compose exec backend pytest -m serial
+
+# Run tests in serial mode (for debugging)
+docker compose exec backend pytest -n0
 
 # Run tests with coverage
 docker compose exec backend pytest --cov=src
@@ -348,7 +375,7 @@ docker compose up -d --build
 #### Database Management
 ```bash
 # Access PostgreSQL directly
-docker compose exec postgres psql -U postgres -d modporter
+docker compose exec postgres psql -U postgres -d portkit
 
 # Run database migrations
 docker compose exec backend alembic upgrade head
@@ -372,6 +399,9 @@ docker compose ps --services
 
 ## 📖 Documentation
 
+- [Getting Started Guide](docs/getting-started.md) - Quick start and installation
+- [API Reference](docs/api-reference.md) - Full API documentation
+- [Conversion Guide](docs/conversion-guide.md) - Feature support and best practices
 - [Product Requirements Document](docs/PRD.md)
 - [API Documentation](docs/API.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
@@ -390,9 +420,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/anchapin/ModPorter-AI/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/anchapin/ModPorter-AI/discussions)
-- **Documentation**: [Project Wiki](https://github.com/anchapin/ModPorter-AI/wiki)
+- **Issues**: [GitHub Issues](https://github.com/anchapin/PortKit/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/anchapin/PortKit/discussions)
+- **Documentation**: [Project Wiki](https://github.com/anchapin/PortKit/wiki)
 
 ## 🏆 Acknowledgments
 
@@ -404,5 +434,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-Made with ❤️ by the ModPorter AI team
+Made with ❤️ by the PortKit team
 
+# test

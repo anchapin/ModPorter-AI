@@ -1,3 +1,7 @@
+import logging
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
 """
 Script to create a simple test JAR file for MVP testing.
 This creates the fixture mentioned in Issue #174.
@@ -22,7 +26,7 @@ def create_simple_copper_block_jar():
     """
     Create a simple test JAR with a polished copper block.
     
-    This fixture is designed to test the complete ModPorter AI pipeline:
+    This fixture is designed to test the complete PortKit pipeline:
     1. JavaAnalyzerAgent can extract registry name and texture path
     2. Conversion pipeline can generate Bedrock blocks
     3. Packager can create .mcaddon files
@@ -45,7 +49,7 @@ def create_simple_copper_block_jar():
         os.makedirs(meta_dir, exist_ok=True)
         with open(os.path.join(meta_dir, "MANIFEST.MF"), 'w') as f:
             f.write("""Manifest-Version: 1.0
-Created-By: ModPorter AI Test Suite
+Created-By: PortKit Test Suite
 Specification-Title: Simple Copper Block
 Specification-Version: 1.0.0
 Implementation-Title: simple_copper
@@ -81,7 +85,7 @@ Implementation-Version: 1.0.0
             "version": "1.0.0",
             "name": "Simple Copper Block",
             "description": "A simple mod that adds a polished copper block",
-            "authors": ["ModPorter AI"],
+            "authors": ["PortKit"],
             "license": "MIT",
             "environment": "*",
             "entrypoints": {
@@ -104,7 +108,7 @@ import net.minecraft.world.level.material.Material;
 import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
 
 /**
- * Simple polished copper block for testing ModPorter AI conversion.
+ * Simple polished copper block for testing PortKit conversion.
  * Registry name should be extracted as "polished_copper"
  */
 public class PolishedCopperBlock extends Block {
@@ -186,15 +190,15 @@ public class SimpleCopperMod implements ModInitializer {
                     arcname = os.path.relpath(file_path, tmpdir)
                     zf.write(file_path, arcname)
         
-    print(f"Created comprehensive test JAR: {jar_path}")
-    print(f"JAR size: {jar_path.stat().st_size} bytes")
+    logger.info(f"Created comprehensive test JAR: {jar_path}")
+    logger.info(f"JAR size: {jar_path.stat().st_size} bytes")
     
     # Verify the JAR was created correctly
     with zipfile.ZipFile(jar_path, 'r') as zf:
         files = zf.namelist()
-        print(f"JAR contains {len(files)} files:")
+        logger.info(f"JAR contains {len(files)} files:")
         for file in sorted(files):
-            print(f"  - {file}")
+            logger.info(f"  - {file}")
             
     return jar_path
 
@@ -239,13 +243,13 @@ def get_expected_bedrock_block():
 if __name__ == "__main__":
     jar_path = create_simple_copper_block_jar()
     
-    print("\n" + "="*60)
-    print("TEST FIXTURE CREATED SUCCESSFULLY")
-    print("="*60)
-    print(f"Location: {jar_path}")
-    print("Use this fixture in tests to validate:")
-    print("1. JavaAnalyzerAgent registry name and texture extraction")
-    print("2. End-to-end conversion pipeline")
-    print("3. .mcaddon package generation")
-    print("\nExpected analysis result:")
-    print(json.dumps(get_expected_analysis_result(), indent=2))
+    logger.info("\n" + "="*60)
+    logger.info("TEST FIXTURE CREATED SUCCESSFULLY")
+    logger.info("="*60)
+    logger.info(f"Location: {jar_path}")
+    logger.info("Use this fixture in tests to validate:")
+    logger.info("1. JavaAnalyzerAgent registry name and texture extraction")
+    logger.info("2. End-to-end conversion pipeline")
+    logger.info("3. .mcaddon package generation")
+    logger.info("\nExpected analysis result:")
+    logger.info(json.dumps(get_expected_analysis_result(), indent=2))

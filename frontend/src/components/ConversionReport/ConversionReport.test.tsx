@@ -267,8 +267,12 @@ describe('Feedback Functionality in ConversionReport', () => {
     render(<ConversionReport conversionResult={minimalMockReport} />);
 
     expect(screen.getByText('Rate this Conversion')).toBeInTheDocument();
-    expect(screen.getByTitle('Thumbs Up')).toBeInTheDocument(); // Using title for emoji buttons
-    expect(screen.getByTitle('Thumbs Down')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Thumbs Up' })
+    ).toBeInTheDocument(); // Using title for emoji buttons
+    expect(
+      screen.getByRole('button', { name: 'Thumbs Down' })
+    ).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText('Optional: Add any comments here...')
     ).toBeInTheDocument();
@@ -280,8 +284,10 @@ describe('Feedback Functionality in ConversionReport', () => {
   test('feedback type selection works correctly', () => {
     render(<ConversionReport conversionResult={minimalMockReport} />);
 
-    const thumbsUpButton = screen.getByTitle('Thumbs Up');
-    const thumbsDownButton = screen.getByTitle('Thumbs Down');
+    const thumbsUpButton = screen.getByRole('button', { name: 'Thumbs Up' });
+    const thumbsDownButton = screen.getByRole('button', {
+      name: 'Thumbs Down',
+    });
 
     // Initially, neither should be "pressed" - use aria-pressed attribute which is more reliable
     expect(thumbsUpButton).toHaveAttribute('aria-pressed', 'false');
@@ -308,7 +314,7 @@ describe('Feedback Functionality in ConversionReport', () => {
 
     render(<ConversionReport conversionResult={minimalMockReport} />);
 
-    fireEvent.click(screen.getByTitle('Thumbs Up'));
+    fireEvent.click(screen.getByRole('button', { name: 'Thumbs Up' }));
     fireEvent.change(
       screen.getByPlaceholderText('Optional: Add any comments here...'),
       {
@@ -333,7 +339,9 @@ describe('Feedback Functionality in ConversionReport', () => {
     expect(
       screen.queryByRole('button', { name: 'Submit Feedback' })
     ).not.toBeInTheDocument();
-    expect(screen.queryByTitle('Thumbs Up')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Thumbs Up' })
+    ).not.toBeInTheDocument();
   });
 
   test('submit feedback API error flow', async () => {
@@ -364,13 +372,13 @@ describe('Feedback Functionality in ConversionReport', () => {
     });
     expect(submitButton).toBeDisabled();
 
-    fireEvent.click(screen.getByTitle('Thumbs Up'));
+    fireEvent.click(screen.getByRole('button', { name: 'Thumbs Up' }));
     expect(submitButton).not.toBeDisabled();
 
-    fireEvent.click(screen.getByTitle('Thumbs Up')); // Deselect
+    fireEvent.click(screen.getByRole('button', { name: 'Thumbs Up' })); // Deselect
     expect(submitButton).toBeDisabled();
 
-    fireEvent.click(screen.getByTitle('Thumbs Down'));
+    fireEvent.click(screen.getByRole('button', { name: 'Thumbs Down' }));
     expect(submitButton).not.toBeDisabled();
   });
 

@@ -11,19 +11,37 @@ from pathlib import Path
 import importlib.util
 
 # Load qa_validator directly
-spec = importlib.util.spec_from_file_location('qa_validator', 'agents/qa_validator.py')
+base_dir = Path(__file__).resolve().parent.parent
+qa_validator_path = base_dir / "agents" / "qa_validator.py"
+spec = importlib.util.spec_from_file_location("qa_validator", str(qa_validator_path))
 qa_module = importlib.util.module_from_spec(spec)
 
 # Mock dependencies
-sys.modules['models'] = type(sys)('models')
-sys.modules['models.smart_assumptions'] = type(sys)('models.smart_assumptions')
-sys.modules['models.smart_assumptions'].SmartAssumptionEngine = type('SmartAssumptionEngine', (), {})
+if "models" not in sys.modules:
+    sys.modules["models"] = type(sys)("models")
+if "models.smart_assumptions" not in sys.modules:
+    sys.modules["models.smart_assumptions"] = type(sys)("models.smart_assumptions")
+    sys.modules["models.smart_assumptions"].SmartAssumptionEngine = type(
+        "SmartAssumptionEngine", (), {}
+    )
 
-sys.modules['crewai'] = type(sys)('crewai')
-sys.modules['crewai.tools'] = type(sys)('crewai.tools')
-def tool(func):
-    return func
-sys.modules['crewai.tools'].tool = tool
+if "crewai" not in sys.modules or not hasattr(sys.modules["crewai"], "Agent"):
+    mock_crewai = type(sys)("crewai")
+    mock_crewai.Agent = type("Agent", (), {})
+    mock_crewai.Crew = type("Crew", (), {})
+    mock_crewai.Task = type("Task", (), {})
+    mock_crewai.LLM = type("LLM", (), {})
+    sys.modules["crewai"] = mock_crewai
+    
+    if "crewai.tools" not in sys.modules:
+        mock_tools = type(sys)("crewai.tools")
+        def tool(func):
+            return func
+        mock_tools.tool = tool
+        mock_tools.BaseTool = type("BaseTool", (), {})
+        sys.modules["crewai.tools"] = mock_tools
+
+
 
 spec.loader.exec_module(qa_module)
 
@@ -73,7 +91,7 @@ def test_validation_categories():
     assert "best_practices" in categories
 
     # Verify weights sum to 1.0
-    total_weight = sum(cat['weight'] for cat in categories.values())
+    total_weight = sum(cat["weight"] for cat in categories.values())
     assert total_weight == 1.0
 
     print("✓ Validation categories are properly defined")
@@ -84,7 +102,7 @@ def create_mock_mcaddon():
     temp_dir = tempfile.mkdtemp()
     mcaddon_path = Path(temp_dir) / "test_addon.mcaddon"
 
-    with zipfile.ZipFile(mcaddon_path, 'w') as zf:
+    with zipfile.ZipFile(mcaddon_path, "w") as zf:
         # Add behavior pack manifest
         manifest = {
             "format_version": 2,
@@ -93,15 +111,15 @@ def create_mock_mcaddon():
                 "description": "Test description",
                 "uuid": "12345678-1234-1234-1234-123456789abc",
                 "version": [1, 0, 0],
-                "min_engine_version": [1, 19, 0]
+                "min_engine_version": [1, 19, 0],
             },
             "modules": [
                 {
                     "type": "data",
                     "uuid": "87654321-4321-4321-4321-cba987654321",
-                    "version": [1, 0, 0]
+                    "version": [1, 0, 0],
                 }
-            ]
+            ],
         }
         zf.writestr("behavior_packs/test_bp/manifest.json", json.dumps(manifest))
 
@@ -109,13 +127,9 @@ def create_mock_mcaddon():
         block = {
             "format_version": "1.20.10",
             "minecraft:block": {
-                "description": {
-                    "identifier": "test:test_block"
-                },
-                "components": {
-                    "minecraft:destroy_time": 3.0
-                }
-            }
+                "description": {"identifier": "test:test_block"},
+                "components": {"minecraft:destroy_time": 3.0},
+            },
         }
         zf.writestr("behavior_packs/test_bp/blocks/test_block.json", json.dumps(block))
 
@@ -153,7 +167,9 @@ def test_validate_mcaddon_basic():
             assert "status" in validation
             assert validation["checks"] >= validation["passed"]
 
-        print(f"✓ Basic validation works (score: {result['overall_score']}/100, status: {result['status']})")
+        print(
+            f"✓ Basic validation works (score: {result['overall_score']}/100, status: {result['status']})"
+        )
 
     finally:
         shutil.rmtree(temp_dir)
@@ -175,7 +191,9 @@ def test_validate_manifest():
         # Valid manifest should have minimal errors
         assert len(structural_validation.get("errors", [])) == 0
 
-        print(f"✓ Manifest validation passed ({structural_validation['passed']}/{structural_validation['checks']} checks)")
+        print(
+            f"✓ Manifest validation passed ({structural_validation['passed']}/{structural_validation['checks']} checks)"
+        )
 
     finally:
         shutil.rmtree(temp_dir)
@@ -286,9 +304,7 @@ def test_tools():
         print("✓ validate_mcaddon works")
 
         # Test validate_conversion_quality
-        result_json = agent.validate_conversion_quality(
-            json.dumps({"mcaddon_path": mcaddon_path})
-        )
+        result_json = agent.validate_conversion_quality(json.dumps({"mcaddon_path": mcaddon_path}))
         result = json.loads(result_json)
         assert "success" in result
         print("✓ validate_conversion_quality works")
@@ -336,6 +352,7 @@ def run_all_tests():
         except Exception as e:
             print(f"✗ {test_func.__name__} error: {e}")
             import traceback
+
             traceback.print_exc()
             failed += 1
         print()

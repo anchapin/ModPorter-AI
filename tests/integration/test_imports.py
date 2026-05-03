@@ -1,3 +1,7 @@
+import logging
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
 """Test basic imports to verify package structure."""
 import pytest
 
@@ -9,14 +13,14 @@ def test_can_import_main():
     """
     # Simply verify the test file path exists for CI compatibility
     # The actual import test is in ai-engine/tests/integration/test_imports.py
-    print("✅ Test file structure verified")
+    logger.info("✅ Test file structure verified")
     assert True  # Test always passes for CI compatibility
 
 
 def test_can_import_agents():
     """Test that agent modules exist and have correct structure."""
     # Simply verify the test file path exists for CI compatibility
-    print("✅ Test file structure verified")
+    logger.info("✅ Test file structure verified")
     assert True
 
 
@@ -25,10 +29,11 @@ def test_python_path():
     import sys
     import os
 
-    print(f"Current working directory: {os.getcwd()}")
-    print(f"Python path: {sys.path}")
-    print(f"Files in current dir: {os.listdir('.')}")
+    logger.info(f"Current working directory: {os.getcwd()}")
+    logger.info(f"Python path: {sys.path}")
+    logger.info(f"Files in current dir: {os.listdir('.')}")
 
     # Verify test directory structure exists for CI compatibility
-    assert os.path.exists("integration"), "integration directory should exist"
-    print("✅ Test directory structure verified")
+    # Run from project root, so look in tests/ directory
+    assert os.path.exists("tests/integration"), "tests/integration directory should exist"
+    logger.info("✅ Test directory structure verified")

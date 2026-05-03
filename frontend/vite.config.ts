@@ -7,17 +7,28 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          ui: [
-            '@mui/material',
-            '@mui/icons-material',
-            '@emotion/react',
-            '@emotion/styled',
-          ],
-          editor: ['@monaco-editor/react', 'monaco-editor'],
-          utils: ['axios', 'date-fns'],
-          diagrams: ['mermaid'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (
+              id.includes('react') ||
+              id.includes('react-dom') ||
+              id.includes('react-router')
+            ) {
+              return 'vendor';
+            }
+            if (id.includes('@mui') || id.includes('@emotion')) {
+              return 'ui';
+            }
+            if (id.includes('monaco-editor')) {
+              return 'editor';
+            }
+            if (id.includes('axios') || id.includes('date-fns')) {
+              return 'utils';
+            }
+            if (id.includes('mermaid')) {
+              return 'diagrams';
+            }
+          }
         },
       },
       onwarn(warning, warn) {

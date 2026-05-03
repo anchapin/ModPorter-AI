@@ -1,0 +1,27 @@
+# QA Report: {{ report.job_id }}
+
+**Generated:** {{ report.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
+
+## Quality Score {% if report.quality_score >= 80 %}✅{% elif report.quality_score >= 60 %}⚠️{% else %}❌{% endif %}
+
+**{{ "%.1f"|format(report.quality_score) }}%**
+
+## Agent Summary
+
+| Agent | Score | Issues |
+|-------|-------|--------|
+{% for result in report.agent_results %}
+| {{ result.agent_name }} | {{ "%.1f"|format(result.score) }}% | {{ result.issues|length }} |
+{% endfor %}
+
+## Issues
+
+{% for severity, issues in report.issues_by_severity.items() %}
+{% if issues %}
+### {{ severity.value|upper }} ({{ issues|length }})
+
+{% for issue in issues %}
+- **{{ issue.location.file if issue.location else 'N/A' }}:{{ issue.location.line if issue.location else '0' }}**: {{ issue.message }}
+{% endfor %}
+{% endif %}
+{% endfor %}

@@ -1,22 +1,22 @@
 # ai-engine/models/__init__.py
-from .smart_assumptions import (
-    SmartAssumption, 
-    SmartAssumptionEngine, 
-    FeatureContext, 
-    AssumptionResult, 
-    ConversionPlanComponent, 
-    ConversionPlan,
-    AssumptionReport,
-    AppliedAssumptionReportItem,
-    AssumptionImpact
-)
 from .comparison import ComparisonResult, FeatureMapping
+from .smart_assumptions import (
+    AppliedAssumptionReportItem,
+    AssumptionImpact,
+    AssumptionReport,
+    AssumptionResult,
+    ConversionPlan,
+    ConversionPlanComponent,
+    FeatureContext,
+    SmartAssumption,
+    SmartAssumptionEngine,
+)
 from .validation import (
-    SemanticAnalysisResult,
-    BehaviorPredictionResult,
     AssetValidationResult,
+    BehaviorPredictionResult,
     ManifestValidationResult,
-    ValidationReport
+    SemanticAnalysisResult,
+    ValidationReport,
 )
 
 __all__ = [
@@ -35,5 +35,5 @@ __all__ = [
     "BehaviorPredictionResult",
     "AssetValidationResult",
     "ManifestValidationResult",
-    "ValidationReport"
+    "ValidationReport",
 ]

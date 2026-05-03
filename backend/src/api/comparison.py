@@ -2,6 +2,17 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import Any, Dict, List
 from pydantic import BaseModel, Field
 import uuid
+import logging
+
+# Import error handling framework
+from errors import (
+    ConversionError,
+    AIEngineUnavailableError,
+    categorize_error,
+    get_error_handler,
+)
+
+logger = logging.getLogger(__name__)
 
 # Import AI Engine components with fallback for testing
 try:
@@ -13,7 +24,7 @@ try:
     project_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
     ai_engine_path = os.path.join(project_root, "ai-engine")
     if ai_engine_path not in sys.path:
-        sys.path.insert(0, ai_engine_path)
+        sys.path.append(ai_engine_path)
 
     from engines.comparison_engine import ComparisonEngine
     from models.comparison import (
@@ -76,7 +87,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
-
 # Adjust these imports based on your actual database setup location
 # from db.declarative_base import Base # Base is not directly used here, models are
 from db.models import (
@@ -131,10 +141,27 @@ async def create_comparison(
         )
     except HTTPException:  # Re-raise HTTPExceptions from validation
         raise
+    except AIEngineUnavailableError as e:
+        # AI Engine unavailable - record error and return appropriate message
+        error_handler = get_error_handler()
+        error_handler.record_error(e, job_id=request.conversion_id)
+        categorized = categorize_error(e)
+        logger.error(f"AI Engine unavailable for comparison: {e}")
+        raise HTTPException(status_code=503, detail=categorized["user_message"])
+    except ConversionError as e:
+        # Conversion error from framework - record and return categorized error
+        error_handler = get_error_handler()
+        error_handler.record_error(e, job_id=request.conversion_id)
+        categorized = categorize_error(e)
+        logger.error(f"Comparison conversion error: {e}")
+        raise HTTPException(status_code=500, detail=categorized["user_message"])
     except Exception as e:
-        # Log the exception e here if logging is set up
-        # logger.error(f"Comparison engine failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Comparison engine failed: {str(e)}")
+        # Unexpected error - record via framework
+        error_handler = get_error_handler()
+        error_handler.record_error(e, job_id=request.conversion_id)
+        categorized = categorize_error(e)
+        logger.error(f"Comparison engine failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=categorized["user_message"])
 
     # Map AI Engine models to SQLAlchemy DB models
     db_comparison_result = ComparisonResultDb(
@@ -164,11 +191,13 @@ async def create_comparison(
         # Refresh related feature_mappings if their IDs are needed immediately, though often not.
         # for fm in db_comparison_result.feature_mappings:
         # await session.refresh(fm)
-    except Exception as e:
+    except Exception:
         await session.rollback()
         # Log the exception e here
         # logger.error(f"Database error during comparison creation: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        logger.error("Database error", exc_info=True)
+
+        raise HTTPException(status_code=500, detail="An internal error occurred")
 
     return ComparisonResponse(
         message="Comparison successfully created",

@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea for ModPorter AI
+about: Suggest an idea for Portkit
 title: '[FEATURE] '
 labels: enhancement
 assignees: ''

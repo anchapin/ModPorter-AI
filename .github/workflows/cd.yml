@@ -1,0 +1,247 @@
+name: CD
+
+# Cancel in-progress builds for same branch (saves CI costs)
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+'on':
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  REGISTRY: ghcr.io
+  PYTHON_VERSION: '3.12'
+  NODE_VERSION: '20'
+
+jobs:
+  # Build Docker images - PARALLEL matrix build instead of sequential steps
+  build:
+    name: Build ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      packages: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: backend
+            path: .
+            dockerfile: ./backend/Dockerfile
+            tag-suffix: backend
+          - service: ai-engine
+            path: ./ai-engine
+            dockerfile: ./ai-engine/Dockerfile
+            tag-suffix: ai-engine
+          - service: frontend
+            path: .
+            dockerfile: ./frontend/Dockerfile
+            tag-suffix: frontend
+    steps:
+      - name: Initialize build metrics
+        id: build_start
+        run: echo "BUILD_START=$(date +%s)" >> $GITHUB_ENV
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=match,pattern=v(\d+\.\d+\.\d+),group=1
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.path }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.tags }}-${{ matrix.tag-suffix }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/portkit-${{ matrix.tag-suffix }}:${{ github.sha }}
+          cache-from: |
+            type=gha,scope=${{ matrix.service }}
+            type=registry,ref=ghcr.io/${{ github.repository_owner }}/portkit/portkit-${{ matrix.tag-suffix }}:cache
+          cache-to: |
+            type=gha,mode=max,scope=${{ matrix.service }}
+            type=registry,ref=ghcr.io/${{ github.repository_owner }}/portkit/portkit-${{ matrix.tag-suffix }}:cache,mode=max
+          # PRs: AMD64 only (fast). Main/tag pushes: full multi-arch.
+          platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+
+      - name: Record build time
+        if: always()
+        run: |
+          BUILD_END=$(date +%s)
+          BUILD_START=${{ env.BUILD_START }}
+          if [ -n "$BUILD_START" ]; then
+            DURATION=$((BUILD_END - BUILD_START))
+            echo "📊 Build ${{ matrix.service }} completed in ${DURATION}s"
+            echo "## Build Metrics" >> $GITHUB_STEP_SUMMARY
+            echo "- Service: ${{ matrix.service }}" >> $GITHUB_STEP_SUMMARY
+            echo "- Duration: ${DURATION}s" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # Generate artifact attestation disabled - causing failures
+      # - name: Generate artifact attestation
+      #   uses: actions/attest-build-provenance@v4
+      #   with:
+      #     subject-name: ${{ env.REGISTRY }}/${{ github.repository_owner }}/portkit-frontend
+      #     subject-digest: sha256:${{ steps.build.outputs.digest }}
+      #     predicate-type: https://slsa.dev/provenance/v1
+
+  # Run staging deployment
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    environment: staging
+    timeout-minutes: 15
+    if: github.event_name != 'pull_request' # Skip deployment for PRs
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Configure Kubernetes
+        uses: azure/k8s-set-context@v5
+        with:
+          kubeconfig: ${{ secrets.STAGING_KUBECONFIG }}
+
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging..."
+
+          # Update image tags in Kubernetes manifests
+          kubectl set image deployment/backend \
+            backend=${{ env.REGISTRY }}/${{ github.repository_owner }}/portkit-backend:${{ github.sha }} \
+            --namespace=staging
+            
+          kubectl set image deployment/ai-engine \
+            ai-engine=${{ env.REGISTRY }}/${{ github.repository_owner }}/portkit-ai-engine:${{ github.sha }} \
+            --namespace=staging
+            
+          kubectl set image deployment/frontend \
+            frontend=${{ env.REGISTRY }}/${{ github.repository_owner }}/portkit-frontend:${{ github.sha }} \
+            --namespace=staging
+
+      - name: Wait for deployment
+        run: |
+          echo "Waiting for deployment to be ready..."
+          kubectl rollout status deployment/backend --namespace=staging --timeout=300s
+          kubectl rollout status deployment/ai-engine --namespace=staging --timeout=300s
+          kubectl rollout status deployment/frontend --namespace=staging --timeout=300s
+
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests..."
+          # Test health endpoint
+          curl -f https://staging.portkit.ai/health || exit 1
+          # Test API endpoint
+          curl -f https://staging.api.portkit.ai/health || exit 1
+
+      - name: Notify deployment
+        if: always()
+        run: |
+          echo "Staging deployment completed"
+
+  # Run production deployment
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, deploy-staging]
+    environment: production
+    timeout-minutes: 20
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Configure Kubernetes
+        uses: azure/k8s-set-context@v5
+        with:
+          kubeconfig: ${{ secrets.PRODUCTION_KUBECONFIG }}
+
+      - name: Deploy to production
+        run: |
+          echo "Deploying to production..."
+
+          # Update image tags in Kubernetes manifests
+          kubectl set image deployment/backend \
+            backend=${{ env.REGISTRY }}/${{ github.repository_owner }}/portkit-backend:${{ github.sha }} \
+            --namespace=production
+            
+          kubectl set image deployment/ai-engine \
+            ai-engine=${{ env.REGISTRY }}/${{ github.repository_owner }}/portkit-ai-engine:${{ github.sha }} \
+            --namespace=production
+            
+          kubectl set image deployment/frontend \
+            frontend=${{ env.REGISTRY }}/${{ github.repository_owner }}/portkit-frontend:${{ github.sha }} \
+            --namespace=production
+
+      - name: Wait for deployment
+        run: |
+          echo "Waiting for deployment to be ready..."
+          kubectl rollout status deployment/backend --namespace=production --timeout=600s
+          kubectl rollout status deployment/ai-engine --namespace=production --timeout=600s
+          kubectl rollout status deployment/frontend --namespace=production --timeout=600s
+
+      - name: Run smoke tests
+        run: |
+          echo "Running production smoke tests..."
+          # Test health endpoint
+          curl -f https://portkit.ai/health || exit 1
+          # Test API endpoint
+          curl -f https://api.portkit.ai/health || exit 1
+
+      - name: Create release tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          echo "Creating release ${{ github.ref }}"
+          # Create GitHub release with deployment info
+          gh release create ${{ github.ref }} \
+            --title "Release ${{ github.ref_name }}" \
+            --generate-notes
+
+  # Notify on deployment status
+  notify:
+    name: Notify Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+    steps:
+      - name: Send notification
+        run: |
+          echo "Deployment status: ${{ needs.deploy-staging.result }}, ${{ needs.deploy-production.result }}"

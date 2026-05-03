@@ -1,5 +1,5 @@
 """
-Structured Logging Service for ModPorter AI
+Structured Logging Service for Portkit
 Provides structured JSON logs using structlog with correlation IDs and log aggregation support.
 
 Issue: #695 - Add structured logging
@@ -11,12 +11,11 @@ import uuid
 import sys
 import os
 from contextvars import ContextVar
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 from logging.handlers import RotatingFileHandler
-from structlog.processors import JSONRenderer, TimeStamper, add_log_level
+from structlog.processors import JSONRenderer, TimeStamper
 from structlog.stdlib import LoggerFactory
-from structlog.stdlib import ProcessorFormatter
 
 # Context variable to store correlation ID across async operations
 correlation_id_var: ContextVar[Optional[str]] = ContextVar("correlation_id", default=None)
@@ -53,7 +52,7 @@ def configure_structlog(
             json_format = True
 
     # Get log directory
-    log_dir = os.getenv("LOG_DIR", "/var/log/modporter")
+    log_dir = os.getenv("LOG_DIR", "/var/log/portkit")
 
     # Configure processors based on format
     processors = [
@@ -99,7 +98,8 @@ def configure_structlog(
     else:
         console_handler.setFormatter(
             logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
             )
         )
     root_logger.addHandler(console_handler)
@@ -107,7 +107,7 @@ def configure_structlog(
     # File handler for production
     if log_file is None:
         os.makedirs(log_dir, exist_ok=True)
-        log_file = os.path.join(log_dir, "modporter.log")
+        log_file = os.path.join(log_dir, "portkit.log")
 
     file_handler = RotatingFileHandler(
         log_file,
@@ -132,7 +132,7 @@ class LoggingFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         # Build structured log data
         log_data = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
@@ -207,17 +207,18 @@ def get_standard_logger(name: str) -> logging.Logger:
         console_handler.setLevel(logging.INFO)
 
         console_formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
         console_handler.setFormatter(console_formatter)
         logger.addHandler(console_handler)
 
         # File handler for production
-        log_dir = os.getenv("LOG_DIR", "/var/log/modporter")
+        log_dir = os.getenv("LOG_DIR", "/var/log/portkit")
         os.makedirs(log_dir, exist_ok=True)
 
         file_handler = RotatingFileHandler(
-            os.path.join(log_dir, "modporter.log"),
+            os.path.join(log_dir, "portkit.log"),
             maxBytes=10 * 1024 * 1024,  # 10MB
             backupCount=5,
         )

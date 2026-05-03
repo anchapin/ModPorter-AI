@@ -1,6 +1,6 @@
 # AI Engine
 
-The AI Engine is the core component of ModPorter AI responsible for intelligent mod conversion using a multi-agent system powered by CrewAI and enhanced with RAG (Retrieval Augmented Generation) capabilities.
+The AI Engine is the core component of PortKit responsible for intelligent mod conversion using a multi-agent system powered by CrewAI and enhanced with RAG (Retrieval Augmented Generation) capabilities.
 
 ## Architecture
 
@@ -23,6 +23,30 @@ The RAG system enhances agent capabilities with:
 - **Semantic Search**: Find relevant information from documentation
 - **Embedding Generation**: Vector representation of mod content
 - **Context-Aware Responses**: Grounded answers based on retrieved knowledge
+
+### QA Pipeline
+
+The QA (Quality Assurance) pipeline runs automatically on every conversion through the `/api/convert` endpoint. It includes five specialized agents:
+
+1. **translator** - Translates Java mod code to Bedrock equivalents
+2. **reviewer** - Reviews translation quality and completeness
+3. **tester** - Tests generated Bedrock code for correctness
+4. **semantic_checker** - Performs semantic analysis for consistency
+5. **logic_auditor** - Adversarial logic auditing for subtle functional discrepancies (Issue #1138)
+
+#### Default vs On-Demand
+
+| Agent | Runs By Default | On-Demand Only |
+|-------|-----------------|----------------|
+| translator | ✅ Yes | - |
+| reviewer | ✅ Yes | - |
+| tester | ✅ Yes | - |
+| semantic_checker | ✅ Yes | - |
+| logic_auditor | ✅ Yes | - |
+
+All 5 QA agents run automatically on every conversion via `/api/convert`. The QA pipeline can be disabled by setting `enabled=False` in `QAIntegrationHook` when calling `run_post_conversion_qa()`.
+
+**Note**: The QA pipeline may add significant latency per conversion. If latency is a concern, consider running the full QA suite asynchronously (after job completion) and including results in the Conversion Report rather than blocking the job.
 
 ## Quick Start
 
@@ -178,8 +202,8 @@ export PYTHONPATH="${PYTHONPATH}:$(pwd)"
 python -c "
 import logging
 logging.basicConfig(level=logging.DEBUG)
-from crew.conversion_crew import ModPorterConversionCrew
-crew = ModPorterConversionCrew()
+from crew.conversion_crew import PortKitConversionCrew
+crew = PortKitConversionCrew()
 "
 ```
 

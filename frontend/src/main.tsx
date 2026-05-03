@@ -12,7 +12,7 @@ if (sentryDsn) {
   Sentry.init({
     dsn: sentryDsn,
     environment: import.meta.env.MODE,
-    release: `modporter-ai-frontend@${import.meta.env.VITE_APP_VERSION || '1.0.0'}`,
+    release: `portkit-frontend@${import.meta.env.VITE_APP_VERSION || '1.0.0'}`,
     integrations: [
       Sentry.browserTracingIntegration(),
       Sentry.replayIntegration({
@@ -41,8 +41,6 @@ if (sentryDsn) {
   });
   console.log('Sentry error tracking initialized');
 }
-
-Sentry.addCaptureConsoleIntegration();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

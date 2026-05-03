@@ -1,0 +1,55 @@
+# Fly.io configuration for Portkit Staging
+# Deploy with: flyctl deploy -c fly-staging.toml
+
+app = "portkit-backend-staging"
+primary_region = "iad"
+
+# Build configuration
+[build]
+  dockerfile = "Dockerfile.fly"
+
+[build.args]
+  PYTHON_VERSION = "3.11"
+  VITE_API_URL = "https://staging-api.portkit.cloud/api/v1"
+  VITE_API_BASE_URL = "https://staging-api.portkit.cloud"
+
+# No database migrations for staging (uses separate database)
+# [deploy]
+#   release_command = "cd /app/backend && alembic upgrade head"
+
+# Process groups
+[processes]
+  app = "/startup.sh"
+  worker = "sh -c 'cd /app/backend && PYTHONPATH=/app/backend celery -A src.services.celery_config worker --loglevel=info'"
+
+# Environment variables for staging
+[env]
+  PYTHONUNBUFFERED = "1"
+  ENVIRONMENT = "staging"
+  LOG_LEVEL = "DEBUG"
+
+# Persistent volume for staging (smaller size)
+[mounts]
+  source = "portkit_staging_data"
+  destination = "/app/data"
+  initial_size = "512mb"
+
+# HTTP service: Staging domain
+[[services]]
+  processes = ["app"]
+  internal_port = 80
+  protocol = "tcp"
+  auto_stop_machines = "true"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.checks]]
+    path = "/health"
+    interval = "30s"
+    timeout = "10s"
+    retries = 3

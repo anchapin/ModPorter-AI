@@ -1,0 +1,14 @@
+# OpenHands ignore file to prevent directory listing overflows
+node_modules/
+**/node_modules/
+build/
+dist/
+.git/
+__pycache__/
+**/__pycache__/
+venv/
+.venv/
+venv_test/
+venv_muttest/
+.pytest_cache/
+.ruff_cache/

@@ -4,7 +4,7 @@
 
 ## Overview
 
-This testing framework provides comprehensive validation of the ModPorter AI conversion pipeline from Java mods to Bedrock add-ons. The tests ensure that the complete workflow (JAR → Analysis → Build → Package) produces valid, working .mcaddon files.
+This testing framework provides comprehensive validation of the Portkit conversion pipeline from Java mods to Bedrock add-ons. The tests ensure that the complete workflow (JAR → Analysis → Build → Package) produces valid, working .mcaddon files.
 
 ## Test Structure
 

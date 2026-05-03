@@ -65,7 +65,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
   const addNotification = useCallback(
     (notification: Omit<Notification, 'id'>): string => {
-      const id = `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const id = `notification-${crypto.randomUUID()}`;
 
       const newNotification: Notification = {
         ...notification,
@@ -202,8 +202,9 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
             className="notification-close-btn"
             onClick={handleRemove}
             aria-label="Close notification"
+            title="Close"
           >
-            ✕
+            <span aria-hidden="true">✕</span>
           </button>
         </div>
       </div>

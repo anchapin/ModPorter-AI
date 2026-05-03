@@ -1,6 +1,6 @@
 name: Cache Cleanup and Monitoring
 
-on:
+'on':
   schedule:
     # Run cache cleanup every Sunday at 3 AM UTC
     - cron: '0 3 * * 0'

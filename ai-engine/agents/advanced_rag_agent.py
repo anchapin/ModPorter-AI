@@ -7,20 +7,19 @@ for multi-modal content, hybrid search, query expansion, and result re-ranking.
 
 import logging
 import re
-from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Tuple
+
+from schemas.multimodal_schema import ContentType, MultiModalDocument, SearchQuery, SearchResult
 
 # Import advanced RAG components
-from search.hybrid_search_engine import HybridSearchEngine, SearchMode, RankingStrategy
+from search.hybrid_search_engine import HybridSearchEngine, RankingStrategy, SearchMode
+from search.query_expansion import ExpansionStrategy, QueryExpansionEngine
 from search.reranking_engine import EnsembleReRanker
-from search.query_expansion import QueryExpansionEngine, ExpansionStrategy
-from utils.multimodal_embedding_generator import MultiModalEmbeddingGenerator, EmbeddingStrategy
 from utils.advanced_chunker import AdvancedChunker
-from schemas.multimodal_schema import (
-    SearchQuery, SearchResult, MultiModalDocument,
-    ContentType
-)
+from utils.multimodal_embedding_generator import EmbeddingStrategy, MultiModalEmbeddingGenerator
+from utils.token_optimizer import ContextTrimmer
 
 # Import existing components
 from utils.vector_db_client import VectorDBClient
@@ -31,6 +30,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class RAGResponse:
     """Response from the Advanced RAG Agent."""
+
     answer: str
     sources: List[SearchResult]
     confidence: float
@@ -40,20 +40,20 @@ class RAGResponse:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
-            'answer': self.answer,
-            'sources': [
+            "answer": self.answer,
+            "sources": [
                 {
-                    'document_id': source.document.id,
-                    'title': source.document.source_path,
-                    'content_preview': source.matched_content,
-                    'relevance_score': source.final_score,
-                    'rank': source.rank
+                    "document_id": source.document.id,
+                    "title": source.document.source_path,
+                    "content_preview": source.matched_content,
+                    "relevance_score": source.final_score,
+                    "rank": source.rank,
                 }
                 for source in self.sources
             ],
-            'confidence': self.confidence,
-            'processing_time_ms': self.processing_time_ms,
-            'metadata': self.metadata
+            "confidence": self.confidence,
+            "processing_time_ms": self.processing_time_ms,
+            "metadata": self.metadata,
         }
 
 
@@ -70,7 +70,7 @@ class AdvancedRAGAgent:
         vector_db_client: Optional[VectorDBClient] = None,
         enable_query_expansion: bool = True,
         enable_reranking: bool = True,
-        enable_multimodal: bool = True
+        enable_multimodal: bool = True,
     ):
         """
         Initialize the Advanced RAG Agent.
@@ -94,12 +94,16 @@ class AdvancedRAGAgent:
         # Configuration
         self.enable_multimodal = enable_multimodal
         self.config = {
-            'max_sources': 10,
-            'min_relevance_threshold': 0.3,
-            'answer_max_length': 2000,
-            'context_window_size': 4000,
-            'confidence_threshold': 0.6
+            "max_sources": 10,
+            "min_relevance_threshold": 0.3,
+            "answer_max_length": 2000,
+            "context_window_size": 4000,
+            "confidence_threshold": 0.6,
+            "default_model": "default",
         }
+
+        # Context trimming (token-based)
+        self.context_trimmer = ContextTrimmer(model=self.config["default_model"])
 
         # Internal state
         self.document_cache = {}
@@ -113,8 +117,8 @@ class AdvancedRAGAgent:
         query_text: str,
         content_types: Optional[List[ContentType]] = None,
         project_context: Optional[str] = None,
-        session_id: str = 'default',
-        **kwargs
+        session_id: str = "default",
+        **kwargs,
     ) -> RAGResponse:
         """
         Process a query and generate an answer with sources.
@@ -129,7 +133,7 @@ class AdvancedRAGAgent:
         Returns:
             RAG response with answer and sources
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
 
         try:
             logger.info(f"Processing RAG query: '{query_text[:100]}...'")
@@ -139,30 +143,29 @@ class AdvancedRAGAgent:
                 query_text=query_text,
                 content_types=content_types,
                 project_context=project_context,
-                top_k=self.config['max_sources'],
-                similarity_threshold=self.config['min_relevance_threshold'],
+                top_k=self.config["max_sources"],
+                similarity_threshold=self.config["min_relevance_threshold"],
                 use_hybrid_search=True,
                 enable_reranking=bool(self.reranker),
-                expand_query=bool(self.query_expander)
+                expand_query=bool(self.query_expander),
             )
 
             # Step 1: Query expansion (if enabled)
             expanded_query = None
             if self.query_expander:
                 session_context = self.session_contexts.get(session_id, {})
-                session_context.update({
-                    'session_id': session_id,
-                    'project_context': project_context
-                })
+                session_context.update(
+                    {"session_id": session_id, "project_context": project_context}
+                )
 
                 expanded_query = self.query_expander.expand_query(
                     search_query,
                     strategies=[
                         ExpansionStrategy.DOMAIN_EXPANSION,
                         ExpansionStrategy.SYNONYM_EXPANSION,
-                        ExpansionStrategy.CONTEXTUAL_EXPANSION
+                        ExpansionStrategy.CONTEXTUAL_EXPANSION,
                     ],
-                    session_context=session_context
+                    session_context=session_context,
                 )
 
                 # Update query text with expansion
@@ -184,29 +187,32 @@ class AdvancedRAGAgent:
             )
 
             # Calculate processing time
-            processing_time = (datetime.utcnow() - start_time).total_seconds() * 1000
+            processing_time = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
 
             # Compile metadata
             response_metadata = {
-                'query_expansion': {
-                    'enabled': bool(self.query_expander),
-                    'original_query': query_text,
-                    'expanded_query': expanded_query.expanded_query if expanded_query else query_text,
-                    'expansion_terms_count': len(expanded_query.expansion_terms) if expanded_query else 0,
-                    'expansion_confidence': expanded_query.expansion_confidence if expanded_query else 0.0
+                "query_expansion": {
+                    "enabled": bool(self.query_expander),
+                    "original_query": query_text,
+                    "expanded_query": expanded_query.expanded_query
+                    if expanded_query
+                    else query_text,
+                    "expansion_terms_count": len(expanded_query.expansion_terms)
+                    if expanded_query
+                    else 0,
+                    "expansion_confidence": expanded_query.expansion_confidence
+                    if expanded_query
+                    else 0.0,
                 },
-                'retrieval': {
-                    'total_results': len(search_results),
-                    'search_mode': 'hybrid',
-                    'content_types_searched': content_types or ['all']
+                "retrieval": {
+                    "total_results": len(search_results),
+                    "search_mode": "hybrid",
+                    "content_types_searched": content_types or ["all"],
                 },
-                'reranking': {
-                    'enabled': bool(self.reranker),
-                    **reranking_metadata
-                },
-                'generation': generation_metadata,
-                'session_id': session_id,
-                'timestamp': start_time.isoformat()
+                "reranking": {"enabled": bool(self.reranker), **reranking_metadata},
+                "generation": generation_metadata,
+                "session_id": session_id,
+                "timestamp": start_time.isoformat(),
             }
 
             # Create response
@@ -215,18 +221,20 @@ class AdvancedRAGAgent:
                 sources=search_results[:5],  # Top 5 sources
                 confidence=confidence,
                 processing_time_ms=processing_time,
-                metadata=response_metadata
+                metadata=response_metadata,
             )
 
             # Update session context
             self._update_session_context(session_id, search_query, response)
 
-            logger.info(f"RAG query completed in {processing_time:.1f}ms with confidence {confidence:.2f}")
+            logger.info(
+                f"RAG query completed in {processing_time:.1f}ms with confidence {confidence:.2f}"
+            )
             return response
 
         except Exception as e:
             logger.error(f"Error processing RAG query: {e}")
-            processing_time = (datetime.utcnow() - start_time).total_seconds() * 1000
+            processing_time = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
 
             # Return error response
             return RAGResponse(
@@ -234,7 +242,7 @@ class AdvancedRAGAgent:
                 sources=[],
                 confidence=0.0,
                 processing_time_ms=processing_time,
-                metadata={'error': str(e), 'timestamp': start_time.isoformat()}
+                metadata={"error": str(e), "timestamp": start_time.isoformat()},
             )
 
     async def _retrieve_documents(self, query: SearchQuery) -> List[SearchResult]:
@@ -264,7 +272,7 @@ class AdvancedRAGAgent:
                 embeddings=embeddings,
                 query_embedding=query_embedding,
                 search_mode=SearchMode.HYBRID,
-                ranking_strategy=RankingStrategy.WEIGHTED_SUM
+                ranking_strategy=RankingStrategy.WEIGHTED_SUM,
             )
 
             logger.info(f"Retrieved {len(search_results)} documents from hybrid search")
@@ -282,12 +290,12 @@ class AdvancedRAGAgent:
         if not self.document_cache:
             # Create some mock documents for demonstration
             self.document_cache = {
-                'java_blocks': MultiModalDocument(
-                    id='java_blocks',
-                    content_hash='mock_hash_1',
-                    source_path='docs/java/blocks.md',
+                "java_blocks": MultiModalDocument(
+                    id="java_blocks",
+                    content_hash="mock_hash_1",
+                    source_path="docs/java/blocks.md",
                     content_type=ContentType.DOCUMENTATION,
-                    content_text='''
+                    content_text="""
                     # Java Blocks in Minecraft Modding
 
                     Blocks are the fundamental building components of Minecraft worlds.
@@ -311,16 +319,16 @@ class AdvancedRAGAgent:
                         }
                     }
                     ```
-                    ''',
-                    tags=['java', 'blocks', 'modding', 'tutorial'],
-                    project_context='minecraft_mod'
+                    """,
+                    tags=["java", "blocks", "modding", "tutorial"],
+                    project_context="minecraft_mod",
                 ),
-                'bedrock_blocks': MultiModalDocument(
-                    id='bedrock_blocks',
-                    content_hash='mock_hash_2',
-                    source_path='docs/bedrock/blocks.md',
+                "bedrock_blocks": MultiModalDocument(
+                    id="bedrock_blocks",
+                    content_hash="mock_hash_2",
+                    source_path="docs/bedrock/blocks.md",
                     content_type=ContentType.DOCUMENTATION,
-                    content_text='''
+                    content_text="""
                     # Bedrock Blocks Documentation
 
                     In Minecraft Bedrock Edition, blocks are defined using JSON
@@ -354,16 +362,16 @@ class AdvancedRAGAgent:
                         }
                     }
                     ```
-                    ''',
-                    tags=['bedrock', 'blocks', 'json', 'behavior'],
-                    project_context='minecraft_mod'
+                    """,
+                    tags=["bedrock", "blocks", "json", "behavior"],
+                    project_context="minecraft_mod",
                 ),
-                'recipe_system': MultiModalDocument(
-                    id='recipe_system',
-                    content_hash='mock_hash_3',
-                    source_path='docs/recipes/crafting.md',
+                "recipe_system": MultiModalDocument(
+                    id="recipe_system",
+                    content_hash="mock_hash_3",
+                    source_path="docs/recipes/crafting.md",
                     content_type=ContentType.DOCUMENTATION,
-                    content_text='''
+                    content_text="""
                     # Recipe System in Minecraft
 
                     Recipes define how players can craft items and blocks.
@@ -394,10 +402,10 @@ class AdvancedRAGAgent:
                     ## Bedrock Recipe Format
 
                     Bedrock uses a similar but slightly different format.
-                    ''',
-                    tags=['recipes', 'crafting', 'java', 'bedrock'],
-                    project_context='minecraft_mod'
-                )
+                    """,
+                    tags=["recipes", "crafting", "java", "bedrock"],
+                    project_context="minecraft_mod",
+                ),
             }
 
         # Filter documents based on query criteria
@@ -419,7 +427,9 @@ class AdvancedRAGAgent:
 
         return filtered_documents
 
-    async def _get_document_embeddings(self, documents: Dict[str, MultiModalDocument]) -> Dict[str, List]:
+    async def _get_document_embeddings(
+        self, documents: Dict[str, MultiModalDocument]
+    ) -> Dict[str, List]:
         """Get embeddings for documents."""
         embeddings = {}
 
@@ -442,9 +452,7 @@ class AdvancedRAGAgent:
         return embeddings
 
     async def _generate_answer(
-        self,
-        query: str,
-        sources: List[SearchResult]
+        self, query: str, sources: List[SearchResult]
     ) -> Tuple[str, float, Dict[str, Any]]:
         """
         Generate an answer based on retrieved sources.
@@ -461,26 +469,45 @@ class AdvancedRAGAgent:
                 "I couldn't find relevant information to answer your question. "
                 "Please try rephrasing your query or being more specific.",
                 0.1,
-                {'source_count': 0, 'generation_method': 'fallback'}
+                {"source_count": 0, "generation_method": "fallback"},
             )
 
-        # Combine source content for context
+        # Combine source content for context using token budgeting
         context_parts = []
         source_info = []
 
-        for i, source in enumerate(sources[:5]):  # Use top 5 sources
+        # Calculate token budget per source (reserve some for system prompt and completion)
+        max_context_tokens = self.config["context_window_size"]
+        reserve_tokens = 500  # Reserve for system prompt and completion
+        available_tokens = max_context_tokens - reserve_tokens
+        num_sources = min(5, len(sources))
+        tokens_per_source = available_tokens // max(1, num_sources)
+
+        # Convert tokens to approximate character limit (4 chars ≈ 1 token)
+        chars_per_source = tokens_per_source * 4
+
+        for i, source in enumerate(sources[:num_sources]):
             if source.document.content_text:
-                # Truncate content to fit context window
-                content = source.document.content_text[:800]  # Limit per source
-                context_parts.append(f"Source {i+1} ({source.document.source_path}):\n{content}")
-                source_info.append({
-                    'rank': source.rank,
-                    'relevance': source.final_score,
-                    'content_type': source.document.content_type,
-                    'source_path': source.document.source_path
-                })
+                # Token-aware truncation: limit based on token budget
+                content = source.document.content_text[:chars_per_source]
+                if len(source.document.content_text) > chars_per_source:
+                    content += " [...]"
+
+                context_parts.append(f"Source {i + 1} ({source.document.source_path}):\n{content}")
+                source_info.append(
+                    {
+                        "rank": source.rank,
+                        "relevance": source.final_score,
+                        "content_type": source.document.content_type,
+                        "source_path": source.document.source_path,
+                    }
+                )
 
         combined_context = "\n\n".join(context_parts)
+
+        # Log token usage
+        estimated_tokens = self.context_trimmer.estimate_tokens(combined_context)
+        logger.debug(f"Context built with ~{estimated_tokens} tokens (budget: {available_tokens})")
 
         # Simple answer generation (in a real implementation, this would use an LLM)
         answer = self._generate_simple_answer(query, combined_context, sources)
@@ -490,23 +517,23 @@ class AdvancedRAGAgent:
         source_diversity = len(set(s.document.content_type for s in sources[:3]))
         confidence = min(avg_relevance * (1 + source_diversity * 0.1), 1.0)
 
+        # Estimate token count for the context
+        estimated_context_tokens = self.context_trimmer.estimate_tokens(combined_context)
+
         metadata = {
-            'source_count': len(sources),
-            'sources_used': source_info,
-            'context_length': len(combined_context),
-            'avg_source_relevance': avg_relevance,
-            'source_diversity': source_diversity,
-            'generation_method': 'context_synthesis'
+            "source_count": len(sources),
+            "sources_used": source_info,
+            "context_length": len(combined_context),
+            "context_tokens": estimated_context_tokens,
+            "context_token_budget": available_tokens,
+            "avg_source_relevance": avg_relevance,
+            "source_diversity": source_diversity,
+            "generation_method": "context_synthesis",
         }
 
         return answer, confidence, metadata
 
-    def _generate_simple_answer(
-        self,
-        query: str,
-        context: str,
-        sources: List[SearchResult]
-    ) -> str:
+    def _generate_simple_answer(self, query: str, context: str, sources: List[SearchResult]) -> str:
         """
         Generate a simple answer based on context (placeholder implementation).
 
@@ -516,11 +543,11 @@ class AdvancedRAGAgent:
         query_lower = query.lower()
 
         # Determine query type and generate appropriate response
-        if any(word in query_lower for word in ['how', 'create', 'make', 'build']):
+        if any(word in query_lower for word in ["how", "create", "make", "build"]):
             return self._generate_how_to_answer(query, context, sources)
-        elif any(word in query_lower for word in ['what', 'explain', 'definition']):
+        elif any(word in query_lower for word in ["what", "explain", "definition"]):
             return self._generate_explanation_answer(query, context, sources)
-        elif any(word in query_lower for word in ['example', 'sample', 'demo']):
+        elif any(word in query_lower for word in ["example", "sample", "demo"]):
             return self._generate_example_answer(query, context, sources)
         else:
             return self._generate_general_answer(query, context, sources)
@@ -534,12 +561,16 @@ class AdvancedRAGAgent:
             if source.document.content_text:
                 content = source.document.content_text
                 # Look for numbered lists or bullet points
-                lines = content.split('\n')
+                lines = content.split("\n")
                 for line in lines:
                     line = line.strip()
-                    if (line.startswith(('1.', '2.', '3.', '-', '*')) or
-                            'step' in line.lower() or
-                            any(word in line.lower() for word in ['create', 'define', 'register', 'add'])):
+                    if (
+                        line.startswith(("1.", "2.", "3.", "-", "*"))
+                        or "step" in line.lower()
+                        or any(
+                            word in line.lower() for word in ["create", "define", "register", "add"]
+                        )
+                    ):
                         if len(line) > 20 and len(line) < 200:  # Reasonable step length
                             steps.append(line)
 
@@ -553,7 +584,9 @@ class AdvancedRAGAgent:
 
         return answer
 
-    def _generate_explanation_answer(self, query: str, context: str, sources: List[SearchResult]) -> str:
+    def _generate_explanation_answer(
+        self, query: str, context: str, sources: List[SearchResult]
+    ) -> str:
         """Generate an explanatory answer."""
         # Find the most relevant source for explanation
         best_source = sources[0] if sources else None
@@ -562,7 +595,7 @@ class AdvancedRAGAgent:
             content = best_source.document.content_text
 
             # Extract the first substantial paragraph
-            paragraphs = [p.strip() for p in content.split('\n\n') if len(p.strip()) > 50]
+            paragraphs = [p.strip() for p in content.split("\n\n") if len(p.strip()) > 50]
 
             if paragraphs:
                 main_explanation = paragraphs[0]
@@ -575,11 +608,15 @@ class AdvancedRAGAgent:
                     for source in sources[1:3]:
                         if source.document.content_text:
                             # Extract key sentences
-                            sentences = source.document.content_text.split('.')
+                            sentences = source.document.content_text.split(".")
                             key_sentence = next(
-                                (s.strip() for s in sentences
-                                 if len(s.strip()) > 30 and any(word in s.lower() for word in query.lower().split())),
-                                None
+                                (
+                                    s.strip()
+                                    for s in sentences
+                                    if len(s.strip()) > 30
+                                    and any(word in s.lower() for word in query.lower().split())
+                                ),
+                                None,
                             )
                             if key_sentence:
                                 answer += f"• {key_sentence}.\n"
@@ -589,7 +626,9 @@ class AdvancedRAGAgent:
 
         return self._generate_general_answer(query, context, sources)
 
-    def _generate_example_answer(self, query: str, context: str, sources: List[SearchResult]) -> str:
+    def _generate_example_answer(
+        self, query: str, context: str, sources: List[SearchResult]
+    ) -> str:
         """Generate an answer with examples."""
         examples = []
 
@@ -598,25 +637,27 @@ class AdvancedRAGAgent:
                 content = source.document.content_text
 
                 # Look for code blocks
-                code_blocks = re.findall(r'```[\w]*\n(.*?)```', content, re.DOTALL)
+                code_blocks = re.findall(r"```[\w]*\n(.*?)```", content, re.DOTALL)
                 for code in code_blocks:
                     if len(code.strip()) > 20:
-                        examples.append(('code', code.strip(), source.document.source_path))
+                        examples.append(("code", code.strip(), source.document.source_path))
 
                 # Look for example sections
-                lines = content.split('\n')
+                lines = content.split("\n")
                 in_example = False
                 example_content = []
 
                 for line in lines:
-                    if 'example' in line.lower() and ':' in line:
+                    if "example" in line.lower() and ":" in line:
                         in_example = True
                         example_content = [line]
                     elif in_example:
-                        if line.strip() and not line.startswith('#'):
+                        if line.strip() and not line.startswith("#"):
                             example_content.append(line)
                         elif len(example_content) > 2:
-                            examples.append(('text', '\n'.join(example_content), source.document.source_path))
+                            examples.append(
+                                ("text", "\n".join(example_content), source.document.source_path)
+                            )
                             in_example = False
                             example_content = []
 
@@ -625,7 +666,7 @@ class AdvancedRAGAgent:
 
             for i, (example_type, content, source_path) in enumerate(examples[:3], 1):
                 answer += f"**Example {i}** (from {source_path}):\n"
-                if example_type == 'code':
+                if example_type == "code":
                     answer += f"```\n{content}\n```\n\n"
                 else:
                     answer += f"{content}\n\n"
@@ -634,7 +675,9 @@ class AdvancedRAGAgent:
 
         return self._generate_general_answer(query, context, sources)
 
-    def _generate_general_answer(self, query: str, context: str, sources: List[SearchResult]) -> str:
+    def _generate_general_answer(
+        self, query: str, context: str, sources: List[SearchResult]
+    ) -> str:
         """Generate a general answer."""
         if not sources:
             return "I couldn't find specific information about your query in the available documentation."
@@ -647,14 +690,13 @@ class AdvancedRAGAgent:
         if primary_source.document.content_text:
             # Extract the most relevant paragraph
             content = primary_source.document.content_text
-            paragraphs = [p.strip() for p in content.split('\n\n') if len(p.strip()) > 50]
+            paragraphs = [p.strip() for p in content.split("\n\n") if len(p.strip()) > 50]
 
             if paragraphs:
                 # Find paragraph most similar to query (simple word overlap)
                 query_words = set(query.lower().split())
                 best_paragraph = max(
-                    paragraphs,
-                    key=lambda p: len(query_words.intersection(set(p.lower().split())))
+                    paragraphs, key=lambda p: len(query_words.intersection(set(p.lower().split())))
                 )
                 answer_parts.append(best_paragraph)
 
@@ -664,19 +706,23 @@ class AdvancedRAGAgent:
             for source in sources[1:3]:
                 if source.document.content_text:
                     # Extract key sentences related to the query
-                    sentences = source.document.content_text.split('.')
+                    sentences = source.document.content_text.split(".")
                     for sentence in sentences:
                         sentence = sentence.strip()
-                        if (len(sentence) > 30 and
-                                any(word in sentence.lower() for word in query.lower().split())):
+                        if len(sentence) > 30 and any(
+                            word in sentence.lower() for word in query.lower().split()
+                        ):
                             supplementary_info.append(sentence)
                             break
 
             if supplementary_info:
-                answer_parts.append("Additional information:\n" + '\n'.join(f"• {info}." for info in supplementary_info))
+                answer_parts.append(
+                    "Additional information:\n"
+                    + "\n".join(f"• {info}." for info in supplementary_info)
+                )
 
         if answer_parts:
-            answer = '\n\n'.join(answer_parts)
+            answer = "\n\n".join(answer_parts)
             answer += f"\n\nThis information is compiled from {len(sources)} relevant sources."
             return answer
 
@@ -686,34 +732,38 @@ class AdvancedRAGAgent:
         """Update session context for future queries."""
         if session_id not in self.session_contexts:
             self.session_contexts[session_id] = {
-                'queries': [],
-                'successful_queries': [],
-                'content_preferences': {},
-                'topic_interests': {}
+                "queries": [],
+                "successful_queries": [],
+                "content_preferences": {},
+                "topic_interests": {},
             }
 
         context = self.session_contexts[session_id]
 
         # Add query to history
-        context['queries'].append({
-            'query': query.query_text,
-            'timestamp': datetime.utcnow().isoformat(),
-            'confidence': response.confidence,
-            'sources_found': len(response.sources)
-        })
+        context["queries"].append(
+            {
+                "query": query.query_text,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "confidence": response.confidence,
+                "sources_found": len(response.sources),
+            }
+        )
 
         # Track successful queries (high confidence)
-        if response.confidence > self.config['confidence_threshold']:
-            context['successful_queries'].append(query.query_text)
+        if response.confidence > self.config["confidence_threshold"]:
+            context["successful_queries"].append(query.query_text)
 
         # Update content type preferences
         if query.content_types:
             for content_type in query.content_types:
-                context['content_preferences'][content_type] = context['content_preferences'].get(content_type, 0) + 1
+                context["content_preferences"][content_type] = (
+                    context["content_preferences"].get(content_type, 0) + 1
+                )
 
         # Keep only recent history
-        context['queries'] = context['queries'][-20:]
-        context['successful_queries'] = context['successful_queries'][-10:]
+        context["queries"] = context["queries"][-20:]
+        context["successful_queries"] = context["successful_queries"][-10:]
 
     async def get_session_context(self, session_id: str) -> Dict[str, Any]:
         """Get session context information."""
@@ -727,24 +777,24 @@ class AdvancedRAGAgent:
     def get_agent_status(self) -> Dict[str, Any]:
         """Get current agent status and statistics."""
         return {
-            'configuration': {
-                'multimodal_enabled': self.enable_multimodal,
-                'query_expansion_enabled': bool(self.query_expander),
-                'reranking_enabled': bool(self.reranker),
-                'max_sources': self.config['max_sources'],
-                'confidence_threshold': self.config['confidence_threshold']
+            "configuration": {
+                "multimodal_enabled": self.enable_multimodal,
+                "query_expansion_enabled": bool(self.query_expander),
+                "reranking_enabled": bool(self.reranker),
+                "max_sources": self.config["max_sources"],
+                "confidence_threshold": self.config["confidence_threshold"],
             },
-            'cache_status': {
-                'documents_cached': len(self.document_cache),
-                'embeddings_cached': len(self.embedding_cache),
-                'active_sessions': len(self.session_contexts)
+            "cache_status": {
+                "documents_cached": len(self.document_cache),
+                "embeddings_cached": len(self.embedding_cache),
+                "active_sessions": len(self.session_contexts),
             },
-            'capabilities': [
-                'multi_modal_search',
-                'hybrid_retrieval',
-                'query_expansion',
-                'result_reranking',
-                'contextual_understanding',
-                'session_awareness'
-            ]
+            "capabilities": [
+                "multi_modal_search",
+                "hybrid_retrieval",
+                "query_expansion",
+                "result_reranking",
+                "contextual_understanding",
+                "session_awareness",
+            ],
         }

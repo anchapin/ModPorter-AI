@@ -1,0 +1,3 @@
+-e git+https://github.com/user/repo.git
+-r other.txt
+requests==2.33.0

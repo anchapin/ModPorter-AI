@@ -2,7 +2,7 @@
 
 ## Requirements Analysis
 
-Based on ModPorter-AI's needs, we need a multi-modal embedding model that can handle:
+Based on PortKit's needs, we need a multi-modal embedding model that can handle:
 1. **Text**: Java source code, documentation, configuration files
 2. **Images**: Minecraft textures, UI elements, block/entity sprites
 3. **Structured Data**: JSON schemas, XML configurations, YAML files
@@ -46,7 +46,7 @@ Based on ModPorter-AI's needs, we need a multi-modal embedding model that can ha
 
 ## Recommendation: Hybrid Approach
 
-Given ModPorter-AI's requirements, I recommend a **hybrid embedding strategy**:
+Given PortKit's requirements, I recommend a **hybrid embedding strategy**:
 
 1. **Primary Model**: OpenCLIP (ViT-B/32) for text-image pairs
    - Good balance of performance and cost

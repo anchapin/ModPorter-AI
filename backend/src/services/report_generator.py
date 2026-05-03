@@ -31,6 +31,100 @@ MOCK_CONVERSION_RESULT_SUCCESS = {
     "processing_time_seconds": 45.2,
     "download_url": "/api/download/job_123_success",
     "quick_statistics": {"total_files_processed": 150, "output_size_mb": 12.5},
+    "minecraft_version_info": {"java_range": "1.18-1.21", "bedrock_target": "1.21.0"},
+    # Issue #1004 - B2B Conversion Report category breakdown
+    "category_breakdown_data": [
+        {
+            "category": "textures",
+            "total": 52,
+            "converted": 45,
+            "partial": 4,
+            "failed": 3,
+            "notes": None,
+            "manual_work_hours": 1.0,
+        },
+        {
+            "category": "models",
+            "total": 30,
+            "converted": 15,
+            "partial": 8,
+            "failed": 7,
+            "notes": "Complex models need manual geometry adjustment",
+            "manual_work_hours": 3.0,
+        },
+        {
+            "category": "recipes",
+            "total": 54,
+            "converted": 0,
+            "partial": 0,
+            "failed": 54,
+            "notes": "Recipe converter not yet available",
+            "manual_work_hours": 6.0,
+        },
+        {
+            "category": "entities",
+            "total": 20,
+            "converted": 18,
+            "partial": 2,
+            "failed": 0,
+            "notes": None,
+            "manual_work_hours": 0.5,
+        },
+        {
+            "category": "sounds",
+            "total": 8,
+            "converted": 0,
+            "partial": 0,
+            "failed": 8,
+            "notes": "Sound extraction not implemented",
+            "manual_work_hours": 2.0,
+        },
+        {
+            "category": "localization",
+            "total": 3,
+            "converted": 0,
+            "partial": 0,
+            "failed": 3,
+            "notes": "Lang file transfer not implemented",
+            "manual_work_hours": 1.0,
+        },
+        {
+            "category": "blockstates",
+            "total": 40,
+            "converted": 38,
+            "partial": 1,
+            "failed": 1,
+            "notes": None,
+            "manual_work_hours": 0.5,
+        },
+        {
+            "category": "loot_tables",
+            "total": 15,
+            "converted": 12,
+            "partial": 2,
+            "failed": 1,
+            "notes": None,
+            "manual_work_hours": 0.5,
+        },
+        {
+            "category": "advancements",
+            "total": 25,
+            "converted": 22,
+            "partial": 3,
+            "failed": 0,
+            "notes": None,
+            "manual_work_hours": 0.0,
+        },
+        {
+            "category": "tags",
+            "total": 60,
+            "converted": 58,
+            "partial": 2,
+            "failed": 0,
+            "notes": None,
+            "manual_work_hours": 0.0,
+        },
+    ],
     "converted_mods_data": [
         {
             "name": "AwesomeMod",
@@ -151,6 +245,7 @@ MOCK_CONVERSION_RESULT_FAILURE = {
     "processing_time_seconds": 15.7,
     "download_url": None,
     "quick_statistics": {"total_files_processed": 30, "output_size_mb": 1.2},
+    "minecraft_version_info": {"java_range": "1.18-1.21", "bedrock_target": "1.21.0"},
     "converted_mods_data": [],
     "failed_mods_data": [
         {
@@ -202,6 +297,7 @@ class ConversionReportGenerator:
             processing_time_seconds=conversion_result.get("processing_time_seconds", 0.0),
             download_url=conversion_result.get("download_url"),
             quick_statistics=conversion_result.get("quick_statistics", {}),
+            minecraft_version_info=conversion_result.get("minecraft_version_info"),
         )
 
     def generate_feature_analysis(self, features_data: List[Dict[str, Any]]) -> FeatureAnalysis:
@@ -386,26 +482,22 @@ class ConversionReportGenerator:
 if __name__ == "__main__":
     generator = ConversionReportGenerator()
 
-    print("--- Generating Success Report (Interactive Style) ---")
     interactive_report_success = generator.create_interactive_report(
         MOCK_CONVERSION_RESULT_SUCCESS, "job_123_success"
     )
     # import json
     # print(json.dumps(interactive_report_success, indent=2)) # Requires TypedDicts to be serializable or use a custom encoder
 
-    print("\n--- Generating Success Report (PRD JSON Style) ---")
     prd_style_report_success = generator.create_full_conversion_report_prd_style(
         MOCK_CONVERSION_RESULT_SUCCESS
     )
     # print(json.dumps(prd_style_report_success, indent=2))
 
-    print("\n--- Generating Failure Report (Interactive Style) ---")
     interactive_report_failure = generator.create_interactive_report(
         MOCK_CONVERSION_RESULT_FAILURE, "job_456_failure"
     )
     # print(json.dumps(interactive_report_failure, indent=2))
 
-    print("\n--- Generating Failure Report (PRD JSON Style) ---")
     prd_style_report_failure = generator.create_full_conversion_report_prd_style(
         MOCK_CONVERSION_RESULT_FAILURE
     )
@@ -413,26 +505,21 @@ if __name__ == "__main__":
 
     # Test individual components
     summary_data = generator.generate_summary_report(MOCK_CONVERSION_RESULT_SUCCESS)
-    print(f"\nSummary Success Rate: {summary_data['overall_success_rate']}%")
 
     feature_analysis_data = generator.generate_feature_analysis(
         MOCK_CONVERSION_RESULT_SUCCESS["features_data"]
     )
     if feature_analysis_data["per_feature_status"]:
-        print(f"First feature status: {feature_analysis_data['per_feature_status'][0]['status']}")
+        pass
 
     assumptions_report_data = generator.generate_assumptions_report(
         MOCK_CONVERSION_RESULT_SUCCESS["assumptions_detail_data"]
     )
     if assumptions_report_data["assumptions"]:
-        print(
-            f"First assumption impact: {assumptions_report_data['assumptions'][0]['impact_level']}"
-        )
+        pass
 
     dev_log_data = generator.generate_developer_log(
         MOCK_CONVERSION_RESULT_SUCCESS["developer_logs_data"]
     )
     if dev_log_data["code_translation_details"]:
-        print(
-            f"First code translation log: {dev_log_data['code_translation_details'][0]['message']}"
-        )
+        pass

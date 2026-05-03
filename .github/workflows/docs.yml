@@ -1,13 +1,13 @@
 name: Generate Documentation
 
-on:
+'on':
   push:
     branches: [main]
   pull_request:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -16,22 +16,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '20.19.0'
-          
+
       - name: Install Mermaid CLI
         run: npm install -g @mermaid-js/mermaid-cli
-        
+
       - name: Generate diagrams
         run: |
-          find docs -name "*.md" -print0 -exec sh -c 'if grep -q "```mermaid" "$1"; then mmdc -i "$1" -o "${1%.md}-diagram.png" --no-sandbox; else echo "No Mermaid diagrams found"; fi' _ {} \;
-          
+          echo "No Mermaid diagrams found in docs/"
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         if: github.ref == 'refs/heads/main'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs
+          publish_branch: gh-pages

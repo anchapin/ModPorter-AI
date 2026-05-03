@@ -146,6 +146,13 @@
   line-height: 1.4;
 }
 
+.dropzone .upload-prompt .privacy-note {
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+  margin-top: 8px;
+}
+
 .dropzone .upload-prompt .browse-button {
   background-color: transparent;
   color: #2563eb;
@@ -235,6 +242,12 @@
   background-color: #f8d7da;
 }
 
+/* Accessibility: Focus-visible for remove-file button */
+.file-preview .remove-file:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
 /* URL input section */
 .url-input-section {
   margin-top: 20px;
@@ -276,10 +289,11 @@
   transition: border-color 0.3s ease;
 }
 
-.url-input:focus {
+.url-input:focus-visible {
   border-color: #1a73e8;
   box-shadow: 0 0 0 0.2rem rgba(26, 115, 232, 0.25);
-  outline: none;
+  outline: 2px solid #1a73e8;
+  outline-offset: 2px;
 }
 
 .url-input:disabled {
@@ -369,6 +383,12 @@
   transform: rotate(45deg);
 }
 
+/* Accessibility: Focus-visible for custom checkbox */
+.checkbox-label input[type='checkbox']:focus-visible + .checkmark {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
 .checkbox-label .info-button {
   background-color: #e9ecef;
   color: #495057;
@@ -389,6 +409,13 @@
 }
 
 .checkbox-label .info-button:hover {
+  background-color: #ced4da;
+}
+
+/* Accessibility: Focus-visible for info-button */
+.info-button:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
   background-color: #ced4da;
 }
 
@@ -685,6 +712,14 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+/* Accessibility: Focus-visible for action buttons */
+.convert-button:focus-visible,
+.download-button:focus-visible,
+.cancel-button:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
 }
 
 /* Spinner for button */

@@ -1,5 +1,5 @@
 """
-Rate Limiting Middleware for ModPorter AI Backend
+Rate Limiting Middleware for Portkit Backend
 
 Provides per-user and global rate limiting for API endpoints.
 Implements token bucket algorithm for smooth rate limiting.
@@ -8,16 +8,13 @@ Issue: #456 - Performance Optimization - Rate limiting for API endpoints
 """
 
 import time
-import uuid
 from typing import Dict, Optional, Callable
 from dataclasses import dataclass, field
-from datetime import datetime
 from collections import defaultdict
 import logging
-import hashlib
 
 import redis.asyncio as aioredis
-from fastapi import HTTPException, Request, status
+from fastapi import Request, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response, JSONResponse
 
@@ -28,6 +25,7 @@ from services.metrics import (
     update_rate_limit_usage,
     update_active_rate_limit_clients,
 )
+from security.auth import verify_token
 
 logger = logging.getLogger(__name__)
 
@@ -176,7 +174,7 @@ class RateLimiter:
                 "remaining_hour": max(0, remaining_hour),
                 "reset_at_minute": reset_at_minute,
                 "reset_at_hour": reset_at_hour,
-                "retry_after": max(0, 60 - (current_time % 60)) if not is_allowed else None,
+                "retry_after": (max(0, 60 - (current_time % 60)) if not is_allowed else None),
             }
 
         except Exception as e:
@@ -221,7 +219,7 @@ class RateLimiter:
             "remaining_hour": max(0, remaining_hour),
             "reset_at_minute": int(current_time + 60),
             "reset_at_hour": int(current_time + 3600),
-            "retry_after": max(0, 60 - (current_time % 60)) if not can_proceed else None,
+            "retry_after": (max(0, 60 - (current_time % 60)) if not can_proceed else None),
         }
 
     async def get_rate_limit_status(self, request: Request) -> Dict[str, any]:
@@ -261,6 +259,64 @@ class RateLimiter:
         }
 
 
+# Paths that don't need authentication
+AUTH_OPTIONAL_PATHS = {"/api/v1/auth/login", "/api/v1/auth/register"}
+
+
+async def extract_user_from_token(request: Request) -> tuple[Optional[str], Optional[str]]:
+    """
+    Extract user_id and tier from JWT token in request.
+
+    Returns:
+        Tuple of (user_id, tier) or (None, None) if not authenticated
+    """
+    # Check Authorization header for Bearer token
+    auth_header = request.headers.get("Authorization", "")
+
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]  # Strip "Bearer " prefix
+        user_id = verify_token(token, "access")
+        if user_id:
+            # For now, default to "free" tier - tier lookup requires DB call
+            # which we avoid in middleware for performance
+            return user_id, "free"
+
+    # Check X-API-Key header (for API key authentication)
+    api_key = request.headers.get("X-API-Key", "")
+    if api_key:
+        # Note: API key validation requires DB lookup
+        # For now, treat valid-looking keys as authenticated
+        # Full implementation would look up API key in DB
+        if api_key and len(api_key) > 10:
+            return f"apikey:{api_key[:8]}", "free"
+
+    return None, None
+
+
+class UserContextMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware that extracts user context from JWT token BEFORE other middleware.
+
+    This runs BEFORE RateLimitMiddleware to populate request.state with user info,
+    enabling per-user rate limiting instead of per-IP.
+    """
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        # Skip for health checks and docs
+        if request.url.path in {"/api/v1/health", "/docs", "/redoc", "/openapi.json"}:
+            return await call_next(request)
+
+        # Try to extract user info from token
+        user_id, tier = await extract_user_from_token(request)
+
+        if user_id:
+            request.state.user_id = user_id
+            request.state.user_tier = tier
+            logger.debug("User context set for request")
+
+        return await call_next(request)
+
+
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """
     FastAPI middleware for rate limiting.
@@ -287,8 +343,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         # Endpoints with different limits
         self.endpoint_limits = {
-            "/api/v1/conversions": RateLimitConfig(requests_per_minute=10, requests_per_hour=100),
-            "/api/v1/upload": RateLimitConfig(requests_per_minute=20, requests_per_hour=200),
+            "/api/v1/conversions": RateLimitConfig(requests_per_minute=30, requests_per_hour=300),
+            "/api/v1/upload": RateLimitConfig(requests_per_minute=60, requests_per_hour=600),
         }
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
@@ -421,9 +477,9 @@ async def check_rate_limit(request: Request) -> Dict[str, any]:
 
 # Endpoint-specific rate limiters
 conversion_rate_limiter = RateLimiter(
-    config=RateLimitConfig(requests_per_minute=10, requests_per_hour=100, burst_size=3)
+    config=RateLimitConfig(requests_per_minute=30, requests_per_hour=300, burst_size=5)
 )
 
 upload_rate_limiter = RateLimiter(
-    config=RateLimitConfig(requests_per_minute=20, requests_per_hour=200, burst_size=5)
+    config=RateLimitConfig(requests_per_minute=60, requests_per_hour=600, burst_size=10)
 )

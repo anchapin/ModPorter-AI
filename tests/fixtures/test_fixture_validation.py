@@ -1,6 +1,10 @@
+import logging
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
 """
 Test to validate that the simple_copper_block.jar fixture is properly structured
-and can be used for testing the ModPorter AI pipeline.
+and can be used for testing the PortKit pipeline.
 
 This test ensures Issue #174 requirements are met:
 - Simple test mod .jar file exists
@@ -139,31 +143,31 @@ def test_readme_documentation_exists():
 
 if __name__ == "__main__":
     # Run basic validation when executed directly
-    print("Validating simple_copper_block.jar fixture...")
+    logger.info("Validating simple_copper_block.jar fixture...")
     
     test_simple_copper_block_jar_exists()
-    print("✓ JAR file exists")
+    logger.info("✓ JAR file exists")
     
     test_jar_has_required_structure()
-    print("✓ JAR has required structure")
+    logger.info("✓ JAR has required structure")
     
     test_fabric_mod_json_structure()
-    print("✓ fabric.mod.json is valid")
+    logger.info("✓ fabric.mod.json is valid")
     
     test_texture_file_present()
-    print("✓ Texture file is present and valid")
+    logger.info("✓ Texture file is present and valid")
     
     test_expected_analysis_result()
-    print("✓ Expected analysis result is valid")
+    logger.info("✓ Expected analysis result is valid")
     
     test_expected_bedrock_block()
-    print("✓ Expected Bedrock block definition is valid")
+    logger.info("✓ Expected Bedrock block definition is valid")
     
     test_jar_can_be_opened_multiple_times()
-    print("✓ JAR integrity is maintained")
+    logger.info("✓ JAR integrity is maintained")
     
     test_readme_documentation_exists()
-    print("✓ README documentation exists")
+    logger.info("✓ README documentation exists")
     
-    print("\n🎉 All fixture validation tests passed!")
-    print("The simple_copper_block.jar fixture is ready for use in testing.")
+    logger.info("\n🎉 All fixture validation tests passed!")
+    logger.info("The simple_copper_block.jar fixture is ready for use in testing.")

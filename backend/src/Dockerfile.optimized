@@ -2,7 +2,7 @@
 # Significantly faster builds by using cached dependencies
 
 ARG PYTHON_BASE_TAG=latest
-FROM ghcr.io/anchapin/modporter-ai/python-base:${PYTHON_BASE_TAG}
+FROM ghcr.io/anchapin/portkit/python-base:${PYTHON_BASE_TAG}
 
 # All dependencies are already installed in the base image
 # Just copy source code and set up the application

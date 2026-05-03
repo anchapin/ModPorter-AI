@@ -1,8 +1,8 @@
-# ModPorter AI Architecture
+# Portkit Architecture
 
 ## Overview
 
-ModPorter AI follows a microservices architecture designed for scalability and maintainability, implementing the PRD requirements through specialized services.
+Portkit follows a microservices architecture designed for scalability and maintainability, implementing the PRD requirements through specialized services.
 
 ## System Architecture
 

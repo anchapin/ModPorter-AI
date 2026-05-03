@@ -1,6 +1,6 @@
 name: Validate Workflows
 
-on:
+'on':
   pull_request:
     paths:
       - '.github/workflows/**'
@@ -20,7 +20,7 @@ jobs:
           echo "Validating YAML syntax for all workflow files..."
           find .github/workflows -name "*.yml" -o -name "*.yaml" | while read file; do
             echo "Validating $file"
-            python -c "import yaml; yaml.safe_load(open('$file'))" || {
+            python3 -c "import yaml; yaml.safe_load(open('$file'))" || {
               echo "❌ YAML syntax error in $file"
               exit 1
             }

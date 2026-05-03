@@ -115,6 +115,12 @@
   cursor: pointer;
 }
 
+/* Accessibility: Focus-visible for checkbox */
+.setting-label input[type='checkbox']:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
 .label-text {
   display: flex;
   flex-direction: column;
@@ -140,8 +146,9 @@
   margin-left: auto;
 }
 
-.setting-select:focus {
-  outline: none;
+.setting-select:focus-visible {
+  outline: 2px solid #1976d2;
+  outline-offset: 2px;
   border-color: #1976d2;
 }
 
@@ -180,8 +187,9 @@
   font-family: monospace;
 }
 
-.api-key-input:focus {
-  outline: none;
+.api-key-input:focus-visible {
+  outline: 2px solid #1976d2;
+  outline-offset: 2px;
   border-color: #1976d2;
 }
 

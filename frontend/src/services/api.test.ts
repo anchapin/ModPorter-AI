@@ -1,14 +1,13 @@
 import { submitFeedback } from './api';
 import type { FeedbackCreatePayload, FeedbackResponse } from '../types/api';
 import { beforeEach, describe, test, expect, vi, afterEach } from 'vitest';
-import { server } from '../test/setup';
 
 describe('API Service - Feedback', () => {
   beforeEach(() => {
-    // Reset MSW handlers
-    server.resetHandlers();
+    // Reset all mocks to ensure clean state
+    vi.restoreAllMocks();
 
-    // Mock fetch since MSW is disabled
+    // Set up a fresh mock for each test
     global.fetch = vi.fn();
   });
 
@@ -42,16 +41,13 @@ describe('API Service - Feedback', () => {
 
       const result = await submitFeedback(mockPayload);
       expect(result).toEqual(mockSuccessResponse);
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:8000/api/v1/feedback',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(mockPayload),
-        }
-      );
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(mockPayload),
+      });
     });
 
     test('should throw ApiError on API error response (e.g., 400, 500)', async () => {

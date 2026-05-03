@@ -1,0 +1,59 @@
+/**
+ * Progress Page Styles
+ */
+
+.progress-page {
+  padding: 2rem 1rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.progress-card {
+  padding: 2rem;
+  border-radius: 12px;
+  background-color: #fff;
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tips-card {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background-color: #f5f9ff;
+  border-radius: 8px;
+  border: 1px solid #e3f2fd;
+}
+
+.tips-list {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: text.secondary;
+}
+
+.tips-list li {
+  margin-bottom: 0.5rem;
+}
+
+/* Spinning animation for processing icon */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@media (max-width: 600px) {
+  .progress-card {
+    padding: 1.5rem;
+  }
+}

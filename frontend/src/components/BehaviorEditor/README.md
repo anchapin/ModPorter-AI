@@ -285,4 +285,4 @@ When adding new features:
 
 ## License
 
-This implementation is part of the ModPorter AI project.
+This implementation is part of the Portkit project.

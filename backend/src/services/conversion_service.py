@@ -13,20 +13,26 @@ import asyncio
 import logging
 import os
 import shutil
-from pathlib import Path
-from typing import Dict, Any, Optional, AsyncIterator
-from datetime import datetime
+from typing import Dict, Any, Optional
+from datetime import datetime, timezone
 
 import httpx
 
 from services.ai_engine_client import (
     AIEngineClient,
     get_ai_engine_client,
-    close_ai_engine_client,
     AIEngineError,
 )
 from services.cache import CacheService
-from websocket.progress_handler import ProgressHandler, AgentStatus
+from src.websocket.progress_handler import ProgressHandler, AgentStatus
+from errors import (
+    ConversionError,
+    AIEngineUnavailableError,
+    ConversionTimeoutError,
+    retry_with_backoff,
+    categorize_error,
+    get_error_handler,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -262,10 +268,39 @@ class ConversionService:
             )
             raise
 
-        except Exception as e:
-            logger.error(f"Conversion {conversion_id} failed: {e}")
+        except AIEngineUnavailableError as e:
+            # AI Engine unavailable - record via error handler
+            error_handler = get_error_handler()
+            error_handler.record_error(e, job_id=conversion_id)
+            categorized = categorize_error(e)
+            logger.error(f"AI Engine unavailable for conversion {conversion_id}: {e}")
+            await self._handle_error(conversion_id, categorized["user_message"])
+            raise ConversionError(f"AI Engine unavailable: {e}", retryable=True)
+
+        except ConversionTimeoutError as e:
+            # Timeout - record via error handler
+            error_handler = get_error_handler()
+            error_handler.record_error(e, job_id=conversion_id)
+            categorized = categorize_error(e)
+            logger.error(f"Conversion timeout for {conversion_id}: {e}")
+            await self._handle_error(conversion_id, categorized["user_message"])
+            raise
+
+        except ConversionError as e:
+            # Already a conversion error - record and re-raise
+            error_handler = get_error_handler()
+            error_handler.record_error(e, job_id=conversion_id)
             await self._handle_error(conversion_id, str(e))
             raise
+
+        except Exception as e:
+            # Unexpected error - wrap in ConversionError and record via framework
+            error_handler = get_error_handler()
+            error_handler.record_error(e, job_id=conversion_id)
+            categorized = categorize_error(e)
+            logger.error(f"Conversion {conversion_id} failed: {e}")
+            await self._handle_error(conversion_id, categorized["user_message"])
+            raise ConversionError(f"Unexpected error: {e}", retryable=False)
 
     async def _poll_and_broadcast(self, conversion_id: str) -> None:
         """
@@ -359,7 +394,7 @@ class ConversionService:
                 "status": status,
                 "progress": progress,
                 "message": message,
-                "updated_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
             },
         )
         await self.cache.set_progress(conversion_id, progress)

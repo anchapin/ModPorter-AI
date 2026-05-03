@@ -3,6 +3,7 @@ from typing import List
 
 logger = logging.getLogger(__name__)
 
+
 class Chunker:
     @staticmethod
     def chunk_document(document: str, chunk_size: int, overlap: int) -> List[str]:
@@ -23,11 +24,16 @@ class Chunker:
 
         chunks = []
         start = 0
+        increment = chunk_size - overlap
+        if increment <= 0:
+            logger.warning(
+                "chunk_size - overlap <= 0. Using chunk_size as increment to avoid infinite loop."
+            )
+            increment = chunk_size
+
         while start < len(document):
             end = start + chunk_size
             chunk = document[start:end]
             chunks.append(chunk)
-            start += chunk_size - overlap
-            if start < 0: # Ensure start doesn't go negative if overlap > chunk_size
-                start = 0
+            start += increment
         return chunks

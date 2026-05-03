@@ -149,7 +149,9 @@ export class RecipeValidation {
     }
   }
 
-  private validateSmeltingRecipe(
+  // Common validation for single-input recipes (smelting, stonecutter, etc.)
+  private validateSingleInputRecipe(
+    recipeType: string,
     recipe: Recipe,
     availableItems: RecipeItem[],
     errors: string[]
@@ -160,13 +162,13 @@ export class RecipeValidation {
       !recipe.pattern[0] ||
       recipe.pattern[0].length === 0
     ) {
-      errors.push('Smelting recipe requires an input item');
+      errors.push(`${recipeType} recipe requires an input item`);
       return;
     }
 
     const inputSlot = recipe.pattern[0][0];
     if (!inputSlot.item) {
-      errors.push('Smelting recipe requires an input item');
+      errors.push(`${recipeType} recipe requires an input item`);
       return;
     }
 
@@ -174,8 +176,16 @@ export class RecipeValidation {
     if (!this.itemExists(inputSlot.item, availableItems)) {
       errors.push(`Input item "${inputSlot.item.name}" is not available`);
     }
+  }
 
-    // Validate experience
+  private validateSmeltingRecipe(
+    recipe: Recipe,
+    availableItems: RecipeItem[],
+    errors: string[]
+  ): void {
+    this.validateSingleInputRecipe('Smelting', recipe, availableItems, errors);
+
+    // Validate experience (specific to smelting)
     if (recipe.experience !== undefined) {
       if (recipe.experience < 0) {
         errors.push('Experience cannot be negative');
@@ -243,26 +253,12 @@ export class RecipeValidation {
     availableItems: RecipeItem[],
     errors: string[]
   ): void {
-    if (
-      !recipe.pattern ||
-      recipe.pattern.length === 0 ||
-      !recipe.pattern[0] ||
-      recipe.pattern[0].length === 0
-    ) {
-      errors.push('Stonecutter recipe requires an input item');
-      return;
-    }
-
-    const inputSlot = recipe.pattern[0][0];
-    if (!inputSlot.item) {
-      errors.push('Stonecutter recipe requires an input item');
-      return;
-    }
-
-    // Validate input item exists
-    if (!this.itemExists(inputSlot.item, availableItems)) {
-      errors.push(`Input item "${inputSlot.item.name}" is not available`);
-    }
+    this.validateSingleInputRecipe(
+      'Stonecutter',
+      recipe,
+      availableItems,
+      errors
+    );
   }
 
   private validateResult(
@@ -320,8 +316,16 @@ export class RecipeValidation {
     result: string;
     complexity: 'simple' | 'medium' | 'complex';
   } {
-    const ingredientCount =
-      recipe.pattern?.flat().filter((slot) => slot.item).length || 0;
+    // ⚡ Bolt optimization: Single pass loop instead of .flat().filter().length
+    // Avoids creating multiple intermediate arrays for O(N) performance
+    let ingredientCount = 0;
+    if (recipe.pattern) {
+      for (const row of recipe.pattern) {
+        for (const slot of row) {
+          if (slot.item) ingredientCount++;
+        }
+      }
+    }
 
     let complexity: 'simple' | 'medium' | 'complex' = 'simple';
     if (ingredientCount > 3) {
@@ -372,39 +376,31 @@ export class RecipeValidation {
     return conflicts;
   }
 
+  private extractIngredientIds(pattern: Recipe['pattern']): string[] {
+    return (
+      pattern
+        ?.flat()
+        .reduce((acc: string[], slot) => {
+          if (slot.item?.id) acc.push(slot.item.id);
+          return acc;
+        }, [])
+        .sort() || []
+    );
+  }
+
   private recipesAreIdentical(recipe1: Recipe, recipe2: Recipe): boolean {
     if (recipe1.type !== recipe2.type) return false;
     if (recipe1.result.id !== recipe2.result.id) return false;
 
-    const ingredients1 =
-      recipe1.pattern
-        ?.flat()
-        .filter((slot) => slot.item)
-        .map((slot) => slot.item?.id)
-        .sort() || [];
-    const ingredients2 =
-      recipe2.pattern
-        ?.flat()
-        .filter((slot) => slot.item)
-        .map((slot) => slot.item?.id)
-        .sort() || [];
+    const ingredients1 = this.extractIngredientIds(recipe1.pattern);
+    const ingredients2 = this.extractIngredientIds(recipe2.pattern);
 
     return JSON.stringify(ingredients1) === JSON.stringify(ingredients2);
   }
 
   private hasSameIngredients(recipe1: Recipe, recipe2: Recipe): boolean {
-    const ingredients1 =
-      recipe1.pattern
-        ?.flat()
-        .filter((slot) => slot.item)
-        .map((slot) => slot.item?.id)
-        .sort() || [];
-    const ingredients2 =
-      recipe2.pattern
-        ?.flat()
-        .filter((slot) => slot.item)
-        .map((slot) => slot.item?.id)
-        .sort() || [];
+    const ingredients1 = this.extractIngredientIds(recipe1.pattern);
+    const ingredients2 = this.extractIngredientIds(recipe2.pattern);
 
     return JSON.stringify(ingredients1) === JSON.stringify(ingredients2);
   }

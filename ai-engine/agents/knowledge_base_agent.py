@@ -1,5 +1,7 @@
 from typing import List
+
 from crewai.tools import BaseTool
+
 from tools.search_tool import SearchTool
 
 
@@ -18,6 +20,7 @@ class KnowledgeBaseAgent:
         Instantiates and returns a list of tools available to this agent.
         """
         return [SearchTool()]
+
 
 # Example usage (optional, for testing):
 # if __name__ == "__main__":

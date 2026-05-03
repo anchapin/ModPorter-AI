@@ -7,10 +7,12 @@ class Settings(BaseSettings):
     model_config = ConfigDict(env_file="../.env", extra="ignore")
 
     database_url_raw: str = Field(
-        default="postgresql://supabase_user:supabase_password@db.supabase_project_id.supabase.co:5432/postgres",
+        default="postgresql://INVALID_CONFIG",
         alias="DATABASE_URL",
     )
     redis_url: str = Field(default="redis://localhost:6379", alias="REDIS_URL")
+    skip_email_verification: bool = Field(default=False, alias="SKIP_EMAIL_VERIFICATION")
+    admin_api_key: str = Field(default="", alias="ADMIN_API_KEY")
 
     @property
     def database_url(self) -> str:
@@ -20,7 +22,11 @@ class Settings(BaseSettings):
             # Default to SQLite for testing to avoid connection issues
             test_db_url = os.getenv("TEST_DATABASE_URL", "sqlite+aiosqlite:///:memory:")
             return test_db_url
-        return self.database_url_raw
+        url = self.database_url_raw
+        # Convert postgresql:// to postgresql+asyncpg:// for async SQLAlchemy
+        if url.startswith("postgresql://"):
+            return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
 
     @property
     def sync_database_url(self) -> str:

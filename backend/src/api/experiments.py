@@ -313,7 +313,9 @@ async def delete_experiment(experiment_id: str, db: AsyncSession = Depends(get_d
 
 @router.post("/experiments/{experiment_id}/variants", response_model=ExperimentVariantResponse)
 async def create_experiment_variant(
-    experiment_id: str, variant: ExperimentVariantCreate, db: AsyncSession = Depends(get_db)
+    experiment_id: str,
+    variant: ExperimentVariantCreate,
+    db: AsyncSession = Depends(get_db),
 ):
     """Create a new variant for an A/B testing experiment."""
     logger.info(f"Creating variant for experiment {experiment_id}: {variant.name}")
@@ -355,7 +357,10 @@ async def create_experiment_variant(
         raise HTTPException(status_code=500, detail="Error creating experiment variant")
 
 
-@router.get("/experiments/{experiment_id}/variants", response_model=List[ExperimentVariantResponse])
+@router.get(
+    "/experiments/{experiment_id}/variants",
+    response_model=List[ExperimentVariantResponse],
+)
 async def list_experiment_variants(experiment_id: str, db: AsyncSession = Depends(get_db)):
     """List all variants for an A/B testing experiment."""
     logger.info(f"Listing variants for experiment: {experiment_id}")
@@ -394,7 +399,8 @@ async def list_experiment_variants(experiment_id: str, db: AsyncSession = Depend
 
 
 @router.get(
-    "/experiments/{experiment_id}/variants/{variant_id}", response_model=ExperimentVariantResponse
+    "/experiments/{experiment_id}/variants/{variant_id}",
+    response_model=ExperimentVariantResponse,
 )
 async def get_experiment_variant(
     experiment_id: str, variant_id: str, db: AsyncSession = Depends(get_db)
@@ -440,7 +446,8 @@ async def get_experiment_variant(
 
 
 @router.put(
-    "/experiments/{experiment_id}/variants/{variant_id}", response_model=ExperimentVariantResponse
+    "/experiments/{experiment_id}/variants/{variant_id}",
+    response_model=ExperimentVariantResponse,
 )
 async def update_experiment_variant(
     experiment_id: str,

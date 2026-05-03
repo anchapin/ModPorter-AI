@@ -10,3 +10,11 @@
 ## 2025-06-25 - Avoid `String.prototype.localeCompare` for Technical/ISO String Sorting
 **Learning:** While `localeCompare` is semantically correct for alphabetizing localized strings, it carries significant overhead (invoking the Internationalization API). In V8, sorting 10,000 ISO date strings using `localeCompare` takes ~200ms, whereas standard string operators (`a > b ? 1 : a < b ? -1 : 0`) take ~10ms (a 20x improvement).
 **Action:** Always use standard operators (`>`, `<`) when sorting ISO 8601 date strings or technical identifiers (like Minecraft resource IDs/names) where strict locale-awareness is not required.
+
+## 2026-03-05 - [React Initial State Optimization]
+**Learning:** Initializing state from `localStorage` inside a `useEffect` hook causes a double render and a visible layout shift because the component first renders with empty/loading state, and then immediately re-renders after the effect reads the data.
+**Action:** Always use lazy initialization (`useState(() => { return readFromLocalStorage(); })`) for state derived from synchronous storage APIs to ensure the component renders with data on the very first paint, avoiding layout shifts and flashes of loading states.
+
+## 2024-05-18 - Avoid O(N) array allocations from sequential filters
+**Learning:** Using sequential `Array.prototype.filter(...).length` calls for distinct boolean conditions introduces hidden `O(N)` memory allocations (for the intermediate arrays) and increases CPU time complexity to `O(K*N)` where K is the number of filters.
+**Action:** When calculating multiple aggregate statistics from a single array, iterate through it exactly once (using a simple `for` loop or `.reduce`) to simultaneously track all the counts. This eliminates array allocations and brings complexity back down to `O(N)`.

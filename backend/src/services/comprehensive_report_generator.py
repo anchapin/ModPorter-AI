@@ -1,5 +1,5 @@
 """
-Comprehensive Report Generator for ModPorter AI
+Comprehensive Report Generator for Portkit
 Implements Issue #10 - Conversion Report Generation System
 
 This module provides enhanced report generation capabilities with:
@@ -14,7 +14,7 @@ from typing import List, Dict, Any, Optional
 import time
 import logging
 
-from ..schemas.report_types import (
+from schemas.report_types import (
     InteractiveReport,
     SummaryReport,
     FeatureAnalysis,
@@ -73,7 +73,111 @@ class ConversionReportGenerator:
         # Generate recommended actions
         summary.recommended_actions = self._generate_recommended_actions(summary)
 
+        # Issue #1004 - B2B Conversion Report: category breakdown, manual work estimate, priority order
+        category_data = conversion_result.get("category_breakdown_data", [])
+        summary.category_breakdown = self._generate_category_breakdown(category_data)
+        summary.manual_work_estimate_hours = self._estimate_manual_work_hours(summary)
+        summary.priority_order = self._generate_priority_order(summary.category_breakdown)
+
+        # Issue #1067 - Time saved estimate vs manual porting
+        summary.time_saved_hours = self._estimate_time_saved(summary)
+
         return summary
+
+    def _generate_category_breakdown(
+        self, category_data: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """Generate per-category conversion breakdown (Issue #1004)."""
+        from schemas.report_types import ASSET_CATEGORIES
+
+        if not category_data:
+            category_data = []
+
+        breakdown = []
+        for cat in ASSET_CATEGORIES:
+            cat_info = next((c for c in category_data if c.get("category") == cat), None)
+            if cat_info:
+                total = cat_info.get("total", 0)
+                converted = cat_info.get("converted", 0)
+                partial = cat_info.get("partial", 0)
+                failed = cat_info.get("failed", 0)
+                percentage = (converted / total * 100) if total > 0 else 0.0
+
+                if percentage >= 90:
+                    status = "converted"
+                    notes = None
+                elif percentage >= 50:
+                    status = "partial"
+                    notes = cat_info.get("notes", "May need manual review")
+                else:
+                    status = "not_converted"
+                    notes = cat_info.get("notes", "Manual work required")
+
+                breakdown.append(
+                    {
+                        "category": cat,
+                        "total": total,
+                        "converted": converted,
+                        "partial": partial,
+                        "failed": failed,
+                        "percentage": round(percentage, 1),
+                        "status": status,
+                        "notes": notes,
+                        "manual_work_hours": cat_info.get("manual_work_hours"),
+                    }
+                )
+            else:
+                breakdown.append(
+                    {
+                        "category": cat,
+                        "total": 0,
+                        "converted": 0,
+                        "partial": 0,
+                        "failed": 0,
+                        "percentage": 0.0,
+                        "status": "not_converted",
+                        "notes": "No data available",
+                        "manual_work_hours": None,
+                    }
+                )
+
+        return breakdown
+
+    def _estimate_manual_work_hours(self, summary) -> float:
+        """Estimate manual work hours based on failed/partial features (Issue #1004)."""
+        hours_per_failed = 0.25  # ~15 min per failed item
+        hours_per_partial = 0.1  # ~6 min per partial item
+
+        estimated = (
+            summary.failed_features * hours_per_failed
+            + summary.partially_converted_features * hours_per_partial
+        )
+        return round(estimated, 1)
+
+    def _estimate_time_saved(self, summary) -> float:
+        """Estimate time saved vs manual porting (Issue #1067).
+
+        Manual porting typically takes ~2-4 hours per feature for an experienced developer.
+        We estimate ~3 hours average per feature, and credit time saved for successfully
+        converted features.
+        """
+        hours_per_feature = 3.0  # Average manual porting time per feature
+        converted = summary.converted_features
+        partial = summary.partially_converted_features
+
+        # Full conversions save full time, partial conversions save half
+        saved = (converted * hours_per_feature) + (partial * hours_per_feature * 0.5)
+        return round(saved, 1)
+
+    def _generate_priority_order(self, category_breakdown: List[Dict[str, Any]]) -> List[str]:
+        """Generate priority order for manual work (Issue #1004)."""
+        priority = []
+        for cat in category_breakdown:
+            if cat["status"] == "not_converted" and cat["total"] > 0:
+                priority.append(cat["category"])
+            elif cat["status"] == "partial" and cat["total"] > 0:
+                priority.append(cat["category"])
+        return priority
 
     def generate_feature_analysis(self, features_data: List[Dict[str, Any]]) -> FeatureAnalysis:
         """Generate comprehensive feature analysis."""

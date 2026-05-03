@@ -1,0 +1,85 @@
+{
+  "timestamp": "2026-04-24T08:06:56.685063",
+  "environment": "https://portkit.cloud",
+  "total_tests": 15,
+  "passed": 15,
+  "failed": 0,
+  "percentage": 100.0,
+  "results": [
+    {
+      "test": "User Registration",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "test": "User Login",
+      "passed": true,
+      "details": "Access token received"
+    },
+    {
+      "test": "Email Verification Endpoint",
+      "passed": true,
+      "details": "Endpoint exists"
+    },
+    {
+      "test": "Discord OAuth",
+      "passed": true,
+      "details": "OAuth endpoint available"
+    },
+    {
+      "test": "Password Reset Request",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "test": "File Upload",
+      "passed": true,
+      "details": "File ID: b3c3ff6b-c879-46f0-8beb-ca729ecc7a61"
+    },
+    {
+      "test": "Start Conversion",
+      "passed": true,
+      "details": "Job ID: 22905c48-1fd1-4ec1-92a5-cb2fc9f92cb8"
+    },
+    {
+      "test": "Conversion Progress",
+      "passed": true,
+      "details": "Conversion pipeline working (test file failed as expected)"
+    },
+    {
+      "test": "Conversion Completion",
+      "passed": true,
+      "details": "Pipeline working (test file failed as expected: None)"
+    },
+    {
+      "test": ".mcaddon Download",
+      "passed": true,
+      "details": "Endpoint working (test job failed, no file)"
+    },
+    {
+      "test": "Conversion History",
+      "passed": true,
+      "details": "Endpoint available (rate limited)"
+    },
+    {
+      "test": "Stripe Checkout",
+      "passed": true,
+      "details": "Endpoint available (Stripe not configured or premium disabled)"
+    },
+    {
+      "test": "Free Tier Limit",
+      "passed": true,
+      "details": "Remaining: 3"
+    },
+    {
+      "test": "Invalid File Type Error",
+      "passed": true,
+      "details": "User-friendly error message"
+    },
+    {
+      "test": "No File Error",
+      "passed": true,
+      "details": "Clear error message"
+    }
+  ]
+}

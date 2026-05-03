@@ -5,11 +5,15 @@ from pydantic import BaseModel, Field
 from db.base import get_db
 from db import crud
 from services import addon_exporter
+from services.cache import CacheService
 from fastapi.responses import StreamingResponse
 from io import BytesIO
 import uuid
 import json
-from datetime import datetime
+from datetime import datetime, timezone
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -100,7 +104,7 @@ async def export_behavior_pack(
             for file in behavior_files
         ],
         "metadata": {
-            "exported_at": datetime.utcnow().isoformat(),
+            "exported_at": datetime.now(timezone.utc).isoformat(),
             "conversion_status": conversion.status,
             "file_count": len(behavior_files),
             "include_templates": request.include_templates,
@@ -133,13 +137,12 @@ async def export_behavior_pack(
             file_count=len(behavior_files),
             template_count=template_count,
             export_size=len(json.dumps(export_data).encode("utf-8")),
-            exported_at=datetime.utcnow().isoformat(),
+            exported_at=datetime.now(timezone.utc).isoformat(),
         )
 
     elif request.export_format == "zip":
         # Create ZIP archive
         import zipfile
-        from services.cache import CacheService
 
         zip_buffer = BytesIO()
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
@@ -178,7 +181,7 @@ async def export_behavior_pack(
             file_count=len(behavior_files),
             template_count=template_count,
             export_size=len(zip_bytes),
-            exported_at=datetime.utcnow().isoformat(),
+            exported_at=datetime.now(timezone.utc).isoformat(),
         )
 
     else:  # mcaddon (default)
@@ -221,11 +224,15 @@ async def export_behavior_pack(
                 file_count=len(behavior_files),
                 template_count=template_count,
                 export_size=len(zip_bytes),
-                exported_at=datetime.utcnow().isoformat(),
+                exported_at=datetime.now(timezone.utc).isoformat(),
             )
 
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to create MCADDON: {str(e)}")
+            logger.error(f"Failed to create MCADDON: {str(e)}", exc_info=True)
+
+            raise HTTPException(
+                status_code=500, detail="Failed to create MCADDON: Please try again."
+            )
 
 
 @router.get(
@@ -250,8 +257,6 @@ async def download_exported_pack(
         raise HTTPException(status_code=404, detail="Conversion not found")
 
     # Get export data from cache
-    from services.cache import CacheService
-
     cache = CacheService()
     export_data = await cache.get_export_data(conversion_id)
 

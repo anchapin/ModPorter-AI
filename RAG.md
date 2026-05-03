@@ -3,8 +3,8 @@
 **Table of Contents**
 - [1. Understanding Retrieval Augmented Generation (RAG)](#1-understanding-retrieval-augmented-generation-rag)
 - [2. Applying RAG to the Complexities of Minecraft Modding](#2-applying-rag-to-the-complexities-of-minecraft-modding)
-- [3. 'modporter-ai': A RAG-Powered Crew AI Concept for Mod Porting](#3-modporter-ai-a-rag-powered-crew-ai-concept-for-mod-porting)
-- [4. Synthesis: Why RAG is a Powerful Approach for 'modporter-ai'](#4-synthesis-why-rag-is-a-powerful-approach-for-modporter-ai)
+- [3. 'portkit': A RAG-Powered Crew AI Concept for Mod Porting](#3-portkit-a-rag-powered-crew-ai-concept-for-mod-porting)
+- [4. Synthesis: Why RAG is a Powerful Approach for 'portkit'](#4-synthesis-why-rag-is-a-powerful-approach-for-portkit)
 - [5. Setup and Configuration](#5-setup-and-configuration)
   - [5.1. Backend Service (`backend`)](#51-backend-service-backend)
   - [5.2. Environment Variables](#52-environment-variables)
@@ -58,9 +58,9 @@ Minecraft modding, for both Java Edition (using APIs like Forge and Fabric) and 
 *   **Understanding Component Interactions:** RAG can explain how different entity components interact by retrieving definitions and usage examples, enabling complex behaviors.
 *   **Bridging Documentation Gaps:** Where official documentation is lacking, RAG can surface community-discovered solutions and techniques.
 
-### 3. 'modporter-ai': A RAG-Powered Crew AI Concept for Mod Porting
+### 3. 'portkit': A RAG-Powered Crew AI Concept for Mod Porting
 
-To illustrate the practical application of RAG in Minecraft modding, consider a conceptual Crew AI project called 'modporter-ai'. This system would consist of specialized AI agents collaborating to assist developers in porting Java Edition mods to Bedrock Edition Add-Ons. RAG would be critical to the success of each agent:
+To illustrate the practical application of RAG in Minecraft modding, consider a conceptual Crew AI project called 'portkit'. This system would consist of specialized AI agents collaborating to assist developers in porting Java Edition mods to Bedrock Edition Add-Ons. RAG would be critical to the success of each agent:
 
 **Agent Roles and RAG Empowerment:**
 
@@ -76,19 +76,19 @@ To illustrate the practical application of RAG in Minecraft modding, consider a 
   *   **Role:** Assists in translating Java code logic to Bedrock's JavaScript API (where applicable) and adapting assets.
   *   **RAG Empowerment:** Utilizes RAG to find examples of Bedrock JavaScript API usage for specific tasks (e.g., event handling that mirrors Java's event system), consults asset format specifications (textures, models, sounds), and retrieves templates for Bedrock's JSON-based configuration files.
 
-**Synergistic Benefits of RAG for 'modporter-ai':**
+**Synergistic Benefits of RAG for 'portkit':**
 
 *   **Grounded Translation:** Ensures that suggestions for porting are based on actual Bedrock capabilities and proven examples, not just LLM guesswork.
 *   **Cross-Platform Knowledge Mapping:** RAG helps bridge the conceptual and technical gap between the two distinct modding ecosystems.
-*   **Maintaining Current Knowledge:** As both Java and Bedrock modding evolve, the RAG knowledge bases can be updated, keeping 'modporter-ai' relevant.
+*   **Maintaining Current Knowledge:** As both Java and Bedrock modding evolve, the RAG knowledge bases can be updated, keeping 'portkit' relevant.
 
-### 4. Synthesis: Why RAG is a Powerful Approach for 'modporter-ai'
+### 4. Synthesis: Why RAG is a Powerful Approach for 'portkit'
 
-RAG is transformative for a project like 'modporter-ai' because it directly addresses the core challenges of such a complex, knowledge-intensive task:
+RAG is transformative for a project like 'portkit' because it directly addresses the core challenges of such a complex, knowledge-intensive task:
 
 *   **Enhanced Accuracy and Reliability:** By grounding agent responses in retrieved, factual data specific to each modding platform, RAG minimizes errors and ensures the generated advice or code snippets are more likely to be correct and useful.
 *   **Deep, Specialized Expertise:** RAG allows each AI agent in the crew to function as a specialist with deep knowledge in its designated area (Java mod analysis, Bedrock architecture, or translation), drawing from curated, domain-specific information.
-*   **Adaptability to Evolving Ecosystems:** Minecraft and its modding tools are dynamic. RAG systems can be continuously updated with the latest documentation, API changes, and community best practices, ensuring 'modporter-ai' remains current.
+*   **Adaptability to Evolving Ecosystems:** Minecraft and its modding tools are dynamic. RAG systems can be continuously updated with the latest documentation, API changes, and community best practices, ensuring 'portkit' remains current.
 *   **Efficient Information Access:** RAG automates the process of sifting through vast amounts of documentation and code, allowing the agents to quickly find relevant information that a human developer might spend hours searching for.
 *   **Structured Problem-Solving:** For the multi-faceted problem of mod porting, RAG provides each agent with the precise information needed to tackle its part of the task, leading to a more organized and effective overall process.
 
@@ -135,7 +135,7 @@ Typically, scripts or utility functions would be developed to automate the batch
 
 ### 6. Architecture and Design Choices
 
-This section details the specific architectural decisions and component design for the RAG system powering the 'modporter-ai' concept. It outlines how the `backend` and `ai-engine` services interact to store, retrieve, and utilize knowledge.
+This section details the specific architectural decisions and component design for the RAG system powering the 'portkit' concept. It outlines how the `backend` and `ai-engine` services interact to store, retrieve, and utilize knowledge.
 
 ### 6.1. Knowledge Base Storage (`backend` service)
 The foundation of the RAG system is its knowledge base, which is managed by the `backend` service.
@@ -195,7 +195,7 @@ The `ai-engine` service houses the components responsible for interacting with t
     *   **Purpose:** This agent's primary function would be to leverage the `SearchTool` to retrieve relevant information from the knowledge base. This retrieved context would then be used to inform its responses, analysis, or decision-making processes, effectively making it a RAG-enabled agent.
 
 ### 6.4. LLM Integration and Prompt Engineering
-Designing effective prompts is crucial for instructing LLMs on how to best utilize the retrieved context (once the `SearchTool` provides it) for their specific tasks, such as analysis, design, or translation in the context of 'modporter-ai'. The quality of prompts directly impacts the relevance and accuracy of the LLM's output when using RAG.
+Designing effective prompts is crucial for instructing LLMs on how to best utilize the retrieved context (once the `SearchTool` provides it) for their specific tasks, such as analysis, design, or translation in the context of 'portkit'. The quality of prompts directly impacts the relevance and accuracy of the LLM's output when using RAG.
 
 ### 6.5. Agent Communication Workflow
 Defining clear workflows for how specialized agents in the Crew AI setup pass information—including RAG-retrieved insights from the `SearchTool`—to each other is essential for collaborative problem-solving. This ensures that knowledge gained by one agent can be effectively utilized by others.
@@ -207,14 +207,14 @@ Meticulously selecting, ingesting, and preprocessing high-quality data sources f
 As a foundational step, a utility for generating text embeddings (e.g., using sentence-transformers) has been implemented. This allows for the vectorization of document chunks derived from mod information (like code comments, descriptions, or analyzed features), which is crucial for enabling semantic search and retrieval components of the RAG pipeline. This component is integrated into the `JavaAnalyzerAgent` to initially process and embed textual data from mods.
 
 ### 6.8. Continuous Evaluation and Iteration
-Implementing mechanisms to evaluate the quality of the RAG system's outputs (i.e., the relevance of retrieved documents) and the overall effectiveness of 'modporter-ai' is vital. This allows for ongoing refinement of the knowledge bases, embedding strategies, retrieval parameters, and agent logic.
+Implementing mechanisms to evaluate the quality of the RAG system's outputs (i.e., the relevance of retrieved documents) and the overall effectiveness of 'portkit' is vital. This allows for ongoing refinement of the knowledge bases, embedding strategies, retrieval parameters, and agent logic.
 
 ### 6.9. Handling Ambiguity
 Developing strategies for how agents should proceed when retrieved information is incomplete, conflicting, or when direct translations or mappings between modding platforms (Java vs. Bedrock) are not readily available in the knowledge base is a key challenge. This might involve multi-step retrieval, asking clarifying questions, or flagging areas for human review.
 
 ### 8. Usage Examples (Conceptual)
 
-The following examples are conceptual and aim to illustrate the *intended* functionality of RAG-enabled agents within the 'modporter-ai' system, particularly how the `SearchTool` would be utilized. It's important to remember that the `SearchTool` (as detailed in [Section 6.3](#63-ai-engine-components-ai-engine-service)) currently requires further implementation, specifically around generating meaningful query embeddings and calling the backend search API.
+The following examples are conceptual and aim to illustrate the *intended* functionality of RAG-enabled agents within the 'portkit' system, particularly how the `SearchTool` would be utilized. It's important to remember that the `SearchTool` (as detailed in [Section 6.3](#63-ai-engine-components-ai-engine-service)) currently requires further implementation, specifically around generating meaningful query embeddings and calling the backend search API.
 
 ### Example: Using KnowledgeBaseAgent with SearchTool
 
@@ -262,4 +262,4 @@ This example illustrates how RAG, through the `SearchTool`, provides specific, c
 
 ### 9. Conclusion
 
-Retrieval Augmented Generation offers a powerful paradigm for enhancing AI agents, particularly in complex, knowledge-rich domains like Minecraft modding. For a conceptual project like 'modporter-ai', RAG is not merely an add-on but a foundational technology. By providing the specialized AI agents with access to grounded, up-to-date, and domain-specific information, RAG enables them to perform their roles with greater accuracy and efficiency. This approach transforms the ambitious goal of assisting with mod porting from a purely speculative endeavor into a more tangible and promising possibility, ultimately lowering the barrier to entry and fostering greater creativity across Minecraft's diverse modding communities.
+Retrieval Augmented Generation offers a powerful paradigm for enhancing AI agents, particularly in complex, knowledge-rich domains like Minecraft modding. For a conceptual project like 'portkit', RAG is not merely an add-on but a foundational technology. By providing the specialized AI agents with access to grounded, up-to-date, and domain-specific information, RAG enables them to perform their roles with greater accuracy and efficiency. This approach transforms the ambitious goal of assisting with mod porting from a purely speculative endeavor into a more tangible and promising possibility, ultimately lowering the barrier to entry and fostering greater creativity across Minecraft's diverse modding communities.

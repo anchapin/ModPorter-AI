@@ -1,2 +1,165 @@
-# Asset Management Implementation\n\nThis document describes the implementation of the asset management system for the ModPorter-AI addon editor.\n\n## Overview\n\nThe asset management system allows users to upload, manage, and organize assets (textures, sounds, models, etc.) associated with their Minecraft Bedrock addons. The implementation consists of backend CRUD operations, API endpoints, and frontend components.\n\n## Backend Implementation\n\n### CRUD Operations\n\nThe following CRUD operations have been implemented in `/backend/src/db/crud.py`:\n\n#### `get_addon_asset(session: AsyncSession, asset_id: PyUUID) -> Optional[models.AddonAsset]`\n\nRetrieves a specific addon asset by its ID.\n\n#### `create_addon_asset(session: AsyncSession, *, addon_id: PyUUID, file, asset_type: str, commit: bool = True) -> models.AddonAsset`\n\nCreates a new addon asset entry in the database and saves the file.\n\n#### `update_addon_asset(session: AsyncSession, *, asset_id: PyUUID, file, commit: bool = True) -> Optional[models.AddonAsset]`\n\nUpdates an existing addon asset with a new file.\n\n#### `delete_addon_asset(session: AsyncSession, *, asset_id: PyUUID, commit: bool = True) -> Optional[dict]`\n\nDeletes an addon asset from the database and removes the file from storage.\n\n#### `create_addon_asset_from_local_path(session: AsyncSession, *, addon_id: PyUUID, source_file_path: str, asset_type: str, original_filename: Optional[str] = None, commit: bool = True) -> models.AddonAsset`\n\nCreates an addon asset entry from a local file path.\n\n## API Endpoints\n\nThe following API endpoints are available in `/backend/src/main.py`:\n\n### POST `/api/v1/addons/{addon_id}/assets`\n\nUploads a new asset for a given addon.\n\n### GET `/api/v1/addons/{addon_id}/assets/{asset_id}`\n\nDownloads/serves an addon asset file.\n\n### PUT `/api/v1/addons/{addon_id}/assets/{asset_id}`\n\nReplaces an existing asset file and its metadata.\n\n### DELETE `/api/v1/addons/{addon_id}/assets/{asset_id}`\n\nDeletes an addon asset (file and database record).\n\n## Frontend Components\n\nThe frontend includes the following components in `/frontend/src/components/Editor/AssetManager/`:\n\n### `AssetManager.tsx`\n\nMain container component that combines asset upload and list components.\n\n### `AssetUpload.tsx`\n\nHandles uploading new assets to an addon.\n\n### `AssetList.tsx`\n\nDisplays a list of existing assets and provides actions (delete, replace).
-## Usage Examples\n\n### Backend Usage\n\n```python\n# Create a new asset\nnew_asset = await crud.create_addon_asset(\n    session=db_session,\n    addon_id=addon_id,\n    file=uploaded_file,\n    asset_type="texture_block"\n)\n\n# Get an existing asset\nasset = await crud.get_addon_asset(session=db_session, asset_id=asset_id)\n\n# Update an asset\nupdated_asset = await crud.update_addon_asset(\n    session=db_session,\n    asset_id=asset_id,\n    file=new_uploaded_file\n)\n\n# Delete an asset\ndeleted_info = await crud.delete_addon_asset(\n    session=db_session,\n    asset_id=asset_id\n)\n```\n\n### Frontend Usage\n\nThe frontend components automatically integrate with the backend API through the `api.ts` service layer. Users can:\n\n1. Upload new assets through the `AssetUpload` component\n2. View existing assets in the `AssetList` component\n3. Replace or delete assets using the action buttons\n\n## Asset Types\n\nSupported asset types include:\n- `texture_block`: Block textures\n- `texture_item`: Item textures\n- `texture_entity`: Entity textures\n- `texture_ui`: UI textures\n- `sound_effect`: Sound effects\n- `sound_music`: Music tracks\n- `model_entity`: Entity models\n- `model_block`: Custom block models\n- `script`: Script files\n- `other`: Other asset types\n\n## File Storage\n\nAssets are stored in a dedicated directory structure:\n```\nbackend/addon_assets/\n├── {addon_id}/\n│   ├── {asset_uuid}_{original_filename}\n│   └── ...\n└── ...\n```\n\nEach asset is stored with a unique UUID prefix to prevent naming conflicts.\n\n## Security Considerations\n\n- File uploads are validated for type and size\n- Asset access is restricted to the owning addon\n- All API endpoints require proper authentication (handled by existing middleware)\n\n## Future Improvements\n\nPotential enhancements for the asset management system:\n1. Asset preview thumbnails\n2. Batch asset operations\n3. Asset categorization and tagging\n4. Version control for assets\n5. Asset compression and optimization
+# Asset Management Implementation
+
+This document describes the implementation of the asset management system for the portkit addon editor.
+
+## Overview
+
+The asset management system allows users to upload, manage, and organize assets (textures, sounds, models, etc.) associated with their Minecraft Bedrock addons. The implementation consists of backend CRUD operations, API endpoints, and frontend components.
+
+## Backend Implementation
+
+### CRUD Operations
+
+The following CRUD operations have been implemented in `/backend/src/db/crud.py`:
+
+#### `get_addon_asset(session: AsyncSession, asset_id: PyUUID) -> Optional[models.AddonAsset]`
+
+Retrieves a specific addon asset by its ID.
+
+#### `create_addon_asset(session: AsyncSession, *, addon_id: PyUUID, file, asset_type: str, commit: bool = True) -> models.AddonAsset`
+
+Creates a new addon asset entry in the database and saves the file.
+
+#### `update_addon_asset(session: AsyncSession, *, asset_id: PyUUID, file, commit: bool = True) -> Optional[models.AddonAsset]`
+
+Updates an existing addon asset with a new file.
+
+#### `delete_addon_asset(session: AsyncSession, *, asset_id: PyUUID, commit: bool = True) -> Optional[dict]`
+
+Deletes an addon asset from the database and removes the file from storage.
+
+#### `create_addon_asset_from_local_path(session: AsyncSession, *, addon_id: PyUUID, source_file_path: str, asset_type: str, original_filename: Optional[str] = None, commit: bool = True) -> models.AddonAsset`
+
+Creates an addon asset entry from a local file path.
+
+## API Endpoints
+
+The following API endpoints are available in `/backend/src/main.py`:
+
+### POST `/api/v1/addons/{addon_id}/assets`
+
+Uploads a new asset for a given addon.
+
+### GET `/api/v1/addons/{addon_id}/assets/{asset_id}`
+
+Downloads/serves an addon asset file.
+
+### PUT `/api/v1/addons/{addon_id}/assets/{asset_id}`
+
+Replaces an existing asset file and its metadata.
+
+### DELETE `/api/v1/addons/{addon_id}/assets/{asset_id}`
+
+Deletes an addon asset (file and database record).
+
+## Frontend Components
+
+The frontend includes the following components in `/frontend/src/components/Editor/AssetManager/`:
+
+### `AssetManager.tsx`
+
+Main container component that combines asset upload and list components.
+
+### `AssetUpload.tsx`
+
+Handles uploading new assets to an addon.
+
+### `AssetList.tsx`
+
+Displays a list of existing assets and provides actions (delete, replace).
+
+## Usage Examples
+
+### Backend Usage
+
+```python
+# Create a new asset
+new_asset = await crud.create_addon_asset(
+    session=db_session,
+    addon_id=addon_id,
+    file=uploaded_file,
+    asset_type="texture_block"
+)
+
+# Get an existing asset
+asset = await crud.get_addon_asset(session=db_session, asset_id=asset_id)
+
+# Update an asset
+updated_asset = await crud.update_addon_asset(
+    session=db_session,
+    asset_id=asset_id,
+    file=new_uploaded_file
+)
+
+# Delete an asset
+deleted_info = await crud.delete_addon_asset(
+    session=db_session,
+    asset_id=asset_id
+)
+```
+
+### Frontend Usage
+
+The frontend components automatically integrate with the backend API through the `api.ts` service layer. Users can:
+
+1. Upload new assets through the `AssetUpload` component
+2. View existing assets in the `AssetList` component
+3. Replace or delete assets using the action buttons
+
+## Asset Types
+
+Supported asset types include:
+- `texture_block`: Block textures
+- `texture_item`: Item textures
+- `texture_entity`: Entity textures
+- `texture_ui`: UI textures
+- `sound_effect`: Sound effects
+- `sound_music`: Music tracks
+- `model_entity`: Entity models
+- `model_block`: Custom block models
+- `script`: Script files
+- `other`: Other asset types
+
+## File Storage
+
+Assets are stored in a dedicated directory structure:
+```
+backend/addon_assets/
+├── {addon_id}/
+│   ├── {asset_uuid}_{original_filename}
+│   └── ...
+└── ...
+```
+
+Each asset is stored with a unique UUID prefix to prevent naming conflicts.
+
+## Security Considerations
+
+- File uploads are validated for type and size
+- Asset access is restricted to the owning addon
+- All API endpoints require proper authentication (handled by existing middleware)
+
+## Git LFS for Large Assets
+
+To keep the repository size manageable, large binary files should be tracked using [Git LFS](https://git-lfs.github.com/).
+
+### Tracked File Types
+The following file types are automatically tracked by Git LFS as configured in `.gitattributes`:
+- **Archives:** `.jar`, `.zip`
+- **Images:** `.png`, `.jpg`, `.jpeg`, `.gif`
+- **Audio:** `.wav`, `.mp3`, `.ogg`
+- **Video:** `.mp4`, `.mov`
+- **Binaries:** `.bin`, `.exe`, `.dll`, `.so`, `.dylib`, `.msi`
+
+### Repository Constraints
+- **Maximum File Size:** The CI pipeline enforces a maximum file size of **10MB** for files not tracked by Git LFS.
+- **LFS Usage:** Any file larger than 10MB MUST be tracked via Git LFS or reduced in size before committing.
+
+## Future Improvements
+
+Potential enhancements for the asset management system:
+1. Asset preview thumbnails
+2. Batch asset operations
+3. Asset categorization and tagging
+4. Version control for assets
+5. Asset compression and optimization

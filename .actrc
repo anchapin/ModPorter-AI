@@ -1,0 +1,14 @@
+# Act CLI configuration for local GitHub Actions execution
+# See https://github.com/nektos/act
+
+# Default container image to use for running workflows
+# Using ubuntu-latest image
+-P ubuntu-latest=ghcr.io/catthehacker/ubuntu:full-latest
+
+# Use cached actions instead of fetching from GitHub (required for local execution)
+--action-offline-mode
+
+# Secrets for local testing (set GITHUB_TOKEN via environment or pass via -s flag)
+# Usage: export GITHUB_TOKEN=your_github_token && act push
+# Or: act push -s GITHUB_TOKEN=$GITHUB_TOKEN
+-s GITHUB_TOKEN=

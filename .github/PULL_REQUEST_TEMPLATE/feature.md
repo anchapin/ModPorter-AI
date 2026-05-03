@@ -1,6 +1,6 @@
 ---
 name: New Feature
-about: Add a new feature to ModPorter AI
+about: Add a new feature to Portkit
 title: '[FEATURE] '
 labels: enhancement
 assignees: ''

@@ -553,9 +553,8 @@ class FileProcessor:
                                     f"Could not parse {manifest_name} as JSON for job_id: {job_id}. It might be a different format or malformed."
                                 )
                                 # Add custom parsing for .info if needed, or treat as plain text
-                                manifest_data = {
-                                    "raw_content": open(potential_manifest_path, "r").read()
-                                }
+                                with open(potential_manifest_path, "r") as f:
+                                    manifest_data = {"raw_content": f.read()}
                                 found_manifest_type = "mcmod.info (raw)"
 
                         if manifest_data:

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation completes both Issue #328 (WebSocket Server) and Issue #329 (Conversion API Endpoints) for the ModPorter-AI backend.
+This implementation completes both Issue #328 (WebSocket Server) and Issue #329 (Conversion API Endpoints) for the portkit backend.
 
 ## Files Created
 

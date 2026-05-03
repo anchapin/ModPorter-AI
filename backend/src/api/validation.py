@@ -26,7 +26,12 @@ class ValidationReportModel(BaseModel):
 
 class ValidationAgent:
     def __init__(self) -> None:
-        self._weights = {"semantic": 0.25, "behavior": 0.30, "assets": 0.20, "manifest": 0.25}
+        self._weights = {
+            "semantic": 0.25,
+            "behavior": 0.30,
+            "assets": 0.20,
+            "manifest": 0.25,
+        }
 
     def validate_conversion(self, conversion_artifacts: Dict[str, Any]) -> ValidationReportModel:
         conversion_id = conversion_artifacts.get("conversion_id", str(uuid.uuid4()))
@@ -109,7 +114,7 @@ class ValidationAgent:
         return {
             "intent_preserved": intent_preserved,
             "confidence": confidence,
-            "findings": findings if findings else ["Analysis completed with available data"],
+            "findings": (findings if findings else ["Analysis completed with available data"]),
             "critical_issues": critical_issues,
             "warnings": warnings if warnings else ["No warnings"],
         }
@@ -155,9 +160,9 @@ class ValidationAgent:
         return {
             "behavior_diff": behavior_diff,
             "confidence": min(compatibility_score + 0.1, 1.0),
-            "potential_issues": potential_issues
-            if potential_issues
-            else ["No major behavior differences detected"],
+            "potential_issues": (
+                potential_issues if potential_issues else ["No major behavior differences detected"]
+            ),
             "compatibility_score": compatibility_score,
         }
 
@@ -241,9 +246,12 @@ class ValidationAgent:
                     errors.append(f"Missing required header field: {field}")
             if "version" in header:
                 version = header["version"]
-                if isinstance(version, list) and len(version) == 3:
-                    schema_compliance = True
-                elif isinstance(version, str) and "." in version:
+                if (
+                    isinstance(version, list)
+                    and len(version) == 3
+                    or isinstance(version, str)
+                    and "." in version
+                ):
                     schema_compliance = True
 
         if "modules" in manifest_data:
@@ -372,11 +380,9 @@ def get_validation_agent():
 async def process_validation_task(
     job_id: str, conversion_id: str, artifacts: Dict[str, Any], agent: ValidationAgent
 ):
-    print(f"Background task started for job_id: {job_id}")
 
     with _validation_jobs_lock:
         if job_id not in validation_jobs:
-            print(f"Error: Job ID {job_id} not found in process_validation_task.")
             return
         validation_jobs[job_id].status = ValidationJobStatus.PROCESSING
         validation_jobs[job_id].message = ValidationMessages.JOB_PROCESSING
@@ -400,11 +406,7 @@ async def process_validation_task(
             validation_jobs[job_id].status = ValidationJobStatus.COMPLETED
             validation_jobs[job_id].message = ValidationMessages.JOB_COMPLETED
 
-        print(f"Background task completed for job_id: {job_id}")
-
     except Exception as e:
-        print(f"Error during validation for job_id {job_id}: {str(e)}")
-
         with _validation_jobs_lock:
             validation_jobs[job_id].status = ValidationJobStatus.FAILED
             validation_jobs[job_id].message = f"{ValidationMessages.JOB_FAILED}: {str(e)}"
@@ -441,7 +443,6 @@ async def start_validation_job(
     background_tasks.add_task(
         process_validation_task, job_id, conversion_id, artifacts_for_agent, agent
     )
-    print(f"Validation job {job_id} for conversion {conversion_id} queued.")
     return job
 
 
@@ -470,7 +471,8 @@ async def get_validation_report(job_id: str):
         report_data = validation_reports.get(job_id)
         if not report_data:
             raise HTTPException(
-                status_code=404, detail="Validation report data not found, though job completed."
+                status_code=404,
+                detail="Validation report data not found, though job completed.",
             )
 
     response_payload = report_data.model_dump()

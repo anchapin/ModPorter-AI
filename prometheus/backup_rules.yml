@@ -1,0 +1,81 @@
+groups:
+  - name: backup_alerts
+    interval: 1h
+    rules:
+      - alert: BackupJobFailed
+        expr: backup_last_success_timestamp{job="portkit-backup"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "portkit backup job has never run successfully"
+          description: "The portkit backup job has never completed successfully. Check backup logs immediately."
+
+      - alert: BackupTooOld
+        expr: (time() - backup_last_success_timestamp{job="portkit-backup"}) > 86400
+        for: 1h
+        labels:
+          severity: critical
+        annotations:
+          summary: "portkit backup is older than 24 hours"
+          description: "Last successful backup was {{ $value | humanizeDuration }} ago. This exceeds the RPO target."
+
+      - alert: BackupVerificationFailed
+        expr: backup_verify_failures_total{job="portkit-backup"} > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "portkit backup verification has failures"
+          description: "The backup verification process has recorded {{ $value }} failures."
+
+      - alert: BackupUploadFailed
+        expr: backup_upload_failures_total{job="portkit-backup"} > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "portkit backup S3 upload has failures"
+          description: "The backup S3 upload has recorded {{ $value }} failures. Local backups may not be replicated."
+
+  - name: database_alerts
+    interval: 5m
+    rules:
+      - alert: PostgreSQLDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL is not responding to health checks."
+
+      - alert: PostgreSQLHighConnections
+        expr: pg_stat_activity_count / pg_settings_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL connections above 80%"
+          description: "PostgreSQL is using {{ $value | humanizePercentage }} of max connections."
+
+  - name: replication_alerts
+    interval: 1m
+    rules:
+      - alert: PostgreSQLReplicationLag
+        expr: pg_replication_lag_seconds > 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL replication lag is high"
+          description: "Replica is {{ $value }}s behind primary."
+
+      - alert: PostgreSQLReplicationOffline
+        expr: pg_replication_status == 2
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL replication is offline"
+          description: "Replication has stopped. Data may be at risk."

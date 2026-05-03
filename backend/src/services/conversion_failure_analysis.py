@@ -9,13 +9,12 @@ Issue: #455 - Comprehensive Error Handling (Phase 3)
 
 import logging
 from typing import Optional, Dict, Any, List
-from datetime import datetime
-from dataclasses import dataclass, field, asdict
+from datetime import datetime, timezone
+from dataclasses import dataclass, field
 from enum import Enum
-import json
 import traceback
 
-from .structured_logging import correlation_id_var, set_correlation_id, get_correlation_id
+from .structured_logging import set_correlation_id, get_correlation_id
 
 logger = logging.getLogger(__name__)
 
@@ -184,7 +183,7 @@ def determine_failure_source(conversion_stage: Optional[str]) -> FailureSource:
 
     if "upload" in stage_lower:
         return FailureSource.FILE_UPLOAD
-    elif "parse" in stage_lower:
+    elif "parse" in stage_lower or "parsing" in stage_lower:
         return FailureSource.FILE_PARSING
     elif "analy" in stage_lower:
         return FailureSource.MOD_ANALYSIS
@@ -252,7 +251,7 @@ def log_conversion_failure(
     failure = ConversionFailure(
         job_id=job_id,
         correlation_id=correlation_id,
-        timestamp=datetime.utcnow().isoformat() + "Z",
+        timestamp=datetime.now(timezone.utc).isoformat() + "Z",
         failure_severity=severity.value,
         failure_source=source.value,
         failure_summary=f"{type(error).__name__}: {str(error)[:100]}",
@@ -324,7 +323,7 @@ def log_retry_success(job_id: str, previous_attempts: int):
                 "job_id": job_id,
                 "correlation_id": correlation_id,
                 "previous_attempts": previous_attempts,
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             }
         },
     )
@@ -348,7 +347,7 @@ def log_retry_failure(
                 "error_category": error_category,
                 "error_type": type(error).__name__,
                 "error_message": str(error),
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             }
         },
     )

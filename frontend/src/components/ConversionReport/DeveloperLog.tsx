@@ -101,21 +101,25 @@ const LogSection: React.FC<LogSectionProps> = ({
 
   const filteredLogs = useMemo(() => {
     if (levelFilter === 'all') return logs;
-    return logs.filter(
-      (log) => log.level.toLowerCase() === levelFilter.toLowerCase()
-    );
+
+    // ⚡ Bolt optimization: Hoist toLowerCase() outside the loop to prevent O(N) redundant string allocations
+    const filterLower = levelFilter.toLowerCase();
+
+    return logs.filter((log) => log.level.toLowerCase() === filterLower);
   }, [logs, levelFilter]);
 
   const logCounts = useMemo(() => {
-    const counts = { error: 0, warning: 0, info: 0, debug: 0 };
-    logs.forEach((log) => {
-      const level = log.level.toLowerCase();
-      if (level === 'error') counts.error++;
-      else if (level === 'warning' || level === 'warn') counts.warning++;
-      else if (level === 'info') counts.info++;
-      else if (level === 'debug') counts.debug++;
-    });
-    return counts;
+    return logs.reduce(
+      (counts, log) => {
+        const level = log.level.toLowerCase();
+        if (level === 'error') counts.error++;
+        else if (level === 'warning' || level === 'warn') counts.warning++;
+        else if (level === 'info') counts.info++;
+        else if (level === 'debug') counts.debug++;
+        return counts;
+      },
+      { error: 0, warning: 0, info: 0, debug: 0 }
+    );
   }, [logs]);
 
   if (logs.length === 0) return null;
@@ -148,6 +152,7 @@ const LogSection: React.FC<LogSectionProps> = ({
         </div>
         <button
           className={styles.toggleButton}
+          aria-expanded={isExpanded}
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
         >
           {isExpanded ? '▼' : '▶'}
@@ -383,6 +388,7 @@ export const DeveloperLog: React.FC<DeveloperLogProps> = ({
         <div className={styles.logSummary}>{totalLogEntries} entries</div>
         <button
           className={styles.toggleButton}
+          aria-expanded={isExpanded}
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
         >
           {isExpanded ? '▼' : '▶'}

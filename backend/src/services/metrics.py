@@ -1,17 +1,21 @@
 """
-Metrics Service for ModPorter AI
+Metrics Service for Portkit
 Provides Prometheus metrics for monitoring conversion success rates, performance, and API costs.
 
 Issue: #384 - Monitoring dashboards with Grafana/Prometheus (Phase 3)
 """
 
-from prometheus_client import Counter, Histogram, Gauge, CollectorRegistry, generate_latest
+from prometheus_client import (
+    Counter,
+    Histogram,
+    Gauge,
+    CollectorRegistry,
+    generate_latest,
+)
 from typing import Optional
 import time
-from datetime import datetime
 from collections import defaultdict
 import threading
-
 
 # Create a custom registry
 registry = CollectorRegistry()
@@ -22,7 +26,7 @@ registry = CollectorRegistry()
 
 # Request counter by endpoint and status
 http_requests_total = Counter(
-    "modporter_http_requests_total",
+    "portkit_http_requests_total",
     "Total HTTP requests",
     ["method", "endpoint", "status"],
     registry=registry,
@@ -30,7 +34,7 @@ http_requests_total = Counter(
 
 # Request duration histogram
 http_request_duration_seconds = Histogram(
-    "modporter_http_request_duration_seconds",
+    "portkit_http_request_duration_seconds",
     "HTTP request duration in seconds",
     ["method", "endpoint"],
     buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
@@ -43,7 +47,7 @@ http_request_duration_seconds = Histogram(
 
 # Conversion job counter by status
 conversion_jobs_total = Counter(
-    "modporter_conversion_jobs_total",
+    "portkit_conversion_jobs_total",
     "Total conversion jobs",
     ["status", "target_version", "mod_type"],
     registry=registry,
@@ -51,7 +55,7 @@ conversion_jobs_total = Counter(
 
 # Conversion duration histogram
 conversion_duration_seconds = Histogram(
-    "modporter_conversion_duration_seconds",
+    "portkit_conversion_duration_seconds",
     "Conversion duration in seconds",
     ["target_version", "mod_type"],
     buckets=[10, 30, 60, 120, 300, 600, 900, 1800],
@@ -60,14 +64,16 @@ conversion_duration_seconds = Histogram(
 
 # Current conversion queue size
 conversion_queue_size = Gauge(
-    "modporter_conversion_queue_size",
+    "portkit_conversion_queue_size",
     "Current number of conversion jobs in queue",
     registry=registry,
 )
 
 # Active conversions gauge
 active_conversions = Gauge(
-    "modporter_active_conversions", "Number of currently active conversion jobs", registry=registry
+    "portkit_active_conversions",
+    "Number of currently active conversion jobs",
+    registry=registry,
 )
 
 # ============================================
@@ -76,7 +82,7 @@ active_conversions = Gauge(
 
 # Agent execution counter
 agent_executions_total = Counter(
-    "modporter_agent_executions_total",
+    "portkit_agent_executions_total",
     "Total agent executions",
     ["agent_name", "status"],
     registry=registry,
@@ -84,7 +90,7 @@ agent_executions_total = Counter(
 
 # Agent execution duration
 agent_duration_seconds = Histogram(
-    "modporter_agent_duration_seconds",
+    "portkit_agent_duration_seconds",
     "Agent execution duration in seconds",
     ["agent_name"],
     buckets=[1, 5, 10, 30, 60, 120, 300],
@@ -97,7 +103,7 @@ agent_duration_seconds = Histogram(
 
 # LLM token usage
 llm_tokens_total = Counter(
-    "modporter_llm_tokens_total",
+    "portkit_llm_tokens_total",
     "Total LLM tokens used",
     ["model", "prompt_completion"],
     registry=registry,
@@ -105,7 +111,10 @@ llm_tokens_total = Counter(
 
 # LLM API cost in dollars
 llm_cost_dollars = Counter(
-    "modporter_llm_cost_dollars", "Total LLM API cost in dollars", ["model"], registry=registry
+    "portkit_llm_cost_dollars",
+    "Total LLM API cost in dollars",
+    ["model"],
+    registry=registry,
 )
 
 # ============================================
@@ -114,7 +123,7 @@ llm_cost_dollars = Counter(
 
 # Assets processed counter
 assets_processed_total = Counter(
-    "modporter_assets_processed_total",
+    "portkit_assets_processed_total",
     "Total assets processed",
     ["asset_type", "status"],
     registry=registry,
@@ -122,7 +131,7 @@ assets_processed_total = Counter(
 
 # Asset conversion duration
 asset_conversion_duration_seconds = Histogram(
-    "modporter_asset_conversion_duration_seconds",
+    "portkit_asset_conversion_duration_seconds",
     "Asset conversion duration in seconds",
     ["asset_type"],
     buckets=[0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 60.0],
@@ -135,7 +144,7 @@ asset_conversion_duration_seconds = Histogram(
 
 # Database operation duration
 db_operation_duration_seconds = Histogram(
-    "modporter_db_operation_duration_seconds",
+    "portkit_db_operation_duration_seconds",
     "Database operation duration in seconds",
     ["operation", "table"],
     buckets=[0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0],
@@ -148,7 +157,7 @@ db_operation_duration_seconds = Histogram(
 
 # Cache hit/miss counter
 cache_operations_total = Counter(
-    "modporter_cache_operations_total",
+    "portkit_cache_operations_total",
     "Total cache operations",
     ["operation", "cache_name"],
     registry=registry,
@@ -160,21 +169,21 @@ cache_operations_total = Counter(
 
 # Conversion success rate (gauge for dashboard)
 conversion_success_rate = Gauge(
-    "modporter_conversion_success_rate",
+    "portkit_conversion_success_rate",
     "Current conversion success rate (percentage)",
     registry=registry,
 )
 
 # Average conversion time (gauge)
 average_conversion_time_seconds = Gauge(
-    "modporter_average_conversion_time_seconds",
+    "portkit_average_conversion_time_seconds",
     "Average conversion time in seconds",
     registry=registry,
 )
 
 # Average conversion time by mod type
 average_conversion_time_by_mod_type = Gauge(
-    "modporter_average_conversion_time_by_mod_type_seconds",
+    "portkit_average_conversion_time_by_mod_type_seconds",
     "Average conversion time in seconds by mod type",
     ["target_version", "mod_type"],
     registry=registry,
@@ -182,14 +191,16 @@ average_conversion_time_by_mod_type = Gauge(
 
 # Total conversions completed
 conversions_completed_total = Gauge(
-    "modporter_conversions_completed_total",
+    "portkit_conversions_completed_total",
     "Total number of successful conversions",
     registry=registry,
 )
 
 # Total conversions failed
 conversions_failed_total = Gauge(
-    "modporter_conversions_failed_total", "Total number of failed conversions", registry=registry
+    "portkit_conversions_failed_total",
+    "Total number of failed conversions",
+    registry=registry,
 )
 
 # ============================================
@@ -198,7 +209,7 @@ conversions_failed_total = Gauge(
 
 # Error counter by category
 error_total = Counter(
-    "modporter_errors_total",
+    "portkit_errors_total",
     "Total errors by category",
     ["error_category", "error_type", "source"],
     registry=registry,
@@ -206,12 +217,14 @@ error_total = Counter(
 
 # Error rate (errors per minute)
 error_rate = Gauge(
-    "modporter_error_rate_per_minute", "Current error rate per minute", registry=registry
+    "portkit_error_rate_per_minute",
+    "Current error rate per minute",
+    registry=registry,
 )
 
 # Retry attempts counter
 retry_attempts_total = Counter(
-    "modporter_retry_attempts_total",
+    "portkit_retry_attempts_total",
     "Total retry attempts",
     ["error_category", "function_name"],
     registry=registry,
@@ -219,7 +232,7 @@ retry_attempts_total = Counter(
 
 # Successful retries counter
 successful_retries_total = Counter(
-    "modporter_successful_retries_total",
+    "portkit_successful_retries_total",
     "Total successful retries",
     ["error_category", "function_name"],
     registry=registry,
@@ -231,7 +244,7 @@ successful_retries_total = Counter(
 
 # Rate limit hits counter - incremented when requests are blocked due to rate limiting
 rate_limit_hits_total = Counter(
-    "modporter_rate_limit_hits_total",
+    "portkit_rate_limit_hits_total",
     "Total number of requests blocked by rate limiting",
     ["endpoint", "client_type"],
     registry=registry,
@@ -239,7 +252,7 @@ rate_limit_hits_total = Counter(
 
 # Rate limit requests counter - total requests processed by rate limiter
 rate_limit_requests_total = Counter(
-    "modporter_rate_limit_requests_total",
+    "portkit_rate_limit_requests_total",
     "Total requests processed by rate limiter",
     ["endpoint", "client_type", "status"],
     registry=registry,
@@ -247,7 +260,7 @@ rate_limit_requests_total = Counter(
 
 # Current rate limit usage gauge - shows current usage per client
 rate_limit_current_usage = Gauge(
-    "modporter_rate_limit_current_usage",
+    "portkit_rate_limit_current_usage",
     "Current rate limit usage per client",
     ["client_key", "window"],
     registry=registry,
@@ -255,7 +268,7 @@ rate_limit_current_usage = Gauge(
 
 # Active rate limited clients gauge
 rate_limit_active_clients = Gauge(
-    "modporter_rate_limit_active_clients",
+    "portkit_rate_limit_active_clients",
     "Number of unique clients currently tracked",
     registry=registry,
 )
@@ -292,7 +305,11 @@ class MetricsTracker:
         self._initialized = True
 
     def record_conversion(
-        self, duration_seconds: float, success: bool, target_version: str, mod_type: str = "unknown"
+        self,
+        duration_seconds: float,
+        success: bool,
+        target_version: str,
+        mod_type: str = "unknown",
     ):
         """Record a conversion for metrics tracking."""
         with self._lock:
@@ -354,10 +371,12 @@ class MetricsTracker:
                 "failure_count": self._failure_count,
                 "total": total,
                 "success_rate": (self._success_count / total * 100) if total > 0 else 0,
-                "average_time": sum(sum(times) for times in self._conversion_times.values())
-                / sum(len(times) for times in self._conversion_times.values())
-                if sum(len(times) for times in self._conversion_times.values()) > 0
-                else 0,
+                "average_time": (
+                    sum(sum(times) for times in self._conversion_times.values())
+                    / sum(len(times) for times in self._conversion_times.values())
+                    if sum(len(times) for times in self._conversion_times.values()) > 0
+                    else 0
+                ),
             }
 
 
@@ -582,7 +601,11 @@ class MetricsMiddleware:
         import re
 
         # Replace UUIDs
-        path = re.sub(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", "{id}", path)
+        path = re.sub(
+            r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+            "{id}",
+            path,
+        )
         # Replace numeric IDs
         path = re.sub(r"/\d+", "/{id}", path)
         return path

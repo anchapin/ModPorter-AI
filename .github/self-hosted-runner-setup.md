@@ -55,7 +55,7 @@ tar xzf ./actions-runner-linux-x64-2.311.0.tar.gz
 
 ```bash
 # Create the runner and start the configuration experience
-./config.sh --url https://github.com/YOUR_USERNAME/ModPorter-AI --token YOUR_TOKEN
+./config.sh --url https://github.com/YOUR_USERNAME/portkit --token YOUR_TOKEN
 
 # When prompted for labels, add: ollama
 # This matches the [self-hosted, ollama] label in the workflow
@@ -102,7 +102,7 @@ ollama pull llama3.2
 Run a simple test to verify everything works:
 
 ```bash
-cd /path/to/ModPorter-AI
+cd /path/to/portkit
 cd ai-engine
 
 # Set environment variables

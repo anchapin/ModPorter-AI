@@ -2,7 +2,7 @@
 
 ## Overview
 
-This orchestration system provides parallel execution and dynamic spawning capabilities for the ModPorter AI conversion pipeline, addressing the limitations identified in Issue #156. It enables significant performance improvements through intelligent task scheduling, parallel agent execution, and adaptive orchestration strategies.
+This orchestration system provides parallel execution and dynamic spawning capabilities for the PortKit conversion pipeline, addressing the limitations identified in Issue #156. It enables significant performance improvements through intelligent task scheduling, parallel agent execution, and adaptive orchestration strategies.
 
 ## Key Features
 

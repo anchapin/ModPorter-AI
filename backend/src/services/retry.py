@@ -10,22 +10,29 @@ import functools
 import logging
 import time
 from typing import Callable, Optional, Type, Tuple, Any
-from datetime import datetime
-
-from .metrics import record_conversion_job
 
 logger = logging.getLogger(__name__)
 
 
 # Error categories for retry logic
 class RetryableError(Exception):
-    """Base class for errors that should trigger a retry."""
+    """
+    Base class for errors that should trigger a retry.
+
+    Inherit from this to create custom retryable errors.
+    The 'pass' is intentional - base classes don't need implementation.
+    """
 
     pass
 
 
 class NonRetryableError(Exception):
-    """Base class for errors that should NOT trigger a retry."""
+    """
+    Base class for errors that should NOT trigger a retry.
+
+    Inherit from this to create custom non-retryable errors.
+    The 'pass' is intentional - base classes don't need implementation.
+    """
 
     pass
 
@@ -164,8 +171,16 @@ class RetryConfig:
         self.max_delay = max_delay
         self.exponential_base = exponential_base
         self.jitter = jitter
-        self.retryable_exceptions = retryable_exceptions or DEFAULT_RETRYABLE_EXCEPTIONS
-        self.non_retryable_exceptions = non_retryable_exceptions or DEFAULT_NON_RETRYABLE_EXCEPTIONS
+        self.retryable_exceptions = (
+            retryable_exceptions
+            if retryable_exceptions is not None
+            else DEFAULT_RETRYABLE_EXCEPTIONS
+        )
+        self.non_retryable_exceptions = (
+            non_retryable_exceptions
+            if non_retryable_exceptions is not None
+            else DEFAULT_NON_RETRYABLE_EXCEPTIONS
+        )
 
 
 def calculate_delay(attempt: int, config: RetryConfig) -> float:
@@ -193,8 +208,10 @@ def is_retryable(error: Exception, config: RetryConfig) -> bool:
         if isinstance(error, exc_type):
             return True
 
-    # Default to retryable for unknown errors
-    return True
+    # Default to non-retryable for unknown errors to prevent infinite loops
+    # This is safer than retrying indefinitely for unexpected errors
+    logger.debug(f"Unknown error type {type(error).__name__}, treating as non-retryable")
+    return False
 
 
 async def retry_async(
@@ -214,7 +231,7 @@ async def retry_async(
         config: Retry configuration
         on_retry: Callback function called on each retry (error, attempt)
         job_id: Optional job ID for metrics tracking
-        **kwargs: Keyword arguments for func
+        **kwargs: Keyword arguments for func (including RetryConfig parameters)
 
     Returns:
         Result of func
@@ -223,7 +240,20 @@ async def retry_async(
         The last exception if all retries are exhausted
     """
     if config is None:
-        config = RetryConfig()
+        # Check for RetryConfig parameters in kwargs
+        config_params = {}
+        for param in [
+            "max_attempts",
+            "base_delay",
+            "max_delay",
+            "exponential_base",
+            "jitter",
+            "retryable_exceptions",
+            "non_retryable_exceptions",
+        ]:
+            if param in kwargs:
+                config_params[param] = kwargs.pop(param)
+        config = RetryConfig(**config_params)
 
     last_error = None
 
@@ -282,7 +312,7 @@ def retry_sync(
         *args: Positional arguments for func
         config: Retry configuration
         on_retry: Callback function called on each retry (error, attempt)
-        **kwargs: Keyword arguments for func
+        **kwargs: Keyword arguments for func (including RetryConfig parameters)
 
     Returns:
         Result of func
@@ -291,7 +321,20 @@ def retry_sync(
         The last exception if all retries are exhausted
     """
     if config is None:
-        config = RetryConfig()
+        # Check for RetryConfig parameters in kwargs
+        config_params = {}
+        for param in [
+            "max_attempts",
+            "base_delay",
+            "max_delay",
+            "exponential_base",
+            "jitter",
+            "retryable_exceptions",
+            "non_retryable_exceptions",
+        ]:
+            if param in kwargs:
+                config_params[param] = kwargs.pop(param)
+        config = RetryConfig(**config_params)
 
     last_error = None
 

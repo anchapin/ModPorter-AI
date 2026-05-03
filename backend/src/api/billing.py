@@ -1,0 +1,886 @@
+"""
+Stripe Billing API endpoints for Portkit (Issue #970)
+
+Endpoints:
+- POST /api/v1/billing/checkout - Create Stripe Checkout session
+- POST /api/v1/billing/portal - Create Stripe Customer Portal session
+- POST /api/v1/billing/webhook - Handle Stripe webhook events
+- GET /api/v1/billing/subscription - Get current user's subscription status
+- GET /api/v1/billing/usage - Get current usage information (Issue #977)
+"""
+
+import logging
+from datetime import datetime, timedelta, timezone
+from typing import Optional
+from uuid import UUID
+
+import stripe
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from db.base import get_db
+from db.models import User
+from security.auth import verify_token
+from services.metering_service import MeteringService
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="", tags=["Billing"])
+
+security = HTTPBearer()
+
+STRIPE_SECRET_KEY = ""  # Loaded from env
+STRIPE_PUBLISHABLE_KEY = ""  # Loaded from env
+STRIPE_WEBHOOK_SECRET = ""  # Loaded from env
+
+TIER_PRICE_IDS = {
+    "creator": "price_creator_monthly",
+    "creator_byok": "price_creator_byok_monthly",
+    "studio": "price_studio_monthly",
+    "studio_byok": "price_studio_byok_monthly",
+    "enterprise": None,
+}
+
+PAYG_CREDIT_PRICES = {
+    "credits_5": "price_payg_5",
+    "credits_12": "price_payg_12",
+}
+
+FREE_TRIAL_DAYS = 14
+
+MAX_FREE_JAR_SIZE_MB = 5
+
+
+def get_stripe():
+    """Get configured Stripe instance"""
+    import os
+    from dotenv import load_dotenv
+
+    load_dotenv()
+
+    secret_key = os.getenv("STRIPE_SECRET_KEY", STRIPE_SECRET_KEY)
+    if not secret_key:
+        logger.warning("Stripe secret key not configured - billing endpoints will fail")
+    stripe.api_key = secret_key
+    return stripe
+
+
+def init_stripe():
+    """Initialize Stripe settings from environment"""
+    import os
+    from dotenv import load_dotenv
+
+    load_dotenv()
+
+    global STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET
+    STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", STRIPE_SECRET_KEY)
+    STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", STRIPE_PUBLISHABLE_KEY)
+    STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", STRIPE_WEBHOOK_SECRET)
+
+
+init_stripe()
+
+
+class CheckoutRequest(BaseModel):
+    """Request to create a Stripe Checkout session"""
+
+    tier: str = "creator"
+    trial: bool = True
+    success_url: Optional[str] = None
+    cancel_url: Optional[str] = None
+
+
+class CreditsCheckoutRequest(BaseModel):
+    """Request to create a Stripe Checkout session for PAYG credit purchase"""
+
+    credit_pack: str = "credits_5"
+    success_url: Optional[str] = None
+    cancel_url: Optional[str] = None
+
+
+class CreditsResponse(BaseModel):
+    """Response with Stripe Checkout session URL for credit purchase"""
+
+    checkout_url: str
+    session_id: str
+    credits: int
+
+
+class CreditBalanceResponse(BaseModel):
+    """Current credit balance for a user"""
+
+    balance: int
+    lifetime_purchased: int
+
+
+class CheckoutResponse(BaseModel):
+    """Response with Stripe Checkout session URL"""
+
+    checkout_url: str
+    session_id: str
+
+
+class PortalRequest(BaseModel):
+    """Request to create a Stripe Customer Portal session"""
+
+    return_url: Optional[str] = None
+
+
+class PortalResponse(BaseModel):
+    """Response with Stripe Customer Portal URL"""
+
+    portal_url: str
+
+
+class SubscriptionStatus(BaseModel):
+    """Current subscription status for a user"""
+
+    tier: str
+    status: Optional[str] = None
+    trial_ends_at: Optional[datetime] = None
+    cancel_at_period_end: bool = False
+    current_period_end: Optional[datetime] = None
+    stripe_customer_id: Optional[str] = None
+
+
+class UsageResponse(BaseModel):
+    """Current usage information for subscription tier limits (Issue #977)"""
+
+    tier: str
+    period_year: int
+    period_month: int
+    web_conversions: int
+    api_conversions: int
+    monthly_limit: int
+    api_limit: int
+    remaining: int
+    api_remaining: int
+    is_at_limit: bool
+    is_api_at_limit: bool
+    should_upgrade: bool
+    upgrade_message: Optional[str] = None
+
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """Dependency to get the current authenticated user"""
+    from uuid import UUID
+
+    token = credentials.credentials
+    payload = verify_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    user_id = payload
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    try:
+        user_uuid = UUID(user_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    result = await db.execute(select(User).where(User.id == user_uuid))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return user
+
+
+@router.post("/checkout", response_model=CheckoutResponse)
+async def create_checkout_session(
+    request: CheckoutRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Create a Stripe Checkout session for subscription.
+
+    Flow:
+    1. User clicks CTA on PricingPage (e.g., "Start Free Trial" for Pro)
+    2. Frontend calls this endpoint with tier and trial flag
+    3. Backend creates Stripe Checkout session with optional trial
+    4. Returns checkout_url for frontend redirect
+    """
+    from services.feature_flags import is_feature_enabled
+
+    if not is_feature_enabled("premium_features"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Premium features are currently disabled. Please contact support if you believe this is an error.",
+        )
+    if request.tier not in TIER_PRICE_IDS:
+        raise HTTPException(status_code=400, detail=f"Invalid tier: {request.tier}")
+
+    if request.tier == "enterprise":
+        raise HTTPException(
+            status_code=400, detail="Enterprise tier uses custom pricing - contact sales"
+        )
+
+    price_id = TIER_PRICE_IDS.get(request.tier)
+    if not price_id:
+        raise HTTPException(status_code=400, detail="Price not configured for this tier")
+
+    stripe_instance = get_stripe()
+    import os
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    base_url = os.getenv("APP_BASE_URL", "http://localhost:3000")
+
+    success_url = request.success_url or f"{base_url}/dashboard?billing=success"
+    cancel_url = request.cancel_url or f"{base_url}/pricing?billing=cancelled"
+
+    try:
+        customer_id = user.stripe_customer_id
+        if not customer_id:
+            customer = stripe_instance.Customer.create(
+                email=user.email,
+                metadata={"user_id": str(user.id)},
+            )
+            customer_id = customer.id
+            user.stripe_customer_id = customer_id
+            db.add(user)
+            await db.commit()
+
+        session_params = {
+            "customer": customer_id,
+            "mode": "subscription",
+            "payment_method_types": ["card"],
+            "line_items": [{"price": price_id, "quantity": 1}],
+            "success_url": success_url,
+            "cancel_url": cancel_url,
+            "metadata": {
+                "user_id": str(user.id),
+                "tier": request.tier,
+            },
+        }
+
+        if request.trial and request.tier in ("creator", "creator_byok", "studio", "studio_byok"):
+            session_params["subscription_data"] = {
+                "trial_period_days": FREE_TRIAL_DAYS,
+            }
+
+        session = stripe_instance.checkout.sessions.create(**session_params)
+
+        return CheckoutResponse(
+            checkout_url=session.url,
+            session_id=session.id,
+        )
+
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe checkout error: {e}")
+        raise HTTPException(
+            status_code=500, detail="Failed to create checkout session. Please try again later."
+        )
+
+
+@router.post("/portal", response_model=PortalResponse)
+async def create_portal_session(
+    request: PortalRequest,
+    user: User = Depends(get_current_user),
+):
+    """
+    Create a Stripe Customer Portal session for self-service billing management.
+
+    Allows users to:
+    - View and update payment methods
+    - Upgrade/downgrade subscriptions
+    - Cancel subscriptions
+    - Download invoices
+    """
+    from services.feature_flags import is_feature_enabled
+
+    if not is_feature_enabled("premium_features"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Premium features are currently disabled. Please contact support if you believe this is an error.",
+        )
+    if not user.stripe_customer_id:
+        raise HTTPException(
+            status_code=400, detail="No billing account found. Please subscribe first."
+        )
+
+    stripe_instance = get_stripe()
+    import os
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    base_url = os.getenv("APP_BASE_URL", "http://localhost:3000")
+
+    return_url = request.return_url or f"{base_url}/dashboard?billing=portal"
+
+    try:
+        session = stripe_instance.billing_portal.sessions.create(
+            customer=user.stripe_customer_id,
+            return_url=return_url,
+        )
+
+        return PortalResponse(portal_url=session.url)
+
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe portal error: {e}")
+        raise HTTPException(
+            status_code=500, detail="Failed to create portal session. Please try again later."
+        )
+
+
+@router.post("/credits/checkout", response_model=CreditsResponse)
+async def create_credits_checkout(
+    request: CreditsCheckoutRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a Stripe Checkout session for PAYG credit pack purchase"""
+    from services.feature_flags import is_feature_enabled
+
+    if not is_feature_enabled("payg_credits"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="PAYG credits are currently disabled.",
+        )
+    if request.credit_pack not in PAYG_CREDIT_PRICES:
+        raise HTTPException(status_code=400, detail=f"Invalid credit pack: {request.credit_pack}")
+
+    credit_amounts = {"credits_5": 5, "credits_12": 12}
+    credits = credit_amounts.get(request.credit_pack, 5)
+
+    stripe_instance = get_stripe()
+    import os
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    base_url = os.getenv("APP_BASE_URL", "http://localhost:3000")
+
+    success_url = request.success_url or f"{base_url}/dashboard?billing=credits_success"
+    cancel_url = request.cancel_url or f"{base_url}/pricing?billing=credits_cancelled"
+
+    try:
+        customer_id = user.stripe_customer_id
+        if not customer_id:
+            customer = stripe_instance.Customer.create(
+                email=user.email,
+                metadata={"user_id": str(user.id)},
+            )
+            customer_id = customer.id
+            user.stripe_customer_id = customer_id
+            db.add(user)
+            await db.commit()
+
+        price_id = PAYG_CREDIT_PRICES.get(request.credit_pack)
+        if not price_id:
+            raise HTTPException(status_code=400, detail="Credit pack price not configured")
+
+        session = stripe_instance.checkout.sessions.create(
+            customer=customer_id,
+            mode="payment",
+            payment_method_types=["card"],
+            line_items=[{"price": price_id, "quantity": 1}],
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata={
+                "user_id": str(user.id),
+                "credit_pack": request.credit_pack,
+                "credits": str(credits),
+            },
+        )
+
+        return CreditsResponse(
+            checkout_url=session.url,
+            session_id=session.id,
+            credits=credits,
+        )
+
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe credits checkout error: {e}")
+        raise HTTPException(
+            status_code=500, detail="Failed to create checkout session. Please try again later."
+        )
+
+
+@router.get("/credits/balance", response_model=CreditBalanceResponse)
+async def get_credit_balance(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get current PAYG credit balance for a user"""
+    from db.models import UserCredits
+
+    result = await db.execute(select(UserCredits).where(UserCredits.user_id == user.id))
+    credit_record = result.scalar_one_or_none()
+
+    if not credit_record:
+        return CreditBalanceResponse(balance=0, lifetime_purchased=0)
+
+    return CreditBalanceResponse(
+        balance=credit_record.balance,
+        lifetime_purchased=credit_record.lifetime_purchased,
+    )
+
+
+@router.post("/webhook")
+async def handle_stripe_webhook(
+    request: Request, response: Response, db: AsyncSession = Depends(get_db)
+):
+    """
+    Handle Stripe webhook events.
+
+    Webhook events handled:
+    - checkout.session.completed - Subscription created
+    - customer.subscription.updated - Subscription updated (tier change)
+    - customer.subscription.deleted - Subscription cancelled
+    - invoice.payment_failed - Payment failed
+    - invoice.paid - Payment successful (for recording)
+    """
+    import os
+    from dotenv import load_dotenv
+
+    load_dotenv()
+
+    stripe_instance = get_stripe()
+    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", STRIPE_WEBHOOK_SECRET)
+
+    body = await request.body()
+
+    try:
+        event = stripe_instance.webhook.construct_event(
+            body, request.headers.get("stripe-signature", ""), webhook_secret
+        )
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid payload")
+    except stripe.error.SignatureVerificationError:
+        raise HTTPException(status_code=400, detail="Invalid signature")
+
+    try:
+        if event["type"] == "checkout.session.completed":
+            session = event["data"]["object"]
+            await handle_checkout_completed(session, db)
+
+            credits_str = session.get("metadata", {}).get("credits")
+            if credits_str:
+                await handle_credits_purchase(session, db)
+
+        elif event["type"] == "customer.subscription.updated":
+            subscription = event["data"]["object"]
+            await handle_subscription_updated(subscription, db)
+
+        elif event["type"] == "customer.subscription.deleted":
+            subscription = event["data"]["object"]
+            await handle_subscription_deleted(subscription, db)
+
+        elif event["type"] == "invoice.payment_failed":
+            invoice = event["data"]["object"]
+            await handle_payment_failed(invoice, db)
+
+        elif event["type"] == "invoice.paid":
+            invoice = event["data"]["object"]
+            await handle_invoice_paid(invoice, db)
+
+        else:
+            logger.info(f"Unhandled webhook event type: {event['type']}")
+
+    except Exception as e:
+        logger.error(f"Webhook handler error for {event.get('type')}: {e}")
+        return Response(status_code=500, content="Webhook handler failed")
+
+    return Response(status_code=200, content="OK")
+
+
+async def handle_checkout_completed(session: dict, db: AsyncSession):
+    """Handle checkout.session.completed - subscription created"""
+    user_id = session.get("metadata", {}).get("user_id")
+    tier = session.get("metadata", {}).get("tier")
+    subscription_id = session.get("subscription")
+
+    if not user_id or not tier:
+        logger.warning(f"Checkout completed missing metadata: user_id={user_id}, tier={tier}")
+        return
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        logger.error(f"User not found for checkout: {user_id}")
+        return
+
+    user.subscription_tier = tier
+    user.stripe_subscription_id = subscription_id
+    user.subscription_status = "active"
+
+    stripe_instance = get_stripe()
+    if subscription_id:
+        try:
+            subscription = stripe_instance.subscriptions.retrieve(subscription_id)
+            if subscription.get("trial_end"):
+                user.trial_ends_at = datetime.fromtimestamp(
+                    subscription["trial_end"], tz=timezone.utc
+                )
+        except stripe.error.StripeError as e:
+            logger.warning(f"Could not fetch subscription for trial end: {e}")
+
+    db.add(user)
+    await db.commit()
+    logger.info(f"User {user_id} subscribed to {tier} (checkout.completed)")
+
+
+async def handle_credits_purchase(session: dict, db: AsyncSession):
+    """Handle checkout.session.completed for PAYG credit purchases"""
+    user_id = session.get("metadata", {}).get("user_id")
+    credits_str = session.get("metadata", {}).get("credits")
+
+    if not user_id or not credits_str:
+        logger.warning(
+            f"Credits purchase missing metadata: user_id={user_id}, credits={credits_str}"
+        )
+        return
+
+    try:
+        credits = int(credits_str)
+    except (ValueError, TypeError):
+        logger.error(f"Invalid credits value: {credits_str}")
+        return
+
+    from db.models import UserCredits
+
+    result = await db.execute(select(UserCredits).where(UserCredits.user_id == UUID(user_id)))
+    credit_record = result.scalar_one_or_none()
+
+    if credit_record:
+        credit_record.balance += credits
+        credit_record.lifetime_purchased += credits
+    else:
+        credit_record = UserCredits(
+            user_id=UUID(user_id),
+            balance=credits,
+            lifetime_purchased=credits,
+        )
+        db.add(credit_record)
+
+    await db.commit()
+    logger.info(f"User {user_id} purchased {credits} credits (checkout.completed)")
+
+
+async def handle_subscription_updated(subscription: dict, db: AsyncSession):
+    """Handle customer.subscription.updated"""
+    customer_id = subscription.get("customer")
+    status = subscription.get("status")
+    tier = "free"
+
+    price_id_to_tier = {
+        "price_creator_monthly": "creator",
+        "price_creator_byok_monthly": "creator_byok",
+        "price_studio_monthly": "studio",
+        "price_studio_byok_monthly": "studio_byok",
+    }
+
+    if subscription.get("items", {}).get("data"):
+        price_id = subscription["items"]["data"][0].get("price", {}).get("id")
+        tier = price_id_to_tier.get(price_id, tier)
+
+    result = await db.execute(select(User).where(User.stripe_customer_id == customer_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        logger.error(f"User not found for subscription update: {customer_id}")
+        return
+
+    user.subscription_status = status
+    user.subscription_tier = tier
+
+    if subscription.get("cancel_at_period_end"):
+        user.subscription_status = "canceling"
+
+    if subscription.get("trial_end"):
+        user.trial_ends_at = datetime.fromtimestamp(subscription["trial_end"], tz=timezone.utc)
+
+    db.add(user)
+    await db.commit()
+    logger.info(f"User {user.id} subscription updated: {tier} ({status})")
+
+
+async def handle_subscription_deleted(subscription: dict, db: AsyncSession):
+    """Handle customer.subscription.deleted - subscription cancelled"""
+    customer_id = subscription.get("customer")
+
+    result = await db.execute(select(User).where(User.stripe_customer_id == customer_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        logger.error(f"User not found for subscription deletion: {customer_id}")
+        return
+
+    user.subscription_tier = "free"
+    user.subscription_status = "canceled"
+    user.stripe_subscription_id = None
+
+    db.add(user)
+    await db.commit()
+    logger.info(f"User {user.id} subscription cancelled")
+
+
+async def handle_payment_failed(invoice: dict, db: AsyncSession):
+    """Handle invoice.payment_failed"""
+    customer_id = invoice.get("customer")
+    attempt_count = invoice.get("attempt_count", 1)
+
+    result = await db.execute(select(User).where(User.stripe_customer_id == customer_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        return
+
+    user.subscription_status = f"payment_failed (attempt {attempt_count})"
+    db.add(user)
+    await db.commit()
+    logger.warning(f"User {user.id} payment failed (attempt {attempt_count})")
+
+
+async def handle_invoice_paid(invoice: dict, db: AsyncSession):
+    """Handle invoice.paid - successful payment"""
+    customer_id = invoice.get("customer")
+
+    result = await db.execute(select(User).where(User.stripe_customer_id == customer_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        return
+
+    if user.subscription_status and user.subscription_status.startswith("payment_failed"):
+        user.subscription_status = "active"
+        db.add(user)
+        await db.commit()
+
+
+@router.get("/subscription", response_model=SubscriptionStatus)
+async def get_subscription_status(
+    user: User = Depends(get_current_user),
+):
+    """Get current user's subscription status"""
+    from services.feature_flags import is_feature_enabled
+
+    if not is_feature_enabled("premium_features"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Premium features are currently disabled. Please contact support if you believe this is an error.",
+        )
+    return SubscriptionStatus(
+        tier=user.subscription_tier or "free",
+        status=user.subscription_status,
+        trial_ends_at=user.trial_ends_at,
+        stripe_customer_id=user.stripe_customer_id,
+    )
+
+
+@router.get("/usage", response_model=UsageResponse)
+async def get_usage_status(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get current user's usage information for subscription tier limits (Issue #977)
+
+    Returns:
+    - Current tier and usage counts
+    - Monthly limits
+    - Remaining conversions
+    - Whether upgrade is recommended
+    """
+    metering_service = MeteringService(db)
+    usage_info = await metering_service.get_usage_info(user)
+
+    return UsageResponse(
+        tier=usage_info.tier,
+        period_year=usage_info.period_year,
+        period_month=usage_info.period_month,
+        web_conversions=usage_info.web_conversions,
+        api_conversions=usage_info.api_conversions,
+        monthly_limit=usage_info.monthly_limit if usage_info.monthly_limit != -1 else -1,
+        api_limit=usage_info.api_limit if usage_info.api_limit != -1 else -1,
+        remaining=usage_info.remaining if usage_info.remaining != float("inf") else -1,
+        api_remaining=usage_info.api_remaining if usage_info.api_remaining != float("inf") else -1,
+        is_at_limit=usage_info.is_at_limit,
+        is_api_at_limit=usage_info.is_api_at_limit,
+        should_upgrade=usage_info.should_upgrade,
+        upgrade_message=usage_info.upgrade_message,
+    )
+
+
+@router.get("/publishable-key")
+async def get_publishable_key():
+    """Get Stripe publishable key for frontend"""
+    import os
+    from dotenv import load_dotenv
+
+    load_dotenv()
+
+    publishable_key = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
+    return {"publishable_key": publishable_key}
+
+
+class AdminUsageMetrics(BaseModel):
+    """Usage metrics for admin dashboard (Issue #977)"""
+
+    total_users: int
+    free_tier_users: int
+    pro_tier_users: int
+    studio_tier_users: int
+    enterprise_tier_users: int
+    total_web_conversions: int
+    total_api_conversions: int
+    users_at_limit: int
+    users_nearing_limit: int
+    period_year: int
+    period_month: int
+
+
+class TierUsageBreakdown(BaseModel):
+    """Usage breakdown by tier"""
+
+    tier: str
+    user_count: int
+    total_web_conversions: int
+    total_api_conversions: int
+    users_at_limit: int
+    users_nearing_limit: int
+
+
+@router.get("/admin/usage-metrics", response_model=AdminUsageMetrics)
+async def get_admin_usage_metrics(
+    db: AsyncSession = Depends(get_db),
+):
+    """Get aggregate usage metrics for admin dashboard (Issue #977)
+
+    Returns:
+    - Total users by tier
+    - Total conversions by type
+    - Users at limit or nearing limit
+    """
+    from sqlalchemy import func, select
+    from db.models import User, UsageRecord
+
+    now = datetime.now(timezone.utc)
+    year, month = now.year, now.month
+
+    tier_counts = await db.execute(
+        select(
+            User.subscription_tier,
+            func.count(User.id).label("count"),
+        ).group_by(User.subscription_tier)
+    )
+    tier_counts_dict = {row[0]: row[1] for row in tier_counts.all()}
+
+    total_users_result = await db.execute(select(func.count(User.id)))
+    total_users = total_users_result.scalar()
+
+    usage_records = await db.execute(
+        select(UsageRecord).where(
+            UsageRecord.period_year == year,
+            UsageRecord.period_month == month,
+        )
+    )
+    usage_records = usage_records.scalars().all()
+
+    total_web = sum(r.web_conversions for r in usage_records)
+    total_api = sum(r.api_conversions for r in usage_records)
+
+    users_at_limit = 0
+    users_nearing_limit = 0
+
+    for record in usage_records:
+        user_result = await db.execute(select(User).where(User.id == record.user_id))
+        user = user_result.scalar_one_or_none()
+        if user:
+            limits = TIER_LIMITS.get(user.subscription_tier, TIER_LIMITS["free"])
+            monthly_limit = limits["monthly_conversions"]
+            if monthly_limit != -1:
+                if record.web_conversions >= monthly_limit:
+                    users_at_limit += 1
+                elif record.web_conversions >= monthly_limit * 0.8:
+                    users_nearing_limit += 1
+
+    return AdminUsageMetrics(
+        total_users=total_users or 0,
+        free_tier_users=tier_counts_dict.get("free", 0),
+        pro_tier_users=tier_counts_dict.get("pro", 0),
+        studio_tier_users=tier_counts_dict.get("studio", 0),
+        enterprise_tier_users=tier_counts_dict.get("enterprise", 0),
+        total_web_conversions=total_web,
+        total_api_conversions=total_api,
+        users_at_limit=users_at_limit,
+        users_nearing_limit=users_nearing_limit,
+        period_year=year,
+        period_month=month,
+    )
+
+
+@router.get("/admin/usage-by-tier", response_model=list[TierUsageBreakdown])
+async def get_usage_by_tier(
+    db: AsyncSession = Depends(get_db),
+):
+    """Get usage breakdown by subscription tier (Issue #977)
+
+    Returns per-tier usage metrics for admin analysis.
+    """
+    from sqlalchemy import func, select
+    from db.models import User, UsageRecord
+
+    now = datetime.now(timezone.utc)
+    year, month = now.year, now.month
+
+    tiers = ["free", "creator", "pro", "studio", "enterprise"]
+    results = []
+
+    for tier in tiers:
+        tier_users_result = await db.execute(
+            select(func.count(User.id)).where(User.subscription_tier == tier)
+        )
+        user_count = tier_users_result.scalar() or 0
+
+        tier_usage_result = await db.execute(
+            select(
+                func.sum(UsageRecord.web_conversions),
+                func.sum(UsageRecord.api_conversions),
+            ).where(
+                UsageRecord.period_year == year,
+                UsageRecord.period_month == month,
+                UsageRecord.user_id.in_(select(User.id).where(User.subscription_tier == tier)),
+            )
+        )
+        row = tier_usage_result.one_or_none()
+        web_conv = row[0] or 0 if row else 0
+        api_conv = row[1] or 0 if row else 0
+
+        limits = TIER_LIMITS.get(tier, TIER_LIMITS["free"])
+        monthly_limit = limits["monthly_conversions"]
+
+        tier_usage_records = await db.execute(
+            select(UsageRecord).where(
+                UsageRecord.period_year == year,
+                UsageRecord.period_month == month,
+                UsageRecord.user_id.in_(select(User.id).where(User.subscription_tier == tier)),
+            )
+        )
+        tier_usage_records = tier_usage_records.scalars().all()
+
+        tier_at_limit = 0
+        tier_nearing_limit = 0
+        for record in tier_usage_records:
+            if monthly_limit != -1:
+                if record.web_conversions >= monthly_limit:
+                    tier_at_limit += 1
+                elif record.web_conversions >= monthly_limit * 0.8:
+                    tier_nearing_limit += 1
+
+        results.append(
+            TierUsageBreakdown(
+                tier=tier,
+                user_count=user_count,
+                total_web_conversions=web_conv,
+                total_api_conversions=api_conv,
+                users_at_limit=tier_at_limit,
+                users_nearing_limit=tier_nearing_limit,
+            )
+        )
+
+    return results

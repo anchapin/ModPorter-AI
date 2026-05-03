@@ -1,6 +1,6 @@
 import { test, expect } from './fixtures';
 
-test.describe('ModPorter AI - UI Interactions', () => {
+test.describe('Portkit - UI Interactions', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
   });

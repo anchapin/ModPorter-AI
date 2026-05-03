@@ -8,7 +8,7 @@ import logging
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Path
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from db.base import get_db
 from db import crud
@@ -44,13 +44,14 @@ class AssetUploadRequest(BaseModel):
     asset_type: str
     metadata: Optional[Dict[str, Any]] = None
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "asset_type": "texture",
                 "metadata": {"category": "blocks", "resolution": "16x16"},
             }
         }
+    )
 
 
 class AssetStatusUpdate(BaseModel):
@@ -99,6 +100,13 @@ async def list_conversion_assets(
     - **limit**: Maximum number of assets to return
     """
     try:
+        uuid.UUID(conversion_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid conversion_id format: '{conversion_id}'. Must be a UUID.",
+        )
+    try:
         assets = await crud.list_assets_for_conversion(
             db,
             conversion_id=conversion_id,
@@ -127,6 +135,14 @@ async def upload_asset(
     - **asset_type**: Type of asset being uploaded
     - **file**: The asset file to upload
     """
+    try:
+        uuid.UUID(conversion_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid conversion_id format: '{conversion_id}'. Must be a UUID.",
+        )
+
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
 
@@ -179,13 +195,18 @@ async def upload_asset(
         # Clean up uploaded file if database creation fails
         if os.path.exists(file_path):
             os.remove(file_path)
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Error saving asset file: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=400, detail="Failed to save asset file. Please ensure it's a valid file."
+        )
     except Exception as e:
         # Clean up uploaded file if database creation fails
         if os.path.exists(file_path):
             os.remove(file_path)
-        logger.error(f"Error creating asset record: {e}")
-        raise HTTPException(status_code=500, detail="Failed to create asset record")
+        logger.error(f"Error creating asset record: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail="Failed to create asset record. Please try again."
+        )
 
 
 @router.get("/assets/{asset_id}", response_model=AssetResponse, tags=["assets"])
@@ -313,11 +334,10 @@ async def trigger_asset_conversion(
         return _asset_to_response(asset)
 
     try:
-        # Trigger conversion through the service
         result = await asset_conversion_service.convert_asset(asset_id)
 
         if result.get("success"):
-            # Get updated asset
+            db.expire_all()
             updated_asset = await crud.get_asset(db, asset_id)
             logger.info(f"Asset {asset_id} conversion triggered successfully")
             return _asset_to_response(updated_asset)
@@ -326,6 +346,8 @@ async def trigger_asset_conversion(
             logger.error(f"Asset {asset_id} conversion failed: {error_msg}")
             raise HTTPException(status_code=500, detail=f"Conversion failed: {error_msg}")
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error triggering asset conversion: {e}")
         raise HTTPException(status_code=500, detail="Failed to trigger asset conversion")
@@ -346,7 +368,14 @@ async def convert_all_conversion_assets(
     - **conversion_id**: ID of the conversion job
     """
     try:
-        # Trigger batch conversion through the service
+        uuid.UUID(conversion_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid conversion_id format: '{conversion_id}'. Must be a UUID.",
+        )
+
+    try:
         result = await asset_conversion_service.convert_assets_for_conversion(conversion_id)
 
         return {

@@ -27,7 +27,11 @@ export interface BatchConversionItem {
 }
 
 interface BatchConversionManagerProps {
-  onComplete?: (jobIds: string[]) => void;
+  onComplete?: (
+    jobIds: string[],
+    results?: { succeeded: number; failed: number }
+  ) => void;
+  onError?: (error: string) => void;
 }
 
 export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
@@ -50,7 +54,7 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
           return ext === 'jar' || ext === 'zip' || ext === 'mcaddon';
         })
         .map((file) => ({
-          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: crypto.randomUUID(),
           filename: file.name,
           file,
           status: 'pending' as const,
@@ -160,10 +164,15 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
     setIsConverting(false);
 
     if (completedJobIds.length > 0) {
+      const results = {
+        succeeded: completedJobIds.length,
+        failed: failedIds.length,
+      };
       successNotification(
-        `Batch conversion completed: ${completedJobIds.length} succeeded`
+        'Batch Conversion Complete!',
+        `${results.succeeded} mods converted${results.failed > 0 ? `, ${results.failed} failed` : ''}.`
       );
-      onComplete?.(completedJobIds);
+      onComplete?.(completedJobIds, results);
     }
 
     if (failedIds.length > 0) {
@@ -191,9 +200,16 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
     }
   }, [items]);
 
-  const pendingCount = items.filter((i) => i.status === 'pending').length;
-  const completedCount = items.filter((i) => i.status === 'completed').length;
-  const failedCount = items.filter((i) => i.status === 'failed').length;
+  // ⚡ Bolt optimization: Single pass instead of multiple filter().length calls to avoid O(3N) time complexity and intermediate array allocations
+  const { pendingCount, completedCount, failedCount } = items.reduce(
+    (acc, item) => {
+      if (item.status === 'pending') acc.pendingCount++;
+      else if (item.status === 'completed') acc.completedCount++;
+      else if (item.status === 'failed') acc.failedCount++;
+      return acc;
+    },
+    { pendingCount: 0, completedCount: 0, failedCount: 0 }
+  );
 
   return (
     <div className="batch-conversion-manager">
@@ -227,7 +243,10 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
           <div className="file-list-header">
             <span>{items.length} file(s) queued</span>
             {!isConverting && (
-              <button className="clear-button" onClick={clearAll}>
+              <button
+                className="clear-button focus-visible:ring-2 focus-visible:outline-none"
+                onClick={clearAll}
+              >
                 Clear All
               </button>
             )}
@@ -259,10 +278,11 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
                 </div>
                 {item.status === 'pending' && !isConverting && (
                   <button
-                    className="remove-button"
+                    className="remove-button focus-visible:ring-2 focus-visible:outline-none"
                     onClick={() => removeItem(item.id)}
+                    aria-label="Remove item"
                   >
-                    ✕
+                    <span aria-hidden="true">✕</span>
                   </button>
                 )}
               </div>
@@ -290,7 +310,7 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
             <div className="action-buttons">
               {pendingCount > 0 && !isConverting && (
                 <button
-                  className="start-button primary"
+                  className="start-button primary focus-visible:ring-2 focus-visible:outline-none"
                   onClick={startBatchConversion}
                 >
                   Start Batch ({pendingCount})
@@ -298,14 +318,17 @@ export const BatchConversionManager: React.FC<BatchConversionManagerProps> = ({
               )}
 
               {isConverting && (
-                <button className="processing-button" disabled>
+                <button
+                  className="processing-button focus-visible:ring-2 focus-visible:outline-none"
+                  disabled
+                >
                   Processing...
                 </button>
               )}
 
               {completedCount > 0 && !isConverting && (
                 <button
-                  className="download-button secondary"
+                  className="download-button secondary focus-visible:ring-2 focus-visible:outline-none"
                   onClick={downloadAll}
                 >
                   Download All ({completedCount})

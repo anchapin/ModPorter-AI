@@ -1,94 +1,91 @@
-<!-- TODO_MANAGEMENT_INSTRUCTIONS -->
+# Repository Guidelines
 
-# CRITICAL: Task Management System
+portkit is an AI-powered Java to Bedrock Minecraft mod converter.
 
-**Using markdown file in .factory directory for task tracking instead of MCP task-manager tools.**
-
-## MANDATORY TODO WORKFLOW
-
-**BEFORE responding to ANY request, you MUST:**
-
-1. **Read `.factory/tasks.md` first** - Check current task status before doing ANYTHING
-2. **Plan work based on existing tasks** - Reference what's already tracked
-3. **Update `.factory/tasks.md`** - Mark tasks in_progress when starting, completed when done
-4. **NEVER work without consulting the task file first**
-
-## CRITICAL TODO SYSTEM RULES
-
-- **Only ONE task can have status "In Progress" at a time** - No exceptions
-- **Mark tasks "In Progress" BEFORE starting work** - Not during or after
-- **Complete tasks IMMEDIATELY when finished** - Don't batch completions
-- **Break complex requests into specific, actionable tasks** - No vague tasks
-- **Reference existing tasks when planning new work** - Don't duplicate
-
-## MANDATORY VISUAL DISPLAY
-
-**ALWAYS display the complete task list from `.factory/tasks.md` AFTER reading or updating:**
+## Project Structure & Module Organization
 
 ```
-# Current Tasks
-
-## In Progress
-- 🔄 Implement login form
-
-## Pending
-- ⏳ Add validation
-- ⏳ Write tests
-
-## Completed
-- ✅ Research existing patterns
+backend/src/
+├── api/              # FastAPI endpoints
+├── services/         # Business logic, conversion pipelines, background workers
+├── models/           # Pydantic models
+├── db/               # Database models, CRUD, connections
+├── security/          # File security, rate limiting, resource limits
+└── tests/
+    ├── unit/         # Test modules per feature
+    └── integration/  # E2E workflows
+frontend/src/
+├── api/             # API client functions
+├── components/       # React components
+├── pages/           # Route pages
+└── services/        # Frontend business logic
+ai-engine/           # Multi-agent conversion system (separate service)
 ```
 
-Icons: ✅ = completed | 🔄 = in progress | ⏳ = pending
+Docker services: frontend, backend, postgres, redis, ai-engine, clamav, jaeger, prometheus.
 
-**NEVER just say "updated tasks"** - Show the full list every time.
+## Build, Test, and Development Commands
 
-## CRITICAL ANTI-PATTERNS
+```bash
+# Development
+pnpm run dev                    # Start both frontend (3000) and backend (8080)
+pnpm run dev:frontend          # Frontend only (Next.js + Vite)
+pnpm run dev:backend           # Backend only (uvicorn --reload)
 
-**NEVER explore/research before creating tasks:**
-- ❌ "Let me first understand the codebase..." → starts exploring
-- ✅ Create task: "Analyze current codebase structure" → mark in_progress → explore
+# Docker
+docker compose up -d           # Production mode
+docker compose -f docker-compose.dev.yml up -d  # Development with hot reload
 
-**NEVER do "preliminary investigation" outside tasks:**
-- ❌ "I'll check what libraries you're using..." → starts searching
-- ✅ Create task: "Audit current dependencies" → track it → investigate
+# Testing
+pnpm run test                 # All tests
+pnpm run test:backend         # pytest on backend
+cd backend && python3 -m pytest src/tests/unit/ -q --tb=no  # Fast unit tests
+cd backend && python3 -m pytest src/tests/unit/ -v  # Verbose output
 
-**NEVER work on tasks without marking them in_progress:**
-- ❌ Creating tasks then immediately starting work without marking in_progress
-- ✅ Create tasks → Mark first as in_progress → Start work
-
-**NEVER mark incomplete work as completed:**
-- ❌ Tests failing but marking "Write tests" as completed
-- ✅ Keep as in_progress, create new task for fixing failures
-
-## FORBIDDEN PHRASES
-
-These phrases indicate you're about to violate the todo system:
-- "Let me first understand..."
-- "I'll start by exploring..."
-- "Let me check what..."
-- "I need to investigate..."
-- "Before we begin, I'll..."
-
-**Correct approach:** CREATE TASK FIRST, mark it in_progress, then investigate.
-
-## TASK FILE REFERENCE
-
-```markdown
-# Current Tasks
-
-## In Progress
-- 🔄 Task name
-
-## Pending  
-- ⏳ Task name
-- ⏳ Another task
-
-## Completed
-- ✅ Completed task
+# Code Quality
+pnpm run lint                 # Check all
+pnpm run format               # Format all (ruff format, prettier)
+pnpm run format:backend       # Ruff format + lint --fix
 ```
 
-<!-- END_TODO_MANAGEMENT_INSTRUCTIONS -->
+## Coding Style & Naming Conventions
 
----
+**Python (Backend)**
+- **Linter/Formatter**: ruff (line-length: 100, target: py311)
+- **Enabled rules**: E, F, W, I, Q, N, D, UP, C901, SIM, T20
+- **Async first**: All I/O operations must be async (`async def`, `async with`)
+- **Pydantic V2**: Use `model_config = ConfigDict(from_attributes=True)`
+- **Dependency injection**: Use `Depends(get_db)` for shared resources
+- **Type hints**: Required on all function signatures
+- **Forbidden**: `time.sleep()`, `requests.get()`, `json.loads()`, global state
 
+**Test Naming**: `test_<feature>_<scenario>_<expected>`
+
+**Test Markers**: `@pytest.mark.unit`, `@pytest.mark.integration`, `@pytest.mark.real_service` (requires USE_REAL_SERVICES=1), `@pytest.mark.asyncio`
+
+## Testing Guidelines
+
+**Framework**: pytest with pytest-asyncio
+
+**Coverage**: 80%+ required for PR merges
+
+**Test Database**: Use `./scripts/test-db.sh {start|stop|reset}`
+
+**Run single test**: `pytest path/to/test_file.py::TestClass::test_method -v`
+
+## Commit & Pull Request Guidelines
+
+**Commit Format**: `<type>(<scope>): <description>`
+
+Types: `feat|fix|docs|style|refactor|test|chore|ci`
+Scopes: `api|backend|ai-engine|tests|docs|ci|frontend`
+
+**Branch Naming**: `feature/<ticket>-<desc>` or `bugfix/<ticket>-<desc>`
+
+**PR Checklist**:
+- Tests pass (`pytest src/tests/unit/ -q`)
+- Coverage maintained/improved
+- No linting errors (`ruff check`)
+- PR description explains WHY, not just WHAT
+
+**Pre-commit**: ruff format, ruff lint, Bandit security scan, Gitleaks secrets detection

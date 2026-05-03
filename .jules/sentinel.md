@@ -23,3 +23,30 @@
 1. Never modify shared service state in middleware.
 2. Pass request-specific configuration as arguments to service methods (e.g. `override_config`).
 3. Use immutable configuration objects where possible or deep copy if modification is needed locally.
+## 2024-05-24 - [Hardcoded JWT Secret Key]
+**Vulnerability:** A hardcoded `SECRET_KEY` ("your-secret-key-change-in-production") was used in `backend/src/security/auth.py` for signing JWT tokens.
+**Learning:** Hardcoded cryptographic keys allow attackers who read the source code to forge valid JWT tokens, completely bypassing authentication.
+**Prevention:** Always load secrets from environment variables or a secure secret management system using a utility like `get_secret` from `core.secrets`.
+
+## 2024-05-24 - [Fail-Secure Missing Secrets]
+**Vulnerability:** A hardcoded `SECRET_KEY` was used as a default, or the application might fall back to an insecure default if the secret was not available.
+**Learning:** When removing hardcoded cryptographic secrets to use environment variables, the application must fail securely if the variable is unset. Falling back to an insecure default negates the purpose of externalized secrets.
+**Prevention:** Raise an explicit error (e.g., `ValueError`) during initialization if critical cryptographic secrets are missing, rather than using fallback values.
+
+## 2024-05-24 - [CRITICAL] Remove Hardcoded Fallback for JWT SECRET_KEY
+**Vulnerability:** The application used a hardcoded fallback secret key (`"dev-secret-key-do-not-use-in-production-change-me"`) for JWT token generation and validation if the `SECRET_KEY` environment variable was missing.
+**Learning:** Hardcoded cryptographic secrets are a severe vulnerability (CWE-798). If the environment variable isn't set properly, the application falls back to an insecure, easily guessable default in production, compromising all tokens.
+**Prevention:** Never use default fallback values for cryptographic secrets. When removing hardcoded cryptographic secrets to use environment variables, ensure the application fails securely (e.g., raises a `ValueError`) if the variable is unset, rather than falling back to an insecure default. For testing, set dummy values in `conftest.py` before application imports.
+## 2024-04-10 - [Remove sensitive tokens from application logs]
+**Vulnerability:** Verification and password reset tokens were being logged in plaintext in the auth API endpoints.
+**Learning:** Even during development or when trying to be helpful for debugging, sensitive URLs containing single-use tokens must not be logged, as logs can be accessed by unauthorized personnel or systems.
+**Prevention:** Remove sensitive values from logger statements and only log the action that occurred (e.g. "Token generated for user X").
+## 2024-05-24 - Prevent Information Exposure in API Exceptions
+**Vulnerability:** The `upload.py` API endpoint directly exposed internal exception details (e.g., file system errors, stack traces) to clients by passing `str(e)` to `HTTPException(detail=...)`.
+**Learning:** Developers often include raw exception strings in HTTP error responses for easier debugging, unintentionally violating the "fail securely" principle and causing Information Exposure (CWE-200).
+**Prevention:** Always log detailed exceptions internally using `logger.error(f"... {str(e)}")` but return a generic, static, and safe error message (e.g., "An unexpected error occurred.") to the client.
+
+## 2024-05-24 - Prevent Information Exposure in API Exceptions
+**Vulnerability:** The application directly exposed internal exception details (e.g., file system errors, stack traces) to clients by passing `str(e)` to `HTTPException(detail=...)` across multiple files.
+**Learning:** Developers often include raw exception strings in HTTP error responses for easier debugging, unintentionally violating the "fail securely" principle and causing Information Exposure (CWE-200).
+**Prevention:** Always log detailed exceptions internally using `logger.error(f"... {str(e)}")` but return a generic, static, and safe error message (e.g., "An unexpected error occurred.") to the client.

@@ -1,6 +1,6 @@
 # WebSocket and Conversion API Implementation
 
-This document describes the implementation of WebSocket support and Conversion REST API endpoints for the ModPorter-AI backend.
+This document describes the implementation of WebSocket support and Conversion REST API endpoints for the portkit backend.
 
 ## Overview
 

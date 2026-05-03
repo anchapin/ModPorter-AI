@@ -1,8 +1,8 @@
-# ModPorter AI API Documentation
+# Portkit API Documentation
 
 ## Base URL
 - Development: `http://localhost:8000/api/v1`
-- Production: `https://api.modporter.ai/v1`
+- Production: `https://api.portkit.cloud/v1`
 
 ## Authentication
 Currently, the API is open for public use. Authentication will be added in future versions for rate limiting and user management.
@@ -95,7 +95,7 @@ GET /convert/{conversion_id}/status
       "description": "Chest GUI converted to book-based interface for inventory management"
     }
   ],
-  "download_url": "https://api.modporter.ai/v1/convert/550e8400.../download",
+  "download_url": "https://api.portkit.cloud/v1/convert/550e8400.../download",
   "detailed_report": {
     "stage": "completed",
     "progress": 100,
@@ -163,8 +163,8 @@ GET /validate/{conversion_id}/results
     }
   ],
   "screenshots": {
-    "java_version": "https://api.modporter.ai/screenshots/java_123.png",
-    "bedrock_version": "https://api.modporter.ai/screenshots/bedrock_123.png"
+    "java_version": "https://api.portkit.cloud/screenshots/java_123.png",
+    "bedrock_version": "https://api.portkit.cloud/screenshots/bedrock_123.png"
   }
 }
 ```

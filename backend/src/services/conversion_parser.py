@@ -113,11 +113,11 @@ def transform_pack_to_addon_data(
                         block_create = pydantic_addon_models.AddonBlockCreate(
                             identifier=identifier,
                             properties=properties_for_db,
-                            behavior=pydantic_addon_models.AddonBehaviorCreate(
-                                data=behavior_data_for_db
-                            )
-                            if behavior_data_for_db
-                            else None,
+                            behavior=(
+                                pydantic_addon_models.AddonBehaviorCreate(data=behavior_data_for_db)
+                                if behavior_data_for_db
+                                else None
+                            ),
                         )
                         blocks.append(block_create)
 

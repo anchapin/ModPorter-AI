@@ -1,15 +1,17 @@
 {
-  "name": "modporter-ai",
+  "name": "portkit",
   "version": "1.0.0",
   "description": "AI-powered tool for converting Minecraft Java Edition mods to Bedrock Edition add-ons",
   "type": "module",
   "scripts": {
+    "postinstall": "node -e \"const fs=require('fs'); const p=require('path'); const w=p.resolve('./node_modules/@composio/ao-web/node_modules/@composio'); try{fs.mkdirSync(w,{recursive:true});fs.symlinkSync(p.resolve('./node_modules/@composio/ao-core'),p.join(w,'ao-core'),'dir');}catch(e){}\"",
     "install-all": "pnpm install && cd frontend && pnpm install",
     "dev": "concurrently \"pnpm run dev:backend\" \"pnpm run dev:frontend\"",
     "dev:frontend": "cd frontend && pnpm run dev",
     "dev:backend": "cd backend && . .venv/bin/activate && python -m uvicorn src.main:app --reload --port 8000",
     "build": "pnpm run build:frontend",
     "build:frontend": "cd frontend && pnpm run build",
+    "build:analyze": "cd frontend && pnpm run build:analyze",
     "test": "pnpm run test:frontend && pnpm run test:backend",
     "test:frontend": "cd frontend && pnpm run test",
     "test:backend": "cd backend && . .venv/bin/activate && python -m pytest",
@@ -17,18 +19,21 @@
     "test:e2e:install": "cd frontend && pnpm run test:e2e:install",
     "test:all": "pnpm run test:frontend && pnpm run test:backend && pnpm run test:e2e",
     "test:watch": "concurrently \"pnpm run test:frontend -- --watch\" \"pnpm run test:backend -- --watch\"",
-    "lint": "pnpm run lint:frontend && pnpm run lint:backend",
+    "lint": "pnpm run lint:frontend && pnpm run lint:backend && pnpm run lint:duplicates",
     "lint:frontend": "cd frontend && pnpm run lint",
     "lint:backend": "cd backend && . .venv/bin/activate && python -m ruff check src/ tests/",
+    "lint:duplicates": "jscpd . --threshold 5 --ignore \"**/node_modules/**,**/dist/**,**/coverage/**,**/htmlcov/**,**/.venv/**,**/venv_test/**,**/venv_muttest/**,**/mutants/**,**/.worktrees/**,.claude/worktrees/**,**/pnpm-lock.yaml\"",
     "format": "pnpm run format:frontend && pnpm run format:backend",
     "format:check": "pnpm run format:check:frontend && pnpm run format:check:backend",
     "format:check:frontend": "cd frontend && pnpm prettier --check .",
-    "format:check:backend": "cd backend && source .venv/bin/activate && python -m ruff format --check src/ tests/",
+    "format:check:backend": "cd backend && bash -c 'source .venv/bin/activate && python -m ruff format --check src/ tests/'",
     "format:frontend": "cd frontend && pnpm prettier --write .",
-    "format:backend": "cd backend && source .venv/bin/activate && python -m ruff format src/ tests/ && python -m ruff check --fix src/ tests/",
+    "format:backend": "cd backend && bash -c 'source .venv/bin/activate && python -m ruff format src/ tests/ && python -m ruff check --fix src/ tests/'",
     "fix-ci": "python scripts/fix-failing-ci-checks",
     "storybook": "cd frontend && pnpm run storybook",
-    "build-storybook": "cd frontend && pnpm run build-storybook"
+    "build-storybook": "cd frontend && pnpm run build-storybook",
+    "setup-ai-commits": "bash scripts/setup-ai-commits.sh",
+    "commit": "cz commit"
   },
   "keywords": [
     "minecraft",
@@ -38,23 +43,41 @@
     "java",
     "bedrock"
   ],
-  "author": "ModPorter AI Team",
+  "author": "PortKit Team",
   "license": "MIT",
   "devDependencies": {
-    "@eslint/js": "^9.38.0",
+    "@commitlint/cli": "^20.5.2",
+    "@commitlint/config-conventional": "^20.5.0",
+    "@composio/ao-core": "^0.2.0",
+    "@composio/ao-web": "^0.2.2",
+    "@eslint/js": "^10.0.1",
     "@types/jest": "^30.0.0",
     "concurrently": "^9.2.1",
-    "prettier": "^3.8.1"
-  },
-  "overrides": {
-    "form-data@>=4.0.0 <4.0.4": ">=4.0.4",
-    "dompurify": "^3.3.2",
-    "lodash-es": "^4.17.23",
-    "axios": "^1.13.5",
-    "react-router-dom": "^7.12.0"
+    "husky": "^9.0.11",
+    "prettier": "^3.8.3"
   },
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=7.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "form-data@>=4.0.0 <4.0.4": ">=4.0.4",
+      "dompurify": "3.3.2",
+      "lodash-es": "4.18.1",
+      "lodash": "4.18.1",
+      "lodash-amd": "4.18.1",
+      "lodash.template": "4.18.1",
+      "axios": "^1.13.5",
+      "react-router-dom": "^7.12.0",
+      "brace-expansion@<1.1.13": "1.1.13"
+    },
+    "onlyBuiltDependencies": [
+      "msw",
+      "esbuild",
+      "node-pty",
+      "sharp",
+      "unrs-resolver"
+    ]
   }
 }

@@ -13,7 +13,7 @@ import logging
 import time
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 
 from sqlalchemy import text
@@ -28,7 +28,7 @@ class HealthCheckResult:
 
     is_healthy: bool
     message: str
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     latency_ms: Optional[float] = None
     details: Dict[str, Any] = field(default_factory=dict)
 
@@ -49,7 +49,7 @@ class QueryMetrics:
     query_text: str
     execution_time_ms: float
     rows_affected: int = 0
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     error: Optional[str] = None
 
 
@@ -193,7 +193,7 @@ class DatabaseHealthChecker:
                 checked_in=pool.checkedin() if hasattr(pool, "checkedin") else 0,
                 checked_out=pool.checkedout() if hasattr(pool, "checkedout") else 0,
                 overflow=pool.overflow() if hasattr(pool, "overflow") else 0,
-                invalid=pool.invalidatedcount() if hasattr(pool, "invalidatedcount") else 0,
+                invalid=(pool.invalidatedcount() if hasattr(pool, "invalidatedcount") else 0),
             )
 
         except Exception as e:

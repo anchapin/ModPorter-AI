@@ -1,5 +1,9 @@
+import logging
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
 """
-Enhanced Test Mod Generator for ModPorter AI
+Enhanced Test Mod Generator for PortKit
 Creates comprehensive test mods covering entities, GUIs, complex logic, and more.
 
 Implements Issue #213: Create Curated Test Sample Repository
@@ -12,7 +16,7 @@ from typing import Dict, List, Optional
 
 
 class EnhancedTestModGenerator:
-    """Generates diverse test mods for comprehensive ModPorter AI testing."""
+    """Generates diverse test mods for comprehensive PortKit testing."""
     
     def __init__(self, output_dir: Optional[str] = None):
         """Initialize the enhanced test mod generator.
@@ -49,8 +53,8 @@ class EnhancedTestModGenerator:
                 "id": mod_name,
                 "version": "1.0.0",
                 "name": f"{mod_type.title()} Entity Test Mod",
-                "description": f"Test mod with {mod_type} entities for ModPorter AI testing",
-                "authors": ["ModPorter AI Test Suite"],
+                "description": f"Test mod with {mod_type} entities for PortKit testing",
+                "authors": ["PortKit Test Suite"],
                 "license": "MIT",
                 "environment": "*",
                 "entrypoints": {
@@ -169,8 +173,8 @@ public class {mod_type.title()}EntityMod implements ModInitializer {{
                 "id": mod_name,
                 "version": "1.0.0",
                 "name": f"{gui_type.title()} GUI Test Mod",
-                "description": f"Test mod with {gui_type} GUI for ModPorter AI testing",
-                "authors": ["ModPorter AI Test Suite"],
+                "description": f"Test mod with {gui_type} GUI for PortKit testing",
+                "authors": ["PortKit Test Suite"],
                 "license": "MIT",
                 "environment": "client",
                 "entrypoints": {
@@ -224,8 +228,8 @@ public class {mod_type.title()}EntityMod implements ModInitializer {{
                 "id": mod_name,
                 "version": "1.0.0",
                 "name": f"{logic_type.title()} Logic Test Mod",
-                "description": f"Test mod with {logic_type} logic for ModPorter AI testing",
-                "authors": ["ModPorter AI Test Suite"],
+                "description": f"Test mod with {logic_type} logic for PortKit testing",
+                "authors": ["PortKit Test Suite"],
                 "license": "MIT",
                 "environment": "*",
                 "entrypoints": {
@@ -871,7 +875,7 @@ public class AutomationNode {{
         """Add common files to mod JAR."""
         # Manifest file
         manifest = f'''Manifest-Version: 1.0
-Created-By: ModPorter AI Test Suite
+Created-By: PortKit Test Suite
 Specification-Title: {mod_name.replace('_', ' ').title()}
 Specification-Version: 1.0.0
 Implementation-Title: {mod_name}
@@ -883,7 +887,7 @@ Implementation-Version: 1.0.0
         pack_mcmeta = {
             "pack": {
                 "pack_format": 9,
-                "description": f"{mod_name} test fixture for ModPorter AI"
+                "description": f"{mod_name} test fixture for PortKit"
             }
         }
         zf.writestr('pack.mcmeta', json.dumps(pack_mcmeta, indent=2))
@@ -955,16 +959,16 @@ if __name__ == "__main__":
     output_dir = Path(__file__).parent / "test_mods"
     test_suite = create_curated_test_suite(str(output_dir))
     
-    print("="*60)
-    print("CURATED TEST SAMPLE REPOSITORY CREATED")
-    print("="*60)
+    logger.info("="*60)
+    logger.info("CURATED TEST SAMPLE REPOSITORY CREATED")
+    logger.info("="*60)
     
     for category, mods in test_suite.items():
-        print(f"\n{category.upper()} ({len(mods)} mods):")
+        logger.info(f"\n{category.upper()} ({len(mods)} mods):")
         for mod_path in mods:
             size = mod_path.stat().st_size if mod_path.exists() else 0
-            print(f"  ✅ {mod_path.name} ({size} bytes)")
+            logger.info(f"  ✅ {mod_path.name} ({size} bytes)")
     
     total_mods = sum(len(mods) for mods in test_suite.values())
-    print(f"\n🎯 Total: {total_mods} comprehensive test mods created")
-    print("Ready for ModPorter AI conversion testing!")
+    logger.info(f"\n🎯 Total: {total_mods} comprehensive test mods created")
+    logger.info("Ready for PortKit conversion testing!")

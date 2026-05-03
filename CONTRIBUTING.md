@@ -1,6 +1,6 @@
-# Contributing to ModPorter AI
+# Contributing to Portkit
 
-Thank you for your interest in contributing to ModPorter AI! This document provides guidelines for contributing to the project.
+Thank you for your interest in contributing to Portkit! This document provides guidelines for contributing to the project.
 
 ## Code Style
 

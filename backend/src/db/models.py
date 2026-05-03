@@ -15,6 +15,7 @@ from sqlalchemy import (
     DECIMAL,
     TIMESTAMP,
     TypeDecorator,
+    Index,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.dialects.sqlite import JSON as SQLiteJSON
@@ -50,6 +51,8 @@ class ConversionJob(Base):
         server_default=text("'queued'"),
     )
     input_data: Mapped[dict] = mapped_column(JSONType, nullable=False)
+    user_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+    batch_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -355,6 +358,42 @@ class ConversionFeedback(Base):
     job = relationship("ConversionJob", back_populates="feedback")
 
 
+class CorrectionSubmission(Base):
+    __tablename__ = "correction_submissions"
+    __table_args__ = {"extend_existing": True}
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("conversion_jobs.id"), nullable=False, index=True
+    )
+    user_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+
+    original_output: Mapped[str] = mapped_column(Text, nullable=False)
+    original_chunk_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    )
+
+    corrected_output: Mapped[str] = mapped_column(Text, nullable=False)
+    correction_rationale: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default=text("'pending'"), index=True
+    )
+    submitted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    reviewed_by: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    review_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    applied_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    embedding_updated: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("'false'")
+    )
+
+    job = relationship("ConversionJob", backref="correction_submissions")
+
+
 # Asset Management Models
 
 
@@ -449,11 +488,26 @@ class DocumentEmbedding(Base):
     __table_args__ = {"extend_existing": True}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    embedding = Column(VECTOR(1536), nullable=False)  # Assuming nullable=False for embedding
+    embedding = Column(
+        VECTOR(1536), nullable=True
+    )  # Nullable to support parent documents without embeddings
     document_source = Column(String, nullable=False, index=True)
-    content_hash = Column(String, nullable=False, unique=True, index=True)
+    content_hash = Column(
+        String, nullable=True, unique=True, index=True
+    )  # Nullable for parent documents
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Hierarchical indexing fields
+    parent_document_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    chunk_index = Column(Integer, nullable=True, index=True)
+    hierarchy_level = Column(
+        Integer, nullable=False, server_default=text("2")
+    )  # 0=document, 1=section, 2=chunk
+    title = Column(String, nullable=True, index=True)
+
+    # Metadata storage - use JSONType to support both SQLite and PostgreSQL
+    metadata_json = Column(JSONType, nullable=True)
 
 
 # A/B Testing Models
@@ -630,3 +684,368 @@ class AnalyticsEvent(Base):
         server_default=func.now(),
         index=True,
     )
+
+
+# Community Pattern Submission Models
+
+
+class PatternSubmission(Base):
+    __tablename__ = "pattern_submissions"
+    __table_args__ = {"extend_existing": True}
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    java_pattern: Mapped[str] = mapped_column(Text, nullable=False)
+    bedrock_pattern: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    contributor_id: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+        index=True,
+    )
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        server_default=text("'pending'"),
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    reviewed_by: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    review_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    reviewed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    upvotes: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default=text("0"),
+    )
+    downvotes: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default=text("0"),
+    )
+    tags: Mapped[dict] = mapped_column(
+        JSONType,
+        nullable=False,
+        default=list,
+    )
+    category: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        index=True,
+    )
+
+
+# ============================================
+# Authentication Models
+# ============================================
+
+
+class User(Base):
+    """User model for authentication"""
+
+    __tablename__ = "users"
+    __table_args__ = {"extend_existing": True}
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    email: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    is_verified: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default=text("'false'"),
+    )
+    conversion_count: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default=text("'0'"),
+    )
+    # Email verification
+    verification_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    verification_token_expires: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    # Password reset
+    reset_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    reset_token_expires: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    # OAuth fields (Issue #980)
+    # Primary OAuth provider (discord, github, google)
+    oauth_provider: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    # OAuth provider's user ID
+    oauth_provider_user_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    # Store OAuth access token (encrypted) for API calls if needed
+    oauth_access_token: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    # Store OAuth refresh token (encrypted) for token refresh
+    oauth_refresh_token: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    # Subscription / Billing fields (Issue #970)
+    subscription_tier: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        server_default=text("'free'"),
+    )
+    stripe_customer_id: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True, unique=True
+    )
+    stripe_subscription_id: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True, unique=True
+    )
+    subscription_status: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    trial_ends_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    byok_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default=text("'false'"),
+    )
+    llm_api_key_encrypted: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    llm_api_key_label: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # Relationships
+    api_keys = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
+    usage_records = relationship("UsageRecord", back_populates="user", cascade="all, delete-orphan")
+    credit_balance = relationship("UserCredits", back_populates="user", uselist=False)
+
+    # OAuth account linking
+    oauth_accounts = relationship(
+        "OAuthAccount", back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class OAuthAccount(Base):
+    """OAuth account linking for users (Issue #980)"""
+
+    __tablename__ = "oauth_accounts"
+    __table_args__ = {"extend_existing": True}
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    user_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    oauth_provider: Mapped[str] = mapped_column(String(50), nullable=False)
+    oauth_provider_user_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    oauth_access_token: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    oauth_refresh_token: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    oauth_token_expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    oauth_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    oauth_username: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # Relationship
+    user = relationship("User", back_populates="oauth_accounts")
+
+    __table_args__ = (
+        Index(
+            "ix_oauth_accounts_provider_user",
+            "oauth_provider",
+            "oauth_provider_user_id",
+            unique=True,
+        ),
+    )
+
+
+class APIKey(Base):
+    """API Key model for programmatic access"""
+
+    __tablename__ = "api_keys"
+    __table_args__ = {"extend_existing": True}
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    user_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    key_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False, default="API Key")
+    prefix: Mapped[str] = mapped_column(String(8), nullable=False)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default=text("'true'"),
+    )
+    last_used: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # Relationships
+    user = relationship("User", back_populates="api_keys")
+
+
+class UsageRecord(Base):
+    """Tracks monthly usage for conversion limits per subscription tier (Issue #977)"""
+
+    __tablename__ = "usage_records"
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    user_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    period_year: Mapped[int] = mapped_column(Integer, nullable=False)
+    period_month: Mapped[int] = mapped_column(Integer, nullable=False)
+    web_conversions: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default=text("'0'"),
+    )
+    api_conversions: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default=text("'0'"),
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    user = relationship("User", back_populates="usage_records")
+
+    __table_args__ = (
+        Index("ix_usage_user_period", "user_id", "period_year", "period_month", unique=True),
+    )
+
+
+class WaitlistEntry(Base):
+    __tablename__ = "waitlist_entries"
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    email: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    source: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+
+class UserCredits(Base):
+    """PAYG credit balance for users (Issue #1226)"""
+
+    __tablename__ = "user_credits"
+
+    id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    user_id: Mapped[str] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    balance: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default=text("'0'"),
+    )
+    lifetime_purchased: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default=text("'0'"),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+    user = relationship("User", back_populates="credit_balance")
+
+    __table_args__ = (Index("ix_user_credits_user_id", "user_id", unique=True),)

@@ -1,4 +1,4 @@
-"""Test fixtures for ModPorter AI testing."""
+"""Test fixtures for PortKit testing."""
 
 from .test_jar_generator import TestJarGenerator, create_test_mod_suite, create_test_jar
 

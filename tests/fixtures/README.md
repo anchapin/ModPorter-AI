@@ -1,6 +1,6 @@
-# Test Fixtures for ModPorter AI
+# Test Fixtures for PortKit
 
-This directory contains comprehensive test fixtures used for automated testing of the ModPorter AI conversion pipeline, covering entities, GUIs, complex logic, and more.
+This directory contains comprehensive test fixtures used for automated testing of the PortKit conversion pipeline, covering entities, GUIs, complex logic, and more.
 
 **✅ Issue #213 Implementation**: Curated Test Sample Repository with diverse mod types for comprehensive conversion validation.
 
@@ -36,6 +36,15 @@ tests/fixtures/
         └── complex_logic_conversion_expectations.json
 ```
 
+## 📋 License Compliance
+
+All test mods must comply with PortKit's license requirements. See [`docs/legal/conversion-audit.md`](../../docs/legal/conversion-audit.md) for the approved test mod shortlist and license compliance guidelines.
+
+**Key Points:**
+- Only mods with permissive licenses (MIT, BSD, Apache 2.0, GPL 3.0+, CC0) are approved
+- Mods with CC BY-NC-ND or similar non-derivative licenses are prohibited
+- License verification is required before adding new test mods
+
 ## 🎯 Test Mod Categories
 
 ### 📦 Existing Mods (Baseline)
@@ -63,14 +72,14 @@ simple_copper_block.jar
   "version": "1.0.0",
   "name": "Simple Copper Block",
   "description": "A simple mod that adds a polished copper block",
-  "authors": ["ModPorter AI"],
+  "authors": ["PortKit"],
   "license": "MIT"
 }
 ```
 
 ### Expected Conversion Output
 
-When processed through the ModPorter AI pipeline, this JAR should produce:
+When processed through the PortKit pipeline, this JAR should produce:
 
 #### 1. JavaAnalyzerAgent Analysis Result
 ```json
@@ -269,7 +278,7 @@ generator.create_complex_logic_mod("machinery")
 | **Logic** | Complex state | Limited | Event-driven | ✅ Simplified interactions |
 | **Baseline** | Basic blocks | Full | Direct mapping | ✅ Property preservation |
 
-## 🎯 Integration with ModPorter AI Pipeline
+## 🎯 Integration with PortKit Pipeline
 
 ### JavaAnalyzerAgent Testing
 - Entity mods test AI behavior recognition
@@ -302,6 +311,18 @@ generator.create_complex_logic_mod("machinery")
 2. Regenerate affected test mods
 3. Re-run validation to ensure integrity
 4. Update expected outputs if needed
+
+## 🌍 World Gen / Biome Reference Mods
+
+External mods used for testing world generation and biome conversion capabilities:
+
+| Mod Name | License | Coverage | Notes |
+|----------|---------|----------|-------|
+| Terralith | MIT | World gen, biomes, terrain | Primary reference for world gen testing |
+| The Aether | GPL 3.0 | Dimensions, world gen | Alternative dimension mod |
+| Blue Skies | MIT | Multi-biome, dimension | Alternative biome mod |
+
+**Note:** Biomes O' Plenty was removed due to CC BY-NC-ND license (see [`docs/legal/conversion-audit.md`](../../docs/legal/conversion-audit.md))
 
 ## Legacy Files
 

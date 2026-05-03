@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   Box,
   TextField,
@@ -15,6 +15,41 @@ import {
   InputAdornment,
 } from '@mui/material';
 import { FormField } from './VisualEditor';
+
+// Helper component to reduce duplicate code in field rendering
+const BaseTextField: React.FC<{
+  field: FormField;
+  value: any;
+  onChange: (value: any) => void;
+  error?: boolean;
+  helperText?: string;
+  readOnly: boolean;
+  inputProps?: object;
+  inputAdornment?: React.ReactNode;
+}> = ({
+  field,
+  value,
+  onChange,
+  error,
+  helperText,
+  readOnly,
+  inputProps,
+  inputAdornment,
+}) => (
+  <TextField
+    key={field.id}
+    fullWidth
+    label={field.label}
+    value={value}
+    onChange={(e) => onChange(e.target.value)}
+    error={error}
+    helperText={helperText}
+    required={field.required}
+    disabled={readOnly || field.disabled}
+    {...inputProps}
+    InputProps={inputAdornment ? { startAdornment: inputAdornment } : undefined}
+  />
+);
 
 export interface FormBuilderProps {
   fields: FormField[];
@@ -40,74 +75,85 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
     [onChange]
   );
 
-  const renderField = useCallback(
+  const getFieldErrorState = useCallback(
     (field: FormField) => {
       const errors = getFieldErrors(field.name);
-      const hasError = errors.some((e) => e.severity === 'error');
-      const helperText =
-        errors.find((e) => e.severity === 'error')?.message ||
-        field.description;
+      let hasError = false;
+      let helperText = field.description;
+      for (const e of errors) {
+        if (e.severity === 'error') {
+          hasError = true;
+          helperText = e.message;
+          break;
+        }
+      }
+      return { hasError, helperText };
+    },
+    [getFieldErrors]
+  );
+
+  const renderTextField = useCallback(
+    (
+      field: FormField,
+      type: 'text' | 'number' | 'textarea',
+      extraProps: Record<string, any> = {}
+    ) => {
+      const { hasError, helperText } = getFieldErrorState(field);
+
+      const handleChangeValue = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (type === 'number') {
+          handleChange(field, parseFloat(e.target.value) || 0);
+        } else {
+          handleChange(field, e.target.value);
+        }
+      };
+
+      return (
+        <TextField
+          key={field.id}
+          fullWidth
+          label={field.label}
+          type={type === 'number' ? 'number' : undefined}
+          multiline={type === 'textarea'}
+          rows={type === 'textarea' ? 4 : undefined}
+          value={data[field.name] || ''}
+          onChange={handleChangeValue}
+          error={hasError}
+          helperText={helperText}
+          required={field.required}
+          disabled={readOnly || field.disabled}
+          {...extraProps}
+        />
+      );
+    },
+    [data, getFieldErrorState, handleChange, readOnly]
+  );
+
+  const renderField = useCallback(
+    (field: FormField) => {
+      const { hasError, helperText } = getFieldErrorState(field);
 
       switch (field.type) {
         case 'text':
-          return (
-            <TextField
-              key={field.id}
-              fullWidth
-              label={field.label}
-              value={data[field.name] || ''}
-              onChange={(e) => handleChange(field, e.target.value)}
-              error={hasError}
-              helperText={helperText}
-              required={field.required}
-              disabled={readOnly || field.disabled}
-              InputProps={{
-                startAdornment: field.name.includes('url') && (
-                  <InputAdornment position="start">🌐</InputAdornment>
-                ),
-              }}
-            />
-          );
+          return renderTextField(field, 'text', {
+            InputProps: {
+              startAdornment: field.name.includes('url') && (
+                <InputAdornment position="start">🌐</InputAdornment>
+              ),
+            },
+          });
 
         case 'number':
-          return (
-            <TextField
-              key={field.id}
-              fullWidth
-              label={field.label}
-              type="number"
-              value={data[field.name] || ''}
-              onChange={(e) =>
-                handleChange(field, parseFloat(e.target.value) || 0)
-              }
-              error={hasError}
-              helperText={helperText}
-              required={field.required}
-              disabled={readOnly || field.disabled}
-              inputProps={{
-                min: field.min,
-                max: field.max,
-                step: field.step || 1,
-              }}
-            />
-          );
+          return renderTextField(field, 'number', {
+            inputProps: {
+              min: field.min,
+              max: field.max,
+              step: field.step || 1,
+            },
+          });
 
         case 'textarea':
-          return (
-            <TextField
-              key={field.id}
-              fullWidth
-              label={field.label}
-              multiline
-              rows={4}
-              value={data[field.name] || ''}
-              onChange={(e) => handleChange(field, e.target.value)}
-              error={hasError}
-              helperText={helperText}
-              required={field.required}
-              disabled={readOnly || field.disabled}
-            />
-          );
+          return renderTextField(field, 'textarea');
 
         case 'select':
           return (
@@ -192,24 +238,51 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
 
         default:
           return (
-            <TextField
-              key={field.id}
-              fullWidth
-              label={field.label}
+            <BaseTextField
+              field={field}
               value={data[field.name] || ''}
-              onChange={(e) => handleChange(field, e.target.value)}
+              onChange={(value) => handleChange(field, value)}
               error={hasError}
               helperText={helperText}
-              required={field.required}
-              disabled={readOnly || field.disabled}
+              readOnly={readOnly}
             />
           );
       }
     },
-    [data, getFieldErrors, handleChange, readOnly]
+    [
+      data,
+      getFieldErrors,
+      getFieldErrorState,
+      handleChange,
+      readOnly,
+      renderTextField,
+    ]
   );
 
-  const visibleFields = fields.filter((field) => field.visible !== false);
+  const visibleFields = useMemo(
+    () => fields.filter((field) => field.visible !== false),
+    [fields]
+  );
+
+  // ⚡ Bolt optimization: Compute summary metrics in a single O(N) pass
+  // instead of multiple O(3N) inline array filters on every render
+  const formSummary = useMemo(() => {
+    let filled = 0;
+    let required = 0;
+
+    for (const f of visibleFields) {
+      if (data[f.name] !== undefined && data[f.name] !== '') filled++;
+      if (f.required) required++;
+    }
+
+    let errors = 0;
+    const allErrors = getFieldErrors('all');
+    for (const e of allErrors) {
+      if (e.severity === 'error') errors++;
+    }
+
+    return { filled, required, errors };
+  }, [visibleFields, data, getFieldErrors]);
 
   if (visibleFields.length === 0) {
     return (
@@ -282,17 +355,17 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             <Chip
-              label={`${visibleFields.filter((f) => data[f.name] !== undefined && data[f.name] !== '').length} fields filled`}
+              label={`${formSummary.filled} fields filled`}
               size="small"
               color="primary"
             />
             <Chip
-              label={`${visibleFields.filter((f) => f.required).length} required fields`}
+              label={`${formSummary.required} required fields`}
               size="small"
               color="secondary"
             />
             <Chip
-              label={`${getFieldErrors('all').filter((e) => e.severity === 'error').length} errors`}
+              label={`${formSummary.errors} errors`}
               size="small"
               color="error"
             />

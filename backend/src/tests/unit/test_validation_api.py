@@ -21,19 +21,22 @@ from api.validation_constants import ValidationJobStatus, ValidationMessages
 
 
 class MockValidationResult:
-        """Mock validation result object"""
-        def __init__(self, conversion_id: str):
-            self.conversion_id = conversion_id
-            self.overall_confidence = 0.95
-            self.issues = []
-            self.recommendations = ["Mock recommendation"]
-            self.semantic_analysis = {"test": "analysis"}
-            self.behavior_prediction = {"test": "prediction"}
-            self.asset_integrity = {"test": "integrity"}
-            self.manifest_validation = {"test": "validation"}
+    """Mock validation result object"""
+
+    def __init__(self, conversion_id: str):
+        self.conversion_id = conversion_id
+        self.overall_confidence = 0.95
+        self.issues = []
+        self.recommendations = ["Mock recommendation"]
+        self.semantic_analysis = {"test": "analysis"}
+        self.behavior_prediction = {"test": "prediction"}
+        self.asset_integrity = {"test": "integrity"}
+        self.manifest_validation = {"test": "validation"}
+
 
 class MockValidationAgent:
     """Mock validation agent for testing"""
+
     def __init__(self):
         self.name = "Mock Validation Agent"
         self.version = "1.0.0"
@@ -71,9 +74,7 @@ def sample_validation_request():
                 "uuid": str(uuid.uuid4()),
                 "version": [1, 0, 0],
             },
-            "modules": [
-                {"type": "data", "uuid": str(uuid.uuid4()), "version": [1, 0, 0]}
-            ],
+            "modules": [{"type": "data", "uuid": str(uuid.uuid4()), "version": [1, 0, 0]}],
         },
     }
 
@@ -116,9 +117,7 @@ class TestValidationAPI:
 
         response = client.post("/api/v1/validation/", json=request_data)
 
-        assert (
-            response.status_code == 422
-        )  # Validation error for missing required field
+        assert response.status_code == 422  # Validation error for missing required field
 
     def test_start_validation_job_empty_conversion_id(self, client):
         """Test validation job creation with empty conversion_id"""
@@ -130,7 +129,7 @@ class TestValidationAPI:
         response = client.post("/api/v1/validation/", json=request_data)
 
         assert response.status_code == 400
-        assert ValidationMessages.CONVERSION_ID_REQUIRED in response.json()["detail"]
+        assert ValidationMessages.CONVERSION_ID_REQUIRED in response.json()["message"]
 
     def test_start_validation_job_minimal_request(self, client):
         """Test validation job creation with minimal request data"""
@@ -146,9 +145,7 @@ class TestValidationAPI:
     def test_get_validation_job_status_success(self, client, sample_validation_request):
         """Test getting validation job status"""
         # First create a job
-        create_response = client.post(
-            "/api/v1/validation/", json=sample_validation_request
-        )
+        create_response = client.post("/api/v1/validation/", json=sample_validation_request)
         job_id = create_response.json()["job_id"]
 
         # Then get its status
@@ -167,11 +164,9 @@ class TestValidationAPI:
         response = client.get(f"/api/v1/validation/{fake_job_id}/status")
 
         assert response.status_code == 404
-        assert ValidationMessages.JOB_NOT_FOUND in response.json()["detail"]
+        assert ValidationMessages.JOB_NOT_FOUND in response.json()["message"]
 
-    def test_get_validation_job_status_thread_safety(
-        self, client, sample_validation_request
-    ):
+    def test_get_validation_job_status_thread_safety(self, client, sample_validation_request):
         """Test thread safety of job status retrieval"""
         # Create multiple jobs
         job_ids = []
@@ -188,14 +183,10 @@ class TestValidationAPI:
             assert response.json()["job_id"] == job_id
 
     @patch("time.sleep")  # Mock sleep to speed up tests
-    def test_get_validation_report_success(
-        self, mock_sleep, client, sample_validation_request
-    ):
+    def test_get_validation_report_success(self, mock_sleep, client, sample_validation_request):
         """Test getting validation report for completed job"""
         # Create a job
-        create_response = client.post(
-            "/api/v1/validation/", json=sample_validation_request
-        )
+        create_response = client.post("/api/v1/validation/", json=sample_validation_request)
         job_id = create_response.json()["job_id"]
 
         # Wait a moment for background task to complete
@@ -218,7 +209,7 @@ class TestValidationAPI:
             assert "retrieved_at" in data
         elif response.status_code == 400:
             # Job still processing
-            assert ValidationMessages.REPORT_NOT_AVAILABLE in response.json()["detail"]
+            assert ValidationMessages.REPORT_NOT_AVAILABLE in response.json()["message"]
 
     def test_get_validation_report_not_found(self, client):
         """Test getting report for non-existent job"""
@@ -227,7 +218,7 @@ class TestValidationAPI:
         response = client.get(f"/api/v1/validation/{fake_job_id}/report")
 
         assert response.status_code == 404
-        assert ValidationMessages.JOB_NOT_FOUND in response.json()["detail"]
+        assert ValidationMessages.JOB_NOT_FOUND in response.json()["message"]
 
     @patch("fastapi.BackgroundTasks.add_task")
     def test_get_validation_report_job_not_completed(
@@ -239,16 +230,14 @@ class TestValidationAPI:
         validation_reports.clear()
 
         # Create a job (background task won't execute due to mocking)
-        create_response = client.post(
-            "/api/v1/validation/", json=sample_validation_request
-        )
+        create_response = client.post("/api/v1/validation/", json=sample_validation_request)
         job_id = create_response.json()["job_id"]
 
         # Immediately try to get report (should fail because job is still queued)
         response = client.get(f"/api/v1/validation/{job_id}/report")
 
         assert response.status_code == 400
-        assert ValidationMessages.REPORT_NOT_AVAILABLE in response.json()["detail"]
+        assert ValidationMessages.REPORT_NOT_AVAILABLE in response.json()["message"]
 
     @patch("fastapi.BackgroundTasks.add_task")
     def test_validation_job_status_transitions(
@@ -260,9 +249,7 @@ class TestValidationAPI:
         validation_reports.clear()
 
         # Create a job (background task won't execute due to mocking)
-        create_response = client.post(
-            "/api/v1/validation/", json=sample_validation_request
-        )
+        create_response = client.post("/api/v1/validation/", json=sample_validation_request)
         job_id = create_response.json()["job_id"]
 
         # Initial status should be QUEUED
@@ -391,10 +378,7 @@ class TestValidationConstants:
     def test_validation_messages_constants(self):
         """Test ValidationMessages constants"""
         assert ValidationMessages.JOB_QUEUED == "Validation job queued successfully"
-        assert (
-            ValidationMessages.JOB_PROCESSING
-            == "Validation job is currently processing"
-        )
+        assert ValidationMessages.JOB_PROCESSING == "Validation job is currently processing"
         assert ValidationMessages.JOB_COMPLETED == "Validation successful"
         assert ValidationMessages.JOB_FAILED == "Validation failed"
         assert ValidationMessages.JOB_NOT_FOUND == "Validation job not found"
@@ -434,4 +418,4 @@ class TestValidationAPIErrorHandling:
         response = client.get(f"/api/v1/validation/{invalid_job_id}/status")
 
         assert response.status_code == 404
-        assert ValidationMessages.JOB_NOT_FOUND in response.json()["detail"]
+        assert ValidationMessages.JOB_NOT_FOUND in response.json()["message"]

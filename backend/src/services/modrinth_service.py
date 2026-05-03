@@ -8,9 +8,7 @@ API Documentation: https://docs.modrinth.app/api-v2/
 import os
 import httpx
 from typing import Optional, List, Dict, Any
-from datetime import datetime
 import logging
-import hashlib
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +27,7 @@ class ModrinthService:
         self.base_url = MODRINTH_API_BASE_URL
         self.headers = {
             "Accept": "application/json",
-            "User-Agent": "ModPorter-AI/1.0",
+            "User-Agent": "portkit/1.0",
         }
         if self.token:
             self.headers["Authorization"] = self.token

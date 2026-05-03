@@ -83,7 +83,7 @@ async def get_behavior_templates(
 
     if tags:
         # Filter by tags - any tag match
-        tag_conditions = [models.BehaviorTemplate.tags.any(tag=tag) for tag in tags]
+        tag_conditions = [models.BehaviorTemplate.tags.contains([tag]) for tag in tags]
         stmt = stmt.where(func.or_(*tag_conditions))
 
     if search:
@@ -99,7 +99,8 @@ async def get_behavior_templates(
         stmt.offset(skip)
         .limit(limit)
         .order_by(
-            models.BehaviorTemplate.is_public.desc(), models.BehaviorTemplate.updated_at.desc()
+            models.BehaviorTemplate.is_public.desc(),
+            models.BehaviorTemplate.updated_at.desc(),
         )
     )
 

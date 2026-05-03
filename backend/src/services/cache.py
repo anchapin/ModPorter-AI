@@ -1,4 +1,5 @@
 import json
+import uuid
 import redis.asyncio as aioredis
 from config import settings
 from typing import Optional
@@ -25,26 +26,38 @@ class CacheService:
     # Cache size limits
     MAX_CACHE_ITEMS = int(os.getenv("CACHE_MAX_ITEMS", "1000"))
 
-    def __init__(self) -> None:
+    def __init__(self, redis_url: Optional[str] = None, disable_redis: bool = False) -> None:
+        """
+        Initialize CacheService.
+
+        Args:
+            redis_url: Optional Redis URL override. Defaults to settings.redis_url.
+            disable_redis: If True, disable Redis explicitly (useful for testing).
+        """
         # Check if Redis is disabled for tests
-        self._redis_disabled = os.getenv("DISABLE_REDIS", "false").lower() == "true"
+        self._redis_disabled = (
+            disable_redis or os.getenv("DISABLE_REDIS", "false").lower() == "true"
+        )
+
+        self._cache_hits = 0
+        self._cache_misses = 0
 
         if self._redis_disabled:
             self._client = None
             self._redis_available = False
-            logger.info("Redis disabled for tests")
+            logger.info("Redis disabled")
         else:
+            # Initialize as available - will be set to False on first connection failure
+            self._redis_available = True
             try:
-                self._client = aioredis.from_url(settings.redis_url, decode_responses=True)
-                self._redis_available = True
+                self._client = aioredis.from_url(
+                    redis_url or settings.redis_url, decode_responses=True
+                )
                 logger.info("Redis cache initialized successfully")
             except Exception as e:
                 logger.warning(f"Failed to initialize Redis client: {e}")
                 self._client = None
                 self._redis_available = False
-
-        self._cache_hits = 0
-        self._cache_misses = 0
 
     def _json_encoder_default(self, obj):
         """
@@ -52,6 +65,8 @@ class CacheService:
         """
         if isinstance(obj, datetime):
             return obj.isoformat()
+        if isinstance(obj, uuid.UUID):
+            return str(obj)
         raise TypeError(f"Type {type(obj)} not serializable")
 
     async def set_job_status(self, job_id: str, status: dict) -> None:
@@ -103,10 +118,13 @@ class CacheService:
         try:
             key = f"{self.CACHE_MOD_ANALYSIS_PREFIX}{mod_hash}"
             await self._client.set(
-                key, json.dumps(analysis, default=self._json_encoder_default), ex=ttl_seconds
+                key,
+                json.dumps(analysis, default=self._json_encoder_default),
+                ex=ttl_seconds,
             )
         except Exception as e:
             logger.warning(f"Redis operation failed for cache_mod_analysis: {e}")
+            self._redis_available = False
 
     async def get_mod_analysis(self, mod_hash: str) -> Optional[dict]:
         try:
@@ -119,6 +137,7 @@ class CacheService:
             return None
         except Exception as e:
             logger.warning(f"Redis operation failed for get_mod_analysis: {e}")
+            self._redis_available = False
             self._cache_misses += 1
             return None
 
@@ -128,10 +147,13 @@ class CacheService:
         try:
             key = f"{self.CACHE_CONVERSION_RESULT_PREFIX}{mod_hash}"
             await self._client.set(
-                key, json.dumps(result, default=self._json_encoder_default), ex=ttl_seconds
+                key,
+                json.dumps(result, default=self._json_encoder_default),
+                ex=ttl_seconds,
             )
         except Exception as e:
             logger.warning(f"Redis operation failed for cache_conversion_result: {e}")
+            self._redis_available = False
 
     async def get_conversion_result(self, mod_hash: str) -> Optional[dict]:
         try:
@@ -203,6 +225,7 @@ class CacheService:
 
         except Exception as e:
             logger.warning(f"Redis operation failed for get_cache_stats: {e}")
+            self._redis_available = False
             stats = CacheStats(
                 hits=self._cache_hits,
                 misses=self._cache_misses,

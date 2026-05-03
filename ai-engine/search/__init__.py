@@ -6,35 +6,47 @@ along with reranking functionality for improved result quality.
 """
 
 # Import directly from modules (not relative imports)
+from search.context_manager import (
+    ContextConfig,
+    ContextManager,
+    ContextStrategy,
+    DynamicContextSizer,
+    Turn,
+)
+from search.feedback_reranker import FeedbackBoost, FeedbackReranker, rerank_with_feedback
 from search.hybrid_search_engine import (
     HybridSearchEngine,
-    UnifiedSearchEngine,
     KeywordSearchEngine,
-    SearchMode,
     RankingStrategy,
-    SearchCandidate
+    SearchCandidate,
+    SearchMode,
+    UnifiedSearchEngine,
 )
-
-from search.reranking_engine import (
-    CrossEncoderReRanker,
-    NeuralReRanker,
-    HybridReRanker,
-    FeatureBasedReRanker,
-    ContextualReRanker,
-    EnsembleReRanker,
-    ReRankingStrategy,
-    ReRankingFeature,
-    ReRankingResult
+from search.query_complexity_analyzer import (
+    ComplexityAnalysis,
+    ComplexityLevel,
+    QueryComplexityAnalyzer,
+    analyze_query_complexity,
 )
-
 from search.query_expansion import (
-    QueryExpansionEngine,
+    ContextualExpander,
+    ExpandedQuery,
     ExpansionStrategy,
     ExpansionTerm,
-    ExpandedQuery,
     MinecraftDomainExpander,
+    QueryExpansionEngine,
     SynonymExpander,
-    ContextualExpander
+)
+from search.reranking_engine import (
+    ContextualReRanker,
+    CrossEncoderReRanker,
+    EnsembleReRanker,
+    FeatureBasedReRanker,
+    HybridReRanker,
+    NeuralReRanker,
+    ReRankingFeature,
+    ReRankingResult,
+    ReRankingStrategy,
 )
 
 # Alias for backwards compatibility
@@ -42,31 +54,44 @@ QueryExpander = QueryExpansionEngine
 
 __all__ = [
     # Hybrid search
-    'HybridSearchEngine',
-    'UnifiedSearchEngine',
-    'KeywordSearchEngine',
-    'SearchMode',
-    'RankingStrategy',
-    'SearchCandidate',
-    
+    "HybridSearchEngine",
+    "UnifiedSearchEngine",
+    "KeywordSearchEngine",
+    "SearchMode",
+    "RankingStrategy",
+    "SearchCandidate",
+    # Feedback reranking
+    "FeedbackReranker",
+    "FeedbackBoost",
+    "rerank_with_feedback",
     # Reranking
-    'CrossEncoderReRanker',
-    'NeuralReRanker',
-    'HybridReRanker',
-    'FeatureBasedReRanker',
-    'ContextualReRanker',
-    'EnsembleReRanker',
-    'ReRankingStrategy',
-    'ReRankingFeature',
-    'ReRankingResult',
-    
+    "CrossEncoderReRanker",
+    "NeuralReRanker",
+    "HybridReRanker",
+    "FeatureBasedReRanker",
+    "ContextualReRanker",
+    "EnsembleReRanker",
+    "ReRankingStrategy",
+    "ReRankingFeature",
+    "ReRankingResult",
     # Query expansion
-    'QueryExpansionEngine',
-    'QueryExpander',
-    'ExpansionStrategy',
-    'ExpansionTerm',
-    'ExpandedQuery',
-    'MinecraftDomainExpander',
-    'SynonymExpander',
-    'ContextualExpander',
+    "QueryExpansionEngine",
+    "QueryExpander",
+    "ExpansionStrategy",
+    "ExpansionTerm",
+    "ExpandedQuery",
+    "MinecraftDomainExpander",
+    "SynonymExpander",
+    "ContextualExpander",
+    # Query complexity analysis
+    "QueryComplexityAnalyzer",
+    "ComplexityLevel",
+    "ComplexityAnalysis",
+    "analyze_query_complexity",
+    # Context management
+    "DynamicContextSizer",
+    "ContextManager",
+    "ContextConfig",
+    "ContextStrategy",
+    "Turn",
 ]

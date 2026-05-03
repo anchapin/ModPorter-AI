@@ -4,19 +4,59 @@ services:
   test-postgres:
     image: pgvector/pgvector:pg15
     environment:
-      POSTGRES_DB: modporter
+      POSTGRES_DB: portkit_test
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_INITDB_ARGS: --encoding=UTF-8 --lc-collate=C --lc-ctype=C
     ports:
-      - "5433:5432"
+      - '5436:5432'
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d modporter"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d portkit_test']
       interval: 10s
       timeout: 5s
       retries: 5
     volumes:
       - test_postgres_data:/var/lib/postgresql/data
+    networks:
+      - test-network
+
+  test-redis:
+    image: redis:7-alpine
+    ports:
+      - '6381:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test-network
+
+  mock-ai-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile.mock-ai
+    ports:
+      - '8080:8080'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8080/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test-network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - '1025:1025' # SMTP
+      - '8025:8025' # Web UI
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge
 
 volumes:
   test_postgres_data:

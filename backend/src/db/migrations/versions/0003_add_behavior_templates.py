@@ -73,7 +73,10 @@ def upgrade():
     op.create_index("ix_behavior_templates_is_public", "behavior_templates", ["is_public"])
     op.create_index("ix_behavior_templates_name", "behavior_templates", ["name"])
     op.create_index(
-        "ix_behavior_templates_tags", "behavior_templates", ["tags"], postgresql_using="gin"
+        "ix_behavior_templates_tags",
+        "behavior_templates",
+        ["tags"],
+        postgresql_using="gin",
     )
     # ### end Alembic commands ###
 
