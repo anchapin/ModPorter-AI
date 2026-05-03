@@ -43,11 +43,11 @@ class TestBackupMonitoring:
         test_content = b"PostgreSQL dump content for testing"
         buffer = io.BytesIO()
 
-        with gzip_module.GzipFile(fileobj=buffer, mode='wb') as gz:
+        with gzip_module.GzipFile(fileobj=buffer, mode="wb") as gz:
             gz.write(test_content)
 
         buffer.seek(0)
-        with gzip_module.GzipFile(fileobj=buffer, mode='rb') as gz:
+        with gzip_module.GzipFile(fileobj=buffer, mode="rb") as gz:
             content = gz.read()
             assert content == test_content, "Backup file should decompress correctly"
 
@@ -60,7 +60,8 @@ class TestBackupMonitoring:
 
         try:
             import gzip
-            with gzip.GzipFile(fileobj=buffer, mode='rb') as gz:
+
+            with gzip.GzipFile(fileobj=buffer, mode="rb") as gz:
                 gz.read()
             pytest.fail("Should have raised an exception for corrupted data")
         except Exception:
@@ -74,12 +75,12 @@ class TestBackupMonitoring:
         test_content = b"x" * 10240
         buffer = io.BytesIO()
 
-        with gzip_module.GzipFile(fileobj=buffer, mode='wb') as gz:
+        with gzip_module.GzipFile(fileobj=buffer, mode="wb") as gz:
             gz.write(test_content)
 
         compressed_size = buffer.tell()
         buffer.seek(0)
-        with gzip_module.GzipFile(fileobj=buffer, mode='rb') as gz:
+        with gzip_module.GzipFile(fileobj=buffer, mode="rb") as gz:
             decompressed = gz.read()
             uncompressed_size = len(decompressed)
 
@@ -94,7 +95,9 @@ class TestBackupMonitoring:
             "full_20260503_000000.dump.gz",
         ]
 
-        assert all(f.startswith("full_") for f in backup_files), "All backups should follow naming convention"
+        assert all(f.startswith("full_") for f in backup_files), (
+            "All backups should follow naming convention"
+        )
         assert all(f.endswith(".dump.gz") for f in backup_files), "All backups should be gzipped"
 
     def test_backup_retention_policy(self):
@@ -115,6 +118,7 @@ class TestPITRReadiness:
     def test_wal_archive_configured(self):
         """Test that WAL archival is properly configured."""
         import os
+
         wal_level = os.environ.get("POSTGRES_WAL_LEVEL", "replica")
         assert wal_level in ("replica", "logical"), "WAL level should be set for PITR"
 
@@ -183,7 +187,9 @@ class TestDisasterRecoveryScenarios:
         ]
 
         for i, step in enumerate(recovery_steps):
-            assert expected_order[i].lower() in step.lower(), f"Step {i+1} should follow correct order"
+            assert expected_order[i].lower() in step.lower(), (
+                f"Step {i + 1} should follow correct order"
+            )
 
     def test_ransomware_recovery_isolation(self):
         """Test that ransomware recovery includes isolation steps."""
@@ -197,14 +203,16 @@ class TestDisasterRecoveryScenarios:
 
         isolation_step = recovery_steps[0]
         assert "isolate" in isolation_step.lower(), "First step should be isolation"
-        assert "not pay" in recovery_steps[1].lower() or "do not pay" in recovery_steps[1].lower(), "Second step should explicitly say not to pay"
+        assert (
+            "not pay" in recovery_steps[1].lower() or "do not pay" in recovery_steps[1].lower()
+        ), "Second step should explicitly say not to pay"
 
     def test_rto_targets(self):
         """Test that RTO targets are documented and achievable."""
         rto_targets = {
             "db_corruption": 2,  # hours
             "complete_loss": 4,  # hours
-            "ransomware": 8,     # hours
+            "ransomware": 8,  # hours
         }
 
         for scenario, hours in rto_targets.items():
@@ -225,7 +233,7 @@ class TestBackupHealthCheckIntegration:
                 "last_success": "2026-05-03T00:00:00Z",
                 "age_hours": 12,
                 "verified": True,
-            }
+            },
         }
 
         for key in expected_keys:
@@ -252,7 +260,9 @@ class TestBackupRestoreProcedures:
         backup_file = "/backups/postgres/daily/full_20260501_120000.dump.gz"
         db_name = "portkit_recovered"
 
-        restore_cmd = f"gunzip -c {backup_file} | pg_restore -h localhost -U postgres -d {db_name} --no-owner"
+        restore_cmd = (
+            f"gunzip -c {backup_file} | pg_restore -h localhost -U postgres -d {db_name} --no-owner"
+        )
 
         assert "gunzip" in restore_cmd, "Restore command should use gunzip"
         assert "pg_restore" in restore_cmd, "Restore command should use pg_restore"
