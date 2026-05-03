@@ -23,10 +23,10 @@ def _make_db_event(**overrides):
     e.id = overrides.get("id", uuid.uuid4())
     e.event_type = overrides.get("event_type", "page_view")
     e.event_category = overrides.get("event_category", "navigation")
-    e.user_id = overrides.get("user_id", None)
-    e.session_id = overrides.get("session_id", None)
-    e.conversion_id = overrides.get("conversion_id", None)
-    e.event_properties = overrides.get("event_properties", None)
+    e.user_id = overrides.get("user_id")
+    e.session_id = overrides.get("session_id")
+    e.conversion_id = overrides.get("conversion_id")
+    e.event_properties = overrides.get("event_properties")
     e.created_at = overrides.get("created_at", datetime.now(timezone.utc))
     return e
 
