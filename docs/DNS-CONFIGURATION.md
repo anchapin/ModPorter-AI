@@ -1,8 +1,8 @@
-# DNS Configuration Guide for ModPorter AI
+# DNS Configuration Guide for PortKit
 
-This document provides DNS record configurations for various DNS providers.
+This document provides DNS record configurations for email deliverability using Resend.
 
-## Domain: portkit.cloud
+## Domain: portkit.ai
 
 ## Required DNS Records
 
@@ -10,7 +10,7 @@ This document provides DNS record configurations for various DNS providers.
 
 | Type | Name | Value | TTL | Description |
 |------|------|-------|-----|-------------|
-| A | @ (portkit.cloud) | `<PRODUCTION_SERVER_IP>` | 3600 | Main domain |
+| A | @ (portkit.ai) | `<PRODUCTION_SERVER_IP>` | 3600 | Main domain |
 | A | www | `<PRODUCTION_SERVER_IP>` | 3600 | WWW subdomain |
 | A | api | `<PRODUCTION_SERVER_IP>` | 3600 | API subdomain |
 | A | grafana | `<PRODUCTION_SERVER_IP>` | 3600 | Grafana subdomain |
@@ -19,22 +19,97 @@ This document provides DNS record configurations for various DNS providers.
 
 | Type | Name | Value | Priority | TTL | Description |
 |------|------|-------|----------|-----|-------------|
-| MX | @ | mx1.sendgrid.net | 10 | 3600 | SendGrid primary |
-| MX | @ | mx2.sendgrid.net | 20 | 3600 | SendGrid backup |
+| MX | @ | smtp.sendgrid.net | 10 | 3600 | Resend (via SendGrid) |
+| MX | @ | smtp2.sendgrid.net | 20 | 3600 | Resend backup |
 
 ### TXT Records (Text Records)
 
 | Type | Name | Value | TTL | Description |
 |------|------|-------|-----|-------------|
 | TXT | @ | `"v=spf1 include:sendgrid.net ~all"` | 3600 | SPF for email |
-| TXT | portkit.cloud._domainkey | `<DKIM_KEY_FROM_SENDGRID>` | 3600 | DKIM signing |
-| TXT | @ | `"v=DMARC1; p=none; rua=mailto:dmarc@portkit.cloud"` | 3600 | DMARC policy |
+| TXT | portkit.ai._domainkey | `<DKIM_KEY_FROM_RESEND>` | 3600 | DKIM signing |
+| TXT | @ | `"v=DMARC1; p=none; rua=mailto:dmarc@portkit.ai; pct=100"` | 3600 | DMARC policy |
 
 ### CNAME Records (Canonical Name)
 
 | Type | Name | Value | TTL | Description |
 |------|------|-------|-----|-------------|
-| CNAME | email | u12345678.ct.sendgrid.net | 3600 | SendGrid link branding |
+| CNAME | email | sendgrid.ki | 3600 | SendGrid link branding |
+| CNAME | resend._domainkey | `<DKIM_CNAME_FROM_RESEND>` | 3600 | Resend DKIM |
+
+---
+
+## Email Authentication Setup
+
+### Resend Configuration
+
+PortKit uses Resend for transactional email. Resend handles SPF automatically, but DKIM requires DNS configuration.
+
+#### Step 1: Add Domain in Resend
+
+1. Log in to Resend dashboard: https://resend.com/domains
+2. Add `portkit.ai` as a verified domain
+3. Resend will provide:
+   - SPF TXT record (auto-generated)
+   - DKIM CNAME record (custom selector)
+
+#### Step 2: Configure DNS Records
+
+**SPF Record:**
+```
+TXT @ "v=spf1 include:sendgrid.net ~all"
+```
+
+**DKIM Record (from Resend dashboard):**
+```
+CNAME resend._domainkey.portkit.ai <DKIM_CNAME_FROM_RESEND>
+```
+
+**DMARC Record:**
+```
+TXT @ "v=DMARC1; p=none; rua=mailto:dmarc@portkit.ai; pct=100"
+```
+
+### SPF (Sender Policy Framework)
+
+SPF record tells receiving mail servers which servers are authorized to send email for your domain.
+
+```
+v=spf1 include:sendgrid.net ~all
+```
+
+**Explanation:**
+- `v=spf1` - SPF version 1
+- `include:sendgrid.net` - Authorize SendGrid (Resend's provider) servers
+- `~all` - Soft fail for unauthorized servers (use `-all` for hard fail after testing)
+
+### DKIM (DomainKeys Identified Mail)
+
+DKIM adds a digital signature to emails verifying the sender and content integrity.
+
+**Setup Steps:**
+1. Log in to Resend dashboard
+2. Navigate to Domains → portkit.ai
+3. Copy the DKIM CNAME record provided
+4. Add to your DNS provider
+
+### DMARC (Domain-based Message Authentication)
+
+DMARC tells receiving servers what to do if SPF or DKIM fails.
+
+```
+v=DMARC1; p=none; rua=mailto:dmarc@portkit.ai; pct=100
+```
+
+**Policy Options:**
+- `p=none` - Monitor only (start with this)
+- `p=quarantine` - Send failing emails to spam
+- `p=reject` - Reject failing emails
+
+**After monitoring period (1-2 weeks), update to:**
+```
+v=DMARC1; p=quarantine; rua=mailto:dmarc@portkit.ai; pct=100
+```
 
 ---
 
@@ -43,7 +118,7 @@ This document provides DNS record configurations for various DNS providers.
 ### Cloudflare
 
 1. Log in to Cloudflare Dashboard
-2. Select your domain (portkit.cloud)
+2. Select your domain (portkit.ai)
 3. Go to DNS settings
 4. Add records as above
 5. **Important**: Disable proxy (orange cloud) for initial SSL setup
@@ -59,18 +134,18 @@ This document provides DNS record configurations for various DNS providers.
 ### Namecheap
 
 1. Log in to Namecheap Dashboard
-2. Select Domain List → Manage for portkit.cloud
+2. Select Domain List → Manage for portkit.ai
 3. Go to Advanced DNS tab
 4. Add records as above
 
 **Namecheap-specific settings:**
-- Email Forwarding: Disabled (using SendGrid)
+- Email Forwarding: Disabled (using Resend)
 - URL Redirect: Not needed
 
 ### GoDaddy
 
 1. Log in to GoDaddy DNS Management
-2. Select portkit.cloud
+2. Select portkit.ai
 3. Add records as above
 
 **GoDaddy-specific settings:**
@@ -80,7 +155,7 @@ This document provides DNS record configurations for various DNS providers.
 ### Route53 (AWS)
 
 1. Log in to AWS Route53 Console
-2. Select Hosted Zone for portkit.cloud
+2. Select Hosted Zone for portkit.ai
 3. Create Record Sets as above
 
 **Route53-specific settings:**
@@ -95,18 +170,18 @@ This document provides DNS record configurations for various DNS providers.
 
 ```bash
 # Check A records
-dig portkit.cloud +short
-dig www.portkit.cloud +short
-dig api.portkit.cloud +short
+dig portkit.ai +short
+dig www.portkit.ai +short
+dig api.portkit.ai +short
 
 # Check MX records
-dig portkit.cloud MX +short
+dig portkit.ai MX +short
 
 # Check TXT records
-dig portkit.cloud TXT +short
+dig portkit.ai TXT +short
 
 # Check all records
-dig portkit.cloud ANY
+dig portkit.ai ANY
 ```
 
 ### Online Tools
@@ -119,75 +194,12 @@ dig portkit.cloud ANY
 
 ---
 
-## Email Authentication Setup
-
-### SPF (Sender Policy Framework)
-
-SPF record tells receiving mail servers which servers are authorized to send email for your domain.
-
-```
-v=spf1 include:sendgrid.net ~all
-```
-
-**Explanation:**
-- `v=spf1` - SPF version 1
-- `include:sendgrid.net` - Authorize SendGrid servers
-- `~all` - Soft fail for unauthorized servers (use `-all` for hard fail)
-
-### DKIM (DomainKeys Identified Mail)
-
-DKIM adds a digital signature to emails.
-
-**Setup Steps:**
-1. Log in to SendGrid
-2. Go to Settings → Sender Authentication
-3. Authenticate your domain
-4. Copy the DKIM CNAME records provided
-5. Add to your DNS
-
-### DMARC (Domain-based Message Authentication)
-
-DMARC tells receiving servers what to do if SPF or DKIM fails.
-
-```
-v=DMARC1; p=none; rua=mailto:dmarc@portkit.cloud
-```
-
-**Policy Options:**
-- `p=none` - Monitor only (start with this)
-- `p=quarantine` - Send failing emails to spam
-- `p=reject` - Reject failing emails
-
-**After monitoring period (1-2 weeks), update to:**
-```
-v=DMARC1; p=quarantine; rua=mailto:dmarc@portkit.cloud; pct=100
-```
-
----
-
-## SSL Certificate Verification
-
-After DNS is configured and SSL certificates are installed:
-
-```bash
-# Check SSL certificate
-openssl s_client -connect portkit.cloud:443 -servername portkit.cloud
-
-# Check certificate expiry
-echo | openssl s_client -connect portkit.cloud:443 -servername portkit.cloud 2>/dev/null | openssl x509 -noout -dates
-
-# Check SSL Labs rating
-# Visit: https://www.ssllabs.com/ssltest/analyze.html?d=portkit.cloud
-```
-
----
-
 ## Troubleshooting
 
 ### DNS Not Propagating
 
 1. Wait up to 48 hours for full propagation
-2. Check with multiple DNS servers: `dig @8.8.8.8 portkit.cloud`
+2. Check with multiple DNS servers: `dig @8.8.8.8 portkit.ai`
 3. Clear local DNS cache: `sudo systemd-resolve --flush-caches`
 
 ### SSL Certificate Issues
@@ -198,8 +210,8 @@ echo | openssl s_client -connect portkit.cloud:443 -servername portkit.cloud 2>/
 
 ### Email Deliverability Issues
 
-1. Verify SPF record: `dig portkit.cloud TXT`
-2. Check DKIM setup in SendGrid
+1. Verify SPF record: `dig portkit.ai TXT`
+2. Check DKIM setup in Resend dashboard
 3. Verify DMARC policy is correct
 4. Check IP reputation: https://talosintelligence.com/
 
@@ -208,10 +220,11 @@ echo | openssl s_client -connect portkit.cloud:443 -servername portkit.cloud 2>/
 ## Post-Setup Checklist
 
 - [ ] All A records propagating correctly
-- [ ] MX records pointing to SendGrid
+- [ ] MX records pointing to SendGrid/Resend
 - [ ] SPF record configured
 - [ ] DKIM CNAME records added
 - [ ] DMARC record configured
+- [ ] Domain verified in Resend dashboard
 - [ ] SSL certificate installed and valid
 - [ ] HTTPS redirect working
 - [ ] Email sending successfully
@@ -228,4 +241,4 @@ For DNS issues:
 - AWS Route53: https://console.aws.amazon.com/route53/
 
 For email issues:
-- SendGrid Support: https://support.sendgrid.com/
+- Resend Support: https://resend.com/support
