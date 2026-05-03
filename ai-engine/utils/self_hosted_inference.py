@@ -188,7 +188,7 @@ class SelfHostedInferenceClient:
             if self.config.provider == InferenceProvider.RUNPOD_FLASH:
                 return await self._runpod_complete(messages, model, temperature, max_tokens, start_time)
             elif self.config.provider in [InferenceProvider.SGLANG, InferenceProvider.VLLM]:
-                return await self._openaiCompatible_complete(messages, model, temperature, max_tokens, start_time)
+                return await self._openai_compatible_complete(messages, model, temperature, max_tokens, start_time)
             else:
                 return await self._cloud_fallback_complete(messages, model, temperature, max_tokens, start_time)
         except Exception as e:
@@ -255,7 +255,7 @@ class SelfHostedInferenceClient:
             logger.error(f"RunPod inference failed: {e}")
             raise
 
-    async def _openaiCompatible_complete(
+    async def _openai_compatible_complete(
         self,
         messages: List[Dict[str, str]],
         model: str,
@@ -303,13 +303,7 @@ class SelfHostedInferenceClient:
     ) -> InferenceResult:
         """Fallback to cloud API when self-hosted is unavailable"""
         # Use OpenRouter or direct OpenAI as fallback
-        from utils.rate_limiter import create_openai_compatible_llm
-
         # Re-use existing cloud LLM infrastructure
-        llm = create_openai_compatible_llm()
-
-        # Convert messages to string for compatibility
-        prompt = self._messages_to_prompt(messages)
 
         # Use litellm for completion
         import litellm
