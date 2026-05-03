@@ -272,35 +272,8 @@ def reset_feature_flag_manager():
         ff_module._default_manager = original_manager
 
 
-@pytest.fixture(autouse=True)
-def clean_feature_flag_env():
-    """Clean feature flag environment variables before each test."""
-    import os
-
-    # Store original values
-    original_values = {}
-    flag_vars = [
-        "FEATURE_USER_ACCOUNTS",
-        "FEATURE_PREMIUM_FEATURES",
-        "FEATURE_API_KEYS",
-        "FEATURE_FLAG_USER_ACCOUNTS",
-        "FEATURE_FLAG_PREMIUM_FEATURES",
-        "FEATURE_FLAG_API_KEYS",
-    ]
-
-    for var in flag_vars:
-        original_values[var] = os.environ.get(var)
-        if var in os.environ:
-            del os.environ[var]
-
-    yield
-
-    # Restore original values
-    for var, value in original_values.items():
-        if value is not None:
-            os.environ[var] = value
-        elif var in os.environ:
-            del os.environ[var]
+# clean_feature_flag_env removed - feature_flag_env fixture handles this properly
+# with explicit control over when environment is set vs when it's cleaned up
 
 
 @pytest.fixture
@@ -385,3 +358,83 @@ def reset_performance_mocks():
         mock_scenarios.update(default_scenario)
     except ImportError:
         yield  # Module not available, skip
+
+
+@pytest.fixture
+def feature_flag_env():
+    """
+    Set feature flag environment variables for a test.
+
+    Usage:
+        def test_something(self, feature_flag_env):
+            feature_flag_env({"FEATURE_USER_ACCOUNTS": "false"})
+
+    This properly isolates tests from each other and resets the
+    feature flag manager between tests.
+    """
+    import os
+    import services.feature_flags as ff_module
+
+    original_values = {}
+    flag_vars = [
+        "FEATURE_USER_ACCOUNTS",
+        "FEATURE_PREMIUM_FEATURES",
+        "FEATURE_API_KEYS",
+    ]
+
+    def _set_flags(flags: dict):
+        """Set feature flag environment variables."""
+        nonlocal original_values
+        # Clear all feature flags first
+        for var in flag_vars:
+            original_values[var] = os.environ.get(var)
+            os.environ.pop(var, None)
+
+        # Set new values
+        for key, value in flags.items():
+            if value is not None:
+                os.environ[key] = value
+
+        # Reset manager to pick up new environment
+        ff_module._default_manager = None
+
+    return _set_flags
+
+
+@pytest.fixture
+def feature_flag_manager_override():
+    """
+    Directly override feature flags via the manager.
+
+    Usage:
+        def test_something(self, feature_flag_manager_override):
+            feature_flag_manager_override({"FEATURE_USER_ACCOUNTS": "true"})
+
+    This bypasses environment variables and directly controls
+    the feature flag manager state.
+    """
+    import services.feature_flags as ff_module
+    from services.feature_flags import FeatureFlagManager, FeatureFlag, FeatureFlagType
+
+    original_manager = ff_module._default_manager
+
+    def _override(flags: dict):
+        """Override feature flags directly in the manager."""
+        # Reset manager
+        ff_module._default_manager = None
+        manager = ff_module.get_feature_flag_manager()
+
+        # Apply overrides
+        for name, value in flags.items():
+            flag_name = name.replace("FEATURE_", "").lower()
+            is_enabled = str(value).lower() in ("true", "1", "yes", "on")
+            manager.register_flag(
+                name=flag_name,
+                flag_type=FeatureFlagType.BOOLEAN,
+                enabled=is_enabled,
+            )
+
+    yield _override
+
+    # Restore
+    ff_module._default_manager = original_manager

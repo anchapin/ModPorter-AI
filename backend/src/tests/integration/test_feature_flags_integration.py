@@ -10,6 +10,7 @@ Tests:
 
 import pytest
 import os
+from contextlib import asynccontextmanager
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,10 +21,10 @@ class TestFeatureFlagGating:
     """Test that feature flags properly gate access to endpoints."""
 
     async def test_user_registration_blocked_when_flag_disabled(
-        self, async_client: AsyncClient, clean_db: AsyncSession
+        self, async_client: AsyncClient, clean_db: AsyncSession, feature_flag_env
     ):
         """Registration should return 403 when FEATURE_USER_ACCOUNTS is disabled."""
-        os.environ["FEATURE_USER_ACCOUNTS"] = "false"
+        feature_flag_env({"FEATURE_USER_ACCOUNTS": "false"})
 
         response = await async_client.post(
             "/api/v1/auth/register",
@@ -36,13 +37,11 @@ class TestFeatureFlagGating:
         assert response.status_code == 403
         assert "disabled" in response.json()["message"].lower()
 
-        os.environ["FEATURE_USER_ACCOUNTS"] = "true"
-
     async def test_user_registration_allowed_when_flag_enabled(
-        self, async_client: AsyncClient, clean_db: AsyncSession
+        self, async_client: AsyncClient, clean_db: AsyncSession, feature_flag_env
     ):
         """Registration should work when FEATURE_USER_ACCOUNTS is enabled."""
-        os.environ["FEATURE_USER_ACCOUNTS"] = "true"
+        feature_flag_env({"FEATURE_USER_ACCOUNTS": "true"})
 
         response = await async_client.post(
             "/api/v1/auth/register",
@@ -56,10 +55,10 @@ class TestFeatureFlagGating:
         assert "user_id" in response.json()
 
     async def test_login_blocked_when_flag_disabled(
-        self, async_client: AsyncClient, clean_db: AsyncSession
+        self, async_client: AsyncClient, clean_db: AsyncSession, feature_flag_env
     ):
         """Login should return 403 when FEATURE_USER_ACCOUNTS is disabled."""
-        os.environ["FEATURE_USER_ACCOUNTS"] = "false"
+        feature_flag_env({"FEATURE_USER_ACCOUNTS": "false"})
 
         response = await async_client.post(
             "/api/v1/auth/login",
@@ -73,10 +72,10 @@ class TestFeatureFlagGating:
         assert "disabled" in response.json()["message"].lower()
 
     async def test_billing_checkout_blocked_when_flag_disabled(
-        self, async_client: AsyncClient, auth_headers: dict
+        self, async_client: AsyncClient, auth_headers: dict, feature_flag_env
     ):
         """Billing checkout should return 403 when FEATURE_PREMIUM_FEATURES is disabled."""
-        os.environ["FEATURE_PREMIUM_FEATURES"] = "false"
+        feature_flag_env({"FEATURE_PREMIUM_FEATURES": "false"})
 
         response = await async_client.post(
             "/api/v1/billing/checkout",
@@ -87,13 +86,11 @@ class TestFeatureFlagGating:
         assert response.status_code == 403
         assert "disabled" in response.json()["message"].lower()
 
-        os.environ["FEATURE_PREMIUM_FEATURES"] = "true"
-
     async def test_billing_subscription_blocked_when_flag_disabled(
-        self, async_client: AsyncClient, auth_headers: dict
+        self, async_client: AsyncClient, auth_headers: dict, feature_flag_env
     ):
         """Billing subscription status should return 403 when FEATURE_PREMIUM_FEATURES is disabled."""
-        os.environ["FEATURE_PREMIUM_FEATURES"] = "false"
+        feature_flag_env({"FEATURE_PREMIUM_FEATURES": "false"})
 
         response = await async_client.get(
             "/api/v1/billing/subscription",
@@ -104,10 +101,10 @@ class TestFeatureFlagGating:
         assert "disabled" in response.json()["message"].lower()
 
     async def test_api_keys_blocked_when_flag_disabled(
-        self, async_client: AsyncClient, auth_headers: dict
+        self, async_client: AsyncClient, auth_headers: dict, feature_flag_env
     ):
         """API key creation should return 403 when FEATURE_API_KEYS is disabled."""
-        os.environ["FEATURE_API_KEYS"] = "false"
+        feature_flag_env({"FEATURE_API_KEYS": "false"})
 
         response = await async_client.post(
             "/api/v1/auth/api-keys",
@@ -118,13 +115,11 @@ class TestFeatureFlagGating:
         assert response.status_code == 403
         assert "disabled" in response.json()["message"].lower()
 
-        os.environ["FEATURE_API_KEYS"] = "true"
-
     async def test_api_keys_list_blocked_when_flag_disabled(
-        self, async_client: AsyncClient, auth_headers: dict
+        self, async_client: AsyncClient, auth_headers: dict, feature_flag_env
     ):
         """API key listing should return 403 when FEATURE_API_KEYS is disabled."""
-        os.environ["FEATURE_API_KEYS"] = "false"
+        feature_flag_env({"FEATURE_API_KEYS": "false"})
 
         response = await async_client.get(
             "/api/v1/auth/api-keys",
@@ -137,9 +132,11 @@ class TestFeatureFlagGating:
 class TestFeatureFlagGracefulFallback:
     """Test that disabled features provide clear error messages."""
 
-    async def test_clear_message_when_user_accounts_disabled(self, async_client: AsyncClient):
+    async def test_clear_message_when_user_accounts_disabled(
+        self, async_client: AsyncClient, feature_flag_env
+    ):
         """Error message should indicate feature is disabled, not internal error."""
-        os.environ["FEATURE_USER_ACCOUNTS"] = "false"
+        feature_flag_env({"FEATURE_USER_ACCOUNTS": "false"})
 
         response = await async_client.post(
             "/api/v1/auth/register",
@@ -153,13 +150,11 @@ class TestFeatureFlagGracefulFallback:
         detail = response.json()["message"].lower()
         assert "disabled" in detail or "contact" in detail
 
-        os.environ["FEATURE_USER_ACCOUNTS"] = "true"
-
     async def test_clear_message_when_premium_features_disabled(
-        self, async_client: AsyncClient, auth_headers: dict
+        self, async_client: AsyncClient, auth_headers: dict, feature_flag_env
     ):
         """Error message should indicate premium feature is disabled."""
-        os.environ["FEATURE_PREMIUM_FEATURES"] = "false"
+        feature_flag_env({"FEATURE_PREMIUM_FEATURES": "false"})
 
         response = await async_client.get(
             "/api/v1/billing/subscription",
@@ -171,10 +166,10 @@ class TestFeatureFlagGracefulFallback:
         assert "disabled" in detail or "premium" in detail
 
     async def test_clear_message_when_api_keys_disabled(
-        self, async_client: AsyncClient, auth_headers: dict
+        self, async_client: AsyncClient, auth_headers: dict, feature_flag_env
     ):
         """Error message should indicate API keys feature is disabled."""
-        os.environ["FEATURE_API_KEYS"] = "false"
+        feature_flag_env({"FEATURE_API_KEYS": "false"})
 
         response = await async_client.post(
             "/api/v1/auth/api-keys",
@@ -190,11 +185,13 @@ class TestFeatureFlagGracefulFallback:
 class TestFeatureFlagEnvironmentLoading:
     """Test that feature flags load correctly from environment."""
 
-    async def test_flags_loaded_from_env_variables(self):
+    async def test_flags_loaded_from_env_variables(self, feature_flag_env):
         """Verify flags load from FEATURE_* environment variables."""
-        os.environ["FEATURE_USER_ACCOUNTS"] = "true"
-        os.environ["FEATURE_PREMIUM_FEATURES"] = "true"
-        os.environ["FEATURE_API_KEYS"] = "true"
+        feature_flag_env({
+            "FEATURE_USER_ACCOUNTS": "true",
+            "FEATURE_PREMIUM_FEATURES": "true",
+            "FEATURE_API_KEYS": "true",
+        })
 
         from services.feature_flags import get_feature_flag_manager
 
@@ -204,11 +201,13 @@ class TestFeatureFlagEnvironmentLoading:
         assert manager.is_enabled("premium_features") is True
         assert manager.is_enabled("api_keys") is True
 
-    async def test_flags_default_to_false(self):
+    async def test_flags_default_to_false(self, feature_flag_env):
         """Verify flags default to False when not set."""
-        os.environ.pop("FEATURE_USER_ACCOUNTS", None)
-        os.environ.pop("FEATURE_PREMIUM_FEATURES", None)
-        os.environ.pop("FEATURE_API_KEYS", None)
+        feature_flag_env({
+            "FEATURE_USER_ACCOUNTS": None,
+            "FEATURE_PREMIUM_FEATURES": None,
+            "FEATURE_API_KEYS": None,
+        })
 
         from services.feature_flags import get_feature_flag_manager
 
@@ -223,10 +222,10 @@ class TestFeatureFlagNoCrashOnToggle:
     """Test that toggling flags off doesn't cause crashes."""
 
     async def test_toggling_user_accounts_off_during_request(
-        self, async_client: AsyncClient, clean_db: AsyncSession
+        self, async_client: AsyncClient, clean_db: AsyncSession, feature_flag_manager_override
     ):
         """Request should fail gracefully if flag is toggled off mid-request."""
-        os.environ["FEATURE_USER_ACCOUNTS"] = "true"
+        feature_flag_manager_override({"FEATURE_USER_ACCOUNTS": "true"})
 
         response = await async_client.post(
             "/api/v1/auth/register",
@@ -238,11 +237,7 @@ class TestFeatureFlagNoCrashOnToggle:
 
         assert response.status_code == 201
 
-        os.environ["FEATURE_USER_ACCOUNTS"] = "false"
-
-        import services.feature_flags as ff_module
-
-        ff_module._default_manager = None
+        feature_flag_manager_override({"FEATURE_USER_ACCOUNTS": "false"})
 
         response = await async_client.post(
             "/api/v1/auth/register",
@@ -253,5 +248,3 @@ class TestFeatureFlagNoCrashOnToggle:
         )
 
         assert response.status_code == 403
-
-        os.environ["FEATURE_USER_ACCOUNTS"] = "true"

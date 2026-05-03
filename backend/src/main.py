@@ -73,6 +73,7 @@ from api import (
     assets,
     mode_classification,
     automation_metrics,
+    version_info,
 )
 from api.rate_limit_dashboard import router as rate_limit_dashboard_router
 
