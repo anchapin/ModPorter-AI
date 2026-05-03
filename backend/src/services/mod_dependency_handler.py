@@ -23,9 +23,6 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-from services.curseforge_service import curseforge_service
-from services.modrinth_service import modrinth_service
-
 logger = logging.getLogger(__name__)
 
 
@@ -79,7 +76,7 @@ class DependencyChainReport:
     def has_missing_critical_deps(self) -> bool:
         return any(
             w.severity == DependencySeverity.CRITICAL
-            for w in self.warning
+            for w in self.warnings
             if not w.dependency.is_optional
         )
 
@@ -146,7 +143,6 @@ class ModDependencyHandler:
         """
         logger.info(f"Analyzing dependencies for {file_path}")
 
-        # Extract metadata from the primary mod
         metadata = await self.extract_mod_metadata(file_path)
         if not metadata.modid:
             return DependencyChainReport(
@@ -161,23 +157,18 @@ class ModDependencyHandler:
                 ],
             )
 
-        # Build dependency list from metadata
         dependencies = self._parse_dependencies_from_metadata(metadata)
 
-        # Check if dependencies are resolved by bundle JARs
-        resolved_modids = {jar.modid for jar in bundle_jars if jar.modid}
+        resolved_modids = {jar.modid for jar in bundle_jars if jar.modid} if bundle_jars else set()
         for dep in dependencies:
             if dep.modid in resolved_modids or dep.modid in self.BUILTIN_MODS:
                 dep.resolved = True
                 dep.resolved_modid = dep.modid
 
-        # Identify missing dependencies
         missing_deps = [d for d in dependencies if not d.resolved and not d.is_optional]
 
-        # Generate warnings for missing dependencies
         warnings = self._generate_dependency_warnings(dependencies, missing_deps)
 
-        # Calculate estimated conversion coverage
         coverage = self._estimate_conversion_coverage(dependencies, missing_deps)
 
         report = DependencyChainReport(
@@ -208,7 +199,6 @@ class ModDependencyHandler:
             with zipfile.ZipFile(file_path, "r") as zf:
                 file_list = zf.namelist()
 
-                # Try Fabric mod.json
                 if self.FABRIC_MOD_JSON in file_list:
                     try:
                         fabric_json = json.loads(zf.read(self.FABRIC_MOD_JSON))
@@ -219,7 +209,6 @@ class ModDependencyHandler:
                     except (json.JSONDecodeError, KeyError) as e:
                         logger.warning(f"Error reading fabric.mod.json: {e}")
 
-                # Try Quilt mod.json
                 elif self.QUILT_MOD_JSON in file_list:
                     try:
                         quilt_json = json.loads(zf.read(self.QUILT_MOD_JSON))
@@ -230,7 +219,6 @@ class ModDependencyHandler:
                     except (json.JSONDecodeError, KeyError) as e:
                         logger.warning(f"Error reading quilt.mod.json: {e}")
 
-                # Try Forge mods.toml
                 elif self.FORGE_MOD_TOML in file_list:
                     try:
                         toml_content = zf.read(self.FORGE_MOD_TOML).decode("utf-8")
@@ -238,7 +226,6 @@ class ModDependencyHandler:
                     except Exception as e:
                         logger.warning(f"Error reading mods.toml: {e}")
 
-                # Try NeoForge mods.toml
                 elif self.NEOFORGE_MOD_TOML in file_list:
                     try:
                         toml_content = zf.read(self.NEOFORGE_MOD_TOML).decode("utf-8")
@@ -358,65 +345,6 @@ class ModDependencyHandler:
 
         return max(coverage, 50.0)
 
-    def analyze_bundle(
-        self,
-        jar_paths: list[str],
-        primary_mod_path: Optional[str] = None,
-    ) -> DependencyChainReport:
-        """
-        Analyze a bundle of JAR files for dependency resolution.
-
-        Args:
-            jar_paths: List of paths to JAR files in the bundle
-            primary_mod_path: Path to the primary mod (if different from first)
-
-        Returns:
-            DependencyChainReport with bundle analysis
-        """
-        bundle_jars = []
-
-        for path in jar_paths:
-            jar_modid = self._extract_modid_from_jar(path)
-            jar_name = self._extract_name_from_jar(path)
-            is_primary = path == primary_mod_path if primary_mod_path else False
-
-            bundle_jars.append(
-                BundleJar(
-                    file_path=path,
-                    modid=jar_modid,
-                    name=jar_name,
-                    is_primary=is_primary,
-                )
-            )
-
-        if not bundle_jars:
-            return DependencyChainReport(
-                primary_modid="unknown",
-                primary_mod_name=None,
-                warnings=[
-                    DependencyWarning(
-                        dependency=ModDependency(modid="unknown"),
-                        severity=DependencySeverity.WARNING,
-                        message="No valid JAR files found in bundle",
-                    )
-                ],
-            )
-
-        primary_jar = bundle_jars[0]
-        for jar in bundle_jars:
-            if jar.is_primary:
-                primary_jar = jar
-                break
-
-        import asyncio
-
-        return asyncio.run(
-            self.analyze_mod_file(
-                file_path=primary_jar.file_path,
-                bundle_jars=bundle_jars,
-            )
-        )
-
     def _extract_modid_from_jar(self, file_path: str) -> Optional[str]:
         """Extract modid from a JAR file."""
         try:
@@ -431,17 +359,16 @@ class ModDependencyHandler:
                     quilt_json = json.loads(zf.read(self.QUILT_MOD_JSON))
                     return quilt_json.get("id")
 
-                if self.FORGE_MOD_TOML in file_list or self.NEOFORGE_MOD_TOML in file_path:
-                    toml_path = self.FORGE_MOD_TOML
-                    if "neoforge" in file_path.lower():
-                        toml_path = self.NEOFORGE_MOD_TOML
+                toml_path = self.FORGE_MOD_TOML
+                if self.NEOFORGE_MOD_TOML in file_list:
+                    toml_path = self.NEOFORGE_MOD_TOML
 
-                    if toml_path in file_list:
-                        toml_content = zf.read(toml_path).decode("utf-8")
-                        for line in toml_content.split("\n"):
-                            line = line.strip()
-                            if line.startswith("modId="):
-                                return line.split("=", 1)[1].strip().strip('"')
+                if toml_path in file_list:
+                    toml_content = zf.read(toml_path).decode("utf-8")
+                    for line in toml_content.split("\n"):
+                        line = line.strip()
+                        if line.startswith("modId="):
+                            return line.split("=", 1)[1].strip().strip('"')
 
         except Exception as e:
             logger.warning(f"Error extracting modid from {file_path}: {e}")
@@ -486,7 +413,7 @@ class ModDependencyHandler:
         ]
 
         warning_lines = [
-            f"⚠️ Missing Dependencies Detected for '{report.primary_modid}'",
+            f"Warning: Missing Dependencies Detected for '{report.primary_modid}'",
             "",
             "This mod has dependencies that were not found in your upload:",
             "",
@@ -494,9 +421,9 @@ class ModDependencyHandler:
 
         for dep in report.missing_dependencies:
             if dep.is_optional:
-                warning_lines.append(f"  • [Optional] {dep.modid}")
+                warning_lines.append(f"  - [Optional] {dep.modid}")
             else:
-                warning_lines.append(f"  • {dep.modid}")
+                warning_lines.append(f"  - {dep.modid}")
 
         warning_lines.extend(
             [
