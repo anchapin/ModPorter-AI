@@ -345,12 +345,8 @@ class ModDependencyHandler:
         if not dependencies:
             return 100.0
 
-        critical_missing = sum(
-            1 for d in missing_deps if not d.is_optional and not d.is_builtin
-        )
-        total_critical = sum(
-            1 for d in dependencies if not d.is_optional and not d.is_builtin
-        )
+        critical_missing = sum(1 for d in missing_deps if not d.is_optional and not d.is_builtin)
+        total_critical = sum(1 for d in dependencies if not d.is_optional and not d.is_builtin)
 
         if total_critical == 0:
             return 100.0

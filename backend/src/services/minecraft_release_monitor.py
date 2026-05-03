@@ -19,7 +19,7 @@ MINECRAFT_DOWNLOAD_URL = "https://www.minecraft.net/en-us/download"
 
 
 class MinecraftReleaseMonitor:
-    _instance: Optional['MinecraftReleaseMonitor'] = None
+    _instance: Optional["MinecraftReleaseMonitor"] = None
 
     def __init__(self):
         self._last_checked_java: Optional[datetime] = None
@@ -29,7 +29,7 @@ class MinecraftReleaseMonitor:
         self._check_interval_hours: int = 24
 
     @classmethod
-    def get_instance(cls) -> 'MinecraftReleaseMonitor':
+    def get_instance(cls) -> "MinecraftReleaseMonitor":
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
@@ -43,7 +43,7 @@ class MinecraftReleaseMonitor:
             "java_update_available": java_update,
             "bedrock_update_available": bedrock_update,
             "current_java": self._last_java_version,
-            "current_bedrock": self._last_bedrock_version
+            "current_bedrock": self._last_bedrock_version,
         }
 
     async def _check_java_releases(self) -> bool:
@@ -70,11 +70,15 @@ class MinecraftReleaseMonitor:
 
     def get_status(self) -> dict:
         return {
-            "last_java_check": self._last_checked_java.isoformat() if self._last_checked_java else None,
-            "last_bedrock_check": self._last_checked_bedrock.isoformat() if self._last_checked_bedrock else None,
+            "last_java_check": self._last_checked_java.isoformat()
+            if self._last_checked_java
+            else None,
+            "last_bedrock_check": self._last_checked_bedrock.isoformat()
+            if self._last_checked_bedrock
+            else None,
             "current_java_version": self._last_java_version,
             "current_bedrock_version": self._last_bedrock_version,
-            "check_interval_hours": self._check_interval_hours
+            "check_interval_hours": self._check_interval_hours,
         }
 
 

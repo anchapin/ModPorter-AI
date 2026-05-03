@@ -1,6 +1,8 @@
 """
 Rate limiting utility for OpenAI API calls and LLM interactions
 Supports: OpenAI, Z.AI, Ollama, and OpenAI-compatible providers (OpenRouter, LM Studio, etc.)
+
+Issue: #1205 - LLM cost monitoring and budget guardrails
 """
 
 import logging
@@ -13,6 +15,24 @@ from typing import Any, Callable
 from langchain_openai import ChatOpenAI
 
 logger = logging.getLogger(__name__)
+
+# Cost tracking imports for Issue #1205
+_cost_guardrails = None
+_cost_middleware = None
+
+
+def _get_cost_tracking():
+    """Lazy import cost tracking to avoid circular dependencies"""
+    global _cost_guardrails, _cost_middleware
+    if _cost_guardrails is None:
+        try:
+            from utils.cost_guardrails import get_budget_guardrails, get_cost_middleware
+            _cost_guardrails = get_budget_guardrails()
+            _cost_middleware = get_cost_middleware()
+        except ImportError:
+            logger.debug("Cost guardrails not available")
+            return None, None
+    return _cost_guardrails, _cost_middleware
 
 
 @dataclass
@@ -248,9 +268,55 @@ class RateLimitedChatOpenAI:
         self.rate_limiter = RateLimiter(self.rate_config)
 
     def invoke(self, input_data, **kwargs):
-        """Implement the invoke method with rate limiting"""
-        return _execute_with_retry(
-            self._base_llm.invoke, self.rate_limiter, self.rate_config, input_data, **kwargs
+        """Implement the invoke method with rate limiting and cost tracking"""
+        start_time = time.time()
+        success = True
+        error_msg = None
+        usage = None
+
+        try:
+            result = _execute_with_retry(
+                self._base_llm.invoke, self.rate_limiter, self.rate_config, input_data, **kwargs
+            )
+
+            usage = getattr(result, "response_metadata", {}).get("usage", {})
+            return result
+
+        except Exception as e:
+            success = False
+            error_msg = str(e)
+            raise
+
+        finally:
+            self._record_cost(usage, start_time, success, error_msg, "openai")
+
+    def _record_cost(self, usage, start_time, success, error_msg, provider):
+        """Record cost for the LLM call"""
+        guardrails, middleware = _get_cost_tracking()
+        if guardrails is None or middleware is None:
+            return
+
+        if middleware._conversion_id is None:
+            return
+
+        input_tokens = usage.get("prompt_tokens", 0) if usage else 0
+        output_tokens = usage.get("completion_tokens", 0) if usage else 0
+        duration = time.time() - start_time
+
+        from utils.cost_guardrails import estimate_call_cost
+
+        model_name = getattr(self, "model_name", "gpt-4")
+        cost = estimate_call_cost(model_name, input_tokens, output_tokens)
+
+        middleware.wrap_llm_call(
+            model=model_name,
+            provider=provider,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            duration=duration,
+            cost=cost,
+            success=success,
+            error=error_msg,
         )
 
     def generate(self, messages, **kwargs):
@@ -630,8 +696,49 @@ class OpenAICompatibleLLM:
         )
 
     def invoke(self, input_data, **kwargs):
-        """Invoke the model with rate limiting"""
-        return self._execute_with_rate_limit(self._invoke_internal, input_data, **kwargs)
+        """Invoke the model with rate limiting and cost tracking"""
+        start_time = time.time()
+        success = True
+        error_msg = None
+        usage = None
+
+        try:
+            return self._execute_with_rate_limit(self._invoke_internal, input_data, **kwargs)
+        except Exception as e:
+            success = False
+            error_msg = str(e)
+            raise
+        finally:
+            self._record_cost(usage, start_time, success, error_msg, self.config.provider)
+
+    def _record_cost(self, usage, start_time, success, error_msg, provider):
+        """Record cost for the LLM call"""
+        guardrails, middleware = _get_cost_tracking()
+        if guardrails is None or middleware is None:
+            return
+
+        if middleware._conversion_id is None:
+            return
+
+        input_tokens = usage.get("prompt_tokens", 0) if usage else 0
+        output_tokens = usage.get("completion_tokens", 0) if usage else 0
+        duration = time.time() - start_time
+
+        from utils.cost_guardrails import estimate_call_cost
+
+        model_name = self.config.model
+        cost = estimate_call_cost(model_name, input_tokens, output_tokens)
+
+        middleware.wrap_llm_call(
+            model=model_name,
+            provider=provider,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            duration=duration,
+            cost=cost,
+            success=success,
+            error=error_msg,
+        )
 
     def generate(self, messages, **kwargs):
         """Generate response using the model with rate limiting"""
