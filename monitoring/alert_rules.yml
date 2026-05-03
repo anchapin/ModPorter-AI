@@ -113,3 +113,79 @@ groups:
         annotations:
           summary: "Low cache hit rate"
           description: "Cache hit rate: {{ $value | printf \"%.1f\" }}%"
+
+  - name: portkit_backup_alerts
+    interval: 60s
+    rules:
+      # Backup too old - critical if no backup in 25 hours
+      - alert: BackupTooOld
+        expr: (time() - postgres_last_backup_timestamp) > 90000
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No database backup in 25 hours"
+          description: "Last successful backup was {{ $value | printf \"%.0f\" }} seconds ago. Check backup script and S3 connectivity."
+
+      # Backup verification failed
+      - alert: BackupVerificationFailed
+        expr: postgres_backup_verification_status == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database backup verification failed"
+          description: "The latest backup failed integrity verification. Do not rely on this backup for restore."
+
+      # Backup upload to S3 failed
+      - alert: BackupUploadFailed
+        expr: postgres_backup_s3_upload_status == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Backup S3 upload failed"
+          description: "Latest backup uploaded to local storage but S3 upload failed. Offsite backup may be missing."
+
+      # PostgreSQL down
+      - alert: PostgreSQLDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "PostgreSQL is not responding to health checks. Immediate investigation required."
+
+      # Database connection pool exhausted
+      - alert: DatabasePoolExhausted
+        expr: rate(pg_stat_activity_count{state="active"}[5m]) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "Active connections approaching pool limit. May indicate connection leak or high load."
+
+  - name: portkit_recovery_alerts
+    interval: 60s
+    rules:
+      # PITR WAL archival lag
+      - alert: WALArchivalLagging
+        expr: (pg_wal_lsn_diff(pg_current_wal_lsn(), pg_last_wal_receive_lsn()) / 1024 / 1024) > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "WAL archival is lagging"
+          description: "WAL receive lag exceeds 100MB. PITR recovery may be limited."
+
+      # Replication lag (if replicas configured)
+      - alert: PostgreSQLReplicationLag
+        expr: pg_replication_lag_seconds > 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL replication lag exceeds 5 seconds"
+          description: "Replica is more than 5 seconds behind primary. Check replica health."
