@@ -271,6 +271,7 @@ class TestFileDeletionTasks:
         mock_audit.return_value = mock_audit_logger
 
         from src.services.celery_tasks import delete_input_file
+
         result = delete_input_file(job_id="test-job-123", file_id="test-file-456")
 
         mock_exists.assert_called_once()
@@ -286,6 +287,7 @@ class TestFileDeletionTasks:
         mock_audit.return_value = mock_audit_logger
 
         from src.services.celery_tasks import delete_input_file
+
         result = delete_input_file(job_id="test-job-123", file_id="nonexistent-file")
 
         assert result["deleted"] is False
@@ -302,6 +304,7 @@ class TestFileDeletionTasks:
         mock_audit.return_value = mock_audit_logger
 
         from src.services.celery_tasks import delete_input_file
+
         result = delete_input_file(job_id="test-job-123", file_id="test-file-789")
 
         assert result["deleted"] is True
@@ -332,6 +335,7 @@ class TestPurgeOrphanedFilesTask:
 
         with patch("os.path.exists", return_value=False):
             from src.services.celery_tasks import purge_orphaned_files
+
             result = purge_orphaned_files(max_age_hours=24)
 
         assert "deleted_input" in result
