@@ -91,3 +91,29 @@ class Config:
     GPU_ENABLED: bool = os.getenv("GPU_ENABLED", "false").lower() == "true"
     MODEL_CACHE_SIZE: str = os.getenv("MODEL_CACHE_SIZE", "2GB")
     MAX_TOKENS_PER_REQUEST: int = int(os.getenv("MAX_TOKENS_PER_REQUEST", "4000"))
+
+    # Self-hosted Inference Configuration (Issue #1203)
+    # INFERENCE_MODE: cloud (default) | self_hosted | hybrid (self-hosted with cloud fallback)
+    INFERENCE_MODE: str = os.getenv("INFERENCE_MODE", "cloud")
+    # INFERENCE_PROVIDER: openrouter (default) | runpod_flash | sglang | vllm | ollama
+    INFERENCE_PROVIDER: str = os.getenv("INFERENCE_PROVIDER", "openrouter")
+
+    # Self-hosted endpoint configuration
+    SELF_HOSTED_ENDPOINT: Optional[str] = os.getenv("SELF_HOSTED_ENDPOINT")
+    SELF_HOSTED_API_KEY: Optional[str] = os.getenv("SELF_HOSTED_API_KEY")
+    SELF_HOSTED_MODEL: str = os.getenv("SELF_HOSTED_MODEL", "Qwen3-Coder-7B")
+
+    # RunPod Flash configuration (Phase 2)
+    RUNPOD_ENDPOINT_ID: Optional[str] = os.getenv("RUNPOD_ENDPOINT_ID")
+    RUNPOD_API_KEY: Optional[str] = os.getenv("RUNPOD_API_KEY")
+    RUNPOD_ENDPOINT: Optional[str] = os.getenv("RUNPOD_ENDPOINT")
+
+    # SGLang configuration (Phase 3)
+    SGLANG_URL: Optional[str] = os.getenv("SGLANG_URL")
+    VLLM_URL: Optional[str] = os.getenv("VLLM_URL")
+
+    # Inference performance tuning
+    INFERENCE_TIMEOUT: int = int(os.getenv("INFERENCE_TIMEOUT", "120"))
+    INFERENCE_SCALE_TO_ZERO: bool = os.getenv("SCALE_TO_ZERO", "true").lower() == "true"
+    INFERENCE_WARMUP_REQUESTS: int = int(os.getenv("INFERENCE_WARMUP_REQUESTS", "1"))
+    INFERENCE_KEEP_ALIVE: int = int(os.getenv("INFERENCE_KEEP_ALIVE", "300"))
