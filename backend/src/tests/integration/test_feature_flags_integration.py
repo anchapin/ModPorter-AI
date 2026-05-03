@@ -187,11 +187,13 @@ class TestFeatureFlagEnvironmentLoading:
 
     async def test_flags_loaded_from_env_variables(self, feature_flag_env):
         """Verify flags load from FEATURE_* environment variables."""
-        feature_flag_env({
-            "FEATURE_USER_ACCOUNTS": "true",
-            "FEATURE_PREMIUM_FEATURES": "true",
-            "FEATURE_API_KEYS": "true",
-        })
+        feature_flag_env(
+            {
+                "FEATURE_USER_ACCOUNTS": "true",
+                "FEATURE_PREMIUM_FEATURES": "true",
+                "FEATURE_API_KEYS": "true",
+            }
+        )
 
         from services.feature_flags import get_feature_flag_manager
 
@@ -203,11 +205,13 @@ class TestFeatureFlagEnvironmentLoading:
 
     async def test_flags_default_to_false(self, feature_flag_env):
         """Verify flags default to False when not set."""
-        feature_flag_env({
-            "FEATURE_USER_ACCOUNTS": None,
-            "FEATURE_PREMIUM_FEATURES": None,
-            "FEATURE_API_KEYS": None,
-        })
+        feature_flag_env(
+            {
+                "FEATURE_USER_ACCOUNTS": None,
+                "FEATURE_PREMIUM_FEATURES": None,
+                "FEATURE_API_KEYS": None,
+            }
+        )
 
         from services.feature_flags import get_feature_flag_manager
 

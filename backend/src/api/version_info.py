@@ -47,11 +47,13 @@ async def get_version_info():
         display_string=info["display_string"],
         last_updated=info["last_updated"],
         update_source=info["update_source"],
-        notes=info["notes"]
+        notes=info["notes"],
     )
 
 
-@router.get("/versions/monitor-status", response_model=ReleaseMonitorStatus, status_code=status.HTTP_200_OK)
+@router.get(
+    "/versions/monitor-status", response_model=ReleaseMonitorStatus, status_code=status.HTTP_200_OK
+)
 async def get_monitor_status():
     """
     Get the status of the Minecraft release monitor.

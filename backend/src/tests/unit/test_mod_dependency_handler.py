@@ -436,7 +436,9 @@ class TestAsyncExtractModMetadata:
         assert report.estimated_conversion_coverage == 70.0
 
     @pytest.mark.asyncio
-    async def test_analyze_mod_file_with_all_deps_in_bundle(self, handler, tmp_path, sample_fabric_mod):
+    async def test_analyze_mod_file_with_all_deps_in_bundle(
+        self, handler, tmp_path, sample_fabric_mod
+    ):
         jar_path = tmp_path / "create.jar"
         with zipfile.ZipFile(jar_path, "w") as zf:
             zf.writestr("fabric.mod.json", json.dumps(sample_fabric_mod))
