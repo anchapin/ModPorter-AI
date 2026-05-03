@@ -31,6 +31,7 @@ MOCK_CONVERSION_RESULT_SUCCESS = {
     "processing_time_seconds": 45.2,
     "download_url": "/api/download/job_123_success",
     "quick_statistics": {"total_files_processed": 150, "output_size_mb": 12.5},
+    "minecraft_version_info": {"java_range": "1.18-1.21", "bedrock_target": "1.21.0"},
     # Issue #1004 - B2B Conversion Report category breakdown
     "category_breakdown_data": [
         {
@@ -244,6 +245,7 @@ MOCK_CONVERSION_RESULT_FAILURE = {
     "processing_time_seconds": 15.7,
     "download_url": None,
     "quick_statistics": {"total_files_processed": 30, "output_size_mb": 1.2},
+    "minecraft_version_info": {"java_range": "1.18-1.21", "bedrock_target": "1.21.0"},
     "converted_mods_data": [],
     "failed_mods_data": [
         {

@@ -79,7 +79,7 @@ class DependencyChainReport:
     def has_missing_critical_deps(self) -> bool:
         return any(
             w.severity == DependencySeverity.CRITICAL
-            for w in self.warning
+            for w in self.warnings
             if not w.dependency.is_optional
         )
 
