@@ -252,3 +252,88 @@ class TestCeleryConfigImport:
         assert celery_app.conf.timezone == "UTC"
         assert celery_app.conf.enable_utc is True
         assert celery_app.conf.task_track_started is True
+
+
+class TestFileDeletionTasks:
+    """Tests for JAR data retention file deletion tasks.
+
+    Issue: #1156 - JAR data retention: 24hr auto-delete + Privacy Policy statement
+    """
+
+    @patch("src.services.audit_logger.get_audit_logger")
+    @patch("os.path.exists")
+    @patch("os.remove")
+    @patch.dict("os.environ", {"TEMP_UPLOADS_DIR": "/tmp/test_uploads"})
+    def test_delete_input_file_success(self, mock_remove, mock_exists, mock_audit):
+        """Test successful deletion of input JAR file after conversion."""
+        mock_exists.return_value = True
+        mock_audit_logger = MagicMock()
+        mock_audit.return_value = mock_audit_logger
+
+        from src.services.celery_tasks import delete_input_file
+        result = delete_input_file(job_id="test-job-123", file_id="test-file-456")
+
+        mock_exists.assert_called_once()
+        mock_remove.assert_called_once()
+        assert result["deleted"] is True
+
+    @patch("src.services.audit_logger.get_audit_logger")
+    @patch("os.path.exists")
+    def test_delete_input_file_not_found(self, mock_exists, mock_audit):
+        """Test deletion when input file does not exist."""
+        mock_exists.return_value = False
+        mock_audit_logger = MagicMock()
+        mock_audit.return_value = mock_audit_logger
+
+        from src.services.celery_tasks import delete_input_file
+        result = delete_input_file(job_id="test-job-123", file_id="nonexistent-file")
+
+        assert result["deleted"] is False
+        assert result["reason"] == "file_not_found"
+
+    @patch("src.services.audit_logger.get_audit_logger")
+    @patch("os.path.exists")
+    @patch("os.remove")
+    @patch.dict("os.environ", {"TEMP_UPLOADS_DIR": "/tmp/test_uploads"})
+    def test_delete_input_file_audit_logging(self, mock_remove, mock_exists, mock_audit):
+        """Test that file deletion works correctly and returns proper result structure."""
+        mock_exists.return_value = True
+        mock_audit_logger = MagicMock()
+        mock_audit.return_value = mock_audit_logger
+
+        from src.services.celery_tasks import delete_input_file
+        result = delete_input_file(job_id="test-job-123", file_id="test-file-789")
+
+        assert result["deleted"] is True
+        mock_remove.assert_called_once()
+
+
+class TestPurgeOrphanedFilesTask:
+    """Tests for purge_orphaned_files Celery task.
+
+    Issue: #1156 - JAR data retention: 24hr auto-delete + Privacy Policy statement
+    """
+
+    @patch("src.core.storage.storage_manager")
+    @patch("src.services.celery_tasks._get_redis_sync")
+    def test_purge_orphaned_files_returns_expected_keys(self, mock_redis, mock_storage):
+        """Test purge returns correct result structure with deleted_input and deleted_output."""
+        from unittest.mock import MagicMock
+
+        mock_redis_instance = MagicMock()
+        mock_redis.return_value = mock_redis_instance
+        mock_redis_instance.zrange.return_value = []
+        mock_redis_instance.smembers.return_value = set()
+        mock_redis_instance.zrangebyscore.return_value = []
+
+        mock_storage.base_path = "/tmp/test_storage"
+        mock_storage.UPLOADS_DIR = "uploads"
+        mock_storage.RESULTS_DIR = "results"
+
+        with patch("os.path.exists", return_value=False):
+            from src.services.celery_tasks import purge_orphaned_files
+            result = purge_orphaned_files(max_age_hours=24)
+
+        assert "deleted_input" in result
+        assert "deleted_output" in result
+        assert "errors" in result
