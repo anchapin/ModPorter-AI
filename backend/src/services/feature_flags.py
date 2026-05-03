@@ -652,6 +652,8 @@ def initialize_default_flags(
         manager = get_feature_flag_manager()
 
     for flag_name, flag_config in DEFAULT_FLAGS.items():
+        if flag_name in manager._flags:
+            continue
         flag_type = flag_config.get("flag_type", "boolean")
         if isinstance(flag_type, str):
             flag_type = FeatureFlagType(flag_type)
