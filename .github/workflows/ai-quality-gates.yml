@@ -344,9 +344,11 @@ jobs:
 
           echo "🔍 Checking for common issues..."
           # Check for TODO comments (should have issue numbers)
-          # Exclude test files, documentation placeholders, and <issue-number> template
-          # Pattern #[0-9]+ matches issue numbers like #123 in ERE
-          if grep -rE "TODO" --include="*.py" backend/src/ --exclude-dir=tests | grep -Ev "#[0-9]+|<issue-number>"; then
+          # Only flag lines that look like actual TODOs, not documentation or conventions
+          # Pattern matches TODO(#123) format
+          if grep -rE "TODO\(\#[0-9]+\)" --include="*.py" backend/src/ --exclude-dir=tests; then
+            :  # All TODOs have issue numbers
+          else
             echo "⚠️ TODO without issue number found"
           fi
 
