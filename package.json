@@ -47,7 +47,7 @@
   "license": "MIT",
   "devDependencies": {
     "@commitlint/cli": "^20.5.2",
-    "@commitlint/config-conventional": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.3",
     "@composio/ao-core": "^0.2.0",
     "@composio/ao-web": "^0.2.2",
     "@eslint/js": "^10.0.1",

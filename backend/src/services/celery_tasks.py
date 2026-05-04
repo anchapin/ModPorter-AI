@@ -342,32 +342,36 @@ def _enqueue_task_sync(
     timeout_seconds: int = 300,
 ) -> Dict[str, Any]:
     """Internal: Enqueue a new task via Celery (synchronous)."""
-    r = redis.from_url(REDIS_URL, decode_responses=True)
 
-    task = TaskData(
-        id=str(uuid.uuid4()),
-        name=name,
-        payload=payload,
-        priority=TaskPriority(priority),
-        max_retries=max_retries,
-        timeout_seconds=timeout_seconds,
-    )
+    async def _enqueue():
+        r = redis.from_url(REDIS_URL, decode_responses=True)
 
-    r.set(f"portkit:task:{task.id}", json.dumps(task.to_dict()), ex=86400)
+        task = TaskData(
+            id=str(uuid.uuid4()),
+            name=name,
+            payload=payload,
+            priority=TaskPriority(priority),
+            max_retries=max_retries,
+            timeout_seconds=timeout_seconds,
+        )
 
-    queue_name = QUEUE_NAMES[task.priority]
-    r.zadd(queue_name, {task.id: time.time()})
-    r.hincrby(METRICS_KEY, "tasks_enqueued", 1)
+        r.set(f"portkit:task:{task.id}", json.dumps(task.to_dict()), ex=86400)
 
-    celery_app.send_task(
-        "services.celery_tasks.process_task",
-        args=[task.id],
-        queue=queue_name,
-        timeout=timeout_seconds,
-    )
+        queue_name = QUEUE_NAMES[task.priority]
+        r.zadd(queue_name, {task.id: time.time()})
+        r.hincrby(METRICS_KEY, "tasks_enqueued", 1)
 
-    logger.info(f"Task {task.id} ({name}) enqueued with priority {task.priority.name}")
-    return {"task_id": task.id, "status": "queued"}
+        celery_app.send_task(
+            "services.celery_tasks.process_task",
+            args=[task.id],
+            queue=queue_name,
+            timeout=timeout_seconds,
+        )
+
+        logger.info(f"Task {task.id} ({name}) enqueued with priority {task.priority.name}")
+        return {"task_id": task.id, "status": "queued"}
+
+    return asyncio.get_event_loop().run_until_complete(_enqueue())
 
 
 @celery_app.task(name="services.celery_tasks.get_task_status")
@@ -523,49 +527,6 @@ def handle_model_conversion_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     model_id = payload.get("model_id")
     logger.info(f"Processing model conversion: {model_id}")
     return {"model_id": model_id, "status": "converted"}
-
-
-async def list_tasks(
-    status: Optional[TaskStatus] = None,
-    limit: int = 100,
-) -> List[Dict[str, Any]]:
-    """List tasks, optionally filtered by status."""
-    r = redis.from_url(REDIS_URL, decode_responses=True)
-
-    keys = []
-    for key in r.scan_iter("portkit:task:*"):
-        keys.append(key)
-
-    tasks = []
-    for key in keys[: limit * 2]:
-        task_data = r.get(key)
-        if task_data:
-            task_dict = json.loads(task_data)
-            if status is None or task_dict["status"] == status.value:
-                tasks.append(task_dict)
-                if len(tasks) >= limit:
-                    break
-
-    return tasks
-
-
-async def get_queue_health() -> Dict[str, Any]:
-    """Get queue health stats."""
-    r = redis.from_url(REDIS_URL, decode_responses=True)
-
-    stats = {
-        "queues": {},
-        "total_queued": 0,
-        "total_processing": r.scard(PROCESSING_SET),
-        "total_dead_letter": r.zcard(DEAD_LETTER_QUEUE),
-    }
-
-    for priority, queue_name in QUEUE_NAMES.items():
-        count = r.zcard(queue_name)
-        stats["queues"][priority.name.lower()] = count
-        stats["total_queued"] += count
-
-    return stats
 
 
 # Legacy compatibility - expose same interface as old task_queue_enhanced
