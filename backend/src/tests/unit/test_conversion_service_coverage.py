@@ -145,19 +145,30 @@ class TestConversionServiceCoverage:
 
         # Mock the async generator for poll_conversion_status
         async def mock_poll(*args, **kwargs):
-            yield {"status": "completed", "progress": 100, "message": "Done", "current_stage": "final"}
+            yield {
+                "status": "completed",
+                "progress": 100,
+                "message": "Done",
+                "current_stage": "final",
+            }
 
         service.ai_client.poll_conversion_status.side_effect = mock_poll
 
         with (
             patch.object(service, "_transfer_file_to_ai_engine", return_value="/ai/path"),
             patch("services.conversion_service.ProgressHandler", new_callable=AsyncMock),
-            patch("services.conversion_service.send_conversion_notification", new_callable=AsyncMock) as mock_email,
+            patch(
+                "services.conversion_service.send_conversion_notification", new_callable=AsyncMock
+            ) as mock_email,
             patch("os.makedirs"),
         ):
             mock_email.return_value = True
             result = await service.process_conversion(
-                "job123", "/path/to/mod.jar", "mod.jar", "1.20.1", {},
+                "job123",
+                "/path/to/mod.jar",
+                "mod.jar",
+                "1.20.1",
+                {},
                 user_email="test@example.com",
                 notify_on_completion=True,
             )
@@ -174,18 +185,29 @@ class TestConversionServiceCoverage:
 
         # Mock the async generator for poll_conversion_status
         async def mock_poll(*args, **kwargs):
-            yield {"status": "completed", "progress": 100, "message": "Done", "current_stage": "final"}
+            yield {
+                "status": "completed",
+                "progress": 100,
+                "message": "Done",
+                "current_stage": "final",
+            }
 
         service.ai_client.poll_conversion_status.side_effect = mock_poll
 
         with (
             patch.object(service, "_transfer_file_to_ai_engine", return_value="/ai/path"),
             patch("services.conversion_service.ProgressHandler", new_callable=AsyncMock),
-            patch("services.conversion_service.send_conversion_notification", new_callable=AsyncMock) as mock_email,
+            patch(
+                "services.conversion_service.send_conversion_notification", new_callable=AsyncMock
+            ) as mock_email,
             patch("os.makedirs"),
         ):
             result = await service.process_conversion(
-                "job123", "/path/to/mod.jar", "mod.jar", "1.20.1", {},
+                "job123",
+                "/path/to/mod.jar",
+                "mod.jar",
+                "1.20.1",
+                {},
                 user_email=None,
                 notify_on_completion=False,
             )
@@ -201,19 +223,30 @@ class TestConversionServiceCoverage:
 
         # Mock the async generator for poll_conversion_status
         async def mock_poll(*args, **kwargs):
-            yield {"status": "completed", "progress": 100, "message": "Done", "current_stage": "final"}
+            yield {
+                "status": "completed",
+                "progress": 100,
+                "message": "Done",
+                "current_stage": "final",
+            }
 
         service.ai_client.poll_conversion_status.side_effect = mock_poll
 
         with (
             patch.object(service, "_transfer_file_to_ai_engine", return_value="/ai/path"),
             patch("services.conversion_service.ProgressHandler", new_callable=AsyncMock),
-            patch("services.conversion_service.send_conversion_notification", new_callable=AsyncMock) as mock_email,
+            patch(
+                "services.conversion_service.send_conversion_notification", new_callable=AsyncMock
+            ) as mock_email,
             patch("os.makedirs"),
         ):
             mock_email.side_effect = Exception("Email service unavailable")
             result = await service.process_conversion(
-                "job123", "/path/to/mod.jar", "mod.jar", "1.20.1", {},
+                "job123",
+                "/path/to/mod.jar",
+                "mod.jar",
+                "1.20.1",
+                {},
                 user_email="test@example.com",
                 notify_on_completion=True,
             )
