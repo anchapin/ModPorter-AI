@@ -71,6 +71,7 @@ const footerLinks = {
     { label: 'Terms of Service', href: '/terms' },
     { label: 'Privacy Policy', href: '/privacy' },
     { label: 'Cookie Policy', href: '/cookies' },
+    { label: 'IP Policy', href: '/ip-policy' },
   ],
   social: [
     { label: 'GitHub', href: 'https://github.com/anchapin/portkit' },
