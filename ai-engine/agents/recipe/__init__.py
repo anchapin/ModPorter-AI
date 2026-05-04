@@ -1,0 +1,624 @@
+"""
+Recipe converter package - handles all recipe conversion logic.
+
+Modularized from recipe_converter.py for better organization.
+
+Submodules:
+- shaped: ShapedRecipeConverter
+- shapeless: ShapelessRecipeConverter
+- furnace: FurnaceRecipeConverter (smelting, blasting, smoking, campfire, stonecutter, smithing)
+- custom_types: CustomTypesConverter (Farmer's Delight, Create, Forge custom recipes)
+- tag_resolver: FORGE_TAG_MAPPINGS and JAVA_TO_BEDROCK_ITEM_MAP
+
+Public API re-exports RecipeConverterAgent to maintain backwards compatibility.
+"""
+
+import json
+import logging
+from typing import Dict, List
+
+from crewai.tools import tool
+
+from agents.recipe.tag_resolver import (
+    FORGE_TAG_MAPPINGS,
+    JAVA_TO_BEDROCK_ITEM_MAP,
+)
+
+from agents.recipe.shaped import ShapedRecipeConverter
+from agents.recipe.shapeless import ShapelessRecipeConverter
+from agents.recipe.furnace import FurnaceRecipeConverter
+from agents.recipe.custom_types import (
+    CUSTOM_RECIPE_TYPES,
+    CustomTypesConverter,
+    is_custom_recipe_type,
+)
+
+
+logger = logging.getLogger(__name__)
+
+
+class RecipeConverterAgent:
+    """
+    Agent responsible for converting Java mod recipes to Bedrock format.
+
+    Supports:
+    - Shaped recipes (crafting table)
+    - Shapeless recipes
+    - Furnace/smelting recipes
+    - Blast furnace recipes
+    - Smithing recipes
+    - Campfire and smoking recipes
+    - Stonecutter recipes
+    - Custom Forge recipe types (Farmer's Delight, Create, etc.)
+    """
+
+    _instance = None
+
+    def __init__(self):
+        self.item_mapping = JAVA_TO_BEDROCK_ITEM_MAP.copy()
+        self.custom_mappings = {}
+        self.manual_review_reasons = []
+
+        self._shaped_converter = ShapedRecipeConverter(self._map_java_item_to_bedrock)
+        self._shapeless_converter = ShapelessRecipeConverter(self._map_java_item_to_bedrock)
+        self._furnace_converter = FurnaceRecipeConverter(self._map_java_item_to_bedrock)
+        self._custom_converter = CustomTypesConverter(self._map_java_item_to_bedrock)
+
+    @classmethod
+    def get_instance(cls):
+        """Get singleton instance of RecipeConverterAgent"""
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    def get_tools(self) -> List:
+        """Get tools available to this agent"""
+        return [
+            RecipeConverterAgent.convert_recipe_tool,
+            RecipeConverterAgent.convert_recipes_batch_tool,
+            RecipeConverterAgent.map_item_id_tool,
+            RecipeConverterAgent.validate_recipe_tool,
+        ]
+
+    def _map_java_item_to_bedrock(self, java_item_id: str) -> str:
+        """Map a Java item ID to its Bedrock equivalent."""
+        if java_item_id in self.custom_mappings:
+            return self.custom_mappings[java_item_id]
+        if java_item_id in FORGE_TAG_MAPPINGS:
+            return FORGE_TAG_MAPPINGS[java_item_id]
+        if java_item_id in self.item_mapping:
+            return self.item_mapping[java_item_id]
+        java_lower = java_item_id.lower()
+        for key, value in self.item_mapping.items():
+            if key.lower() == java_lower:
+                return value
+        logger.warning(f"No mapping found for item: {java_item_id}")
+        return java_item_id
+
+    def _parse_java_recipe(self, recipe_data: Dict) -> Dict:
+        """Parse a Java recipe JSON into a normalized format."""
+        recipe_type = recipe_data.get("type", "")
+
+        normalized = {
+            "original_type": recipe_type,
+            "result_item": None,
+            "result_count": 1,
+            "result_data": 0,
+            "ingredients": [],
+            "pattern": [],
+            "key": {},
+            "cooking_time": None,
+            "experience": 0.0,
+            "requires_manual_review": False,
+            "manual_review_reason": None,
+            "container": None,
+            "tool": None,
+        }
+
+        if "forge:conditional" in recipe_type:
+            recipe_data = self._unwrap_conditional_recipe(recipe_data)
+            recipe_type = recipe_data.get("type", "")
+
+        result = recipe_data.get("result", {})
+        if isinstance(result, dict):
+            normalized["result_item"] = result.get("item", result.get("id", ""))
+            normalized["result_count"] = result.get("count", 1)
+            normalized["result_data"] = result.get("data", 0)
+        elif isinstance(result, str):
+            normalized["result_item"] = result
+        elif isinstance(result, list) and len(result) > 0:
+            first_result = result[0] if isinstance(result[0], dict) else {"item": result[0]}
+            normalized["result_item"] = first_result.get("item", first_result.get("id", ""))
+            normalized["result_count"] = first_result.get("count", 1)
+            normalized["result_data"] = first_result.get("data", 0)
+            if len(result) > 1:
+                secondary_outputs = []
+                for r in result[1:]:
+                    if isinstance(r, dict):
+                        secondary_outputs.append(
+                            {
+                                "item": r.get("item", r.get("id", "")),
+                                "count": r.get("count", 1),
+                                "data": r.get("data", 0),
+                            }
+                        )
+                    elif isinstance(r, str):
+                        secondary_outputs.append({"item": r, "count": 1, "data": 0})
+                if secondary_outputs:
+                    normalized["secondary_outputs"] = secondary_outputs
+
+        if "crafting_shaped" in recipe_type:
+            normalized["recipe_category"] = "shaped"
+            normalized["pattern"] = recipe_data.get("pattern", [])
+            normalized["key"] = recipe_data.get("key", {})
+        elif "crafting_shapeless" in recipe_type:
+            normalized["recipe_category"] = "shapeless"
+            normalized["ingredients"] = recipe_data.get("ingredients", [])
+        elif "smelting" in recipe_type:
+            normalized["recipe_category"] = "smelting"
+            normalized["cooking_time"] = recipe_data.get("cookingtime", 200)
+            normalized["experience"] = recipe_data.get("experience", 0.0)
+            ingredient = recipe_data.get("ingredient")
+            if ingredient:
+                normalized["ingredients"] = [ingredient]
+        elif "blasting" in recipe_type:
+            normalized["recipe_category"] = "blasting"
+            normalized["cooking_time"] = recipe_data.get("cookingtime", 100)
+            normalized["experience"] = recipe_data.get("experience", 0.0)
+            ingredient = recipe_data.get("ingredient")
+            if ingredient:
+                normalized["ingredients"] = [ingredient]
+        elif "smoking" in recipe_type:
+            normalized["recipe_category"] = "smoking"
+            normalized["cooking_time"] = recipe_data.get("cookingtime", 100)
+            normalized["experience"] = recipe_data.get("experience", 0.0)
+            ingredient = recipe_data.get("ingredient")
+            if ingredient:
+                normalized["ingredients"] = [ingredient]
+        elif "campfire_cooking" in recipe_type:
+            normalized["recipe_category"] = "campfire"
+            normalized["cooking_time"] = recipe_data.get("cookingtime", 600)
+            normalized["experience"] = recipe_data.get("experience", 0.0)
+            ingredient = recipe_data.get("ingredient")
+            if ingredient:
+                normalized["ingredients"] = [ingredient]
+        elif "stonecutting" in recipe_type:
+            normalized["recipe_category"] = "stonecutter"
+            ingredient = recipe_data.get("ingredient")
+            if ingredient:
+                normalized["ingredients"] = [ingredient]
+        elif "smithing_transform" in recipe_type:
+            normalized["recipe_category"] = "smithing"
+            normalized["base"] = recipe_data.get("base")
+            normalized["addition"] = recipe_data.get("addition")
+            normalized["template"] = recipe_data.get("template")
+        elif "farmersdelight:cooking" in recipe_type:
+            normalized["recipe_category"] = "cooking_pot"
+            normalized["cooking_time"] = recipe_data.get("cookingtime", 200)
+            normalized["experience"] = recipe_data.get("experience", 0.0)
+            normalized["container"] = recipe_data.get("container")
+            ingredients = recipe_data.get("ingredients") or []
+            if not ingredients:
+                ingredient = recipe_data.get("ingredient")
+                if ingredient:
+                    ingredients = [ingredient]
+            normalized["ingredients"] = ingredients
+        elif "farmersdelight:cutting" in recipe_type:
+            normalized["recipe_category"] = "cutting_board"
+            normalized["tool"] = recipe_data.get("tool")
+            ingredients = recipe_data.get("ingredients", [])
+            normalized["ingredients"] = ingredients
+        elif "create:mechanical_crafting" in recipe_type:
+            normalized["recipe_category"] = "mechanical_crafting"
+            normalized["pattern"] = recipe_data.get("pattern", [])
+            normalized["key"] = recipe_data.get("key", {})
+        elif "create:pressing" in recipe_type:
+            normalized["recipe_category"] = "pressing"
+            ingredient = recipe_data.get("ingredient")
+            if ingredient:
+                normalized["ingredients"] = [ingredient]
+        elif "create:sequenced_assembly" in recipe_type:
+            normalized["recipe_category"] = "sequenced_assembly"
+            normalized["requires_manual_review"] = True
+            normalized["manual_review_reason"] = (
+                "Sequenced assembly requires multi-step crafting not supported in Bedrock"
+            )
+        elif "create:deploying" in recipe_type:
+            normalized["recipe_category"] = "deploying"
+            normalized["ingredients"] = recipe_data.get("ingredients", [])
+            normalized["tool"] = recipe_data.get("tool")
+        elif "create:milling" in recipe_type:
+            normalized["recipe_category"] = "milling"
+            ingredient = recipe_data.get("ingredient")
+            if ingredient:
+                normalized["ingredients"] = [ingredient]
+            normalized["heat_requirement"] = recipe_data.get("heatRequirement")
+            normalized["min_rpm"] = recipe_data.get("minRPM")
+            normalized["max_rpm"] = recipe_data.get("maxRPM")
+        elif "create:crushing" in recipe_type:
+            normalized["recipe_category"] = "crushing"
+            ingredient = recipe_data.get("ingredient")
+            if ingredient:
+                normalized["ingredients"] = [ingredient]
+            normalized["heat_requirement"] = recipe_data.get("heatRequirement")
+            normalized["min_rpm"] = recipe_data.get("minRPM")
+            normalized["max_rpm"] = recipe_data.get("maxRPM")
+        elif "create:splashing" in recipe_type:
+            normalized["recipe_category"] = "splashing"
+            normalized["ingredients"] = recipe_data.get("ingredients", [])
+            normalized["min_rpm"] = recipe_data.get("minRPM")
+            normalized["max_rpm"] = recipe_data.get("maxRPM")
+        elif "create:compacting" in recipe_type:
+            normalized["recipe_category"] = "compacting"
+            normalized["ingredients"] = recipe_data.get("ingredients", [])
+            normalized["heat_requirement"] = recipe_data.get("heatRequirement")
+            normalized["min_rpm"] = recipe_data.get("minRPM")
+            normalized["max_rpm"] = recipe_data.get("maxRPM")
+        elif "create:mixing" in recipe_type:
+            normalized["recipe_category"] = "mixing"
+            normalized["ingredients"] = recipe_data.get("ingredients", [])
+            normalized["heat_requirement"] = recipe_data.get("heatRequirement")
+            normalized["min_rpm"] = recipe_data.get("minRPM")
+            normalized["max_rpm"] = recipe_data.get("maxRPM")
+            fluid_ingredients = []
+            for ing in normalized.get("ingredients", []):
+                if (
+                    isinstance(ing, dict)
+                    and ing.get("tag")
+                    and ing["tag"].startswith("forge:fluids")
+                ):
+                    fluid_ingredients.append(ing)
+                elif isinstance(ing, str) and ing.startswith("forge:fluids"):
+                    fluid_ingredients.append(ing)
+            if fluid_ingredients:
+                normalized["requires_manual_review"] = True
+                normalized["manual_review_reason"] = (
+                    "Mixing recipes with fluid ingredients require Create's mixer block not available in Bedrock"
+                )
+        elif "create:filling" in recipe_type or "create:emptying" in recipe_type:
+            normalized["recipe_category"] = "fluid_interaction"
+            normalized["requires_manual_review"] = True
+            normalized["manual_review_reason"] = (
+                "Fluid interaction recipes require Create's fluid mechanisms not available in Bedrock"
+            )
+        elif is_custom_recipe_type(recipe_type):
+            normalized["recipe_category"] = "custom"
+            normalized["requires_manual_review"] = True
+            normalized["manual_review_reason"] = (
+                f"Custom Forge recipe type '{recipe_type}' requires manual review"
+            )
+        else:
+            normalized["recipe_category"] = "unknown"
+            normalized["requires_manual_review"] = True
+            normalized["manual_review_reason"] = f"Unknown recipe type: {recipe_type}"
+            logger.warning(f"Unknown recipe type: {recipe_type}")
+
+        return normalized
+
+    def _unwrap_conditional_recipe(self, recipe_data: Dict) -> Dict:
+        """Unwrap a forge:conditional recipe to get the inner recipe."""
+        if "recipe" in recipe_data:
+            inner = recipe_data["recipe"]
+            if isinstance(inner, dict):
+                return inner
+        return recipe_data
+
+    def _convert_shaped_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a shaped recipe to Bedrock format."""
+        return self._shaped_converter.convert_to_bedrock(normalized_recipe, namespace, recipe_name)
+
+    def _convert_shapeless_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a shapeless recipe to Bedrock format."""
+        return self._shapeless_converter.convert_to_bedrock(normalized_recipe, namespace, recipe_name)
+
+    def _convert_smelting_to_bedrock(
+        self,
+        normalized_recipe: Dict,
+        namespace: str,
+        recipe_name: str,
+        recipe_type: str = "smelting",
+    ) -> Dict:
+        """Convert a furnace-type recipe to Bedrock format."""
+        return self._furnace_converter.convert_smelting_to_bedrock(
+            normalized_recipe, namespace, recipe_name, recipe_type
+        )
+
+    def _convert_stonecutter_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a stonecutter recipe to Bedrock format."""
+        return self._furnace_converter.convert_stonecutter_to_bedrock(normalized_recipe, namespace, recipe_name)
+
+    def _convert_smithing_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a smithing recipe to Bedrock format."""
+        return self._furnace_converter.convert_smithing_to_bedrock(normalized_recipe, namespace, recipe_name)
+
+    def _convert_cooking_pot_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Farmer's Delight cooking pot recipe to Bedrock format."""
+        return self._custom_converter.convert_cooking_pot_to_bedrock(normalized_recipe, namespace, recipe_name)
+
+    def _convert_cutting_board_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Farmer's Delight cutting board recipe to Bedrock format."""
+        return self._custom_converter.convert_cutting_board_to_bedrock(normalized_recipe, namespace, recipe_name)
+
+    def _convert_mechanical_crafting_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create mechanical crafting recipe to Bedrock format."""
+        return self._custom_converter.convert_mechanical_crafting_to_bedrock(normalized_recipe, namespace, recipe_name)
+
+    def _convert_pressing_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create pressing recipe to Bedrock format."""
+        return self._custom_converter.convert_pressing_to_bedrock(normalized_recipe, namespace, recipe_name)
+
+    def _convert_milling_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create milling recipe to Bedrock format."""
+        return self._custom_converter.convert_milling_to_bedrock(normalized_recipe, namespace, recipe_name)
+
+    def _convert_crushing_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create crushing recipe to Bedrock format."""
+        return self._custom_converter.convert_crushing_to_bedrock(normalized_recipe, namespace, recipe_name)
+
+    def _convert_deploying_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create deploying recipe to Bedrock format."""
+        return self._custom_converter.convert_deploying_to_bedrock(normalized_recipe, namespace, recipe_name)
+
+    def _convert_splashing_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create splashing recipe to Bedrock format."""
+        return self._custom_converter.convert_splashing_to_bedrock(normalized_recipe, namespace, recipe_name)
+
+    def _convert_compacting_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create compacting recipe to Bedrock format."""
+        return self._custom_converter.convert_compacting_to_bedrock(normalized_recipe, namespace, recipe_name)
+
+    def _create_manual_review_result(self, namespace: str, recipe_name: str, reason: str) -> Dict:
+        """Create a result indicating the recipe requires manual review."""
+        return {
+            "format_version": "1.20.10",
+            "manual_review_required": True,
+            "reason": reason,
+            "original_recipe": f"{namespace}:{recipe_name}",
+            "description": {"identifier": f"{namespace}:{recipe_name}"},
+        }
+
+    def convert_recipe(
+        self, recipe_data: Dict, namespace: str = "mod", recipe_name: str = None
+    ) -> Dict:
+        """Convert a Java recipe to Bedrock format."""
+        normalized = self._parse_java_recipe(recipe_data)
+
+        if not recipe_name:
+            result_item = normalized.get("result_item", "unknown")
+            if ":" in result_item:
+                _, item_name = result_item.split(":", 1)
+                recipe_name = item_name
+            else:
+                recipe_name = result_item
+
+        category = normalized.get("recipe_category", "unknown")
+
+        if category == "shaped":
+            return self._convert_shaped_to_bedrock(normalized, namespace, recipe_name)
+        elif category == "shapeless":
+            return self._convert_shapeless_to_bedrock(normalized, namespace, recipe_name)
+        elif category == "smelting":
+            return self._convert_smelting_to_bedrock(normalized, namespace, recipe_name, "smelting")
+        elif category == "blasting":
+            return self._convert_smelting_to_bedrock(normalized, namespace, recipe_name, "blasting")
+        elif category == "smoking":
+            return self._convert_smelting_to_bedrock(normalized, namespace, recipe_name, "smoking")
+        elif category == "campfire":
+            return self._convert_smelting_to_bedrock(normalized, namespace, recipe_name, "campfire")
+        elif category == "stonecutter":
+            return self._convert_stonecutter_to_bedrock(normalized, namespace, recipe_name)
+        elif category == "smithing":
+            return self._convert_smithing_to_bedrock(normalized, namespace, recipe_name)
+        elif category == "cooking_pot":
+            return self._convert_cooking_pot_to_bedrock(normalized, namespace, recipe_name)
+        elif category == "cutting_board":
+            return self._convert_cutting_board_to_bedrock(normalized, namespace, recipe_name)
+        elif category == "mechanical_crafting":
+            return self._convert_mechanical_crafting_to_bedrock(normalized, namespace, recipe_name)
+        elif category == "pressing":
+            return self._convert_pressing_to_bedrock(normalized, namespace, recipe_name)
+        elif category == "milling":
+            return self._convert_milling_to_bedrock(normalized, namespace, recipe_name)
+        elif category == "crushing":
+            return self._convert_crushing_to_bedrock(normalized, namespace, recipe_name)
+        elif category == "deploying":
+            return self._convert_deploying_to_bedrock(normalized, namespace, recipe_name)
+        elif category == "splashing":
+            return self._convert_splashing_to_bedrock(normalized, namespace, recipe_name)
+        elif category == "compacting":
+            return self._convert_compacting_to_bedrock(normalized, namespace, recipe_name)
+        elif category in ("sequenced_assembly", "mixing", "fluid_interaction"):
+            reason = normalized.get(
+                "manual_review_reason", "Custom recipe type requires manual review"
+            )
+            return self._create_manual_review_result(namespace, recipe_name, reason)
+        elif category == "custom":
+            reason = normalized.get("manual_review_reason", "Unknown custom Forge recipe type")
+            return self._create_manual_review_result(namespace, recipe_name, reason)
+        else:
+            logger.warning(f"Cannot convert unknown recipe category: {category}")
+            return {"success": False, "error": f"Unknown recipe category: {category}"}
+
+    def add_custom_item_mapping(self, java_item_id: str, bedrock_item_id: str):
+        """Add a custom Java to Bedrock item mapping."""
+        self.custom_mappings[java_item_id] = bedrock_item_id
+
+    @tool
+    @staticmethod
+    def convert_recipe_tool(recipe_json: str) -> str:
+        """Convert a Java recipe to Bedrock format."""
+        try:
+            input_data = json.loads(recipe_json)
+            agent = RecipeConverterAgent.get_instance()
+
+            if "recipe_data" in input_data and isinstance(input_data["recipe_data"], dict):
+                recipe_data = input_data["recipe_data"]
+                namespace = input_data.get("namespace") or recipe_data.pop("namespace", "mod")
+                recipe_name = input_data.get("recipe_name") or recipe_data.pop("recipe_name", None)
+            else:
+                recipe_data = input_data
+                namespace = recipe_data.pop("namespace", "mod")
+                recipe_name = recipe_data.pop("recipe_name", None)
+
+            result = agent.convert_recipe(recipe_data, namespace, recipe_name)
+
+            return json.dumps({"success": True, "converted_recipe": result}, indent=2)
+
+        except Exception as e:
+            return json.dumps({"success": False, "error": str(e)}, indent=2)
+
+    @tool
+    @staticmethod
+    def convert_recipes_batch_tool(recipes_json: str) -> str:
+        """Convert multiple Java recipes to Bedrock format in batch."""
+        try:
+            recipes = json.loads(recipes_json)
+            agent = RecipeConverterAgent.get_instance()
+
+            results = []
+            for item in recipes:
+                if "recipe_data" in item and isinstance(item["recipe_data"], dict):
+                    recipe_data = item["recipe_data"]
+                    namespace = item.get("namespace") or recipe_data.pop("namespace", "mod")
+                    recipe_name = item.get("recipe_name") or recipe_data.pop("recipe_name", None)
+                else:
+                    recipe_data = item
+                    namespace = recipe_data.pop("namespace", "mod")
+                    recipe_name = recipe_data.pop("recipe_name", None)
+
+                converted = agent.convert_recipe(recipe_data, namespace, recipe_name)
+                results.append(converted)
+
+            return json.dumps(
+                {"success": True, "converted_recipes": results, "total_count": len(results)},
+                indent=2,
+            )
+
+        except Exception as e:
+            return json.dumps({"success": False, "error": str(e)}, indent=2)
+
+    @tool
+    @staticmethod
+    def map_item_id_tool(item_mapping_json: str) -> str:
+        """Add custom Java to Bedrock item ID mappings."""
+        try:
+            mappings = json.loads(item_mapping_json)
+            agent = RecipeConverterAgent.get_instance()
+
+            if isinstance(mappings, list):
+                for mapping in mappings:
+                    if isinstance(mapping, dict) and "java" in mapping and "bedrock" in mapping:
+                        agent.add_custom_item_mapping(mapping["java"], mapping["bedrock"])
+            elif isinstance(mappings, dict):
+                for java_id, bedrock_id in mappings.items():
+                    agent.add_custom_item_mapping(java_id, bedrock_id)
+
+            return json.dumps({"success": True, "message": "Custom item mappings added"}, indent=2)
+
+        except Exception as e:
+            return json.dumps({"success": False, "error": str(e)}, indent=2)
+
+    @tool
+    @staticmethod
+    def validate_recipe_tool(recipe_json: str) -> str:
+        """Validate a Bedrock recipe for correctness."""
+        try:
+            recipe = json.loads(recipe_json)
+            issues = []
+
+            if "format_version" not in recipe:
+                issues.append("Missing format_version")
+
+            recipe_types = [
+                "minecraft:recipe_shaped",
+                "minecraft:recipe_shapeless",
+                "minecraft:recipe_furnace",
+                "minecraft:recipe_furnace_blast",
+                "minecraft:recipe_furnace_smoke",
+                "minecraft:recipe_campfire",
+                "minecraft:recipe_stonecutter",
+                "minecraft:recipe_smithing_transform",
+            ]
+
+            found_type = None
+            for rt in recipe_types:
+                if rt in recipe:
+                    found_type = rt
+                    break
+
+            if not found_type:
+                issues.append("Unknown recipe type")
+                return json.dumps({"valid": False, "issues": issues}, indent=2)
+
+            recipe_content = recipe.get(found_type, {})
+
+            if "description" not in recipe_content:
+                issues.append("Missing description")
+            elif "identifier" not in recipe_content.get("description", {}):
+                issues.append("Missing description.identifier")
+
+            if found_type == "minecraft:recipe_shaped":
+                if "pattern" not in recipe_content:
+                    issues.append("Missing pattern")
+                if "key" not in recipe_content:
+                    issues.append("Missing key")
+                if "result" not in recipe_content:
+                    issues.append("Missing result")
+            elif found_type == "minecraft:recipe_shapeless":
+                if "ingredients" not in recipe_content:
+                    issues.append("Missing ingredients")
+                if "result" not in recipe_content:
+                    issues.append("Missing result")
+            elif "recipe_furnace" in found_type or found_type == "minecraft:recipe_campfire":
+                if "ingredients" not in recipe_content:
+                    issues.append("Missing ingredients")
+                if "result" not in recipe_content:
+                    issues.append("Missing result")
+            elif found_type == "minecraft:recipe_stonecutter":
+                if "ingredients" not in recipe_content:
+                    issues.append("Missing ingredients")
+                if "result" not in recipe_content:
+                    issues.append("Missing result")
+
+            is_valid = len(issues) == 0
+
+            return json.dumps(
+                {"valid": is_valid, "recipe_type": found_type, "issues": issues}, indent=2
+            )
+
+        except Exception as e:
+            return json.dumps({"valid": False, "issues": [str(e)]}, indent=2)
+
+
+__all__ = [
+    "RecipeConverterAgent",
+    "FORGE_TAG_MAPPINGS",
+    "JAVA_TO_BEDROCK_ITEM_MAP",
+    "CUSTOM_RECIPE_TYPES",
+]

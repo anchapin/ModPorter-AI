@@ -650,6 +650,51 @@ class QAValidatorAgent:
         """Get the current pass/fail threshold."""
         return self.pass_threshold
 
+    @property
+    def valid_block_components(self):
+        """Return valid block components set."""
+        from .structure_validator import VALID_BLOCK_COMPONENTS
+        return VALID_BLOCK_COMPONENTS
+
+    @property
+    def valid_sound_formats(self):
+        """Return valid sound formats set."""
+        from .structure_validator import VALID_SOUND_FORMATS
+        return VALID_SOUND_FORMATS
+
+    def _is_power_of_2(self, n: int) -> bool:
+        """Check if a number is a power of 2."""
+        return n != 0 and (n & (n - 1)) == 0
+
+    def _calculate_overall_score(self, result: Dict[str, Any]) -> int:
+        """Calculate overall quality score (0-100%)."""
+        return calculate_overall_score(result, self.validation_categories)
+
+    def _validate_manifest_schema(self, manifest: dict, path: str) -> Dict[str, Any]:
+        """Validate manifest against schema."""
+        from .manifest_validator import validate_manifest
+        return validate_manifest(manifest, path)
+
+    def _validate_block_definition(self, block: dict, path: str) -> Dict[str, Any]:
+        """Validate block definition against Bedrock schema."""
+        from .structure_validator import validate_block_definition
+        return validate_block_definition(block, path)
+
+    def _validate_item_definition(self, item: dict, path: str) -> Dict[str, Any]:
+        """Validate item definition against Bedrock schema."""
+        from .structure_validator import validate_item_definition
+        return validate_item_definition(item, path)
+
+    def _validate_entity_definition(self, entity: dict, path: str) -> Dict[str, Any]:
+        """Validate entity definition against Bedrock schema."""
+        from .structure_validator import validate_entity_definition
+        return validate_entity_definition(entity, path)
+
+    def _extract_texture_references(self, zipf) -> List[str]:
+        """Extract all texture file references from JSON files."""
+        from .texture_validator import extract_texture_references
+        return extract_texture_references(zipf)
+
     def validate_conversion_quality(self, quality_data: str) -> str:
         """Validate overall conversion quality."""
         try:
