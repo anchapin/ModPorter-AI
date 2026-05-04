@@ -68,6 +68,8 @@ jobs:
       - name: Clear any cached coverage/test artifacts
         run: |
           rm -rf backend/.pytest_cache backend/coverage.json backend/.coverage 2>/dev/null || true
+          find backend/src/tests -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+          find backend/src/tests -name "*.pyc" -delete 2>/dev/null || true
           rm -f backend/src/tests/unit/test_byok_vault.py backend/src/tests/unit/test_billing.py 2>/dev/null || true
 
       - name: Set up Python
@@ -111,6 +113,8 @@ jobs:
       - name: Clear any cached coverage/test artifacts
         run: |
           rm -rf backend/.pytest_cache backend/coverage.json backend/.coverage 2>/dev/null || true
+          find backend/src/tests -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+          find backend/src/tests -name "*.pyc" -delete 2>/dev/null || true
           rm -f backend/src/tests/unit/test_byok_vault.py backend/src/tests/unit/test_billing.py 2>/dev/null || true
 
       - name: Set up Python
@@ -155,6 +159,8 @@ jobs:
       - name: Clear any cached coverage/test artifacts
         run: |
           rm -rf backend/.pytest_cache backend/coverage.json backend/.coverage 2>/dev/null || true
+          find backend/src/tests -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+          find backend/src/tests -name "*.pyc" -delete 2>/dev/null || true
           rm -f backend/src/tests/unit/test_byok_vault.py backend/src/tests/unit/test_billing.py 2>/dev/null || true
 
       - name: Set up Python
@@ -213,6 +219,8 @@ jobs:
       - name: Clear any cached files that might include deleted tests
         run: |
           rm -rf backend/.pytest_cache backend/coverage.json backend/.coverage 2>/dev/null || true
+          find backend/src/tests -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+          find backend/src/tests -name "*.pyc" -delete 2>/dev/null || true
           rm -f backend/src/tests/unit/test_byok_vault.py backend/src/tests/unit/test_billing.py 2>/dev/null || true
 
       - name: Verify test_byok_vault.py does not exist
