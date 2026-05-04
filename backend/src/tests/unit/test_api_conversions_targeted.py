@@ -224,3 +224,30 @@ class TestConversionsAPITargeted:
         assert is_valid is True
         is_valid, _ = validate_file_type("test.txt")
         assert is_valid is False
+
+    def test_conversion_options_defaults(self):
+        from api.conversions import ConversionOptions
+
+        opts = ConversionOptions()
+        assert opts.assumptions == "conservative"
+        assert opts.target_version == "1.20.0"
+        assert opts.notify_on_completion is True
+
+    def test_conversion_options_custom(self):
+        from api.conversions import ConversionOptions
+
+        opts = ConversionOptions(
+            assumptions="aggressive",
+            target_version="1.21.0",
+            notify_on_completion=False,
+        )
+        assert opts.assumptions == "aggressive"
+        assert opts.target_version == "1.21.0"
+        assert opts.notify_on_completion is False
+
+    def test_conversion_options_invalid_assumptions(self):
+        from api.conversions import ConversionOptions
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            ConversionOptions(assumptions="invalid")

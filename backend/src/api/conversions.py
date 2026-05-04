@@ -146,6 +146,10 @@ class ConversionOptions(BaseModel):
         default="1.20.0",
         description="Target Minecraft Bedrock version",
     )
+    notify_on_completion: bool = Field(
+        default=True,
+        description="Send email notification when conversion completes",
+    )
 
     @field_validator("assumptions")
     @classmethod
@@ -245,6 +249,9 @@ class ConversionStatusResponse(BaseModel):
         None, description="List of features that were skipped"
     )
     warnings: Optional[List[str]] = Field(None, description="List of warnings during conversion")
+    email_verified: Optional[bool] = Field(
+        None, description="Whether completion email was verified/sent successfully"
+    )
 
 
 class ConversionListResponse(BaseModel):
@@ -755,6 +762,7 @@ async def create_conversion(
         # Start AI Engine conversion in background task for real-time progress updates
         if background_tasks:
             conversion_service = get_conversion_service()
+            user_email = user.email if user else None
             background_tasks.add_task(
                 conversion_service.process_conversion,
                 conversion_id=conversion_id,
@@ -762,6 +770,8 @@ async def create_conversion(
                 original_filename=safe_filename,
                 target_version=conversion_options.target_version,
                 options=conversion_options.model_dump(),
+                user_email=user_email,
+                notify_on_completion=conversion_options.notify_on_completion,
             )
             logger.info(f"AI Engine conversion started in background for job: {conversion_id}")
 
@@ -869,6 +879,7 @@ async def get_conversion(
         structured_error=None,
         asset_results=None,
         overall_percentage=None,
+        email_verified=job.input_data.get("email_verified"),
     )
 
     # Update cache

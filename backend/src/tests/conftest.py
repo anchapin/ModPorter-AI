@@ -254,22 +254,68 @@ async def auth_headers():
 @pytest.fixture(autouse=True)
 def reset_feature_flag_manager():
     """Reset the feature flag manager singleton between tests to prevent state pollution."""
+    import os
     import services.feature_flags as ff_module
 
-    # Store original manager
-    original_manager = ff_module._default_manager
+    legacy_env_vars = [
+        "FEATURE_USER_ACCOUNTS",
+        "FEATURE_PREMIUM_FEATURES",
+        "FEATURE_API_KEYS",
+    ]
 
-    # Reset to None before each test
+    original_manager = ff_module._default_manager
+    original_env = {var: os.environ.get(var) for var in legacy_env_vars}
+
     ff_module._default_manager = None
+    for var in legacy_env_vars:
+        os.environ.pop(var, None)
 
     yield
 
-    # Reset after each test as well
     ff_module._default_manager = None
+    for var in legacy_env_vars:
+        os.environ.pop(var, None)
+    for var, val in original_env.items():
+        if val is not None:
+            os.environ[var] = val
 
-    # Restore original if it existed
     if original_manager is not None:
         ff_module._default_manager = original_manager
+
+
+@pytest.fixture(autouse=True)
+def reset_storage_env():
+    """Reset storage and redis environment variables between tests to prevent state pollution."""
+    import os
+
+    storage_and_redis_env_vars = [
+        "STORAGE_BACKEND",
+        "STORAGE_PATH",
+        "S3_BUCKET",
+        "AWS_REGION",
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY",
+        "REDIS_URL",
+        "REDIS_MAX_CONNECTIONS",
+        "REDIS_SOCKET_TIMEOUT",
+        "REDIS_SOCKET_CONNECT_TIMEOUT",
+        "REDIS_SOCKET_KEEPALIVE",
+        "REDIS_RETRY_ON_TIMEOUT",
+        "REDIS_HEALTH_CHECK_INTERVAL",
+    ]
+
+    original_env = {var: os.environ.get(var) for var in storage_and_redis_env_vars}
+
+    for var in storage_and_redis_env_vars:
+        os.environ.pop(var, None)
+
+    yield
+
+    for var in storage_and_redis_env_vars:
+        os.environ.pop(var, None)
+    for var, val in original_env.items():
+        if val is not None:
+            os.environ[var] = val
 
 
 # clean_feature_flag_env removed - feature_flag_env fixture handles this properly
