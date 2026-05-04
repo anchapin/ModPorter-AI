@@ -8,7 +8,7 @@ Issue: #379 - Implement async task queue (Phase 3)
 from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
-from services.task_queue import (
+from services.celery_tasks import (
     TaskStatus,
     TaskPriority,
     get_task_queue,
@@ -17,6 +17,13 @@ from services.task_queue import (
     cancel_task,
     get_queue_stats,
 )
+
+
+# Re-export for compatibility
+async def get_task_queue():
+    """Legacy compatibility - queue operations now go through Celery."""
+    pass
+
 
 router = APIRouter(prefix="/api/v1/tasks", tags=["task-queue"])
 

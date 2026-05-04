@@ -47,7 +47,7 @@ from db.models import User
 from src.websocket.manager import manager
 from src.websocket.progress_handler import ProgressHandler
 from services.cache import CacheService
-from services.task_queue import enqueue_task, TaskPriority
+from services.celery_tasks import enqueue_task, TaskPriority
 from services.conversion_service import get_conversion_service
 from services.metering_service import MeteringService
 from services.report_exporter import ReportExporter

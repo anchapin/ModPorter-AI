@@ -1,0 +1,696 @@
+"""
+Custom recipe types converter for NeoForge, Farmer's Delight, Create, and other mods.
+
+Handles:
+- Farmer's Delight (cooking pot, cutting board)
+- Create (mechanical crafting, pressing, milling, crushing, deploying, splashing, compacting)
+- Generic Forge patterns
+"""
+
+from typing import Dict
+
+from agents.recipe.tag_resolver import FORGE_TAG_MAPPINGS
+
+
+CUSTOM_RECIPE_TYPES = {
+    # Farmer's Delight
+    "farmersdelight:cooking": {
+        "category": "cooking_pot",
+        "description": "Cooking pot recipe",
+        "convertible": True,
+    },
+    "farmersdelight:cutting": {
+        "category": "cutting_board",
+        "description": "Cutting board recipe",
+        "convertible": True,
+    },
+    # Create
+    "create:sequenced_assembly": {
+        "category": "sequenced_assembly",
+        "description": "Sequenced assembly recipe",
+        "convertible": False,
+    },
+    "create:mechanical_crafting": {
+        "category": "mechanical_crafting",
+        "description": "Mechanical crafting (9x9 grid)",
+        "convertible": True,
+    },
+    "create:mixing": {
+        "category": "mixing",
+        "description": "Mixing recipe",
+        "convertible": False,
+    },
+    "create:pressing": {
+        "category": "pressing",
+        "description": "Pressing recipe",
+        "convertible": True,
+    },
+    "create:deploying": {
+        "category": "deploying",
+        "description": "Deploying recipe",
+        "convertible": True,
+    },
+    "create:milling": {
+        "category": "milling",
+        "description": "Milling recipe (Millstone)",
+        "convertible": True,
+    },
+    "create:crushing": {
+        "category": "crushing",
+        "description": "Crushing recipe (Crushing Wheels)",
+        "convertible": True,
+    },
+    "create:splashing": {
+        "category": "splashing",
+        "description": "Splashing recipe (Water)",
+        "convertible": True,
+    },
+    "create:compacting": {
+        "category": "compacting",
+        "description": "Compacting recipe",
+        "convertible": True,
+    },
+    "create:filling": {
+        "category": "filling",
+        "description": "Filling recipe",
+        "convertible": False,
+    },
+    "create:emptying": {
+        "category": "emptying",
+        "description": "Emptying recipe",
+        "convertible": False,
+    },
+    # Generic Forge patterns
+    "forge:conditional": {
+        "category": "conditional",
+        "description": "Conditional recipe",
+        "convertible": False,
+    },
+}
+
+
+class CustomTypesConverter:
+    """Converter for custom Forge recipe types (Farmer's Delight, Create, etc.)."""
+
+    def __init__(self, map_java_item_to_bedrock_fn):
+        self._map_java_item = map_java_item_to_bedrock_fn
+
+    def convert_cooking_pot_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Farmer's Delight cooking pot recipe to Bedrock format.
+
+        Cooking pot recipes are converted to furnace recipes with additional
+        container and cooking time info preserved in comments/tags.
+        """
+        ingredients = normalized_recipe.get("ingredients", [])
+        if not ingredients:
+            return self._create_manual_review_result(
+                namespace, recipe_name, "Cooking pot recipe has no ingredients"
+            )
+
+        ingredient = ingredients[0]
+        if isinstance(ingredient, dict):
+            item_data = ingredient.get("item", "")
+            item_data_val = ingredient.get("data", 0)
+        else:
+            item_data = ingredient
+            item_data_val = 0
+
+        bedrock_ingredient = {
+            "item": self._map_java_item(item_data),
+            "data": item_data_val,
+        }
+
+        bedrock_result = {
+            "item": self._map_java_item(normalized_recipe.get("result_item", "")),
+            "data": normalized_recipe.get("result_data", 0),
+            "count": normalized_recipe.get("result_count", 1),
+        }
+
+        container = normalized_recipe.get("container")
+        cooking_time = normalized_recipe.get("cooking_time", 200)
+        experience = normalized_recipe.get("experience", 0.0)
+
+        bedrock_recipe = {
+            "format_version": "1.20.10",
+            "minecraft:recipe_furnace": {
+                "description": {"identifier": f"{namespace}:{recipe_name}"},
+                "tags": ["crafting_table", "cooking_pot"],
+                "ingredients": [bedrock_ingredient],
+                "result": bedrock_result,
+                "cookingtime": cooking_time,
+                "experience": experience,
+                "备注": f"Original container: {container}"
+                if container
+                else "Farmer's Delight cooking pot recipe",
+            },
+        }
+
+        return bedrock_recipe
+
+    def convert_cutting_board_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Farmer's Delight cutting board recipe to Bedrock format.
+
+        Cutting board recipes use a tool + ingredients -> result pattern.
+        We convert to a shaped recipe with the tool as part of the key.
+        """
+        ingredients = normalized_recipe.get("ingredients", [])
+        tool = normalized_recipe.get("tool")
+
+        if not ingredients:
+            return self._create_manual_review_result(
+                namespace, recipe_name, "Cutting board recipe has no ingredients"
+            )
+
+        bedrock_ingredients = []
+        for ingredient in ingredients:
+            if isinstance(ingredient, dict):
+                item_data = ingredient.get("item", "")
+                item_count = ingredient.get("count", 1)
+                item_data_val = ingredient.get("data", 0)
+            elif isinstance(ingredient, str):
+                item_data = ingredient
+                item_count = 1
+                item_data_val = 0
+            else:
+                continue
+
+            bedrock_item = self._map_java_item(item_data)
+            entry = {"item": bedrock_item, "data": item_data_val}
+            if item_count > 1:
+                entry["count"] = item_count
+            bedrock_ingredients.append(entry)
+
+        bedrock_result = {
+            "item": self._map_java_item(normalized_recipe.get("result_item", "")),
+            "data": normalized_recipe.get("result_data", 0),
+            "count": normalized_recipe.get("result_count", 1),
+        }
+
+        tool_info = ""
+        if tool:
+            tool_item = tool.get("item", tool) if isinstance(tool, dict) else tool
+            tool_info = f" - Requires tool: {tool_item}"
+
+        bedrock_recipe = {
+            "format_version": "1.20.10",
+            "minecraft:recipe_shaped": {
+                "description": {"identifier": f"{namespace}:{recipe_name}"},
+                "tags": ["crafting_table", "cutting_board"],
+                "pattern": ["A", "B"],
+                "key": {
+                    "A": bedrock_ingredients[0]
+                    if len(bedrock_ingredients) > 0
+                    else {"item": "minecraft:air"},
+                    "B": {"item": "minecraft:air"}
+                    if len(bedrock_ingredients) <= 1
+                    else bedrock_ingredients[1],
+                },
+                "result": bedrock_result,
+                "备注": f"Cutting board recipe{tool_info}",
+            },
+        }
+
+        return bedrock_recipe
+
+    def convert_mechanical_crafting_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create mechanical crafting recipe to Bedrock format.
+
+        Mechanical crafting supports up to 9x9 grids. We convert to a standard
+        shaped recipe (Bedrock supports 3x3 max).
+        """
+        pattern = normalized_recipe.get("pattern", [])
+        key = normalized_recipe.get("key", {})
+
+        if not pattern or not key:
+            return self._create_manual_review_result(
+                namespace, recipe_name, "Mechanical crafting recipe has no pattern or key"
+            )
+
+        max_row_len = max(len(row) for row in pattern) if pattern else 0
+        if max_row_len > 3 or len(pattern) > 3:
+            return self._create_manual_review_result(
+                namespace,
+                recipe_name,
+                f"Mechanical crafting uses {max_row_len}x{len(pattern)} grid, Bedrock supports max 3x3",
+            )
+
+        bedrock_key = {}
+        for key_char, ingredient in key.items():
+            if isinstance(ingredient, list):
+                item_data = ingredient[0].get("item", "") if ingredient else "minecraft:air"
+                item_count = 1
+                item_data_val = 0
+            elif isinstance(ingredient, str):
+                item_data = ingredient
+                item_count = 1
+                item_data_val = 0
+            elif isinstance(ingredient, dict):
+                item_data = ingredient.get("item", "")
+                item_count = ingredient.get("count", 1)
+                item_data_val = ingredient.get("data", 0)
+            else:
+                continue
+
+            bedrock_item = self._map_java_item(item_data)
+            entry = {"item": bedrock_item, "data": item_data_val}
+            if item_count > 1:
+                entry["count"] = item_count
+            bedrock_key[key_char] = entry
+
+        bedrock_result = {
+            "item": self._map_java_item(normalized_recipe.get("result_item", "")),
+            "data": normalized_recipe.get("result_data", 0),
+            "count": normalized_recipe.get("result_count", 1),
+        }
+
+        bedrock_recipe = {
+            "format_version": "1.20.10",
+            "minecraft:recipe_shaped": {
+                "description": {"identifier": f"{namespace}:{recipe_name}"},
+                "tags": ["crafting_table", "mechanical_crafting"],
+                "pattern": pattern,
+                "key": bedrock_key,
+                "result": bedrock_result,
+            },
+        }
+
+        return bedrock_recipe
+
+    def convert_pressing_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create pressing recipe to Bedrock format.
+
+        Pressing recipes are converted to a shaped recipe with the ingredient
+        as the main input.
+        """
+        ingredients = normalized_recipe.get("ingredients", [])
+        if not ingredients:
+            return self._create_manual_review_result(
+                namespace, recipe_name, "Pressing recipe has no ingredients"
+            )
+
+        ingredient = ingredients[0]
+        if isinstance(ingredient, dict):
+            item_data = ingredient.get("item", "")
+            item_data_val = ingredient.get("data", 0)
+        else:
+            item_data = ingredient
+            item_data_val = 0
+
+        bedrock_ingredient = {
+            "item": self._map_java_item(item_data),
+            "data": item_data_val,
+        }
+
+        bedrock_result = {
+            "item": self._map_java_item(normalized_recipe.get("result_item", "")),
+            "data": normalized_recipe.get("result_data", 0),
+            "count": normalized_recipe.get("result_count", 1),
+        }
+
+        bedrock_recipe = {
+            "format_version": "1.20.10",
+            "minecraft:recipe_shaped": {
+                "description": {"identifier": f"{namespace}:{recipe_name}"},
+                "tags": ["crafting_table", "pressing"],
+                "pattern": ["A"],
+                "key": {"A": bedrock_ingredient},
+                "result": bedrock_result,
+                "备注": "Create pressing recipe",
+            },
+        }
+
+        return bedrock_recipe
+
+    def convert_milling_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create milling recipe to Bedrock format.
+
+        Milling recipes use Millstone to crush ores into materials.
+        Converted to a shaped recipe approximating the crushing operation.
+        """
+        ingredients = normalized_recipe.get("ingredients", [])
+        if not ingredients:
+            return self._create_manual_review_result(
+                namespace, recipe_name, "Milling recipe has no ingredients"
+            )
+
+        ingredient = ingredients[0]
+        if isinstance(ingredient, dict):
+            item_data = ingredient.get("item", "")
+            item_data_val = ingredient.get("data", 0)
+        else:
+            item_data = ingredient
+            item_data_val = 0
+
+        bedrock_ingredient = {
+            "item": self._map_java_item(item_data),
+            "data": item_data_val,
+        }
+
+        bedrock_result = {
+            "item": self._map_java_item(normalized_recipe.get("result_item", "")),
+            "data": normalized_recipe.get("result_data", 0),
+            "count": normalized_recipe.get("result_count", 1),
+        }
+
+        secondary_note = ""
+        secondary_outputs = normalized_recipe.get("secondary_outputs", [])
+        if secondary_outputs:
+            secondary_items = [o.get("item", "") for o in secondary_outputs]
+            secondary_note = f" | Secondary outputs: {secondary_items}"
+
+        heat_note = ""
+        if normalized_recipe.get("heat_requirement"):
+            heat_note = f" | Heat: {normalized_recipe.get('heat_requirement')}"
+
+        rpm_note = ""
+        if normalized_recipe.get("min_rpm") or normalized_recipe.get("max_rpm"):
+            min_rpm = normalized_recipe.get("min_rpm", "?")
+            max_rpm = normalized_recipe.get("max_rpm", "?")
+            rpm_note = f" | RPM: {min_rpm}-{max_rpm}"
+
+        bedrock_recipe = {
+            "format_version": "1.20.10",
+            "minecraft:recipe_shaped": {
+                "description": {"identifier": f"{namespace}:{recipe_name}_converted_from_create"},
+                "tags": ["crafting_table", "milling"],
+                "pattern": ["A"],
+                "key": {"A": bedrock_ingredient},
+                "result": bedrock_result,
+                "备注": f"Create milling recipe (Millstone) - approximated{secondary_note}{heat_note}{rpm_note}",
+            },
+        }
+
+        return bedrock_recipe
+
+    def convert_crushing_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create crushing recipe to Bedrock format.
+
+        Crushing recipes use Crushing Wheels for ore doubling.
+        Converted to a shaped recipe approximating the crushing operation.
+        """
+        ingredients = normalized_recipe.get("ingredients", [])
+        if not ingredients:
+            return self._create_manual_review_result(
+                namespace, recipe_name, "Crushing recipe has no ingredients"
+            )
+
+        ingredient = ingredients[0]
+        if isinstance(ingredient, dict):
+            item_data = ingredient.get("item", "")
+            item_data_val = ingredient.get("data", 0)
+        else:
+            item_data = ingredient
+            item_data_val = 0
+
+        bedrock_ingredient = {
+            "item": self._map_java_item(item_data),
+            "data": item_data_val,
+        }
+
+        bedrock_result = {
+            "item": self._map_java_item(normalized_recipe.get("result_item", "")),
+            "data": normalized_recipe.get("result_data", 0),
+            "count": normalized_recipe.get("result_count", 1),
+        }
+
+        secondary_note = ""
+        secondary_outputs = normalized_recipe.get("secondary_outputs", [])
+        if secondary_outputs:
+            secondary_items = [o.get("item", "") for o in secondary_outputs]
+            secondary_note = f" | Secondary outputs: {secondary_items}"
+
+        heat_note = ""
+        if normalized_recipe.get("heat_requirement"):
+            heat_note = f" | Heat: {normalized_recipe.get('heat_requirement')}"
+
+        rpm_note = ""
+        if normalized_recipe.get("min_rpm") or normalized_recipe.get("max_rpm"):
+            min_rpm = normalized_recipe.get("min_rpm", "?")
+            max_rpm = normalized_recipe.get("max_rpm", "?")
+            rpm_note = f" | RPM: {min_rpm}-{max_rpm}"
+
+        bedrock_recipe = {
+            "format_version": "1.20.10",
+            "minecraft:recipe_shaped": {
+                "description": {"identifier": f"{namespace}:{recipe_name}_converted_from_create"},
+                "tags": ["crafting_table", "crushing"],
+                "pattern": ["A"],
+                "key": {"A": bedrock_ingredient},
+                "result": bedrock_result,
+                "备注": f"Create crushing recipe (Crushing Wheels) - approximated{secondary_note}{heat_note}{rpm_note}",
+            },
+        }
+
+        return bedrock_recipe
+
+    def convert_deploying_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create deploying recipe to Bedrock format.
+
+        Deploying recipes combine an item with a catalyst (block) to produce output.
+        Converted to a shaped recipe using ingredient + catalyst pattern.
+        """
+        ingredients = normalized_recipe.get("ingredients", [])
+        tool = normalized_recipe.get("tool")
+
+        if not ingredients:
+            return self._create_manual_review_result(
+                namespace, recipe_name, "Deploying recipe has no ingredients"
+            )
+
+        bedrock_ingredients = []
+        for i, ingredient in enumerate(ingredients):
+            if isinstance(ingredient, dict):
+                item_data = ingredient.get("item", "")
+                item_count = ingredient.get("count", 1)
+                item_data_val = ingredient.get("data", 0)
+            elif isinstance(ingredient, str):
+                item_data = ingredient
+                item_count = 1
+                item_data_val = 0
+            else:
+                continue
+
+            bedrock_item = self._map_java_item(item_data)
+            entry = {"item": bedrock_item, "data": item_data_val}
+            if item_count > 1:
+                entry["count"] = item_count
+            bedrock_ingredients.append(entry)
+
+        bedrock_result = {
+            "item": self._map_java_item(normalized_recipe.get("result_item", "")),
+            "data": normalized_recipe.get("result_data", 0),
+            "count": normalized_recipe.get("result_count", 1),
+        }
+
+        catalyst_info = ""
+        if tool:
+            tool_item = tool.get("item", tool) if isinstance(tool, dict) else tool
+            bedrock_tool = self._map_java_item(tool_item)
+            catalyst_info = f" - Catalyst: {bedrock_tool}"
+
+        pattern = ["AB"] if len(bedrock_ingredients) >= 2 else ["A"]
+        key = {
+            "A": bedrock_ingredients[0]
+            if len(bedrock_ingredients) > 0
+            else {"item": "minecraft:air"},
+            "B": bedrock_ingredients[1]
+            if len(bedrock_ingredients) > 1
+            else {"item": "minecraft:air"},
+        }
+
+        bedrock_recipe = {
+            "format_version": "1.20.10",
+            "minecraft:recipe_shaped": {
+                "description": {"identifier": f"{namespace}:{recipe_name}_converted_from_create"},
+                "tags": ["crafting_table", "deploying"],
+                "pattern": pattern,
+                "key": key,
+                "result": bedrock_result,
+                "备注": f"Create deploying recipe{catalyst_info} - approximated",
+            },
+        }
+
+        return bedrock_recipe
+
+    def convert_splashing_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create splashing recipe to Bedrock format.
+
+        Splashing recipes use water to wash items (ore washing, etc.).
+        Converted to a shapeless recipe with water bucket as an implicit ingredient.
+        """
+        ingredients = normalized_recipe.get("ingredients", [])
+
+        if not ingredients:
+            return self._create_manual_review_result(
+                namespace, recipe_name, "Splashing recipe has no ingredients"
+            )
+
+        bedrock_ingredients = []
+        for ingredient in ingredients:
+            if isinstance(ingredient, dict):
+                item_data = ingredient.get("item", "")
+                item_count = ingredient.get("count", 1)
+                item_data_val = ingredient.get("data", 0)
+            elif isinstance(ingredient, str):
+                item_data = ingredient
+                item_count = 1
+                item_data_val = 0
+            else:
+                continue
+
+            bedrock_item = self._map_java_item(item_data)
+            entry = {"item": bedrock_item, "data": item_data_val}
+            if item_count > 1:
+                entry["count"] = item_count
+            bedrock_ingredients.append(entry)
+
+        bedrock_result = {
+            "item": self._map_java_item(normalized_recipe.get("result_item", "")),
+            "data": normalized_recipe.get("result_data", 0),
+            "count": normalized_recipe.get("result_count", 1),
+        }
+
+        secondary_note = ""
+        secondary_outputs = normalized_recipe.get("secondary_outputs", [])
+        if secondary_outputs:
+            secondary_items = [o.get("item", "") for o in secondary_outputs]
+            secondary_note = f" | Secondary outputs: {secondary_items}"
+
+        heat_note = ""
+        if normalized_recipe.get("heat_requirement"):
+            heat_note = f" | Heat: {normalized_recipe.get('heat_requirement')}"
+
+        rpm_note = ""
+        if normalized_recipe.get("min_rpm") or normalized_recipe.get("max_rpm"):
+            min_rpm = normalized_recipe.get("min_rpm", "?")
+            max_rpm = normalized_recipe.get("max_rpm", "?")
+            rpm_note = f" | RPM: {min_rpm}-{max_rpm}"
+
+        bedrock_recipe = {
+            "format_version": "1.20.10",
+            "minecraft:recipe_shapeless": {
+                "description": {"identifier": f"{namespace}:{recipe_name}_converted_from_create"},
+                "tags": ["crafting_table", "splashing"],
+                "ingredients": bedrock_ingredients,
+                "result": bedrock_result,
+                "备注": f"Create splashing recipe (Water) - approximated{secondary_note}{heat_note}{rpm_note}",
+            },
+        }
+
+        return bedrock_recipe
+
+    def convert_compacting_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create compacting recipe to Bedrock format.
+
+        Compacting recipes compress items into blocks.
+        Converted to a shaped recipe.
+        """
+        ingredients = normalized_recipe.get("ingredients", [])
+
+        if not ingredients:
+            return self._create_manual_review_result(
+                namespace, recipe_name, "Compacting recipe has no ingredients"
+            )
+
+        bedrock_ingredients = []
+        for ingredient in ingredients:
+            if isinstance(ingredient, dict):
+                item_data = ingredient.get("item", "")
+                item_count = ingredient.get("count", 1)
+                item_data_val = ingredient.get("data", 0)
+            elif isinstance(ingredient, str):
+                item_data = ingredient
+                item_count = 1
+                item_data_val = 0
+            else:
+                continue
+
+            bedrock_item = self._map_java_item(item_data)
+            entry = {"item": bedrock_item, "data": item_data_val}
+            if item_count > 1:
+                entry["count"] = item_count
+            bedrock_ingredients.append(entry)
+
+        bedrock_result = {
+            "item": self._map_java_item(normalized_recipe.get("result_item", "")),
+            "data": normalized_recipe.get("result_data", 0),
+            "count": normalized_recipe.get("result_count", 1),
+        }
+
+        pattern = ["A"] * min(len(bedrock_ingredients), 3)
+        key = {}
+        for i, char in enumerate(["A", "B", "C"][: len(bedrock_ingredients)]):
+            key[char] = bedrock_ingredients[i]
+
+        secondary_note = ""
+        secondary_outputs = normalized_recipe.get("secondary_outputs", [])
+        if secondary_outputs:
+            secondary_items = [o.get("item", "") for o in secondary_outputs]
+            secondary_note = f" | Secondary outputs: {secondary_items}"
+
+        heat_note = ""
+        if normalized_recipe.get("heat_requirement"):
+            heat_note = f" | Heat: {normalized_recipe.get('heat_requirement')}"
+
+        rpm_note = ""
+        if normalized_recipe.get("min_rpm") or normalized_recipe.get("max_rpm"):
+            min_rpm = normalized_recipe.get("min_rpm", "?")
+            max_rpm = normalized_recipe.get("max_rpm", "?")
+            rpm_note = f" | RPM: {min_rpm}-{max_rpm}"
+
+        bedrock_recipe = {
+            "format_version": "1.20.10",
+            "minecraft:recipe_shaped": {
+                "description": {"identifier": f"{namespace}:{recipe_name}_converted_from_create"},
+                "tags": ["crafting_table", "compacting"],
+                "pattern": pattern,
+                "key": key,
+                "result": bedrock_result,
+                "备注": f"Create compacting recipe - approximated{secondary_note}{heat_note}{rpm_note}",
+            },
+        }
+
+        return bedrock_recipe
+
+    def _create_manual_review_result(self, namespace: str, recipe_name: str, reason: str) -> Dict:
+        """Create a result indicating the recipe requires manual review."""
+        return {
+            "format_version": "1.20.10",
+            "manual_review_required": True,
+            "reason": reason,
+            "original_recipe": f"{namespace}:{recipe_name}",
+            "description": {"identifier": f"{namespace}:{recipe_name}"},
+        }
+
+
+def is_custom_recipe_type(recipe_type: str) -> bool:
+    """Check if a recipe type is a known custom Forge recipe type."""
+    for custom_type in CUSTOM_RECIPE_TYPES.keys():
+        if custom_type in recipe_type:
+            return True
+    return False
+
+
+__all__ = [
+    "CUSTOM_RECIPE_TYPES",
+    "CustomTypesConverter",
+    "is_custom_recipe_type",
+]
