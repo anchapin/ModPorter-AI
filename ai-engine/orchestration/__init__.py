@@ -9,6 +9,16 @@ from .orchestrator import ParallelOrchestrator
 from .strategy_selector import OrchestrationStrategy, StrategySelector
 from .task_graph import TaskGraph, TaskNode, TaskStatus
 from .worker_pool import WorkerPool
+from .run_agent import (
+    RunAgent,
+    RunAgentPlan,
+    Step,
+    StepContext,
+    StepStatus as RunAgentStepStatus,
+    Constraint,
+    StepResult,
+)
+from .run_agent_integration import RunAgentOrchestrator, RunAgentCrewBridge
 
 __all__ = [
     "TaskGraph",
@@ -18,4 +28,13 @@ __all__ = [
     "WorkerPool",
     "OrchestrationStrategy",
     "StrategySelector",
+    "RunAgent",
+    "RunAgentPlan",
+    "Step",
+    "StepContext",
+    "StepResult",
+    "Constraint",
+    "RunAgentStepStatus",
+    "RunAgentOrchestrator",
+    "RunAgentCrewBridge",
 ]
