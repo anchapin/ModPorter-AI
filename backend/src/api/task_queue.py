@@ -18,6 +18,13 @@ from services.celery_tasks import (
     list_tasks,
 )
 
+
+# Re-export for compatibility
+async def get_task_queue():
+    """Legacy compatibility - queue operations now go through Celery."""
+    pass
+
+
 router = APIRouter(prefix="/api/v1/tasks", tags=["task-queue"])
 
 
