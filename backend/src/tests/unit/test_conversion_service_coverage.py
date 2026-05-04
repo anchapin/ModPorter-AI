@@ -137,6 +137,123 @@ class TestConversionServiceCoverage:
             calls = service.cache.set_job_status.call_args_list
             assert any(call[0][1]["status"] == "cancelled" for call in calls)
 
+    @pytest.mark.asyncio
+    async def test_process_conversion_success_with_email(self, service):
+        service.ai_client.start_conversion = AsyncMock(return_value={"status": "started"})
+        service.ai_client.get_conversion_status = AsyncMock(return_value={"status": "completed"})
+        service.ai_client.poll_conversion_status = MagicMock()
+
+        # Mock the async generator for poll_conversion_status
+        async def mock_poll(*args, **kwargs):
+            yield {
+                "status": "completed",
+                "progress": 100,
+                "message": "Done",
+                "current_stage": "final",
+            }
+
+        service.ai_client.poll_conversion_status.side_effect = mock_poll
+
+        with (
+            patch.object(service, "_transfer_file_to_ai_engine", return_value="/ai/path"),
+            patch("services.conversion_service.ProgressHandler", new_callable=AsyncMock),
+            patch(
+                "services.conversion_service.send_conversion_notification", new_callable=AsyncMock
+            ) as mock_email,
+            patch("os.makedirs"),
+        ):
+            mock_email.return_value = True
+            result = await service.process_conversion(
+                "job123",
+                "/path/to/mod.jar",
+                "mod.jar",
+                "1.20.1",
+                {},
+                user_email="test@example.com",
+                notify_on_completion=True,
+            )
+
+            assert result["status"] == "completed"
+            assert result.get("email_verified") is True
+            mock_email.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_process_conversion_success_no_email(self, service):
+        service.ai_client.start_conversion = AsyncMock(return_value={"status": "started"})
+        service.ai_client.get_conversion_status = AsyncMock(return_value={"status": "completed"})
+        service.ai_client.poll_conversion_status = MagicMock()
+
+        # Mock the async generator for poll_conversion_status
+        async def mock_poll(*args, **kwargs):
+            yield {
+                "status": "completed",
+                "progress": 100,
+                "message": "Done",
+                "current_stage": "final",
+            }
+
+        service.ai_client.poll_conversion_status.side_effect = mock_poll
+
+        with (
+            patch.object(service, "_transfer_file_to_ai_engine", return_value="/ai/path"),
+            patch("services.conversion_service.ProgressHandler", new_callable=AsyncMock),
+            patch(
+                "services.conversion_service.send_conversion_notification", new_callable=AsyncMock
+            ) as mock_email,
+            patch("os.makedirs"),
+        ):
+            result = await service.process_conversion(
+                "job123",
+                "/path/to/mod.jar",
+                "mod.jar",
+                "1.20.1",
+                {},
+                user_email=None,
+                notify_on_completion=False,
+            )
+
+            assert result["status"] == "completed"
+            mock_email.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_process_conversion_email_fails(self, service):
+        service.ai_client.start_conversion = AsyncMock(return_value={"status": "started"})
+        service.ai_client.get_conversion_status = AsyncMock(return_value={"status": "completed"})
+        service.ai_client.poll_conversion_status = MagicMock()
+
+        # Mock the async generator for poll_conversion_status
+        async def mock_poll(*args, **kwargs):
+            yield {
+                "status": "completed",
+                "progress": 100,
+                "message": "Done",
+                "current_stage": "final",
+            }
+
+        service.ai_client.poll_conversion_status.side_effect = mock_poll
+
+        with (
+            patch.object(service, "_transfer_file_to_ai_engine", return_value="/ai/path"),
+            patch("services.conversion_service.ProgressHandler", new_callable=AsyncMock),
+            patch(
+                "services.conversion_service.send_conversion_notification", new_callable=AsyncMock
+            ) as mock_email,
+            patch("os.makedirs"),
+        ):
+            mock_email.side_effect = Exception("Email service unavailable")
+            result = await service.process_conversion(
+                "job123",
+                "/path/to/mod.jar",
+                "mod.jar",
+                "1.20.1",
+                {},
+                user_email="test@example.com",
+                notify_on_completion=True,
+            )
+
+            assert result["status"] == "completed"
+            assert result.get("email_verified") is False
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

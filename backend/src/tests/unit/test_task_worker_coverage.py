@@ -13,7 +13,6 @@ from src.services.task_worker import (
     handle_conversion_task,
     handle_asset_conversion_task,
 )
-from src.services.task_queue import Task, TaskStatus, TaskPriority
 
 
 class TestTaskWorker:
