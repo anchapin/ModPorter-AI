@@ -56,6 +56,17 @@ from .prompt_optimizer import (
 from .quality_scorer import ConversionQualityScorer, QualityMetrics, create_quality_scorer
 from .reward_system import RewardSignal, RewardSignalGenerator, create_reward_generator
 from .training_loop import RLTrainingLoop, TrainingEpisode, TrainingMetrics, create_training_loop
+from .minecraft_contracts import (
+    BedrockIdiomaticityRewardModel,
+    BedrockIdiomaticityScore,
+    ContractType,
+    ContractViolation,
+    MinecraftContractResult,
+    MinecraftContractValidator,
+    ViolationSeverity,
+    create_idiomaticity_reward_model,
+    create_minecraft_contract_validator,
+)
 
 __version__ = "1.0.0"
 __author__ = "Portkit Team"
@@ -147,4 +158,14 @@ __all__ = [
     "get_data_collection_pipeline",
     "get_rl_feedback_loop",
     "collect_conversion",
+    # Minecraft contract validation (Issue #1268)
+    "MinecraftContractValidator",
+    "MinecraftContractResult",
+    "BedrockIdiomaticityScore",
+    "BedrockIdiomaticityRewardModel",
+    "ContractViolation",
+    "ContractType",
+    "ViolationSeverity",
+    "create_minecraft_contract_validator",
+    "create_idiomaticity_reward_model",
 ]
