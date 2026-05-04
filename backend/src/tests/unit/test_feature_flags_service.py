@@ -69,7 +69,14 @@ class TestFeatureFlag:
 
 class TestFeatureFlagManager:
     @pytest.fixture
-    def manager(self):
+    def manager(self, monkeypatch):
+        for key in list(os.environ.keys()):
+            if key.startswith("FEATURE_FLAG_") or key in (
+                "FEATURE_USER_ACCOUNTS",
+                "FEATURE_PREMIUM_FEATURES",
+                "FEATURE_API_KEYS",
+            ):
+                monkeypatch.delenv(key, raising=False)
         return FeatureFlagManager()
 
     def test_manager_init(self, manager):
