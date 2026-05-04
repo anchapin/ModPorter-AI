@@ -256,7 +256,9 @@ class ConversionService:
                             success=True,
                             issues=None,
                         )
-                        logger.info(f"Completion email sent to {user_email} for conversion {conversion_id}")
+                        logger.info(
+                            f"Completion email sent to {user_email} for conversion {conversion_id}"
+                        )
                     except Exception as e:
                         logger.warning(f"Failed to send completion email: {e}")
                         email_verified = False
