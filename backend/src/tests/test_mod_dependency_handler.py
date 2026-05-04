@@ -102,13 +102,8 @@ description="A Forge mod"
         """Create a temporary Fabric mod JAR"""
         jar_path = tmp_path / "create-fabric.jar"
         with zipfile.ZipFile(jar_path, "w") as zf:
-            zf.writestr(
-                "fabric.mod.json", json.dumps(fabric_mod_json)
-            )
-            zf.writestr(
-                "META-INF/MANIFEST.MF",
-                "Manifest-Version: 1.0\nCreated-By: Gradle\n"
-            )
+            zf.writestr("fabric.mod.json", json.dumps(fabric_mod_json))
+            zf.writestr("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\nCreated-By: Gradle\n")
         return str(jar_path)
 
     @pytest.fixture
@@ -116,9 +111,7 @@ description="A Forge mod"
         """Create a temporary Quilt mod JAR"""
         jar_path = tmp_path / "quilt_mod.jar"
         with zipfile.ZipFile(jar_path, "w") as zf:
-            zf.writestr(
-                "quilt.mod.json", json.dumps(quilt_mod_json)
-            )
+            zf.writestr("quilt.mod.json", json.dumps(quilt_mod_json))
         return str(jar_path)
 
     @pytest.fixture
@@ -126,9 +119,7 @@ description="A Forge mod"
         """Create a temporary Forge mod JAR"""
         jar_path = tmp_path / "immersive-engineering.jar"
         with zipfile.ZipFile(jar_path, "w") as zf:
-            zf.writestr(
-                "META-INF/mods.toml", forge_mods_toml
-            )
+            zf.writestr("META-INF/mods.toml", forge_mods_toml)
         return str(jar_path)
 
     @pytest.fixture
@@ -142,9 +133,7 @@ description="A Forge mod"
             "depends": {"minecraft": ">=1.20.0"},
         }
         with zipfile.ZipFile(jar_path, "w") as zf:
-            zf.writestr(
-                "fabric.mod.json", json.dumps(fabric_mod)
-            )
+            zf.writestr("fabric.mod.json", json.dumps(fabric_mod))
         return str(jar_path)
 
     @pytest.mark.asyncio
@@ -194,9 +183,7 @@ description="A Forge mod"
         fabric_dep = next(d for d in deps if d.modid == "fabric")
         assert fabric_dep.is_builtin
 
-    def test_generate_dependency_warnings_missing_required(
-        self, handler
-    ):
+    def test_generate_dependency_warnings_missing_required(self, handler):
         """Test warnings generated for missing required dependencies"""
         deps = [
             ModDependency(modid="flywheel", is_optional=False),
@@ -212,9 +199,7 @@ description="A Forge mod"
         assert "Required dependency" in warnings[0].message
         assert warnings[0].suggestion is not None
 
-    def test_generate_dependency_warnings_missing_optional(
-        self, handler
-    ):
+    def test_generate_dependency_warnings_missing_optional(self, handler):
         """Test warnings generated for missing optional dependencies"""
         deps = [ModDependency(modid="some_lib", is_optional=True)]
         missing = deps.copy()
@@ -277,20 +262,13 @@ description="A Forge mod"
         # flywheel is a required dependency that wasn't provided
         assert len(report.missing_dependencies) >= 1
 
-    def test_analyze_bundle_with_dependency(
-        self, handler, temp_fabric_jar, temp_flywheel_jar
-    ):
+    def test_analyze_bundle_with_dependency(self, handler, temp_fabric_jar, temp_flywheel_jar):
         """Test analyzing bundle that includes dependency"""
-        report = handler.analyze_bundle(
-            [temp_fabric_jar, temp_flywheel_jar]
-        )
+        report = handler.analyze_bundle([temp_fabric_jar, temp_flywheel_jar])
 
         assert report.primary_modid == "create"
         # flywheel should be resolved
-        flywheel_dep = next(
-            (d for d in report.dependencies if d.modid == "flywheel"),
-            None
-        )
+        flywheel_dep = next((d for d in report.dependencies if d.modid == "flywheel"), None)
         assert flywheel_dep is not None
         assert flywheel_dep.resolved
 

@@ -77,10 +77,7 @@ class DependencyChainReport:
 
     @property
     def has_missing_critical_deps(self) -> bool:
-        return any(
-            not d.is_optional and not d.is_builtin
-            for d in self.missing_dependencies
-        )
+        return any(not d.is_optional and not d.is_builtin for d in self.missing_dependencies)
 
     @property
     def warning_messages(self) -> list[str]:

@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 class InferenceProvider(str, Enum):
     """Supported inference providers"""
+
     OPENROUTER = "openrouter"  # Phase 1: cloud API
     RUNPOD_FLASH = "runpod_flash"  # Phase 2: RunPod serverless GPU
     SGLANG = "sglang"  # Phase 3: optimized inference server
@@ -32,6 +33,7 @@ class InferenceProvider(str, Enum):
 
 class InferenceMode(str, Enum):
     """Inference mode configuration"""
+
     CLOUD = "cloud"  # Use hosted APIs (OpenRouter, OpenAI)
     SELF_HOSTED = "self_hosted"  # Use self-hosted inference
     HYBRID = "hybrid"  # Fallback from self-hosted to cloud
@@ -40,6 +42,7 @@ class InferenceMode(str, Enum):
 @dataclass
 class InferenceConfig:
     """Configuration for self-hosted inference"""
+
     provider: InferenceProvider = InferenceProvider.OPENROUTER
     mode: InferenceMode = InferenceMode.CLOUD
 
@@ -79,6 +82,7 @@ class InferenceConfig:
 @dataclass
 class InferenceResult:
     """Result from an inference call"""
+
     content: str
     model: str
     provider: str
@@ -149,6 +153,7 @@ class SelfHostedInferenceClient:
         if self.config.endpoint_url:
             try:
                 from openai import OpenAI
+
                 self._client = OpenAI(
                     api_key=self.config.api_key or "dummy",
                     base_url=self.config.endpoint_url,
@@ -165,7 +170,7 @@ class SelfHostedInferenceClient:
         model: Optional[str] = None,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ) -> InferenceResult:
         """
         Generate completion via self-hosted inference.
@@ -186,11 +191,17 @@ class SelfHostedInferenceClient:
 
         try:
             if self.config.provider == InferenceProvider.RUNPOD_FLASH:
-                return await self._runpod_complete(messages, model, temperature, max_tokens, start_time)
+                return await self._runpod_complete(
+                    messages, model, temperature, max_tokens, start_time
+                )
             elif self.config.provider in [InferenceProvider.SGLANG, InferenceProvider.VLLM]:
-                return await self._openaiCompatible_complete(messages, model, temperature, max_tokens, start_time)
+                return await self._openai_compatible_complete(
+                    messages, model, temperature, max_tokens, start_time
+                )
             else:
-                return await self._cloud_fallback_complete(messages, model, temperature, max_tokens, start_time)
+                return await self._cloud_fallback_complete(
+                    messages, model, temperature, max_tokens, start_time
+                )
         except Exception as e:
             logger.error(f"Inference failed: {e}")
             return InferenceResult(
@@ -208,7 +219,7 @@ class SelfHostedInferenceClient:
         model: str,
         temperature: float,
         max_tokens: int,
-        start_time: float
+        start_time: float,
     ) -> InferenceResult:
         """Call RunPod Flash endpoint"""
         try:
@@ -234,7 +245,7 @@ class SelfHostedInferenceClient:
                             "temperature": temperature,
                             "max_tokens": max_tokens,
                         }
-                    }
+                    },
                 )
                 response.raise_for_status()
                 result = response.json()
@@ -255,17 +266,18 @@ class SelfHostedInferenceClient:
             logger.error(f"RunPod inference failed: {e}")
             raise
 
-    async def _openaiCompatible_complete(
+    async def _openai_compatible_complete(
         self,
         messages: List[Dict[str, str]],
         model: str,
         temperature: float,
         max_tokens: int,
-        start_time: float
+        start_time: float,
     ) -> InferenceResult:
         """Call SGLang/vLLM via OpenAI-compatible API"""
         if self._client is None:
             from openai import OpenAI
+
             self._client = OpenAI(
                 api_key=self.config.api_key or "dummy",
                 base_url=self.config.endpoint_url,
@@ -299,17 +311,11 @@ class SelfHostedInferenceClient:
         model: str,
         temperature: float,
         max_tokens: int,
-        start_time: float
+        start_time: float,
     ) -> InferenceResult:
         """Fallback to cloud API when self-hosted is unavailable"""
         # Use OpenRouter or direct OpenAI as fallback
-        from utils.rate_limiter import create_openai_compatible_llm
-
         # Re-use existing cloud LLM infrastructure
-        llm = create_openai_compatible_llm()
-
-        # Convert messages to string for compatibility
-        prompt = self._messages_to_prompt(messages)
 
         # Use litellm for completion
         import litellm
@@ -357,10 +363,12 @@ class SelfHostedInferenceClient:
         logger.info(f"Warming up {self.config.provider} endpoint...")
         try:
             # Send a minimal request to initialize
-            asyncio.run(self.complete(
-                messages=[{"role": "user", "content": "Hi"}],
-                max_tokens=1,
-            ))
+            asyncio.run(
+                self.complete(
+                    messages=[{"role": "user", "content": "Hi"}],
+                    max_tokens=1,
+                )
+            )
             logger.info("Warmup complete")
             return True
         except Exception as e:
@@ -489,7 +497,6 @@ def create_inference_celery_task():
     """
     try:
         from celery import shared_task
-        import httpx
 
         @shared_task(bind=True, max_retries=3)
         def inference_task(self, messages: List[Dict], model: str = None, temperature: float = 0.1):
@@ -508,11 +515,13 @@ def create_inference_celery_task():
             client = SelfHostedInferenceClient(config)
 
             try:
-                result = asyncio.run(client.complete(
-                    messages=messages,
-                    model=model,
-                    temperature=temperature,
-                ))
+                result = asyncio.run(
+                    client.complete(
+                        messages=messages,
+                        model=model,
+                        temperature=temperature,
+                    )
+                )
 
                 return {
                     "success": result.success,
