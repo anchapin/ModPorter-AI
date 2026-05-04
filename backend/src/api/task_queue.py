@@ -11,11 +11,11 @@ from pydantic import BaseModel, Field
 from services.celery_tasks import (
     TaskStatus,
     TaskPriority,
+    get_task_queue,
     enqueue_task,
     get_task_status,
     cancel_task,
     get_queue_stats,
-    list_tasks,
 )
 
 
@@ -60,9 +60,8 @@ class QueueStatsResponse(BaseModel):
     """Response model for queue statistics"""
 
     queues: Dict[str, int]
-    total_queued: int
-    total_processing: int
-    total_dead_letter: int
+    total_tasks: int
+    by_status: Dict[str, int]
 
 
 def priority_string_to_enum(priority: str) -> TaskPriority:
@@ -160,7 +159,7 @@ async def cancel_task_endpoint(task_id: str):
 
 
 @router.get("", response_model=List[TaskResponse])
-async def list_tasks_endpoint(
+async def list_tasks(
     status: Optional[str] = Query(None, description="Filter by status"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of tasks to return"),
 ):
@@ -179,7 +178,8 @@ async def list_tasks_endpoint(
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
 
-    tasks = await list_tasks(status=task_status, limit=limit)
+    queue = await get_task_queue()
+    tasks = await queue.list_tasks(status=task_status, limit=limit)
 
     return [
         TaskResponse(
@@ -211,7 +211,6 @@ async def get_queue_statistics():
 
     return QueueStatsResponse(
         queues=stats["queues"],
-        total_queued=stats["total_queued"],
-        total_processing=stats["total_processing"],
-        total_dead_letter=stats["total_dead_letter"],
+        total_tasks=stats["total_tasks"],
+        by_status=stats["by_status"],
     )
