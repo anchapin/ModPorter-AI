@@ -549,6 +549,26 @@ async def list_tasks(
     return tasks
 
 
+async def get_queue_stats() -> Dict[str, Any]:
+    """Get queue statistics - async wrapper for direct Redis query."""
+    r = redis.from_url(REDIS_URL, decode_responses=True)
+
+    stats = {
+        "queues": {},
+        "total_queued": 0,
+        "total_processing": r.scard(PROCESSING_SET),
+        "total_dead_letter": r.zcard(DEAD_LETTER_QUEUE),
+    }
+
+    for priority, queue_name in QUEUE_NAMES.items():
+        count = r.zcard(queue_name)
+        stats["queues"][priority.name.lower()] = count
+        stats["total_queued"] += count
+
+    r.close()
+    return stats
+
+
 async def get_queue_health() -> Dict[str, Any]:
     """Get queue health stats."""
     r = redis.from_url(REDIS_URL, decode_responses=True)
@@ -565,6 +585,7 @@ async def get_queue_health() -> Dict[str, Any]:
         stats["queues"][priority.name.lower()] = count
         stats["total_queued"] += count
 
+    r.close()
     return stats
 
 
