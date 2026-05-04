@@ -8,10 +8,26 @@ output_path = "/home/alex/Projects/portkit/ai_engine/mmsd/data/raw/instructions.
 os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
 themes = [
-    "Industrial Automation", "Advanced Sorcery", "Farming", "Transportation",
-    "Quality of Life", "Mob Overhaul", "Medieval Weapons", "Space Exploration",
-    "Deep Sea", "Cybernetic", "Ecosystem", "Economic", "Storage",
-    "Furniture", "Weather", "Combat", "Pets", "Archaeology", "Underground", "Music"
+    "Industrial Automation",
+    "Advanced Sorcery",
+    "Farming",
+    "Transportation",
+    "Quality of Life",
+    "Mob Overhaul",
+    "Medieval Weapons",
+    "Space Exploration",
+    "Deep Sea",
+    "Cybernetic",
+    "Ecosystem",
+    "Economic",
+    "Storage",
+    "Furniture",
+    "Weather",
+    "Combat",
+    "Pets",
+    "Archaeology",
+    "Underground",
+    "Music",
 ]
 
 model = "qwen2.5:3b"
@@ -23,13 +39,17 @@ print(f"Starting generation to reach 1400 instructions...")
 while count < 1400:
     theme = random.choice(themes)
     try:
-        resp = httpx.post(url, json={
-            "model": model,
-            "prompt": f"Minecraft mod: {theme}",
-            "system": "Creative mod idea",
-            "stream": False,
-            "options": {"temperature": 0.9}
-        }, timeout=20.0)
+        resp = httpx.post(
+            url,
+            json={
+                "model": model,
+                "prompt": f"Minecraft mod: {theme}",
+                "system": "Creative mod idea",
+                "stream": False,
+                "options": {"temperature": 0.9},
+            },
+            timeout=20.0,
+        )
         if resp.status_code == 200:
             txt = resp.json().get("response", "").strip()
             if txt:
