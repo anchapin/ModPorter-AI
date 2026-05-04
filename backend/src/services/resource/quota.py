@@ -97,6 +97,4 @@ class QuotaTracker:
 
     def get_job_allocations(self, job_id: str) -> list:
         """Get all allocations for a job."""
-        return [
-            a for a in self._allocations.values() if a.job_id == job_id
-        ]
+        return [a for a in self._allocations.values() if a.job_id == job_id]

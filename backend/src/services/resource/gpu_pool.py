@@ -181,9 +181,7 @@ class GPUPoolManager:
                 pool.total_capacity_gb,
                 pool.available_capacity_gb + allocation.allocated_gb,
             )
-            pool.allocated_amount_gb = max(
-                0, pool.allocated_amount_gb - allocation.allocated_gb
-            )
+            pool.allocated_amount_gb = max(0, pool.allocated_amount_gb - allocation.allocated_gb)
 
         allocation.released_at = datetime.now(timezone.utc)
         return True

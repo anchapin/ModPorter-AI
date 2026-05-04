@@ -159,7 +159,9 @@ class AdmissionController:
             Number of jobs that could be dequeued from overflow
         """
         self._active_job_count = max(0, self._active_job_count - 1)
-        self._active_gpu_memory_gb = max(0, self._active_gpu_memory_gb - request.gpu_memory_required_gb)
+        self._active_gpu_memory_gb = max(
+            0, self._active_gpu_memory_gb - request.gpu_memory_required_gb
+        )
         self._active_memory_gb = max(0, self._active_memory_gb - request.memory_required_gb)
 
         dequeued = 0
