@@ -7,7 +7,7 @@ class DualTeacherPipeline:
     Synthesizes parallel Java and Bedrock modding codebases with reasoning traces.
     """
 
-    def __init__(self, model: str = "qwen2.5-coder:7b"):
+    def __init__(self, model: str = "qwen2.5-coder:3b"):
         self.model = model
         self.url = "http://localhost:11434/api/generate"
         self.validator = CodeValidator()
