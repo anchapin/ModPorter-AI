@@ -643,3 +643,19 @@ Phase 21.0 (Coverage Optimization)
 - *Vibe Coding UX* (65%) — natural language guidance for the 20-40% manual review step mod creators still do. Worth exploring for the human-in-the-loop phase.
 
 *Full digest: [.planning/research/digest-2026-04-27.md](.planning/research/digest-2026-04-27.md)*
+
+---
+
+## Research Scout Update — 2026-05-04
+
+## Suggested Roadmap Updates
+
+* **Add Phase 0.5b: Minecraft-Specific Reward Model Training**: Integrate a specialized reward model (RM) into the conversion pipeline to score LLM outputs based on Bedrock API idiomaticity and readability rather than just generic Java-to-JavaScript syntax.
+    * **Milestone**: Milestone v0.2: AI Conversion Pipeline
+    * **Motivated by**: *Themis: Training Robust Multilingual Code Reward Models for Flexible Multi-Criteria Scoring*
+
+* **Add Phase 0.7: Minecraft Schema Contract & Repair Loop**: Implement a "Minecraft contract" validation layer that checks generated Bedrock JSON and Scripting API files against strict game-logic schemas, automatically triggering LLM-based repair cycles when constraints (e.g., coordinate semantics or component nesting) are violated.
+    * **Milestone**: Milestone v0.3: QA & Testing
+    * **Motivated by**: *GeoContra: From Fluent GIS Code to Verifiable Spatial Analysis with Geography-Grounded Repair* and *Generating Statistical Charts with Validation-Driven LLM Workflows*
+
+*Full digest: [.planning/research/digest-2026-05-04.md](.planning/research/digest-2026-05-04.md)*
