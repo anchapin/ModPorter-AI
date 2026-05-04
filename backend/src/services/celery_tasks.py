@@ -525,6 +525,49 @@ def handle_model_conversion_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     return {"model_id": model_id, "status": "converted"}
 
 
+async def list_tasks(
+    status: Optional[TaskStatus] = None,
+    limit: int = 100,
+) -> List[Dict[str, Any]]:
+    """List tasks, optionally filtered by status."""
+    r = redis.from_url(REDIS_URL, decode_responses=True)
+
+    keys = []
+    for key in r.scan_iter("portkit:task:*"):
+        keys.append(key)
+
+    tasks = []
+    for key in keys[: limit * 2]:
+        task_data = r.get(key)
+        if task_data:
+            task_dict = json.loads(task_data)
+            if status is None or task_dict["status"] == status.value:
+                tasks.append(task_dict)
+                if len(tasks) >= limit:
+                    break
+
+    return tasks
+
+
+async def get_queue_health() -> Dict[str, Any]:
+    """Get queue health stats."""
+    r = redis.from_url(REDIS_URL, decode_responses=True)
+
+    stats = {
+        "queues": {},
+        "total_queued": 0,
+        "total_processing": r.scard(PROCESSING_SET),
+        "total_dead_letter": r.zcard(DEAD_LETTER_QUEUE),
+    }
+
+    for priority, queue_name in QUEUE_NAMES.items():
+        count = r.zcard(queue_name)
+        stats["queues"][priority.name.lower()] = count
+        stats["total_queued"] += count
+
+    return stats
+
+
 # Legacy compatibility - expose same interface as old task_queue_enhanced
 async def enqueue_task(
     name: str,
