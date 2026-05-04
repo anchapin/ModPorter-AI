@@ -342,32 +342,36 @@ def _enqueue_task_sync(
     timeout_seconds: int = 300,
 ) -> Dict[str, Any]:
     """Internal: Enqueue a new task via Celery (synchronous)."""
-    r = redis.from_url(REDIS_URL, decode_responses=True)
 
-    task = TaskData(
-        id=str(uuid.uuid4()),
-        name=name,
-        payload=payload,
-        priority=TaskPriority(priority),
-        max_retries=max_retries,
-        timeout_seconds=timeout_seconds,
-    )
+    async def _enqueue():
+        r = redis.from_url(REDIS_URL, decode_responses=True)
 
-    r.set(f"portkit:task:{task.id}", json.dumps(task.to_dict()), ex=86400)
+        task = TaskData(
+            id=str(uuid.uuid4()),
+            name=name,
+            payload=payload,
+            priority=TaskPriority(priority),
+            max_retries=max_retries,
+            timeout_seconds=timeout_seconds,
+        )
 
-    queue_name = QUEUE_NAMES[task.priority]
-    r.zadd(queue_name, {task.id: time.time()})
-    r.hincrby(METRICS_KEY, "tasks_enqueued", 1)
+        r.set(f"portkit:task:{task.id}", json.dumps(task.to_dict()), ex=86400)
 
-    celery_app.send_task(
-        "services.celery_tasks.process_task",
-        args=[task.id],
-        queue=queue_name,
-        timeout=timeout_seconds,
-    )
+        queue_name = QUEUE_NAMES[task.priority]
+        r.zadd(queue_name, {task.id: time.time()})
+        r.hincrby(METRICS_KEY, "tasks_enqueued", 1)
 
-    logger.info(f"Task {task.id} ({name}) enqueued with priority {task.priority.name}")
-    return {"task_id": task.id, "status": "queued"}
+        celery_app.send_task(
+            "services.celery_tasks.process_task",
+            args=[task.id],
+            queue=queue_name,
+            timeout=timeout_seconds,
+        )
+
+        logger.info(f"Task {task.id} ({name}) enqueued with priority {task.priority.name}")
+        return {"task_id": task.id, "status": "queued"}
+
+    return asyncio.get_event_loop().run_until_complete(_enqueue())
 
 
 @celery_app.task(name="services.celery_tasks.get_task_status")
