@@ -14,7 +14,7 @@ def main():
     
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     
-    pipeline = DualTeacherPipeline(model="qwen2.5-coder:7b")
+    pipeline = DualTeacherPipeline(model="qwen2.5-coder:3b")
     
     # Load already processed instructions to skip them
     processed_ids = set()

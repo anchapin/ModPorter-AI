@@ -14,7 +14,7 @@ themes = [
     "Furniture", "Weather", "Combat", "Pets", "Archaeology", "Underground", "Music"
 ]
 
-model = "llama3.2:latest"
+model = "qwen2.5:3b"
 url = "http://localhost:11434/api/generate"
 
 count = 0
