@@ -24,6 +24,7 @@ from services.ai_engine_client import (
     AIEngineError,
 )
 from services.cache import CacheService
+from services.email_service import send_conversion_notification
 from src.websocket.progress_handler import ProgressHandler, AgentStatus
 from errors import (
     ConversionError,
@@ -131,6 +132,8 @@ class ConversionService:
         original_filename: str,
         target_version: str,
         options: Dict[str, Any],
+        user_email: Optional[str] = None,
+        notify_on_completion: bool = True,
     ) -> Dict[str, Any]:
         """
         Process a conversion by sending it to the AI Engine.
@@ -148,6 +151,8 @@ class ConversionService:
             original_filename: Original filename for reference
             target_version: Target Minecraft version
             options: Conversion options
+            user_email: Email address for completion notification
+            notify_on_completion: Whether to send email on completion
 
         Returns:
             Dict with conversion result (output_path, download_url, etc.)
@@ -240,11 +245,28 @@ class ConversionService:
                     download_url=download_url,
                 )
 
+                # Send completion email if requested
+                email_verified = False
+                if notify_on_completion and user_email:
+                    try:
+                        email_verified = await send_conversion_notification(
+                            email=user_email,
+                            conversion_id=conversion_id,
+                            download_url=download_url,
+                            success=True,
+                            issues=None,
+                        )
+                        logger.info(f"Completion email sent to {user_email} for conversion {conversion_id}")
+                    except Exception as e:
+                        logger.warning(f"Failed to send completion email: {e}")
+                        email_verified = False
+
                 return {
                     "status": "completed",
                     "output_path": output_path,
                     "download_url": download_url,
                     "message": "Conversion completed successfully",
+                    "email_verified": email_verified,
                 }
             else:
                 error_msg = final_status.get("message", "Conversion failed")
