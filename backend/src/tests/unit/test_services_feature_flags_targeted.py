@@ -116,6 +116,7 @@ class TestFeatureFlagManager:
     def manager(self, monkeypatch):
         """Create fresh manager instance."""
         import os
+
         for key in list(os.environ.keys()):
             if key.startswith("FEATURE_FLAG_") or key in (
                 "FEATURE_USER_ACCOUNTS",
