@@ -64,6 +64,74 @@ Asset Converter ← Packaging Agent ← QA Validator
 
 **Technologies**: CrewAI, LangChain, OpenAI/Anthropic APIs
 
+## Inference Strategy
+
+PortKit uses a phased approach for LLM inference, evolving from hosted APIs to self-hosted models as traffic and cost at scale justify the infrastructure investment.
+
+### Phase 1 — OpenRouter API (Current Baseline)
+**OpenRouter API → Claude Sonnet or Qwen3-Coder**
+- Zero infrastructure setup
+- Pay per token — correct for pre-product-market-fit
+- Iterate fast on prompts, system instructions, and output schemas
+
+### Phase 2 — RunPod Flash + vLLM (Post #997 Fine-tune)
+After ~500+ conversion pairs produce a fine-tuned model:
+- **RunPod Flash**: Python-native serverless GPU workers with scale-to-zero
+- **vLLM**: OpenAI-compatible inference with PagedAttention (14-24x throughput)
+- **Target**: QLoRA-merged Qwen3-Coder-7B or DeepSeek-Coder-7B on single RTX 4090
+- **Cost**: ~$0.007/min with scale-to-zero (pay only during active conversions)
+
+Architecture:
+```
+API request
+    ↓
+Redis job queue (Celery)
+    ↓
+Celery worker
+    ↓
+RunPod Flash endpoint (vLLM + fine-tuned model)
+    ↓
+Result stored in Redis
+    ↓
+API returns result to client
+```
+
+### Phase 3 — SGLang vs vLLM Benchmark (Post-beta)
+Benchmark SGLang vs vLLM on PortKit's actual prompt shapes:
+- **SGLang**: RadixAttention = 85-95% KV cache hit rate on shared prefixes
+- **PortKit's prompts**: Long shared system-prompt prefixes (Bedrock docs, conversion patterns)
+- If SGLang wins → drop-in swap (both expose OpenAI-compatible APIs)
+
+| Server | Best for | Notes |
+|--------|----------|-------|
+| **vLLM** | High-concurrency API, first deployment | PagedAttention, OpenAI-compatible, battle-tested |
+| **SGLang** | Agent pipelines, multi-turn, batch | RadixAttention on shared prefixes; ~29% faster on H100 batch |
+| **TGI** | — | Entered maintenance mode Dec 2025 — do not use |
+
+### Self-Hosted Inference Configuration
+
+Environment variables for self-hosted inference:
+```bash
+# Mode: cloud (default) | self_hosted | hybrid
+INFERENCE_MODE=cloud
+INFERENCE_PROVIDER=openrouter  # openrouter | runpod_flash | sglang | vllm | ollama
+
+# Endpoint configuration
+SELF_HOSTED_ENDPOINT=https://your-endpoint.run.app
+SELF_HOSTED_API_KEY=your_api_key
+SELF_HOSTED_MODEL=Qwen3-Coder-7B
+
+# RunPod Flash (Phase 2)
+RUNPOD_ENDPOINT_ID=your_endpoint_id
+RUNPOD_API_KEY=your_runpod_key
+
+# SGLang (Phase 3)
+SGLANG_URL=http://localhost:30000
+VLLM_URL=http://localhost:8000
+```
+
+See [INFERENCE_DEPLOYMENT.md](./INFERENCE_DEPLOYMENT.md) for full deployment guide.
+
 ### Local Validation Agent (Node.js)
 **Purpose**: PRD Feature 4 implementation for gameplay comparison
 
