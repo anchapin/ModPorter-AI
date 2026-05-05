@@ -1,8 +1,8 @@
-# ModPorter AI User Guide
+# PortKit User Guide
 
 ## 🎯 Overview
 
-ModPorter AI is an intelligent tool that converts Minecraft Java Edition mods to Bedrock Edition add-ons using AI-powered analysis and automated conversion processes.
+PortKit is an intelligent tool that converts Minecraft Java Edition mods to Bedrock Edition add-ons using AI-powered analysis and automated conversion processes.
 
 ### Key Features
 - **One-Click Conversion**: Upload or provide URL for instant conversion
@@ -229,7 +229,7 @@ Each conversion includes a detailed report with:
 
 ## 🎯 Next Steps
 
-Now that you understand how to use ModPorter AI:
+Now that you understand how to use PortKit:
 
 1. **Try a Simple Conversion**: Start with a basic block mod
 2. **Explore Behavior Editor**: Customize converted behaviors
