@@ -4,7 +4,7 @@
 # ============================================
 # Stage 1: Backend builder
 # ============================================
-FROM python:3.14-slim AS backend-builder
+FROM python:3.13-slim AS backend-builder
 
 WORKDIR /app/backend
 
@@ -24,7 +24,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # ============================================
 # Stage 2: AI Engine builder
 # ============================================
-FROM python:3.14-slim AS ai-engine-builder
+FROM python:3.13-slim AS ai-engine-builder
 
 WORKDIR /app/ai-engine
 
@@ -43,7 +43,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # ============================================
 # Stage 3: Production backend
 # ============================================
-FROM python:3.14-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 
@@ -54,7 +54,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy Python dependencies from builders - use correct Python 3.14 path
+# Copy Python dependencies from builders
 COPY --from=backend-builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY --from=backend-builder /usr/local/bin /usr/local/bin
 

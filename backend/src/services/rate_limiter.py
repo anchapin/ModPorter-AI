@@ -106,14 +106,38 @@ class RateLimiter:
     def _get_user_config(
         self, request: Request, base_config: Optional[RateLimitConfig] = None
     ) -> RateLimitConfig:
-        """Get rate limit config for specific user (can be overridden per user)"""
-        # Check for premium users who might have higher limits
+        """Get rate limit config for specific user (can be overridden per user/tier)"""
         user_tier = getattr(request.state, "user_tier", "free")
+
+        if base_config is not None:
+            return base_config
+
+        tier_limits = {
+            "free": RateLimitConfig(requests_per_minute=10, requests_per_hour=50, burst_size=3),
+            "creator": RateLimitConfig(requests_per_minute=30, requests_per_hour=200, burst_size=5),
+            "creator_byok": RateLimitConfig(
+                requests_per_minute=30, requests_per_hour=200, burst_size=5
+            ),
+            "pro": RateLimitConfig(requests_per_minute=60, requests_per_hour=500, burst_size=10),
+            "studio": RateLimitConfig(
+                requests_per_minute=120, requests_per_hour=1000, burst_size=20
+            ),
+            "studio_byok": RateLimitConfig(
+                requests_per_minute=120, requests_per_hour=1000, burst_size=20
+            ),
+            "enterprise": RateLimitConfig(
+                requests_per_minute=300, requests_per_hour=5000, burst_size=50
+            ),
+            "payg": RateLimitConfig(requests_per_minute=30, requests_per_hour=200, burst_size=5),
+        }
+
+        if user_tier in tier_limits:
+            return tier_limits[user_tier]
 
         if user_tier == "premium":
             return RateLimitConfig(requests_per_minute=300, requests_per_hour=10000, burst_size=50)
 
-        return base_config if base_config else self.config
+        return self.config
 
     async def check_rate_limit(
         self,

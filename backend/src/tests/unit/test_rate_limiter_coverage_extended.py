@@ -134,7 +134,7 @@ class TestRateLimiterUserConfig:
         mock_request.state.user_tier = "free"
 
         config = limiter._get_user_config(mock_request)
-        assert config.requests_per_minute == 60  # Default
+        assert config.requests_per_minute == 10  # Free tier limit
 
     def test_get_user_config_premium_tier(self, limiter):
         """Test config for premium tier user."""
