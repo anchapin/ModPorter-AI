@@ -197,7 +197,7 @@ class TestRecipeConverterAgent:
         # Handle both direct call and crewai Tool object
         tool_func = self.agent.validate_recipe_tool
         if hasattr(tool_func, "fn"):
-            result = tool_func.fn(json.dumps(valid_recipe))
+            result = tool_func.func(json.dumps(valid_recipe))
         else:
             result = tool_func(json.dumps(valid_recipe))
 
@@ -218,7 +218,7 @@ class TestRecipeConverterAgent:
         # Handle both direct call and crewai Tool object
         tool_func = self.agent.validate_recipe_tool
         if hasattr(tool_func, "fn"):
-            result = tool_func.fn(json.dumps(invalid_recipe))
+            result = tool_func.func(json.dumps(invalid_recipe))
         else:
             result = tool_func(json.dumps(invalid_recipe))
 
@@ -245,7 +245,7 @@ class TestRecipeConverterAgent:
         # Handle both direct call and crewai Tool object
         tool_func = self.agent.convert_recipes_batch_tool
         if hasattr(tool_func, "fn"):
-            result = tool_func.fn(recipes)
+            result = tool_func.func(recipes)
         else:
             result = tool_func(recipes)
 
@@ -292,7 +292,7 @@ class TestRecipeConverterAgent:
 
         tool_func = RecipeConverterAgent.map_item_id_tool
         if hasattr(tool_func, "fn"):
-            result = tool_func.fn(mappings)
+            result = tool_func.func(mappings)
         else:
             result = tool_func(mappings)
 
@@ -320,7 +320,7 @@ class TestRecipeConverterAgent:
                     "result": {"item": "minecraft:stone"}
                 }
             }
-            result = self.agent.validate_recipe_tool.fn(json.dumps(recipe)) if hasattr(self.agent.validate_recipe_tool, "fn") else self.agent.validate_recipe_tool(json.dumps(recipe))
+            result = self.agent.validate_recipe_tool.func(json.dumps(recipe)) if hasattr(self.agent.validate_recipe_tool, "func") else self.agent.validate_recipe_tool(json.dumps(recipe))
             assert json.loads(result)["valid"] is True
 
     def test_convert_recipe_tool_nested_data(self):
@@ -337,7 +337,7 @@ class TestRecipeConverterAgent:
             }
         })
         
-        result = RecipeConverterAgent.convert_recipe_tool.fn(input_data) if hasattr(RecipeConverterAgent.convert_recipe_tool, "fn") else RecipeConverterAgent.convert_recipe_tool(input_data)
+        result = RecipeConverterAgent.convert_recipe_tool.func(input_data) if hasattr(RecipeConverterAgent.convert_recipe_tool, "func") else RecipeConverterAgent.convert_recipe_tool(input_data)
         result_data = json.loads(result)
         assert result_data["success"] is True
         assert "nested_ns:nested_name" in str(result_data["converted_recipe"])
@@ -462,8 +462,8 @@ class TestRecipeConverterTools:
 
         # Handle both direct call and crewai Tool object
         tool_func = RecipeConverterAgent.convert_recipe_tool
-        if hasattr(tool_func, "fn"):
-            result = tool_func.fn(java_recipe)
+        if hasattr(tool_func, "func"):
+            result = tool_func.func(java_recipe)
         else:
             result = tool_func(java_recipe)
 
@@ -492,7 +492,7 @@ class TestRecipeConverterTools:
         # Handle both direct call and crewai Tool object
         tool_func = RecipeConverterAgent.convert_recipes_batch_tool
         if hasattr(tool_func, "fn"):
-            result = tool_func.fn(recipes)
+            result = tool_func.func(recipes)
         else:
             result = tool_func(recipes)
 
@@ -509,7 +509,7 @@ class TestRecipeConverterTools:
         # Handle both direct call and crewai Tool object
         tool_func = RecipeConverterAgent.map_item_id_tool
         if hasattr(tool_func, "fn"):
-            result = tool_func.fn(mappings)
+            result = tool_func.func(mappings)
         else:
             result = tool_func(mappings)
 
