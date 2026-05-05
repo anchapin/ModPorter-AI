@@ -7,86 +7,52 @@ Handles:
 - Generic Forge patterns
 """
 
+import json
+import logging
+from pathlib import Path
 from typing import Dict
 
-from agents.recipe.tag_resolver import FORGE_TAG_MAPPINGS
+logger = logging.getLogger(__name__)
 
 
-CUSTOM_RECIPE_TYPES = {
-    # Farmer's Delight
-    "farmersdelight:cooking": {
-        "category": "cooking_pot",
-        "description": "Cooking pot recipe",
-        "convertible": True,
-    },
-    "farmersdelight:cutting": {
-        "category": "cutting_board",
-        "description": "Cutting board recipe",
-        "convertible": True,
-    },
-    # Create
-    "create:sequenced_assembly": {
-        "category": "sequenced_assembly",
-        "description": "Sequenced assembly recipe",
-        "convertible": False,
-    },
-    "create:mechanical_crafting": {
-        "category": "mechanical_crafting",
-        "description": "Mechanical crafting (9x9 grid)",
-        "convertible": True,
-    },
-    "create:mixing": {
-        "category": "mixing",
-        "description": "Mixing recipe",
-        "convertible": False,
-    },
-    "create:pressing": {
-        "category": "pressing",
-        "description": "Pressing recipe",
-        "convertible": True,
-    },
-    "create:deploying": {
-        "category": "deploying",
-        "description": "Deploying recipe",
-        "convertible": True,
-    },
-    "create:milling": {
-        "category": "milling",
-        "description": "Milling recipe (Millstone)",
-        "convertible": True,
-    },
-    "create:crushing": {
-        "category": "crushing",
-        "description": "Crushing recipe (Crushing Wheels)",
-        "convertible": True,
-    },
-    "create:splashing": {
-        "category": "splashing",
-        "description": "Splashing recipe (Water)",
-        "convertible": True,
-    },
-    "create:compacting": {
-        "category": "compacting",
-        "description": "Compacting recipe",
-        "convertible": True,
-    },
-    "create:filling": {
-        "category": "filling",
-        "description": "Filling recipe",
-        "convertible": False,
-    },
-    "create:emptying": {
-        "category": "emptying",
-        "description": "Emptying recipe",
-        "convertible": False,
-    },
-    # Generic Forge patterns
-    "forge:conditional": {
-        "category": "conditional",
-        "description": "Conditional recipe",
-        "convertible": False,
-    },
-}
+def _load_custom_recipe_types() -> Dict:
+    """Load custom Forge recipe type definitions from the bundled JSON file.
+
+    Returns:
+        Dictionary mapping recipe type IDs to their metadata
+
+    The mappings are loaded from data/custom_recipe_types.json.
+    """
+    try:
+        data_dir = Path(__file__).parent.parent.parent / "data"
+        mappings_file = data_dir / "custom_recipe_types.json"
+
+        if not mappings_file.exists():
+            logger.warning(
+                f"Custom recipe types file not found at {mappings_file}. Falling back to empty dict."
+            )
+            return {}
+
+        with open(mappings_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        types = data.get("types", {})
+        metadata = data.get("metadata", {})
+        logger.info(
+            f"Loaded {len(types)} custom recipe types from {mappings_file} "
+            f"(type_count: {metadata.get('type_count', 'unknown')})"
+        )
+        return types
+
+    except json.JSONDecodeError as e:
+        logger.error(f"Error parsing custom recipe types JSON: {e}. Falling back to empty dict.")
+        return {}
+    except Exception as e:
+        logger.error(f"Error loading custom recipe types: {e}. Falling back to empty dict.")
+        return {}
+
+
+CUSTOM_RECIPE_TYPES = _load_custom_recipe_types()
 
 
 class CustomTypesConverter:
@@ -693,4 +659,5 @@ __all__ = [
     "CUSTOM_RECIPE_TYPES",
     "CustomTypesConverter",
     "is_custom_recipe_type",
+    "_load_custom_recipe_types",
 ]
