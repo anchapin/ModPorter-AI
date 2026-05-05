@@ -491,42 +491,89 @@ def health_check() -> Dict[str, Any]:
 
 def handle_conversion_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Handle conversion task - runs in worker process."""
+    from services.conversion_service import process_conversion_task as _process
+
     job_id = payload.get("job_id")
     file_id = payload.get("file_id")
     logger.info(f"Processing conversion job: {job_id}")
-    return {
-        "job_id": job_id,
-        "status": "completed",
-        "result_url": f"/api/v1/conversions/{job_id}/download",
-    }
+    try:
+        return asyncio.get_event_loop().run_until_complete(
+            _process(payload)
+        )
+    except Exception as e:
+        logger.error(f"Conversion job {job_id} failed: {e}")
+        raise
 
 
 def handle_asset_conversion_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Handle asset conversion task."""
+    from services.asset_conversion_service import asset_conversion_service as _svc
+
     asset_id = payload.get("asset_id")
     logger.info(f"Processing asset conversion: {asset_id}")
-    return {"asset_id": asset_id, "status": "converted"}
+    try:
+        return asyncio.get_event_loop().run_until_complete(
+            _svc.convert_asset(asset_id)
+        )
+    except Exception as e:
+        logger.error(f"Asset conversion {asset_id} failed: {e}")
+        raise
 
 
 def handle_java_analysis_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Handle Java analysis task."""
+    from services.java_parser import analyze_java_file
+    from db import crud
+    from db.base import AsyncSessionLocal
+
     mod_id = payload.get("mod_id")
     logger.info(f"Processing Java analysis: {mod_id}")
-    return {"mod_id": mod_id, "status": "analyzed"}
+    try:
+        async def _analyze():
+            async with AsyncSessionLocal() as session:
+                mod = await crud.get_mod(session, mod_id)
+                if not mod:
+                    raise ValueError(f"Mod {mod_id} not found")
+                source_code = mod.source_code or ""
+                return analyze_java_file(source_code, f"mod_{mod_id}.java")
+
+        result = asyncio.get_event_loop().run_until_complete(_analyze())
+        return {"mod_id": mod_id, "status": "analyzed", "result": result}
+    except Exception as e:
+        logger.error(f"Java analysis {mod_id} failed: {e}")
+        raise
 
 
 def handle_texture_extraction_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Handle texture extraction task."""
+    from ai_engine.utils.texture_metadata_extractor import TextureMetadataExtractor
+
     jar_path = payload.get("jar_path")
     logger.info(f"Processing texture extraction: {jar_path}")
-    return {"jar_path": jar_path, "status": "extracted"}
+    try:
+        extractor = TextureMetadataExtractor()
+        result = asyncio.get_event_loop().run_until_complete(
+            extractor.extract_from_jar(jar_path)
+        )
+        return {"jar_path": jar_path, "status": "extracted", "result": result}
+    except Exception as e:
+        logger.error(f"Texture extraction {jar_path} failed: {e}")
+        raise
 
 
 def handle_model_conversion_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Handle model conversion task."""
+    from services.asset_conversion_service import asset_conversion_service as _svc
+
     model_id = payload.get("model_id")
     logger.info(f"Processing model conversion: {model_id}")
-    return {"model_id": model_id, "status": "converted"}
+    try:
+        return asyncio.get_event_loop().run_until_complete(
+            _svc.convert_asset(model_id)
+        )
+    except Exception as e:
+        logger.error(f"Model conversion {model_id} failed: {e}")
+        raise
 
 
 # Legacy compatibility - expose same interface as old task_queue_enhanced
