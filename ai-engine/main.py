@@ -1,6 +1,6 @@
 """
 Portkit Engine
-FastAPI service for AI-powered mod conversion using CrewAI
+FastAPI service for AI-powered mod conversion using CrewAI/LangGraph
 """
 
 import json
@@ -484,11 +484,13 @@ async def process_conversion(
     options: Dict[str, Any],
     experiment_variant: Optional[str] = None,
 ):
-    """Process a conversion job using the AI crew"""
+    """Process a conversion job using the AI crew or LangGraph pipeline"""
 
     progress_callback = None
 
     try:
+        use_langgraph = os.getenv("USE_LANGGRAPH_PIPELINE", "false").lower() == "true"
+
         # Get current job status
         job_status = await job_manager.get_job_status(job_id)
         if not job_status:
@@ -502,7 +504,7 @@ async def process_conversion(
         job_status.progress = 10
         await job_manager.set_job_status(job_id, job_status)
 
-        logger.info(f"Processing conversion for job {job_id} with variant {experiment_variant}")
+        logger.info(f"Processing conversion for job {job_id} with variant {experiment_variant} (langgraph={use_langgraph})")
 
         # Create progress callback for real-time updates if available
         if PROGRESS_CALLBACK_AVAILABLE and create_progress_callback:
@@ -525,104 +527,14 @@ async def process_conversion(
         # Ensure the output directory exists
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-        try:
-            # Initialize conversion crew with variant if specified and pass progress callback
-            crew = PortkitConversionCrew(
-                variant_id=experiment_variant, progress_callback=progress_callback
+        if use_langgraph:
+            await _process_with_langgraph_pipeline(
+                job_id, mod_file_path, output_path, options, job_manager, progress_callback
             )
-            logger.info(f"PortkitConversionCrew initialized with variant: {experiment_variant}")
-
-            # Update status for analysis stage
-            job_status = await job_manager.get_job_status(job_id)
-            if job_status:
-                job_status.current_stage = "analysis"
-                job_status.message = "Analyzing Java mod structure"
-                job_status.progress = 20
-                await job_manager.set_job_status(job_id, job_status)
-
-            # Execute the actual AI conversion using the conversion crew
-            from pathlib import Path
-
-            conversion_result = crew.convert_mod(
-                mod_path=Path(mod_file_path),
-                output_path=Path(output_path),
-                smart_assumptions=options.get("smart_assumptions", True),
-                include_dependencies=options.get("include_dependencies", True),
+        else:
+            await _process_with_crewai(
+                job_id, mod_file_path, output_path, options, experiment_variant, job_manager, progress_callback
             )
-
-            # Update progress based on conversion result
-            if conversion_result.get("status") == "failed":
-                # Mark job as failed
-                job_status = await job_manager.get_job_status(job_id)
-                if job_status:
-                    job_status.status = "failed"
-                    job_status.message = (
-                        f"Conversion failed: {conversion_result.get('error', 'Unknown error')}"
-                    )
-                    await job_manager.set_job_status(job_id, job_status)
-                logger.error(
-                    f"Conversion failed for job {job_id}: {conversion_result.get('error')}"
-                )
-                return
-
-            # Update progress through conversion stages
-            stages = [
-                ("planning", "Creating conversion plan", 40),
-                ("translation", "Translating logic to Bedrock", 60),
-                ("assets", "Converting assets", 80),
-                ("packaging", "Packaging Bedrock addon", 90),
-                ("validation", "Validating conversion", 95),
-            ]
-
-            for stage, message, progress in stages:
-                job_status = await job_manager.get_job_status(job_id)
-                if job_status:
-                    job_status.current_stage = stage
-                    job_status.message = message
-                    job_status.progress = progress
-                    await job_manager.set_job_status(job_id, job_status)
-
-                # Short delay to show progress
-                import asyncio
-
-                await asyncio.sleep(0.5)
-
-            # Verify output file was created
-            if not os.path.exists(output_path):
-                logger.error(f"Output file not created by conversion crew: {output_path}")
-                logger.error(
-                    "This indicates a serious conversion failure that should not be masked"
-                )
-
-                # Mark job as failed explicitly instead of creating a fake successful output
-                job_status = await job_manager.get_job_status(job_id)
-                if job_status:
-                    job_status.status = "failed"
-                    job_status.message = "Conversion crew failed to produce output file - this indicates a serious error in the conversion process"
-                    await job_manager.set_job_status(job_id, job_status)
-                return
-
-            logger.info(f"Conversion completed successfully: {output_path}")
-
-        except Exception as conversion_error:
-            logger.error(f"Failed to convert mod {mod_file_path}: {conversion_error}")
-            # Mark job as failed if conversion fails
-            job_status = await job_manager.get_job_status(job_id)
-            if job_status:
-                job_status.status = "failed"
-                job_status.message = f"Conversion failed: {str(conversion_error)}"
-                await job_manager.set_job_status(job_id, job_status)
-            return
-
-        # Mark as completed
-        job_status = await job_manager.get_job_status(job_id)
-        if job_status:
-            job_status.status = "completed"
-            job_status.message = "Conversion completed successfully"
-            job_status.completed_at = datetime.now(timezone.utc)
-            await job_manager.set_job_status(job_id, job_status)
-
-        logger.info(f"Completed conversion for job {job_id}")
 
     except Exception as e:
         logger.error(f"Conversion failed for job {job_id}: {e}", exc_info=True)
@@ -646,6 +558,218 @@ async def process_conversion(
                 logger.info(f"Cleaned up progress callback for job {job_id}")
             except Exception as e:
                 logger.warning(f"Failed to cleanup progress callback: {e}")
+
+
+async def _process_with_crewai(
+    job_id: str,
+    mod_file_path: str,
+    output_path: str,
+    options: Dict[str, Any],
+    experiment_variant: Optional[str],
+    job_manager: Any,
+    progress_callback: Optional[Any],
+) -> None:
+    """Process conversion using the CrewAI pipeline."""
+    try:
+        # Initialize conversion crew with variant if specified and pass progress callback
+        crew = PortkitConversionCrew(
+            variant_id=experiment_variant, progress_callback=progress_callback
+        )
+        logger.info(f"PortkitConversionCrew initialized with variant: {experiment_variant}")
+
+        # Update status for analysis stage
+        job_status = await job_manager.get_job_status(job_id)
+        if job_status:
+            job_status.current_stage = "analysis"
+            job_status.message = "Analyzing Java mod structure"
+            job_status.progress = 20
+            await job_manager.set_job_status(job_id, job_status)
+
+        # Execute the actual AI conversion using the conversion crew
+        from pathlib import Path
+
+        conversion_result = crew.convert_mod(
+            mod_path=Path(mod_file_path),
+            output_path=Path(output_path),
+            smart_assumptions=options.get("smart_assumptions", True),
+            include_dependencies=options.get("include_dependencies", True),
+        )
+
+        # Update progress based on conversion result
+        if conversion_result.get("status") == "failed":
+            # Mark job as failed
+            job_status = await job_manager.get_job_status(job_id)
+            if job_status:
+                job_status.status = "failed"
+                job_status.message = (
+                    f"Conversion failed: {conversion_result.get('error', 'Unknown error')}"
+                )
+                await job_manager.set_job_status(job_id, job_status)
+            logger.error(
+                f"Conversion failed for job {job_id}: {conversion_result.get('error')}"
+            )
+            return
+
+        # Update progress through conversion stages
+        stages = [
+            ("planning", "Creating conversion plan", 40),
+            ("translation", "Translating logic to Bedrock", 60),
+            ("assets", "Converting assets", 80),
+            ("packaging", "Packaging Bedrock addon", 90),
+            ("validation", "Validating conversion", 95),
+        ]
+
+        for stage, message, progress in stages:
+            job_status = await job_manager.get_job_status(job_id)
+            if job_status:
+                job_status.current_stage = stage
+                job_status.message = message
+                job_status.progress = progress
+                await job_manager.set_job_status(job_id, job_status)
+
+            # Short delay to show progress
+            import asyncio
+            await asyncio.sleep(0.5)
+
+        # Verify output file was created
+        if not os.path.exists(output_path):
+            logger.error(f"Output file not created by conversion crew: {output_path}")
+            logger.error(
+                "This indicates a serious conversion failure that should not be masked"
+            )
+
+            # Mark job as failed explicitly instead of creating a fake successful output
+            job_status = await job_manager.get_job_status(job_id)
+            if job_status:
+                job_status.status = "failed"
+                job_status.message = "Conversion crew failed to produce output file - this indicates a serious error in the conversion process"
+                await job_manager.set_job_status(job_id, job_status)
+            return
+
+        logger.info(f"Conversion completed successfully: {output_path}")
+
+        # Mark as completed
+        job_status = await job_manager.get_job_status(job_id)
+        if job_status:
+            job_status.status = "completed"
+            job_status.message = "Conversion completed successfully"
+            job_status.completed_at = datetime.now(timezone.utc)
+            await job_manager.set_job_status(job_id, job_status)
+
+        logger.info(f"Completed conversion for job {job_id}")
+
+    except Exception as conversion_error:
+        logger.error(f"Failed to convert mod {mod_file_path}: {conversion_error}")
+        # Mark job as failed if conversion fails
+        job_status = await job_manager.get_job_status(job_id)
+        if job_status:
+            job_status.status = "failed"
+            job_status.message = f"Conversion failed: {str(conversion_error)}"
+            await job_manager.set_job_status(job_id, job_status)
+
+
+async def _process_with_langgraph_pipeline(
+    job_id: str,
+    mod_file_path: str,
+    output_path: str,
+    options: Dict[str, Any],
+    job_manager: Any,
+    progress_callback: Optional[Any],
+) -> None:
+    """Process conversion using the LangGraph pipeline."""
+    try:
+        from orchestration.langgraph_pipeline import ConversionPipeline
+
+        logger.info(f"Initializing LangGraph pipeline for job {job_id}")
+
+        # Update status for pipeline initialization
+        job_status = await job_manager.get_job_status(job_id)
+        if job_status:
+            job_status.current_stage = "pipeline_init"
+            job_status.message = "Initializing LangGraph conversion pipeline"
+            job_status.progress = 15
+            await job_manager.set_job_status(job_id, job_status)
+
+        # Initialize the LangGraph pipeline
+        pipeline = ConversionPipeline(
+            job_id=job_id,
+            mod_path=mod_file_path,
+            output_path=output_path,
+            enable_checkpointing=os.getenv("LANGGRAPH_CHECKPOINTING", "true").lower() == "true",
+            enable_langsmith=os.getenv("LANGSMITH_TRACING", "false").lower() == "true",
+            langsmith_api_key=os.getenv("LANGSMITH_API_KEY"),
+        )
+
+        # Build and compile the graph
+        pipeline.build_graph()
+        pipeline.compile()
+
+        # Update progress
+        job_status = await job_manager.get_job_status(job_id)
+        if job_status:
+            job_status.current_stage = "analysis"
+            job_status.message = "Analyzing Java mod structure"
+            job_status.progress = 20
+            await job_manager.set_job_status(job_id, job_status)
+
+        # Execute the pipeline
+        result = await pipeline.execute()
+
+        # Check for errors in result
+        if result.get("errors"):
+            logger.error(f"LangGraph pipeline errors: {result.get('errors')}")
+
+        # Update progress through conversion stages
+        stages = [
+            ("planning", "Creating conversion plan", 40),
+            ("translation", "Translating logic to Bedrock", 60),
+            ("assets", "Converting assets", 80),
+            ("packaging", "Packaging Bedrock addon", 90),
+            ("validation", "Validating conversion", 95),
+        ]
+
+        for stage, message, progress in stages:
+            job_status = await job_manager.get_job_status(job_id)
+            if job_status:
+                job_status.current_stage = stage
+                job_status.message = message
+                job_status.progress = progress
+                await job_manager.set_job_status(job_id, job_status)
+
+            import asyncio
+            await asyncio.sleep(0.5)
+
+        # Check if output was produced
+        bedrock_json = result.get("bedrock_json", {})
+        if not bedrock_json and not os.path.exists(output_path):
+            logger.error(f"LangGraph pipeline did not produce output: {output_path}")
+            job_status = await job_manager.get_job_status(job_id)
+            if job_status:
+                job_status.status = "failed"
+                job_status.message = "LangGraph pipeline failed to produce output"
+                await job_manager.set_job_status(job_id, job_status)
+            return
+
+        logger.info(f"LangGraph conversion completed successfully: {output_path}")
+
+        # Mark as completed
+        job_status = await job_manager.get_job_status(job_id)
+        if job_status:
+            job_status.status = "completed"
+            job_status.message = "Conversion completed successfully"
+            job_status.completed_at = datetime.now(timezone.utc)
+            await job_manager.set_job_status(job_id, job_status)
+
+        logger.info(f"Completed LangGraph conversion for job {job_id}")
+
+    except Exception as conversion_error:
+        logger.error(f"LangGraph pipeline failed for job {job_id}: {conversion_error}", exc_info=True)
+        # Mark job as failed
+        job_status = await job_manager.get_job_status(job_id)
+        if job_status:
+            job_status.status = "failed"
+            job_status.message = f"LangGraph pipeline failed: {str(conversion_error)}"
+            await job_manager.set_job_status(job_id, job_status)
 
 
 # RAG Evaluation Models

@@ -5,6 +5,7 @@ import tempfile
 import json
 from typing import Tuple, List
 
+
 class CodeValidator:
     """
     Validates generated Minecraft modding code for compilation and schema correctness.
@@ -12,8 +13,8 @@ class CodeValidator:
 
     def validate_java(self, source_code: str) -> Tuple[bool, str]:
         """
-        Attempts to compile Java code snippets. 
-        Note: This is a basic syntax check. In a production RL loop, 
+        Attempts to compile Java code snippets.
+        Note: This is a basic syntax check. In a production RL loop,
         you would need the Forge/Fabric MDK jar files in the classpath.
         """
         code = self._extract_code(source_code, "java")
@@ -26,9 +27,9 @@ class CodeValidator:
             "package": r"package [\w\.]+;",
             "class": r"public class \w+",
             "imports": r"import [\w\.\*]+;",
-            "braces": r"\{.*?\}"
+            "braces": r"\{.*?\}",
         }
-        
+
         for name, pat in checks.items():
             if not re.search(pat, code, re.DOTALL):
                 return False, f"Structural check failed: Missing {name}"
@@ -45,25 +46,26 @@ class CodeValidator:
                 class_match = re.search(r"public class (\w+)", code)
                 class_name = class_match.group(1) if class_match else "ModComponent"
                 file_path = os.path.join(tmpdir, f"{class_name}.java")
-                
+
                 with open(file_path, "w") as f:
                     f.write(code)
-                
+
                 result = subprocess.run(
-                    ["javac", "-Xlint:none", file_path],
-                    capture_output=True,
-                    text=True
+                    ["javac", "-Xlint:none", file_path], capture_output=True, text=True
                 )
-                
+
                 if result.returncode == 0:
                     return True, "Perfect Compilation"
-                
+
                 # Check for common missing dependency errors vs actual syntax errors
-                if "error: package net.minecraft" in result.stderr or "error: cannot find symbol" in result.stderr:
+                if (
+                    "error: package net.minecraft" in result.stderr
+                    or "error: cannot find symbol" in result.stderr
+                ):
                     return True, "Syntactically Correct (Missing Dependencies)"
-                
+
                 return False, result.stderr
-        
+
         return True, "Structural Check Passed (No javac)"
 
     def validate_bedrock_json(self, source_content: str) -> Tuple[bool, str]:
@@ -74,7 +76,7 @@ class CodeValidator:
             if "format_version" in source_content:
                 return True, "Found format_version outside block"
             return False, "No JSON blocks found"
-        
+
         for block in json_blocks:
             try:
                 # Basic cleanup for comments which Minecraft JSON often has
@@ -85,7 +87,7 @@ class CodeValidator:
                     pass
             except json.JSONDecodeError as e:
                 return False, f"JSON Error: {e}"
-        
+
         return True, "Valid JSON Structures"
 
     def _extract_code(self, source: str, lang: str) -> str:

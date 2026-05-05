@@ -9,10 +9,26 @@ output_path = "/home/alex/mmsd-work/data/raw/instructions.jsonl"
 os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
 themes = [
-    "Industrial Automation", "Advanced Sorcery", "Farming", "Transportation",
-    "Quality of Life", "Mob Overhaul", "Medieval Weapons", "Space Exploration",
-    "Deep Sea", "Cybernetic", "Ecosystem", "Economic", "Storage",
-    "Furniture", "Weather", "Combat", "Pets", "Archaeology", "Underground", "Music"
+    "Industrial Automation",
+    "Advanced Sorcery",
+    "Farming",
+    "Transportation",
+    "Quality of Life",
+    "Mob Overhaul",
+    "Medieval Weapons",
+    "Space Exploration",
+    "Deep Sea",
+    "Cybernetic",
+    "Ecosystem",
+    "Economic",
+    "Storage",
+    "Furniture",
+    "Weather",
+    "Combat",
+    "Pets",
+    "Archaeology",
+    "Underground",
+    "Music",
 ]
 
 url = "http://localhost:8001/v1/chat/completions"
@@ -24,11 +40,13 @@ Adds craftable campfire items that can be carried in inventory and placed anywhe
 
 USER_TEMPLATE = "Create a unique Minecraft mod concept in the '{theme}' category. Be specific about mechanics and features. 2-4 sentences only."
 
+
 def count_existing():
     if not os.path.exists(output_path):
         return 0
     with open(output_path, "r") as f:
         return sum(1 for _ in f)
+
 
 def is_valid(text):
     if not text or len(text) < 20:
@@ -37,16 +55,21 @@ def is_valid(text):
     banned = ["as an ai", "i cannot", "language model", "i can't", "i'm not able", "sorry, i"]
     return not any(b in lower for b in banned)
 
+
 async def generate_one(client, theme):
     try:
-        resp = await client.post(url, json={
-            "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": USER_TEMPLATE.format(theme=theme)}
-            ],
-            "temperature": 1.0,
-            "max_tokens": 512
-        }, timeout=120.0)
+        resp = await client.post(
+            url,
+            json={
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": USER_TEMPLATE.format(theme=theme)},
+                ],
+                "temperature": 1.0,
+                "max_tokens": 512,
+            },
+            timeout=120.0,
+        )
         if resp.status_code == 200:
             txt = resp.json()["choices"][0]["message"]["content"].strip()
             if is_valid(txt):
@@ -54,6 +77,7 @@ async def generate_one(client, theme):
     except Exception:
         pass
     return None
+
 
 async def run_parallel(concurrency=4):
     count = count_existing()
@@ -83,9 +107,12 @@ async def run_parallel(concurrency=4):
                         f.write(json.dumps({"instruction": text}) + "\n")
                         count += 1
 
-            print(f"[{count}/{target}] Batch done. Rate: {batch_size} requested, {sum(1 for r in results if r)} valid.")
+            print(
+                f"[{count}/{target}] Batch done. Rate: {batch_size} requested, {sum(1 for r in results if r)} valid."
+            )
 
     print(f"DONE! Total: {count}")
+
 
 if __name__ == "__main__":
     asyncio.run(run_parallel(concurrency=4))
