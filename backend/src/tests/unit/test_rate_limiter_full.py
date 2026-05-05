@@ -145,7 +145,7 @@ class TestGetRateLimitStatusRedis:
         mock_request.state.user_tier = "free"
 
         result = await limiter.get_rate_limit_status(mock_request)
-        assert result["limit_minute"] == 60
+        assert result["limit_minute"] == 10  # free tier limit
         assert result["used_minute"] == 5
         assert result["used_hour"] == 100
 
