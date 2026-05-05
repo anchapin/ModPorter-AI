@@ -84,5 +84,11 @@ async def test_status_component_structure():
         for field in required_fields:
             assert field in component, f"Missing field {field} in component"
 
-        valid_statuses = ["operational", "degraded", "partial_outage", "major_outage", "maintenance"]
+        valid_statuses = [
+            "operational",
+            "degraded",
+            "partial_outage",
+            "major_outage",
+            "maintenance",
+        ]
         assert component["status"] in valid_statuses
