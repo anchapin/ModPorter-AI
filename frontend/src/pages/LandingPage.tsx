@@ -78,6 +78,9 @@ const footerLinks = {
     { label: 'Discord', href: 'https://discord.gg/modporter' },
     { label: 'Twitter', href: 'https://twitter.com/modporterai' },
   ],
+  support: [
+    { label: 'Status', href: '/status' },
+  ],
 };
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
@@ -369,6 +372,16 @@ const LandingPage: React.FC = () => {
                     >
                       {link.label}
                     </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="footer-column">
+              <h4>Support</h4>
+              <ul>
+                {footerLinks.support.map((link, index) => (
+                  <li key={index}>
+                    <a href={link.href}>{link.label}</a>
                   </li>
                 ))}
               </ul>
