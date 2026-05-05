@@ -672,6 +672,7 @@ def llm_inference_task(
     - Result stored in Redis, returned to client
 
     Args:
+        self: Celery task instance (provided by bind=True)
         messages: Chat messages list [{"role": "user", "content": "..."}]
         model: Model name (uses SELF_HOSTED_MODEL env var if None)
         temperature: Sampling temperature (default 0.1)
