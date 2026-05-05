@@ -1,6 +1,6 @@
 # Step-by-Step Conversion Tutorial
 
-This detailed tutorial walks you through converting a Java mod to Bedrock using ModPorter AI. We'll use a simple "Custom Sword" mod as an example.
+This detailed tutorial walks you through converting a Java mod to Bedrock using PortKit. We'll use a simple "Custom Sword" mod as an example.
 
 ## Example Mod: Ruby Sword
 
@@ -36,7 +36,7 @@ rubysword.jar
     └── mods.toml
 ```
 
-## Step 2: Upload to ModPorter AI
+## Step 2: Upload to PortKit
 
 1. **Navigate to [portkit.cloud](https://portkit.cloud)**
 2. **Click "Upload Mod"** or drag-and-drop your .jar file
@@ -253,7 +253,7 @@ File: `behavior_packs/rubysword/items/ruby_sword.json`
 
 If the AI made wrong assumptions:
 1. Edit the original Java mod
-2. Re-upload to ModPorter AI
+2. Re-upload to PortKit
 3. The AI will learn from the previous conversion
 
 ### Option C: Use the Visual Editor

@@ -1,6 +1,6 @@
 # API Reference
 
-This document provides detailed documentation for the ModPorter AI REST API.
+This document provides detailed documentation for the PortKit REST API.
 
 ## Base URL
 
