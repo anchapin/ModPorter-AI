@@ -4,7 +4,6 @@ import json
 import httpx
 import random
 import asyncio
-import time
 
 output_path = "/home/alex/mmsd-work/data/raw/instructions.jsonl"
 os.makedirs(os.path.dirname(output_path), exist_ok=True)
