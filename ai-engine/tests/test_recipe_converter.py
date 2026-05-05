@@ -196,7 +196,7 @@ class TestRecipeConverterAgent:
 
         # Handle both direct call and crewai Tool object
         tool_func = self.agent.validate_recipe_tool
-        if hasattr(tool_func, "fn"):
+        if hasattr(tool_func, "func"):
             result = tool_func.func(json.dumps(valid_recipe))
         else:
             result = tool_func(json.dumps(valid_recipe))
@@ -217,7 +217,7 @@ class TestRecipeConverterAgent:
 
         # Handle both direct call and crewai Tool object
         tool_func = self.agent.validate_recipe_tool
-        if hasattr(tool_func, "fn"):
+        if hasattr(tool_func, "func"):
             result = tool_func.func(json.dumps(invalid_recipe))
         else:
             result = tool_func(json.dumps(invalid_recipe))
@@ -244,7 +244,7 @@ class TestRecipeConverterAgent:
 
         # Handle both direct call and crewai Tool object
         tool_func = self.agent.convert_recipes_batch_tool
-        if hasattr(tool_func, "fn"):
+        if hasattr(tool_func, "func"):
             result = tool_func.func(recipes)
         else:
             result = tool_func(recipes)
@@ -291,7 +291,7 @@ class TestRecipeConverterAgent:
         ])
 
         tool_func = RecipeConverterAgent.map_item_id_tool
-        if hasattr(tool_func, "fn"):
+        if hasattr(tool_func, "func"):
             result = tool_func.func(mappings)
         else:
             result = tool_func(mappings)
@@ -359,7 +359,7 @@ class TestRecipeConverterAgent:
         """Test convert_recipe_tool error handling."""
         from agents.recipe_converter import RecipeConverterAgent
         # Invalid JSON should cause error
-        result = RecipeConverterAgent.convert_recipe_tool("invalid json")
+        result = RecipeConverterAgent.convert_recipe_tool.func("invalid json")
         result_data = json.loads(result)
         assert result_data["success"] is False
         assert "error" in result_data
@@ -368,7 +368,7 @@ class TestRecipeConverterAgent:
         """Test convert_recipes_batch_tool error handling."""
         from agents.recipe_converter import RecipeConverterAgent
         # Invalid JSON should cause error
-        result = RecipeConverterAgent.convert_recipes_batch_tool("invalid json")
+        result = RecipeConverterAgent.convert_recipes_batch_tool.func("invalid json")
         result_data = json.loads(result)
         assert result_data["success"] is False
         assert "error" in result_data
@@ -377,7 +377,7 @@ class TestRecipeConverterAgent:
         """Test map_item_id_tool error handling."""
         from agents.recipe_converter import RecipeConverterAgent
         # Invalid JSON should cause error
-        result = RecipeConverterAgent.map_item_id_tool("invalid json")
+        result = RecipeConverterAgent.map_item_id_tool.func("invalid json")
         result_data = json.loads(result)
         assert result_data["success"] is False
         assert "error" in result_data
@@ -386,7 +386,7 @@ class TestRecipeConverterAgent:
         """Test validate_recipe_tool error handling."""
         from agents.recipe_converter import RecipeConverterAgent
         # Invalid JSON should cause error
-        result = RecipeConverterAgent.validate_recipe_tool("invalid json")
+        result = RecipeConverterAgent.validate_recipe_tool.func("invalid json")
         result_data = json.loads(result)
         assert result_data["valid"] is False
         assert len(result_data["issues"]) > 0
@@ -491,7 +491,7 @@ class TestRecipeConverterTools:
 
         # Handle both direct call and crewai Tool object
         tool_func = RecipeConverterAgent.convert_recipes_batch_tool
-        if hasattr(tool_func, "fn"):
+        if hasattr(tool_func, "func"):
             result = tool_func.func(recipes)
         else:
             result = tool_func(recipes)
@@ -508,7 +508,7 @@ class TestRecipeConverterTools:
 
         # Handle both direct call and crewai Tool object
         tool_func = RecipeConverterAgent.map_item_id_tool
-        if hasattr(tool_func, "fn"):
+        if hasattr(tool_func, "func"):
             result = tool_func.func(mappings)
         else:
             result = tool_func(mappings)
