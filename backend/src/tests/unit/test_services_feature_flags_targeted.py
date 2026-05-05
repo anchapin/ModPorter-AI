@@ -113,8 +113,17 @@ class TestFeatureFlagManager:
     """Tests for FeatureFlagManager class."""
 
     @pytest.fixture
-    def manager(self):
+    def manager(self, monkeypatch):
         """Create fresh manager instance."""
+        import os
+
+        for key in list(os.environ.keys()):
+            if key.startswith("FEATURE_FLAG_") or key in (
+                "FEATURE_USER_ACCOUNTS",
+                "FEATURE_PREMIUM_FEATURES",
+                "FEATURE_API_KEYS",
+            ):
+                monkeypatch.delenv(key, raising=False)
         return FeatureFlagManager()
 
     def test_initialization_empty(self, manager):

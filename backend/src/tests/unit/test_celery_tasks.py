@@ -318,13 +318,13 @@ class TestPurgeOrphanedFilesTask:
     """
 
     @patch("src.core.storage.storage_manager")
-    @patch("src.services.celery_tasks._get_redis_sync")
-    def test_purge_orphaned_files_returns_expected_keys(self, mock_redis, mock_storage):
+    @patch("redis.from_url")
+    def test_purge_orphaned_files_returns_expected_keys(self, mock_redis_from_url, mock_storage):
         """Test purge returns correct result structure with deleted_input and deleted_output."""
         from unittest.mock import MagicMock
 
         mock_redis_instance = MagicMock()
-        mock_redis.return_value = mock_redis_instance
+        mock_redis_from_url.return_value = mock_redis_instance
         mock_redis_instance.zrange.return_value = []
         mock_redis_instance.smembers.return_value = set()
         mock_redis_instance.zrangebyscore.return_value = []

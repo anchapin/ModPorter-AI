@@ -484,12 +484,13 @@ class TestS3Config:
             assert manager.s3_bucket == "my-bucket"
             assert manager.s3_region == "eu-west-1"
 
-    def test_s3_config_defaults(self):
+    def test_s3_config_defaults(self, monkeypatch):
         """Test S3 config default values."""
-        with patch.dict(os.environ, {"STORAGE_BACKEND": "s3"}):
-            manager = StorageManager()
-            assert manager.s3_bucket == ""
-            assert manager.s3_region == "us-east-1"
+        monkeypatch.delenv("AWS_REGION", raising=False)
+        monkeypatch.setenv("STORAGE_BACKEND", "s3")
+        manager = StorageManager()
+        assert manager.s3_bucket == ""
+        assert manager.s3_region == "us-east-1"
 
 
 class TestStorageManagerInstance:

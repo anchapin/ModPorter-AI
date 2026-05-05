@@ -13,8 +13,9 @@ import json
 class TestRedisConfig:
     """Test RedisConfig class"""
 
-    def test_redis_config_defaults(self):
+    def test_redis_config_defaults(self, monkeypatch):
         """Test RedisConfig default values"""
+        monkeypatch.delenv("REDIS_URL", raising=False)
         from core.redis import RedisConfig
 
         config = RedisConfig()
