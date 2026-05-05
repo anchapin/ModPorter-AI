@@ -162,8 +162,9 @@ app = FastAPI(
             "description": "Post-conversion behavior file editing",
         },
     ],
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url="/api/v1/docs",
+    redoc_url="/api/v1/redoc",
+    openapi_url="/api/v1/openapi.json",
 )
 
 # CORS middleware
