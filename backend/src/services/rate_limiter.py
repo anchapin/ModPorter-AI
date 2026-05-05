@@ -327,7 +327,7 @@ class UserContextMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # Skip for health checks and docs
-        if request.url.path in {"/api/v1/health", "/docs", "/redoc", "/openapi.json"}:
+        if request.url.path in {"/api/v1/health", "/api/v1/docs", "/api/v1/redoc", "/api/v1/openapi.json"}:
             return await call_next(request)
 
         # Try to extract user info from token
@@ -353,9 +353,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Endpoints to exclude from rate limiting
         self.exclude_paths = {
             "/api/v1/health",
-            "/docs",
-            "/redoc",
-            "/openapi.json",
+            "/api/v1/docs",
+            "/api/v1/redoc",
+            "/api/v1/openapi.json",
             "/api/v1/metrics",
             "/api/v1/rate-limit/dashboard",
             "/api/v1/rate-limit/summary",

@@ -525,6 +525,7 @@ def handle_java_analysis_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     mod_id = payload.get("mod_id")
     logger.info(f"Processing Java analysis: {mod_id}")
     try:
+
         async def _analyze():
             async with AsyncSessionLocal() as session:
                 mod = await crud.get_mod(session, mod_id)

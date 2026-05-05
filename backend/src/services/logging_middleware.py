@@ -42,9 +42,9 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             "/api/v1/metrics",
             "/health",
             "/metrics",
-            "/docs",
-            "/redoc",
-            "/openapi.json",
+            "/api/v1/docs",
+            "/api/v1/redoc",
+            "/api/v1/openapi.json",
         ]
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
