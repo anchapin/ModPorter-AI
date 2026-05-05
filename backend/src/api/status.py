@@ -29,8 +29,11 @@ router = APIRouter(prefix="/status", tags=["status"])
 
 class ComponentStatus(BaseModel):
     """Individual component status"""
+
     name: str
-    status: str = Field(..., description="operational, degraded, partial_outage, major_outage, maintenance")
+    status: str = Field(
+        ..., description="operational, degraded, partial_outage, major_outage, maintenance"
+    )
     latency_ms: Optional[float] = None
     message: str = ""
     last_checked: str
@@ -38,7 +41,10 @@ class ComponentStatus(BaseModel):
 
 class StatusResponse(BaseModel):
     """Public status page response"""
-    status: str = Field(..., description="Overall status: operational, degraded, outage, maintenance")
+
+    status: str = Field(
+        ..., description="Overall status: operational, degraded, outage, maintenance"
+    )
     timestamp: str
     components: List[ComponentStatus]
     message: str = ""
@@ -49,6 +55,7 @@ async def check_database() -> ComponentStatus:
     start = time.time()
     try:
         from sqlalchemy import text
+
         async with async_engine.connect() as conn:
             result = await conn.execute(text("SELECT 1"))
             result.fetchone()
@@ -118,6 +125,7 @@ async def check_stripe_webhook() -> ComponentStatus:
     start = time.time()
     try:
         import stripe
+
         stripe.api_key = stripe_key
         stripe.Account.retrieve()
         latency = (time.time() - start) * 1000
