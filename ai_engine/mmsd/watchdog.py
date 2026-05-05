@@ -48,8 +48,7 @@ def log(msg):
 def get_pid_on_port(port):
     try:
         result = subprocess.run(
-            ["lsof", "-ti", f":{port}"],
-            capture_output=True, text=True, timeout=5
+            ["lsof", "-ti", f":{port}"], capture_output=True, text=True, timeout=5
         )
         pids = result.stdout.strip().split("\n")
         return [int(p) for p in pids if p.strip()]
@@ -80,10 +79,7 @@ def kill_port(port, timeout=10):
 
 
 def start_llama_server(model, port, ngl, ctx, extra_flags=""):
-    cmd = (
-        f"{LLAMA_BIN} -m {model} --port {port} -ngl {ngl} -c {ctx} "
-        f"{extra_flags}"
-    )
+    cmd = f"{LLAMA_BIN} -m {model} --port {port} -ngl {ngl} -c {ctx} {extra_flags}"
     log_file = f"{LOG_DIR}/llama_server_port{port}.log"
     proc = subprocess.Popen(
         cmd.split(),
@@ -216,8 +212,11 @@ def run_phase2():
     log("--- PHASE 2: Synthesis ---")
     log(f"Starting synthesis server (Qwen2.5-Coder-3B Q8_0)...")
     start_llama_server(
-        PHASE2_MODEL, PHASE2_PORT, PHASE2_NGL, PHASE2_CTX,
-        extra_flags=f"-t {PHASE2_THREADS} -b {PHASE2_BATCH}"
+        PHASE2_MODEL,
+        PHASE2_PORT,
+        PHASE2_NGL,
+        PHASE2_CTX,
+        extra_flags=f"-t {PHASE2_THREADS} -b {PHASE2_BATCH}",
     )
 
     log("Starting synthesis script (parallel=3)...")
