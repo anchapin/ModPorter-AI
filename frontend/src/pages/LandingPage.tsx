@@ -78,9 +78,7 @@ const footerLinks = {
     { label: 'Discord', href: 'https://discord.gg/modporter' },
     { label: 'Twitter', href: 'https://twitter.com/modporterai' },
   ],
-  support: [
-    { label: 'Status', href: '/status' },
-  ],
+  support: [{ label: 'Status', href: '/status' }],
 };
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL

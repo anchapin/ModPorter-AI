@@ -497,9 +497,7 @@ def handle_conversion_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     file_id = payload.get("file_id")
     logger.info(f"Processing conversion job: {job_id}")
     try:
-        return asyncio.get_event_loop().run_until_complete(
-            _process(payload)
-        )
+        return asyncio.run(_process(payload))
     except Exception as e:
         logger.error(f"Conversion job {job_id} failed: {e}")
         raise
@@ -512,9 +510,7 @@ def handle_asset_conversion_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     asset_id = payload.get("asset_id")
     logger.info(f"Processing asset conversion: {asset_id}")
     try:
-        return asyncio.get_event_loop().run_until_complete(
-            _svc.convert_asset(asset_id)
-        )
+        return asyncio.run(_svc.convert_asset(asset_id))
     except Exception as e:
         logger.error(f"Asset conversion {asset_id} failed: {e}")
         raise
@@ -529,6 +525,7 @@ def handle_java_analysis_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     mod_id = payload.get("mod_id")
     logger.info(f"Processing Java analysis: {mod_id}")
     try:
+
         async def _analyze():
             async with AsyncSessionLocal() as session:
                 mod = await crud.get_mod(session, mod_id)
@@ -537,7 +534,7 @@ def handle_java_analysis_task(payload: Dict[str, Any]) -> Dict[str, Any]:
                 source_code = mod.source_code or ""
                 return analyze_java_file(source_code, f"mod_{mod_id}.java")
 
-        result = asyncio.get_event_loop().run_until_complete(_analyze())
+        result = asyncio.run(_analyze())
         return {"mod_id": mod_id, "status": "analyzed", "result": result}
     except Exception as e:
         logger.error(f"Java analysis {mod_id} failed: {e}")
@@ -552,9 +549,7 @@ def handle_texture_extraction_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     logger.info(f"Processing texture extraction: {jar_path}")
     try:
         extractor = TextureMetadataExtractor()
-        result = asyncio.get_event_loop().run_until_complete(
-            extractor.extract_from_jar(jar_path)
-        )
+        result = asyncio.run(extractor.extract_from_jar(jar_path))
         return {"jar_path": jar_path, "status": "extracted", "result": result}
     except Exception as e:
         logger.error(f"Texture extraction {jar_path} failed: {e}")
@@ -568,9 +563,7 @@ def handle_model_conversion_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     model_id = payload.get("model_id")
     logger.info(f"Processing model conversion: {model_id}")
     try:
-        return asyncio.get_event_loop().run_until_complete(
-            _svc.convert_asset(model_id)
-        )
+        return asyncio.run(_svc.convert_asset(model_id))
     except Exception as e:
         logger.error(f"Model conversion {model_id} failed: {e}")
         raise
@@ -672,6 +665,7 @@ def llm_inference_task(
     - Result stored in Redis, returned to client
 
     Args:
+        self: Celery task instance (provided by bind=True)
         messages: Chat messages list [{"role": "user", "content": "..."}]
         model: Model name (uses SELF_HOSTED_MODEL env var if None)
         temperature: Sampling temperature (default 0.1)

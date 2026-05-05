@@ -60,7 +60,7 @@ async def run_parallel(pipeline, instructions, output_path, processed, target, c
     idx = 0
 
     while idx < len(instructions) and len(processed) < target:
-        batch = instructions[idx:idx + batch_size]
+        batch = instructions[idx : idx + batch_size]
         idx += batch_size
 
         tasks = [process_one(instr) for instr in batch]
@@ -100,7 +100,9 @@ def main():
 
     processed = load_processed(output_path)
 
-    print(f"Starting synthesis ({'parallel=' + str(concurrency) if concurrency > 1 else 'sequential'}). Target: {target} pairs.")
+    print(
+        f"Starting synthesis ({'parallel=' + str(concurrency) if concurrency > 1 else 'sequential'}). Target: {target} pairs."
+    )
 
     while True:
         if len(processed) >= target:
@@ -114,10 +116,14 @@ def main():
             time.sleep(60)
             continue
 
-        print(f"Found {len(instructions)} new instructions. Processing (concurrency={concurrency})...")
+        print(
+            f"Found {len(instructions)} new instructions. Processing (concurrency={concurrency})..."
+        )
 
         if concurrency > 1:
-            asyncio.run(run_parallel(pipeline, instructions, output_path, processed, target, concurrency))
+            asyncio.run(
+                run_parallel(pipeline, instructions, output_path, processed, target, concurrency)
+            )
         else:
             run_sequential(pipeline, instructions, output_path, processed, target)
 

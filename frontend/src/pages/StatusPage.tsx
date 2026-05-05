@@ -3,7 +3,12 @@ import './StatusPage.css';
 
 interface ComponentStatus {
   name: string;
-  status: 'operational' | 'degraded' | 'partial_outage' | 'major_outage' | 'maintenance';
+  status:
+    | 'operational'
+    | 'degraded'
+    | 'partial_outage'
+    | 'major_outage'
+    | 'maintenance';
   latency_ms?: number;
   lastChecked: string;
   description: string;
@@ -45,14 +50,20 @@ const StatusPage: React.FC = () => {
         },
         {
           name: 'Conversion Queue',
-          status: dependencies.redis?.status === 'healthy' ? 'operational' : 'degraded',
+          status:
+            dependencies.redis?.status === 'healthy'
+              ? 'operational'
+              : 'degraded',
           latency_ms: dependencies.redis?.latency_ms,
           lastChecked: now,
           description: 'Background job processing and AI conversion',
         },
         {
           name: 'Database',
-          status: dependencies.database?.status === 'healthy' ? 'operational' : 'major_outage',
+          status:
+            dependencies.database?.status === 'healthy'
+              ? 'operational'
+              : 'major_outage',
           latency_ms: dependencies.database?.latency_ms,
           lastChecked: now,
           description: 'PostgreSQL database for user data and conversions',
@@ -61,10 +72,10 @@ const StatusPage: React.FC = () => {
 
       setComponents(componentList);
 
-      const hasOutage = componentList.some(c =>
-        c.status === 'major_outage' || c.status === 'partial_outage'
+      const hasOutage = componentList.some(
+        (c) => c.status === 'major_outage' || c.status === 'partial_outage'
       );
-      const hasDegraded = componentList.some(c => c.status === 'degraded');
+      const hasDegraded = componentList.some((c) => c.status === 'degraded');
 
       if (hasOutage) {
         setOverallStatus('major_outage');
@@ -207,9 +218,14 @@ const StatusPage: React.FC = () => {
 
         <div className="components-grid">
           {components.map((component, index) => (
-            <div key={index} className={`component-card ${getStatusClass(component.status)}`}>
+            <div
+              key={index}
+              className={`component-card ${getStatusClass(component.status)}`}
+            >
               <div className="component-header">
-                <span className="component-status-icon">{getStatusIcon(component.status)}</span>
+                <span className="component-status-icon">
+                  {getStatusIcon(component.status)}
+                </span>
                 <h3 className="component-name">{component.name}</h3>
               </div>
               <p className="component-description">{component.description}</p>

@@ -327,7 +327,12 @@ class UserContextMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # Skip for health checks and docs
-        if request.url.path in {"/api/v1/health", "/api/v1/docs", "/api/v1/redoc", "/api/v1/openapi.json"}:
+        if request.url.path in {
+            "/api/v1/health",
+            "/api/v1/docs",
+            "/api/v1/redoc",
+            "/api/v1/openapi.json",
+        }:
             return await call_next(request)
 
         # Try to extract user info from token

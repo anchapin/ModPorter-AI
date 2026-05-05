@@ -51,31 +51,31 @@
 
 | Permission | Status |
 |------------|--------|
-| View Channel | ✅ Allowed |
-| Send Messages | ✅ Allowed |
-| Embed Links | ✅ Allowed |
-| Attach Files | ✅ Allowed |
-| Add Reactions | ✅ Allowed |
-| Use Threads | ✅ Allowed |
-| Create Public Threads | ❌ Disallowed |
-| Create Private Threads | ✅ Allowed |
-| Manage Threads | ❌ Disallowed |
-| Manage Messages | ❌ Disallowed |
-| Pin Messages | ❌ Disallowed |
+| View Channel | Allowed |
+| Send Messages | Allowed |
+| Embed Links | Allowed |
+| Attach Files | Allowed |
+| Add Reactions | Allowed |
+| Use Threads | Allowed |
+| Create Public Threads | Disallowed |
+| Create Private Threads | Allowed |
+| Manage Threads | Disallowed |
+| Manage Messages | Disallowed |
+| Pin Messages | Disallowed |
 
 ### Default Role (@everyone)
 
 | Permission | Status |
 |------------|--------|
-| View Channel | ❌ Disallowed (unless public) |
-| Send Messages | ❌ Disallowed |
+| View Channel | Disallowed (unless public) |
+| Send Messages | Disallowed |
 
 ---
 
 ## Channel Topics / Descriptions
 
 ### #beta-general
-```
+
 Welcome to the beta general channel!
 
 This is a space for beta testers to:
@@ -91,10 +91,9 @@ Guidelines:
 
 Beta Timeline: 8 weeks
 Your tier: Creator (free during beta)
-```
 
 ### #beta-bugs
-```
+
 Bug Report Guidelines:
 
 Before submitting a bug:
@@ -115,10 +114,9 @@ Bug Report Template:
 
 Response time: < 24 hours
 For critical bugs, DM @developer directly.
-```
 
 ### #beta-feedback
-```
+
 Feature Feedback & Suggestions
 
 We want to hear what you think!
@@ -131,16 +129,15 @@ What to share:
 
 Feedback is reviewed weekly by the dev team.
 
-Top suggestions get优先 consideration for the roadmap.
+Top suggestions get priority consideration for the roadmap.
 (Your feedback shapes Portkit's future!)
-```
 
 ---
 
-## Welcome Message for Each Channel
+## Welcome Messages
 
 ### #beta-general Welcome
-```
+
 👋 Welcome to #beta-general!
 
 This is your space to connect with other beta testers.
@@ -157,10 +154,9 @@ This is your space to connect with other beta testers.
 - Discord: https://discord.gg/portkit
 
 Happy testing! 🎮
-```
 
 ### #beta-bugs Welcome
-```
+
 🐛 Welcome to #beta-bugs!
 
 This channel is for reporting bugs and issues you encounter during conversion.
@@ -183,10 +179,9 @@ This channel is for reporting bugs and issues you encounter during conversion.
 ```
 
 Response time: < 24 hours
-```
 
 ### #beta-feedback Welcome
-```
+
 💡 Welcome to #beta-feedback!
 
 Your feedback shapes Portkit's future!
@@ -204,26 +199,6 @@ Your feedback shapes Portkit's future!
 
 We read every piece of feedback.
 Top suggestions get priority on our roadmap.
-```
-
----
-
-## Pin Messages
-
-### #beta-general Pinned
-- Link to beta guidelines
-- Link to getting started guide
-- Discord server invite (if needed)
-
-### #beta-bugs Pinned
-- Bug report template
-- Known limitations list
-- Support contact info
-
-### #beta-feedback Pinned
-- Feedback submission guidelines
-- What's on our roadmap
-- Success stories (when available)
 
 ---
 
@@ -241,24 +216,6 @@ Add these channels to the existing server structure documented in `docs/DISCORD-
 ├── #beta-general           ← NEW
 ├── #beta-bugs              ← NEW
 └── #beta-feedback          ← already exists, update topic
-```
-
----
-
-## Optional: Bot Commands for Beta Channels
-
-### Auto-response for #beta-bugs
-
-```
-#set #beta-bugs slowmode 60  (1 message per minute to prevent spam)
-```
-
-### Notification for New Beta Testers
-
-```
-#welcome #beta-general
-#welcome #beta-bugs
-#welcome #beta-feedback
 ```
 
 ---
