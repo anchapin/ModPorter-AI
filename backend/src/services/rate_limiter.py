@@ -115,11 +115,19 @@ class RateLimiter:
         tier_limits = {
             "free": RateLimitConfig(requests_per_minute=10, requests_per_hour=50, burst_size=3),
             "creator": RateLimitConfig(requests_per_minute=30, requests_per_hour=200, burst_size=5),
-            "creator_byok": RateLimitConfig(requests_per_minute=30, requests_per_hour=200, burst_size=5),
+            "creator_byok": RateLimitConfig(
+                requests_per_minute=30, requests_per_hour=200, burst_size=5
+            ),
             "pro": RateLimitConfig(requests_per_minute=60, requests_per_hour=500, burst_size=10),
-            "studio": RateLimitConfig(requests_per_minute=120, requests_per_hour=1000, burst_size=20),
-            "studio_byok": RateLimitConfig(requests_per_minute=120, requests_per_hour=1000, burst_size=20),
-            "enterprise": RateLimitConfig(requests_per_minute=300, requests_per_hour=5000, burst_size=50),
+            "studio": RateLimitConfig(
+                requests_per_minute=120, requests_per_hour=1000, burst_size=20
+            ),
+            "studio_byok": RateLimitConfig(
+                requests_per_minute=120, requests_per_hour=1000, burst_size=20
+            ),
+            "enterprise": RateLimitConfig(
+                requests_per_minute=300, requests_per_hour=5000, burst_size=50
+            ),
             "payg": RateLimitConfig(requests_per_minute=30, requests_per_hour=200, burst_size=5),
         }
 
