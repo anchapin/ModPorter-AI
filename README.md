@@ -1,36 +1,43 @@
 # PortKit
 
-An AI-powered tool for converting Minecraft Java Edition mods to Bedrock Edition add-ons.
+AI-powered Minecraft Java to Bedrock conversion platform. Convert mods, add-ons, and extensions with 67%+ coverage across textures, models, recipes, sounds, lang files, and entities.
+
+**[modporter.ai](https://modporter.ai)** | [Documentation](docs/getting-started.md) | [API Reference](docs/api-reference.md) | [Conversion Guide](docs/conversion-guide.md)
 
 [![codecov](https://codecov.io/gh/anchapin/PortKit/branch/main/graph/badge.svg)](https://codecov.io/gh/anchapin/PortKit)
 
 ## 🎯 Vision
-Empower Minecraft players and creators with a "one-click" AI-powered tool that intelligently converts Java Edition mods into functional Bedrock Edition add-ons using smart assumptions to bridge technical gaps.
+
+Empower Minecraft creators with production-grade AI tooling that converts Java Edition content to Bedrock Edition at scale — with smart assumptions to bridge technical gaps.
 
 ## 🚀 Features
 
-### MVP Focus: Simple Block Conversion
-The current development priority is the Minimum Viable Product (MVP), which focuses on the core functionality of converting a simple Java block mod into a functional Bedrock add-on.
+### Conversion Coverage (67%+ B2B)
+| Content Type | Coverage |
+|--------------|----------|
+| **Textures** | Block textures, item textures, entity textures |
+| **Models** | Bedrock JSON models (geometry, render controllers) |
+| **Recipes** | Crafting, smelting, stonecutting, milling, crushing, cooking_pot |
+| **Sounds** | Sound definitions and audio assets |
+| **Lang Files** | en_US.lang translation and localization |
+| **Entities** | Entity behaviors and spawn rules |
 
--   **Java Block to Bedrock JSON**: Convert a `.jar` file containing a single block into a `.mcaddon` package.
--   **Texture Preservation**: Ensure the block's appearance is correctly transferred.
--   **Basic Functionality**: The converted block can be placed and destroyed in-game.
+### Core Platform
+- **AI-Powered Conversion**: Multi-agent CrewAI pipeline for intelligent content transformation
+- **Adversarial Logic Auditor**: QA pipeline that validates conversion accuracy
+- **Conversion History Dashboard**: Track and review past conversions
+- **Usage Metering**: Production billing via Stripe with OAuth authentication
+- **File Security**: Robust validation and malware scanning (ClamAV)
+- **Fine-tuning Infrastructure**: Continuously improving AI models
 
-### Future (Post-MVP) Features
--   **Complex Conversions**: Support for items, entities, and complex logic.
--   **AI-Powered Analysis**: A multi-agent system for advanced conversion strategies.
--   **Detailed Reporting**: Transparent reports detailing the conversion process.
--   **Validation System**: AI-powered comparison between the original and converted mods.
-
-## 🛠️ Tech Stack
-- **Frontend**: React + TypeScript + Vite (served by Nginx in production)
+### Tech Stack
+- **Frontend**: React + TypeScript + Vite (Nginx in production)
 - **Backend**: Python + FastAPI + SQLAlchemy + AsyncPG
 - **AI Engine**: CrewAI + LangChain + FastAPI
-- **RAG System**: Vector database (pgvector) + Embedding generation + Knowledge retrieval
+- **RAG System**: Vector database (pgvector) + Embedding generation
 - **Database**: PostgreSQL 15 with async support
 - **Cache**: Redis 7 for sessions and caching
 - **Infrastructure**: Docker + Docker Compose
-- **Local Agent**: Node.js for Minecraft integration
 
 ## 📦 Quick Start
 
@@ -323,8 +330,8 @@ cd ai-engine && pytest
 ./scripts/test-db.sh logs
 ```
 
-### MVP Conversion Test
-To run the end-to-end MVP test case, which validates the complete pipeline from a Java block to Bedrock files, use the following command:
+### End-to-End Conversion Test
+To run the full conversion pipeline test, validating the complete Java to Bedrock pipeline:
 
 ```bash
 pytest tests/test_mvp_conversion.py
@@ -396,6 +403,10 @@ docker compose config
 # Check service dependencies
 docker compose ps --services
 ```
+
+## 🗺️ Roadmap
+
+Current milestone: **M6 Beta Iteration** — see [GitHub Milestones](https://github.com/anchapin/PortKit/milestones) for progress.
 
 ## 📖 Documentation
 
