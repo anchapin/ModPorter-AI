@@ -2,6 +2,7 @@ import httpx
 from typing import Optional, Dict
 from ai_engine.mmsd.validators.code_validator import CodeValidator
 
+
 class DualTeacherPipeline:
     """
     Synthesizes parallel Java and Bedrock modding codebases with reasoning traces.
@@ -27,7 +28,9 @@ class DualTeacherPipeline:
             f"Identify the specific Java classes/events and the corresponding Bedrock JSON components/Script events. "
             f"Focus on the functional mapping between the two platforms."
         )
-        reasoning_trace = self._query_ollama(reasoning_prompt, "You are a master Minecraft architect.")
+        reasoning_trace = self._query_ollama(
+            reasoning_prompt, "You are a master Minecraft architect."
+        )
         if not reasoning_trace or reasoning_trace.startswith("Error:"):
             print(f"  SKIP: Reasoning trace failed: {reasoning_trace}")
             return None
@@ -48,10 +51,12 @@ class DualTeacherPipeline:
             "instruction": instruction,
             "reasoning_trace": reasoning_trace,
             "java_source": java_source,
-            "bedrock_source": bedrock_source
+            "bedrock_source": bedrock_source,
         }
 
-    def _generate_with_retry(self, platform: str, plan: str, instruction: str, max_retries: int = 3) -> str:
+    def _generate_with_retry(
+        self, platform: str, plan: str, instruction: str, max_retries: int = 3
+    ) -> str:
         if platform == "java":
             system = "You are a senior Java Minecraft modder."
             prompt = (
@@ -71,17 +76,19 @@ class DualTeacherPipeline:
             validator_fn = self.validator.validate_bedrock_json
 
         current_code = self._query_ollama(prompt, system)
-        
+
         for i in range(max_retries):
             if not current_code or current_code.startswith("Error:"):
                 return current_code
-            
+
             success, error_msg = validator_fn(current_code)
             if success:
                 return current_code
-            
-            print(f"  [Retry {i+1}] {platform.upper()} failed: {error_msg[:50]}. Self-correcting...")
-            
+
+            print(
+                f"  [Retry {i + 1}] {platform.upper()} failed: {error_msg[:50]}. Self-correcting..."
+            )
+
             retry_prompt = (
                 f"{prompt}\n\n"
                 f"Your previous output failed validation with this error: {error_msg}\n"
@@ -93,20 +100,24 @@ class DualTeacherPipeline:
 
     def _query_ollama(self, prompt: str, system: str) -> str:
         try:
-            resp = httpx.post(self.url, json={
-                "model": self.model,
-                "prompt": prompt,
-                "system": system,
-                "stream": False,
-                "options": {"temperature": 0.7}
-            }, timeout=600.0)
-            
+            resp = httpx.post(
+                self.url,
+                json={
+                    "model": self.model,
+                    "prompt": prompt,
+                    "system": system,
+                    "stream": False,
+                    "options": {"temperature": 0.7},
+                },
+                timeout=600.0,
+            )
+
             if resp.status_code == 200:
                 text = resp.json().get("response", "").strip()
                 if not text:
                     return "Error: empty response from model"
                 return text
-            
+
             return f"Error: HTTP {resp.status_code} - {resp.text}"
         except httpx.TimeoutException:
             return "Error: timed out"

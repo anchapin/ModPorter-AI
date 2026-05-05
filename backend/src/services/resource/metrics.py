@@ -106,5 +106,7 @@ class ResourceMetricsCollector:
                 "memory_utilization_percent": latest.memory_utilization_percent if latest else 0.0,
                 "active_allocations": latest.active_allocations if latest else 0,
                 "pending_jobs": latest.pending_jobs if latest else 0,
-            } if latest else None,
+            }
+            if latest
+            else None,
         }
