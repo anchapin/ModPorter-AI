@@ -1,6 +1,6 @@
-# ModPorter AI - System Architecture Diagrams
+# PortKit - System Architecture Diagrams
 
-This document contains comprehensive visual diagrams explaining the ModPorter AI system architecture and conversion process flow.
+This document contains comprehensive visual diagrams explaining the PortKit system architecture and conversion process flow.
 
 ## System Architecture Overview
 
@@ -250,4 +250,4 @@ graph LR
 
 ---
 
-*Diagrams generated with Mermaid.js - Visual documentation for ModPorter AI architecture and workflows*
+*Diagrams generated with Mermaid.js - Visual documentation for PortKit architecture and workflows*

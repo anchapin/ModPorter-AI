@@ -2,7 +2,7 @@
 
 **Effective Date:** 2026-04-28
 **Last Updated:** 2026-05-03
-**Policy Owner:** PortKit / ModPorter AI
+**Policy Owner:** PortKit
 
 ---
 
