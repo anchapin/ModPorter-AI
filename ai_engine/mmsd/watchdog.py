@@ -5,9 +5,7 @@ Monitors instruction generation, then automatically swaps to synthesis phase.
 """
 
 import os
-import sys
 import time
-import json
 import signal
 import subprocess
 import requests
