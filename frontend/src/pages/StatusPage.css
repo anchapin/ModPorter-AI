@@ -1,0 +1,259 @@
+.status-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #e4e4e7;
+  padding: 40px 20px;
+}
+
+.status-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 48px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-logo .logo-icon {
+  font-size: 32px;
+}
+
+.status-logo .logo-text {
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.overall-operational .status-dot {
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+}
+
+.overall-operational {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.overall-degraded .status-dot {
+  background: #eab308;
+  box-shadow: 0 0 8px #eab308;
+}
+
+.overall-degraded {
+  background: rgba(234, 179, 8, 0.1);
+  color: #eab308;
+}
+
+.overall-outage .status-dot {
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+.overall-outage {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.overall-partial .status-dot {
+  background: #f97316;
+  box-shadow: 0 0 8px #f97316;
+}
+
+.overall-partial {
+  background: rgba(249, 115, 22, 0.1);
+  color: #f97316;
+}
+
+.overall-maintenance .status-dot {
+  background: #3b82f6;
+  box-shadow: 0 0 8px #3b82f6;
+}
+
+.overall-maintenance {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.overall-checking .status-dot {
+  background: #6b7280;
+  box-shadow: 0 0 8px #6b7280;
+}
+
+.overall-checking {
+  background: rgba(107, 114, 128, 0.1);
+  color: #9ca3af;
+}
+
+.status-hero {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.status-hero h1 {
+  font-size: 36px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 12px 0;
+}
+
+.status-hero p {
+  font-size: 18px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.last-updated {
+  font-size: 14px !important;
+  color: #6b7280 !important;
+  margin-top: 12px !important;
+}
+
+.components-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 48px;
+}
+
+.component-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.component-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.component-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.component-status-icon {
+  font-size: 24px;
+}
+
+.status-operational .component-status-icon {
+  color: #22c55e;
+}
+
+.status-degraded .component-status-icon {
+  color: #eab308;
+}
+
+.status-outage .component-status-icon {
+  color: #ef4444;
+}
+
+.status-partial .component-status-icon {
+  color: #f97316;
+}
+
+.status-maintenance .component-status-icon {
+  color: #3b82f6;
+}
+
+.component-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.component-description {
+  font-size: 14px;
+  color: #9ca3af;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+.component-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.component-latency {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.status-footer {
+  text-align: center;
+  padding-top: 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-footer p {
+  color: #9ca3af;
+  margin: 0 0 12px 0;
+}
+
+.status-footer a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+.status-footer a:hover {
+  text-decoration: underline;
+}
+
+.status-page-link {
+  margin-top: 8px !important;
+}
+
+@media (max-width: 640px) {
+  .status-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .status-hero h1 {
+    font-size: 28px;
+  }
+
+  .components-grid {
+    grid-template-columns: 1fr;
+  }
+}

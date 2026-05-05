@@ -74,6 +74,7 @@ from api import (
     mode_classification,
     automation_metrics,
     version_info,
+    status,
 )
 from api.rate_limit_dashboard import router as rate_limit_dashboard_router
 
@@ -236,6 +237,9 @@ app.include_router(version_info.router, prefix="/api/v1", tags=["version-info"])
 
 # Health check endpoints (no prefix - used for Kubernetes probes)
 app.include_router(health.router)
+
+# Status page endpoint (no prefix - public status page)
+app.include_router(status.router)
 
 # Register exception handlers for comprehensive error handling
 register_exception_handlers(app)
