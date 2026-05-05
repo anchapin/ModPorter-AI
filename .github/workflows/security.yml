@@ -95,10 +95,77 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Build Docker images for scanning
+      - name: Set repository name to lowercase
+        id: repo-name
         run: |
-          docker build --no-cache -t portkit-backend:latest -f Dockerfile .
-          docker build --no-cache -t portkit-ai-engine:latest -f ai-engine/Dockerfile ai-engine/
+          echo "lowercase=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: Pull cached images from CD pipeline
+        id: pull-images
+        run: |
+          REPO_OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower]')
+          REPO_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower]')
+          SHA=${{ github.sha }}
+
+          # Try pulling existing images from CD pipeline
+          echo "Attempting to pull cached images..."
+          
+          # Backend image
+          if docker pull "ghcr.io/${REPO_OWNER}/portkit-backend:${SHA}" 2>/dev/null; then
+            echo "✅ Pulled backend image from registry"
+            docker tag "ghcr.io/${REPO_OWNER}/portkit-backend:${SHA}" portkit-backend:latest
+            BACKEND_PULLED=true
+          elif docker pull "ghcr.io/${REPO_LOWER}/portkit-backend:${SHA}" 2>/dev/null; then
+            echo "✅ Pulled backend image from registry (full repo path)"
+            docker tag "ghcr.io/${REPO_LOWER}/portkit-backend:${SHA}" portkit-backend:latest
+            BACKEND_PULLED=true
+          else
+            echo "⚠️ Backend image not in registry, will build with cache"
+            BACKEND_PULLED=false
+          fi
+          
+          # AI Engine image
+          if docker pull "ghcr.io/${REPO_OWNER}/portkit-ai-engine:${SHA}" 2>/dev/null; then
+            echo "✅ Pulled ai-engine image from registry"
+            docker tag "ghcr.io/${REPO_OWNER}/portkit-ai-engine:${SHA}" portkit-ai-engine:latest
+            AIENGINE_PULLED=true
+          elif docker pull "ghcr.io/${REPO_LOWER}/portkit-ai-engine:${SHA}" 2>/dev/null; then
+            echo "✅ Pulled ai-engine image from registry (full repo path)"
+            docker tag "ghcr.io/${REPO_LOWER}/portkit-ai-engine:${SHA}" portkit-ai-engine:latest
+            AIENGINE_PULLED=true
+          else
+            echo "⚠️ AI engine image not in registry, will build with cache"
+            AIENGINE_PULLED=false
+          fi
+
+          # Output for use in subsequent steps
+          echo "backend_pulled=${BACKEND_PULLED}" >> $GITHUB_OUTPUT
+          echo "aiengine_pulled=${AIENGINE_PULLED}" >> $GITHUB_OUTPUT
+          echo "sha=${SHA}" >> $GITHUB_OUTPUT
+
+      - name: Build Docker images (fallback if not in registry)
+        if: steps.pull-images.outputs.backend_pulled == 'false' || steps.pull-images.outputs.aiengine_pulled == 'false'
+        run: |
+          REPO_OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower]')
+          SHA=${{ steps.pull-images.outputs.sha }}
+
+          # Build backend if needed
+          if [ "${{ steps.pull-images.outputs.backend_pulled }}" == "false" ]; then
+            echo "Building backend image with cache..."
+            docker build \
+              --cache-from=ghcr.io/${REPO_OWNER}/portkit-backend:cache \
+              -t portkit-backend:latest \
+              -f Dockerfile .
+          fi
+
+          # Build AI engine if needed
+          if [ "${{ steps.pull-images.outputs.aiengine_pulled }}" == "false" ]; then
+            echo "Building AI engine image with cache..."
+            docker build \
+              --cache-from=ghcr.io/${REPO_OWNER}/portkit-ai-engine:cache \
+              -t portkit-ai-engine:latest \
+              -f ai-engine/Dockerfile ai-engine/
+          fi
 
       - name: Run Trivy vulnerability scanner (image)
         uses: aquasecurity/trivy-action@master

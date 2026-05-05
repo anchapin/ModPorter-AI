@@ -53,6 +53,21 @@ except ImportError:
     GoldenDatasetItem = None
     EvaluationResult = None
 
+# Import token budget estimator for B2B cost transparency (Issue #1188)
+try:
+    from agent_metrics.token_budget_estimator import (
+        TokenBudgetEstimator,
+        estimate_conversion_cost,
+        ModMetadata,
+    )
+
+    TOKEN_BUDGET_AVAILABLE = True
+except ImportError:
+    TOKEN_BUDGET_AVAILABLE = False
+    TokenBudgetEstimator = None
+    estimate_conversion_cost = None
+    ModMetadata = None
+
 # Import progress callback for real-time updates
 try:
     from utils.progress_callback import cleanup_progress_callback, create_progress_callback
@@ -753,7 +768,90 @@ async def evaluate_rag_query(request: RAGEvaluationRequest):
         raise HTTPException(status_code=500, detail="Evaluation failed.")
 
 
-@app.get("/api/v1/rag/health", tags=["evaluation"], summary="Check RAG evaluation service health")
+class TokenEstimateRequest(BaseModel):
+    """Request model for token cost estimation"""
+
+    mod_file_path: str = Field(..., description="Path to the mod file")
+    model: Optional[str] = Field(None, description="Model to use for estimation")
+    budget_limit: Optional[float] = Field(None, description="Optional budget cap in USD")
+
+
+class TokenEstimateResponse(BaseModel):
+    """Response model for token cost estimation"""
+
+    estimated_tokens: int = Field(..., description="Total estimated tokens")
+    input_tokens: int = Field(..., description="Estimated input tokens")
+    output_tokens: int = Field(..., description="Estimated output tokens")
+    estimated_cost_usd: float = Field(..., description="Estimated cost in USD")
+    confidence_interval: tuple[float, float] = Field(..., description="Low and high confidence bounds")
+    complexity_tier: str = Field(..., description="Complexity tier: simple, moderate, complex, very_complex")
+    model_used: str = Field(..., description="Model used for pricing")
+    budget_check: Dict[str, Any] = Field(..., description="Budget cap check result")
+    phases: Dict[str, Dict[str, int]] = Field(..., description="Per-phase token breakdown")
+
+
+@app.post(
+    "/api/v1/estimate",
+    response_model=TokenEstimateResponse,
+    tags=["estimation"],
+    summary="Estimate conversion cost before running",
+    description="Pre-conversion token and cost estimation for B2B transparency. "
+    "Provides token budget prediction based on mod metadata before conversion runs.",
+)
+async def estimate_conversion_cost_endpoint(request: TokenEstimateRequest):
+    """
+    Estimate the token usage and cost for a conversion before running it.
+
+    This endpoint enables B2B cost transparency by allowing customers to:
+    - See estimated token consumption before conversion starts
+    - Check if estimated cost fits within their budget
+    - Make informed decisions about which mods to convert
+
+    Based on regression model using: file count, LOC, class count, max class depth,
+    and dependency count. Confidence intervals account for model variability.
+
+    The estimation follows findings from "How Do AI Agents Spend Your Money?"
+    (Bai et al., 2026): context tokens dominate in agentic tasks, and pre-task
+    prediction is feasible with reasonable accuracy.
+    """
+    if not TOKEN_BUDGET_AVAILABLE or estimate_conversion_cost is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Token budget estimation not available",
+        )
+
+    try:
+        result = estimate_conversion_cost(
+            mod_path=request.mod_file_path,
+            model=request.model,
+            budget_limit=request.budget_limit,
+        )
+
+        estimate = result["estimate"]
+        budget_check = result["budget_check"]
+
+        return TokenEstimateResponse(
+            estimated_tokens=estimate["total_tokens"],
+            input_tokens=estimate["total_input_tokens"],
+            output_tokens=estimate["total_output_tokens"],
+            estimated_cost_usd=estimate["estimated_cost_usd"],
+            confidence_interval=estimate["confidence_interval"],
+            complexity_tier=estimate["complexity_tier"],
+            model_used=estimate["model_used"],
+            budget_check=budget_check,
+            phases=estimate["by_phase"],
+        )
+
+    except Exception as e:
+        logger.error(f"Token estimation failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Estimation failed: {str(e)}")
+
+
+@app.get(
+    "/api/v1/rag/health",
+    tags=["evaluation"],
+    summary="Check RAG evaluation service health",
+)
 async def evaluation_health_check():
     """Check if RAG evaluation service is available."""
     return {
