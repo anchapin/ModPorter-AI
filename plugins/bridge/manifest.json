@@ -1,0 +1,19 @@
+{
+  "id": "portkit",
+  "name": "PortKit",
+  "version": "1.0.0",
+  "description": "Convert Java Edition mods to Bedrock Edition add-ons directly from bridge.",
+  "author": "PortKit Team",
+  "icon": "icon.png",
+  "tags": ["minecraft", "bedrock", "conversion", "addon"],
+  "permissions": [
+    "storage",
+    "notification",
+    "contextmenu",
+    "action",
+    "file"
+  ],
+  "requirements": {
+    "bridge_version": ">=2.0.0"
+  }
+}

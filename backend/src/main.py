@@ -47,7 +47,13 @@ from services.rate_limiter import (
 )
 from services.security_headers import SecurityHeadersMiddleware
 from services.logging_middleware import LoggingMiddleware, RequestContextMiddleware
-from services.sentry_config import init_sentry, capture_conversion_error, capture_conversion_success, track_conversion_failure_rate, flush
+from services.sentry_config import (
+    init_sentry,
+    capture_conversion_error,
+    capture_conversion_success,
+    track_conversion_failure_rate,
+    flush,
+)
 
 # Import API routers
 from api import (
@@ -76,6 +82,7 @@ from api import (
     automation_metrics,
     version_info,
     status,
+    plugins,
 )
 from api.rate_limit_dashboard import router as rate_limit_dashboard_router
 
@@ -247,7 +254,7 @@ app.include_router(health.router)
 # Status page endpoint (public status page)
 app.include_router(status.router, prefix="/api/v1", tags=["status"])
 
-# Plugin ecosystem endpoints for IDE integrations (bridge., VS Code, Blockbench)
+# Plugin endpoints
 app.include_router(plugins.router, prefix="/api/v1/plugins", tags=["plugins"])
 
 # Register exception handlers for comprehensive error handling
