@@ -54,7 +54,10 @@ from services.celery_config import get_conversion_timeout  # Issue #1151
 from services.celery_monitoring import get_celery_monitor  # Issue #1151: Queue depth monitoring
 from services.conversion_service import get_conversion_service
 from services.metering_service import MeteringService
-from services.rate_limiter import RateLimitConfig, RateLimiter  # Issue #1151: Per-user rate limiting
+from services.rate_limiter import (
+    RateLimitConfig,
+    RateLimiter,
+)  # Issue #1151: Per-user rate limiting
 from services.report_exporter import ReportExporter
 from security.file_security import (
     FileSecurityScanner,
@@ -666,7 +669,7 @@ async def create_conversion(
     # Higher tiers get more conversions per minute
     tier = user.subscription_tier if user else "free"
     tier_rate_limits = {
-        "free": (5, 20),      # 5/min, 20/hour
+        "free": (5, 20),  # 5/min, 20/hour
         "payg": (10, 50),
         "creator": (15, 100),
         "creator_byok": (15, 100),
@@ -871,7 +874,9 @@ async def create_conversion(
             timeout_seconds=timeout_seconds,
             subscription_tier=tier,
         )
-        logger.info(f"Conversion task enqueued for job: {conversion_id} with {timeout_seconds}s timeout")
+        logger.info(
+            f"Conversion task enqueued for job: {conversion_id} with {timeout_seconds}s timeout"
+        )
 
         # Start AI Engine conversion in background task for real-time progress updates
         if background_tasks:

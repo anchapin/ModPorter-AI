@@ -24,12 +24,12 @@ celery_app = Celery(
 # Conversion job timeout limits per subscription tier (Issue #1151)
 # Creator: 5 minutes, Studio: 15 minutes, Enterprise: 30 minutes
 CONVERSION_TIMEOUT_SECONDS: Dict[str, int] = {
-    "free": 180,       # 3 minutes for free tier
-    "payg": 300,       # 5 minutes for payg
-    "creator": 300,    # 5 minutes for creator
+    "free": 180,  # 3 minutes for free tier
+    "payg": 300,  # 5 minutes for payg
+    "creator": 300,  # 5 minutes for creator
     "creator_byok": 300,
-    "pro": 600,        # 10 minutes for pro
-    "studio": 900,     # 15 minutes for studio
+    "pro": 600,  # 10 minutes for pro
+    "studio": 900,  # 15 minutes for studio
     "studio_byok": 900,
     "enterprise": 1800,  # 30 minutes for enterprise
 }

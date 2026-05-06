@@ -799,9 +799,7 @@ class IssueReportResponse(BaseModel):
     response_model=IssueReportResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def submit_issue_report(
-    report: IssueReportRequest, db: AsyncSession = Depends(get_db)
-):
+async def submit_issue_report(report: IssueReportRequest, db: AsyncSession = Depends(get_db)):
     """Submit an issue report for a conversion job (beta feedback)."""
     from datetime import datetime, timezone
     from db.models import IssueReport
@@ -839,7 +837,9 @@ async def submit_issue_report(
         logger.error(f"Database error checking job {report.job_id}: {e}")
         raise HTTPException(status_code=500, detail="Error validating job ID")
 
-    failing_categories_str = ", ".join(report.failing_categories) if report.failing_categories else None
+    failing_categories_str = (
+        ", ".join(report.failing_categories) if report.failing_categories else None
+    )
 
     db_report = IssueReport(
         job_id=job_uuid,

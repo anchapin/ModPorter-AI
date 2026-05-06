@@ -107,7 +107,10 @@ def _filter_events(event: Any, hint: Optional[Any] = None) -> Optional[Any]:
     """
     if event.get("type") == "transaction":
         transaction_name = event.get("transaction", "")
-        if any(skip in transaction_name for skip in ["/health", "/health/liveness", "/health/readiness"]):
+        if any(
+            skip in transaction_name
+            for skip in ["/health", "/health/liveness", "/health/readiness"]
+        ):
             return None
 
     if event.get("type") == "error":
@@ -149,7 +152,9 @@ def capture_conversion_error(
     sentry_sdk.capture_exception(error)
 
 
-def capture_conversion_success(job_id: str, duration_seconds: float, metadata: Optional[dict] = None):
+def capture_conversion_success(
+    job_id: str, duration_seconds: float, metadata: Optional[dict] = None
+):
     """
     Track successful conversion for pipeline success rate monitoring.
 
@@ -219,11 +224,14 @@ def track_conversion_failure_rate(total: int, failed: int):
     failure_rate = (failed / total * 100) if total > 0 else 0
 
     with sentry_sdk.configure_scope() as scope:
-        scope.set_context("conversion_metrics", {
-            "total_conversions": total,
-            "failed_conversions": failed,
-            "failure_rate_percent": round(failure_rate, 2),
-        })
+        scope.set_context(
+            "conversion_metrics",
+            {
+                "total_conversions": total,
+                "failed_conversions": failed,
+                "failure_rate_percent": round(failure_rate, 2),
+            },
+        )
 
 
 def get_sentry_enabled() -> bool:
