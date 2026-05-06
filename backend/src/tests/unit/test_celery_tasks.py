@@ -161,7 +161,11 @@ class TestTaskHandlers:
     @patch("services.conversion_service.process_conversion_task")
     def test_handle_conversion_task(self, mock_process):
         """Test conversion task handler."""
-        mock_process.return_value = {"job_id": "job-123", "status": "completed", "result_url": "http://test"}
+        mock_process.return_value = {
+            "job_id": "job-123",
+            "status": "completed",
+            "result_url": "http://test",
+        }
 
         result = handle_conversion_task({"job_id": "job-123", "file_id": "file-456"})
 
