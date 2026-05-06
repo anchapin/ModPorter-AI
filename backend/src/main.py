@@ -74,6 +74,7 @@ from api import (
     mode_classification,
     automation_metrics,
     version_info,
+    plugins,
 )
 from api.rate_limit_dashboard import router as rate_limit_dashboard_router
 
@@ -236,6 +237,9 @@ app.include_router(version_info.router, prefix="/api/v1", tags=["version-info"])
 
 # Health check endpoints (no prefix - used for Kubernetes probes)
 app.include_router(health.router)
+
+# Plugin ecosystem endpoints for IDE integrations (bridge., VS Code, Blockbench)
+app.include_router(plugins.router, prefix="/api/v1/plugins", tags=["plugins"])
 
 # Register exception handlers for comprehensive error handling
 register_exception_handlers(app)

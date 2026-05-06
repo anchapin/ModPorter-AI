@@ -68,7 +68,7 @@
       "lodash": "4.18.1",
       "lodash-amd": "4.18.1",
       "lodash.template": "4.18.1",
-      "axios": "^1.13.5",
+      "axios": "^1.15.2",
       "react-router-dom": "^7.12.0",
       "brace-expansion@<1.1.13": "1.1.13"
     },

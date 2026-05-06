@@ -1,0 +1,30 @@
+{
+  "name": "portkit-bridge-plugin",
+  "version": "1.0.0",
+  "description": "Convert Java Edition mods to Bedrock Edition add-ons directly from bridge.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "bridge",
+    "minecraft",
+    "bedrock",
+    "addon",
+    "conversion",
+    "portkit"
+  ],
+  "author": "PortKit Team",
+  "license": "MIT",
+  "peerDependencies": {
+    "bridge.": ">=2.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  }
+}
