@@ -247,9 +247,6 @@ app.include_router(health.router)
 # Status page endpoint (public status page)
 app.include_router(status.router, prefix="/api/v1", tags=["status"])
 
-# Plugin ecosystem endpoints for IDE integrations (bridge., VS Code, Blockbench)
-app.include_router(plugins.router, prefix="/api/v1/plugins", tags=["plugins"])
-
 # Register exception handlers for comprehensive error handling
 register_exception_handlers(app)
 
