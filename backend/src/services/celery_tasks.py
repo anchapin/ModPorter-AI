@@ -201,21 +201,28 @@ class CeleryTaskBase(Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         """Handle task failure."""
         logger.error(f"Task {task_id} failed: {exc}")
-        sentry_sdk.capture_exception(exc, scope={
-            "task_id": task_id,
-            "task_name": self.name,
-            "args": args,
-            "kwargs": kwargs,
-        })
+        sentry_sdk.capture_exception(
+            exc,
+            scope={
+                "task_id": task_id,
+                "task_name": self.name,
+                "args": args,
+                "kwargs": kwargs,
+            },
+        )
 
     def on_retry(self, exc, task_id, args, kwargs, einfo):
         """Handle task retry."""
         logger.info(f"Task {task_id} retrying: {exc}")
-        sentry_sdk.capture_message(f"Task retry: {task_id}", level="warning", scope={
-            "task_id": task_id,
-            "task_name": self.name,
-            "retry_count": self.request.retries,
-        })
+        sentry_sdk.capture_message(
+            f"Task retry: {task_id}",
+            level="warning",
+            scope={
+                "task_id": task_id,
+                "task_name": self.name,
+                "retry_count": self.request.retries,
+            },
+        )
 
 
 @celery_app.task(bind=True, base=CeleryTaskBase, name="services.celery_tasks.process_task")
