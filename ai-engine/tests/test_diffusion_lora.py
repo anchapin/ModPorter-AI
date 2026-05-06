@@ -22,6 +22,7 @@ class TestMinecraftTextureLoRA:
     def setup_method(self):
         """Set up test fixtures."""
         from agents.texture_converter.diffusion_lora import MinecraftTextureLoRA
+
         MinecraftTextureLoRA.reset_instance()
 
     def test_singleton_pattern(self):
@@ -311,9 +312,7 @@ class TestTextureConversionPipeline:
                 {"path": str(tmpdir) + "/texture1.png", "usage": "block"},
             ]
 
-            with patch.object(
-                pipeline.lora, "is_available", return_value=False
-            ):
+            with patch.object(pipeline.lora, "is_available", return_value=False):
                 results = pipeline.convert_batch(
                     textures,
                     Path(tmpdir),
@@ -478,13 +477,9 @@ class TestPromptBuilding:
 
         lora = MinecraftTextureLoRA()
 
-        format_strength = lora._get_strength_for_mode(
-            TextureConversionMode.FORMAT_CONVERSION
-        )
+        format_strength = lora._get_strength_for_mode(TextureConversionMode.FORMAT_CONVERSION)
         upscale_strength = lora._get_strength_for_mode(TextureConversionMode.UPSCALING)
-        missing_strength = lora._get_strength_for_mode(
-            TextureConversionMode.MISSING_TEXTURE
-        )
+        missing_strength = lora._get_strength_for_mode(TextureConversionMode.MISSING_TEXTURE)
 
         assert 0.0 <= format_strength <= 1.0
         assert 0.0 <= upscale_strength <= 1.0
