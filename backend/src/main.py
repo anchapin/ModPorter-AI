@@ -76,6 +76,7 @@ from api import (
     automation_metrics,
     version_info,
     status,
+    plugins,
 )
 from api.rate_limit_dashboard import router as rate_limit_dashboard_router
 
@@ -246,6 +247,9 @@ app.include_router(health.router)
 
 # Status page endpoint (public status page)
 app.include_router(status.router, prefix="/api/v1", tags=["status"])
+
+# Plugin endpoints
+app.include_router(plugins.router, prefix="/api/v1/plugins", tags=["plugins"])
 
 # Register exception handlers for comprehensive error handling
 register_exception_handlers(app)
