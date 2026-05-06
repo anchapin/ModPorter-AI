@@ -83,6 +83,7 @@ from api import (
     version_info,
     status,
     plugins,
+    premium_conversion,
 )
 from api.rate_limit_dashboard import router as rate_limit_dashboard_router
 
@@ -256,6 +257,9 @@ app.include_router(status.router, prefix="/api/v1", tags=["status"])
 
 # Plugin endpoints
 app.include_router(plugins.router, prefix="/api/v1/plugins", tags=["plugins"])
+
+# Premium conversion endpoints (frontier AI models via OpenRouter)
+app.include_router(premium_conversion.router, prefix="/api/v1/premium", tags=["Premium Conversion"])
 
 # Register exception handlers for comprehensive error handling
 register_exception_handlers(app)

@@ -14,11 +14,8 @@ Supports fallback to local fine-tuned model via the standard tier.
 """
 
 import os
-import re
-import time
-import logging
-from typing import Optional
-from dataclasses import dataclass
+import json
+from dataclasses import dataclass, field
 
 import httpx
 
