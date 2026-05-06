@@ -203,6 +203,13 @@ conversions_failed_total = Gauge(
     registry=registry,
 )
 
+# Conversion failure rate (percentage)
+conversion_failure_rate = Gauge(
+    "portkit_conversion_failure_rate_percent",
+    "Current conversion failure rate as percentage",
+    registry=registry,
+)
+
 # ============================================
 # Error Metrics (for Issue #455)
 # ============================================
@@ -361,6 +368,11 @@ class MetricsTracker:
             # Update total counts
             conversions_completed_total.set(self._success_count)
             conversions_failed_total.set(self._failure_count)
+
+            # Update failure rate gauge
+            if total > 0:
+                failure_rate = (self._failure_count / total) * 100
+                conversion_failure_rate.set(failure_rate)
 
     def get_stats(self):
         """Get current statistics."""
