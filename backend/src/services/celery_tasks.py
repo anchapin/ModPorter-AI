@@ -23,10 +23,15 @@ import redis.asyncio as aioredis
 
 from services.celery_config import celery_app, REDIS_URL
 from services.audit_logger import get_audit_logger
+from services.sentry_config import init_celery_sentry, capture_conversion_error, capture_llm_error
+import sentry_sdk
 
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Initialize Sentry for Celery workers
+init_celery_sentry()
 
 
 class TaskStatus(Enum):
@@ -39,6 +44,29 @@ class TaskStatus(Enum):
     CANCELLED = "cancelled"
     DEAD_LETTER = "dead_letter"
     RETRYING = "retrying"
+    TIMEOUT = "timeout"  # Issue #1151: Timeout status for clean timeout response
+
+
+@dataclass
+class TimeoutResult:
+    """Structured timeout response (not a 500) - Issue #1151"""
+
+    status: str = "timeout"
+    message: str = ""
+    timeout_seconds: int = 0
+    tier: str = "free"
+    can_retry: bool = True
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "status": "timeout",
+            "error_code": "CONVERSION_TIMEOUT",
+            "message": self.message,
+            "timeout_seconds": self.timeout_seconds,
+            "tier": self.tier,
+            "can_retry": self.can_retry,
+            "retry_after_seconds": min(self.timeout_seconds * 2, 3600),
+        }
 
 
 class TaskPriority(IntEnum):
@@ -173,10 +201,21 @@ class CeleryTaskBase(Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         """Handle task failure."""
         logger.error(f"Task {task_id} failed: {exc}")
+        sentry_sdk.capture_exception(exc, scope={
+            "task_id": task_id,
+            "task_name": self.name,
+            "args": args,
+            "kwargs": kwargs,
+        })
 
     def on_retry(self, exc, task_id, args, kwargs, einfo):
         """Handle task retry."""
         logger.info(f"Task {task_id} retrying: {exc}")
+        sentry_sdk.capture_message(f"Task retry: {task_id}", level="warning", scope={
+            "task_id": task_id,
+            "task_name": self.name,
+            "retry_count": self.request.retries,
+        })
 
 
 @celery_app.task(bind=True, base=CeleryTaskBase, name="services.celery_tasks.process_task")
@@ -222,8 +261,16 @@ def process_task(self, task_id: str) -> Dict[str, Any]:
 
     except SoftTimeLimitExceeded:
         logger.error(f"Task {task_id} soft time limit exceeded")
-        _fail_task(r, task_id, "Soft time limit exceeded", retry=False)
-        return {"status": "error", "message": "Soft time limit exceeded"}
+        _timeout_task(r, task_id)
+        return {
+            "status": "timeout",
+            "error_code": "CONVERSION_TIMEOUT",
+            "message": f"Conversion job exceeded time limit",
+            "timeout_seconds": task.timeout_seconds,
+            "tier": task.payload.get("subscription_tier", "free"),
+            "can_retry": True,
+            "retry_after_seconds": min(task.timeout_seconds * 2, 3600),
+        }
     except Exception as exc:
         logger.error(f"Task {task_id} failed: {exc}")
         retry = _fail_task(r, task_id, str(exc), retry=True)
@@ -288,6 +335,23 @@ def _fail_task(r, task_id: str, error: str, retry: bool = True) -> bool:
         r.set(f"portkit:task:{task_id}", json.dumps(task.to_dict()), ex=86400)
         r.srem(PROCESSING_SET, task_id)
         return False
+
+
+def _timeout_task(r, task_id: str) -> None:
+    """Mark task as timed out with structured response - Issue #1151"""
+    task_data = r.get(f"portkit:task:{task_id}")
+    if not task_data:
+        return
+
+    task = TaskData.from_dict(json.loads(task_data))
+    task.status = TaskStatus.TIMEOUT
+    task.completed_at = datetime.now(timezone.utc)
+    task.error = "Conversion job timed out"
+
+    r.set(f"portkit:task:{task_id}", json.dumps(task.to_dict()), ex=86400)
+    r.srem(PROCESSING_SET, task_id)
+    r.hincrby(METRICS_KEY, "tasks_timed_out", 1)
+    logger.warning(f"Task {task_id} timed out")
 
 
 @celery_app.task(name="services.celery_tasks.cleanup_old_tasks")
@@ -586,8 +650,25 @@ async def enqueue_task(
     priority: TaskPriority = TaskPriority.NORMAL,
     max_retries: int = 3,
     timeout_seconds: int = 300,
+    subscription_tier: str = "free",
 ) -> TaskData:
-    """Async wrapper for enqueueing tasks - maintains compatibility with old code."""
+    """Async wrapper for enqueueing tasks - maintains compatibility with old code.
+
+    Args:
+        name: Task name (conversion, asset_conversion, etc.)
+        payload: Task payload data
+        priority: Task priority (LOW, NORMAL, HIGH, CRITICAL)
+        max_retries: Maximum retry attempts
+        timeout_seconds: Task timeout in seconds (overrides tier-based default if > 0)
+        subscription_tier: User's subscription tier for timeout calculation (Issue #1151)
+    """
+    # Issue #1151: Use tier-based timeout if not explicitly overridden
+    if timeout_seconds == 300:
+        from services.celery_config import get_conversion_timeout
+
+        tier_timeout = get_conversion_timeout(subscription_tier)
+        timeout_seconds = tier_timeout
+
     task = TaskData(
         id=str(uuid.uuid4()),
         name=name,
@@ -609,6 +690,7 @@ async def enqueue_task(
         args=[task.id],
         queue=queue_name,
         timeout=timeout_seconds,
+        soft_timeout=timeout_seconds - 30,  # Soft timeout 30s before hard timeout
     )
 
     return task
