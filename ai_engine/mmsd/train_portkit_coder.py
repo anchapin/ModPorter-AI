@@ -248,16 +248,20 @@ def main():
 
     # ── Model ───────────────────────────────────────────────────────────────
     print("\nLoading model...")
+    # Use adaptive dtype based on GPU support
+    use_bf16 = torch.cuda.is_bf16_supported() if torch.cuda.is_available() else False
+    compute_dtype = torch.bfloat16 if use_bf16 else torch.float16
+
     bnb = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.bfloat16,
+        bnb_4bit_compute_dtype=compute_dtype,
         bnb_4bit_use_double_quant=True,
     )
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_ID,
         quantization_config=bnb,
-        torch_dtype=torch.bfloat16,
+        dtype=compute_dtype,
         use_cache=False,
         device_map="auto",
     )
@@ -276,12 +280,20 @@ def main():
 
     # ── Train ───────────────────────────────────────────────────────────────
     report_to = "trackio" if TRACKIO_SPACE_ID else "none"
+
+    # Detect bf16 support (T4 doesn't support bf16, only fp16)
+    use_bf16 = torch.cuda.is_bf16_supported() if torch.cuda.is_available() else False
+    compute_dtype = torch.bfloat16 if use_bf16 else torch.float16
+    print(f"Precision: {'bf16' if use_bf16 else 'fp16'} (compute_dtype={compute_dtype})")
+
     args = SFTConfig(
         output_dir="./portkit-lora",
         max_length=MAX_LENGTH,
         packing=False,
         num_train_epochs=NUM_EPOCHS,
         per_device_train_batch_size=BATCH_SIZE,
+        per_device_eval_batch_size=1,  # Prevent OOM during eval — logits tensor is huge
+        prediction_loss_only=True,     # Don't materialize logits we'll discard anyway
         gradient_accumulation_steps=GRAD_ACCUM,
         learning_rate=LR,
         warmup_ratio=WARMUP,
@@ -289,7 +301,9 @@ def main():
         optim="paged_adamw_8bit",
         seed=SEED,
         gradient_checkpointing=True,
-        bf16=True,
+        bf16=use_bf16,
+        fp16=not use_bf16,
+        fp16_full_eval=not use_bf16,  # Force fp16 during eval on non-bf16 GPUs
         logging_strategy="steps",
         logging_steps=10,
         logging_first_step=True,
@@ -345,7 +359,7 @@ def main():
 
         merged = AutoPeftModelForCausalLM.from_pretrained(
             "./portkit-lora/final",
-            torch_dtype=torch.bfloat16,
+            dtype=compute_dtype,
             device_map="auto",
         ).merge_and_unload()
 

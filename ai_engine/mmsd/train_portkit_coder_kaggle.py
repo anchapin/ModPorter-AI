@@ -39,9 +39,6 @@ os.makedirs(DATA_DIR, exist_ok=True)
 
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
-# Reduce memory fragmentation on CUDA
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
-
 
 def get_checkpoint_path() -> Path:
     """Find the latest checkpoint if it exists."""
@@ -85,14 +82,6 @@ MAX_LENGTH = 2048
 NUM_EPOCHS = 3
 BATCH_SIZE = 2
 GRAD_ACCUM = 8
-LR = 2e-4
-WARMUP = 0.05
-SCHEDULER = "cosine"
-SEED = 42
-TRAIN_RATIO = 0.9
-
-# Kaggle: save checkpoint every N steps (more frequent than default)
-CHECKPOINT_STEPS = 100  # Save every 100 steps to prevent lost progress
 LR = 2e-4
 WARMUP = 0.05
 SCHEDULER = "cosine"
@@ -316,16 +305,21 @@ def main():
     from peft import LoraConfig, TaskType
     from trl import SFTTrainer, SFTConfig
 
+    # T4 doesn't support bf16 — use fp16 instead
+    use_bf16 = torch.cuda.is_bf16_supported() if torch.cuda.is_available() else False
+    compute_dtype = torch.bfloat16 if use_bf16 else torch.float16
+    print(f"[precision] {'bf16' if use_bf16 else 'fp16'} (T4 = no bf16 support)")
+
     bnb = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.bfloat16,
+        bnb_4bit_compute_dtype=compute_dtype,
         bnb_4bit_use_double_quant=True,
     )
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_ID,
         quantization_config=bnb,
-        torch_dtype=torch.bfloat16,
+        dtype=compute_dtype,
         use_cache=False,
         device_map="auto",
         attn_implementation="eager",  # Safer on T4, avoids SDPA issues
@@ -356,6 +350,8 @@ def main():
         packing=False,
         num_train_epochs=NUM_EPOCHS,
         per_device_train_batch_size=BATCH_SIZE,
+        per_device_eval_batch_size=1,  # Prevent OOM during eval — logits tensor is huge
+        prediction_loss_only=True,     # Don't materialize logits we'll discard anyway
         gradient_accumulation_steps=GRAD_ACCUM,
         learning_rate=LR,
         warmup_ratio=WARMUP,
@@ -363,7 +359,9 @@ def main():
         optim="paged_adamw_8bit",
         seed=SEED,
         gradient_checkpointing=True,
-        bf16=True,
+        bf16=use_bf16,
+        fp16=not use_bf16,
+        fp16_full_eval=not use_bf16,  # Force fp16 during eval on non-bf16 GPUs (T4)
         logging_strategy="steps",
         logging_steps=10,
         logging_first_step=True,
@@ -421,7 +419,7 @@ def main():
 
         merged = AutoPeftModelForCausalLM.from_pretrained(
             str(FINAL_DIR / "lora"),
-            torch_dtype=torch.bfloat16,
+            dtype=compute_dtype,
             device_map="auto",
         ).merge_and_unload()
 
