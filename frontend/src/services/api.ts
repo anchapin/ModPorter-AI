@@ -733,6 +733,48 @@ export const submitFeedback = async (
   return response.json();
 };
 
+export interface IssueReportPayload {
+  job_id: string;
+  mod_name: string;
+  version: string;
+  conversion_score: number;
+  failing_categories: string[];
+  description: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  contact_email?: string;
+}
+
+export interface IssueReportResponse {
+  message: string;
+  report_id: string;
+  severity: string;
+  expected_response_time: string;
+}
+
+export const submitIssueReport = async (
+  payload: IssueReportPayload
+): Promise<IssueReportResponse> => {
+  const response = await fetch(`${API_BASE_URL}/feedback/issues`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'Unknown error submitting issue report' }));
+    throw new ApiError(
+      errorData.detail || 'Failed to submit issue report',
+      response.status
+    );
+  }
+
+  return response.json();
+};
+
 // --- Conversion Asset Management API Functions ---
 
 export const listConversionAssets = async (

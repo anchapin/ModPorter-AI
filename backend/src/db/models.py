@@ -394,6 +394,41 @@ class CorrectionSubmission(Base):
     job = relationship("ConversionJob", backref="correction_submissions")
 
 
+class IssueReport(Base):
+    __tablename__ = "issue_reports"
+    __table_args__ = {"extend_existing": True}
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("conversion_jobs.id"), nullable=False, index=True
+    )
+    user_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+
+    mod_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    version: Mapped[str] = mapped_column(String(50), nullable=False)
+    conversion_score: Mapped[float] = mapped_column(nullable=False)
+
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    severity: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default=text("'medium'")
+    )  # 'low', 'medium', 'high', 'critical'
+    failing_categories: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    contact_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default=text("'pending'")
+    )  # 'pending', 'acknowledged', 'investigating', 'resolved', 'wont_fix'
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+    job = relationship("ConversionJob", backref="issue_reports")
+
+
 # Asset Management Models
 
 

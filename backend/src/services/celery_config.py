@@ -2,10 +2,12 @@
 Celery configuration for distributed task processing.
 
 Issue: #1098 - Consolidate task queues: remove task_queue.py duplicate, migrate to Celery
+Issue: #1151 - Pre-beta: Conversion job timeout handling and per-user rate limiting
 """
 
 import os
 from celery import Celery
+from typing import Dict
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
@@ -17,6 +19,26 @@ celery_app = Celery(
         "services.celery_tasks",
     ],
 )
+
+
+# Conversion job timeout limits per subscription tier (Issue #1151)
+# Creator: 5 minutes, Studio: 15 minutes, Enterprise: 30 minutes
+CONVERSION_TIMEOUT_SECONDS: Dict[str, int] = {
+    "free": 180,       # 3 minutes for free tier
+    "payg": 300,       # 5 minutes for payg
+    "creator": 300,    # 5 minutes for creator
+    "creator_byok": 300,
+    "pro": 600,        # 10 minutes for pro
+    "studio": 900,     # 15 minutes for studio
+    "studio_byok": 900,
+    "enterprise": 1800,  # 30 minutes for enterprise
+}
+
+
+def get_conversion_timeout(tier: str) -> int:
+    """Get conversion timeout in seconds for a subscription tier."""
+    return CONVERSION_TIMEOUT_SECONDS.get(tier, CONVERSION_TIMEOUT_SECONDS["free"])
+
 
 celery_app.conf.update(
     task_serializer="json",

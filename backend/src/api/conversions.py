@@ -8,6 +8,8 @@ This module provides REST endpoints for managing conversion jobs:
 - GET /api/v1/conversions/{id}/download - Download .mcaddon file
 - DELETE /api/v1/conversions/{id} - Cancel/delete conversion
 - WS /api/v1/conversions/{id}/ws - WebSocket progress endpoint
+
+Issue #1151: Conversion job timeout handling and per-user rate limiting
 """
 
 import json
@@ -48,8 +50,11 @@ from src.websocket.manager import manager
 from src.websocket.progress_handler import ProgressHandler
 from services.cache import CacheService
 from services.celery_tasks import enqueue_task, TaskPriority
+from services.celery_config import get_conversion_timeout  # Issue #1151
+from services.celery_monitoring import get_celery_monitor  # Issue #1151: Queue depth monitoring
 from services.conversion_service import get_conversion_service
 from services.metering_service import MeteringService
+from services.rate_limiter import RateLimitConfig, RateLimiter  # Issue #1151: Per-user rate limiting
 from services.report_exporter import ReportExporter
 from security.file_security import (
     FileSecurityScanner,
@@ -200,6 +205,39 @@ class StructuredError(BaseModel):
     message: str = Field(..., description="Error message")
     is_retryable: bool = Field(..., description="Whether client can retry this operation")
     details: Optional[Dict[str, Any]] = Field(None, description="Additional error details")
+
+
+class ConversionTimeoutError(BaseModel):
+    """Structured timeout response - not a 500 error (Issue #1151)."""
+
+    error_code: str = Field(
+        default="CONVERSION_TIMEOUT",
+        description="Error code for timeout: CONVERSION_TIMEOUT",
+    )
+    error_type: str = Field(
+        default="timeout_error",
+        description="Error type: timeout_error",
+    )
+    message: str = Field(
+        ...,
+        description="Human-readable timeout message",
+    )
+    timeout_seconds: int = Field(
+        ...,
+        description="Configured timeout in seconds for this tier",
+    )
+    tier: str = Field(
+        ...,
+        description="User's subscription tier that determined the timeout",
+    )
+    can_retry: bool = Field(
+        default=True,
+        description="Whether client can retry with same or longer timeout",
+    )
+    retry_after_seconds: Optional[int] = Field(
+        None,
+        description="Suggested wait time before retrying",
+    )
 
 
 class ConversionStage(str, Enum):
@@ -607,6 +645,78 @@ async def create_conversion(
     - WS /api/v1/conversions/{id}/ws - Real-time progress
     - GET /api/v1/conversions/{id}/download - Download result
     """
+    # Issue #1151: Per-user rate limiting tied to subscription tier
+    # Check queue depth before accepting new conversion
+    monitor = get_celery_monitor()
+    queue_health = monitor.check_queue_health()
+
+    if not queue_health["healthy"] and queue_health["alerts"]:
+        for alert in queue_health["alerts"]:
+            if alert["severity"] == "P0":
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail={
+                        "error": "service_unavailable",
+                        "message": "Conversion service is temporarily unavailable due to high load. Please try again later.",
+                        "retry_after": 60,
+                    },
+                )
+
+    # Per-user rate limiting based on subscription tier (Issue #1151)
+    # Higher tiers get more conversions per minute
+    tier = user.subscription_tier if user else "free"
+    tier_rate_limits = {
+        "free": (5, 20),      # 5/min, 20/hour
+        "payg": (10, 50),
+        "creator": (15, 100),
+        "creator_byok": (15, 100),
+        "pro": (30, 200),
+        "studio": (60, 500),
+        "studio_byok": (60, 500),
+        "enterprise": (120, 1000),
+    }
+    requests_per_minute, requests_per_hour = tier_rate_limits.get(tier, tier_rate_limits["free"])
+
+    # Use the rate limiter to check against Redis
+    rate_limiter = RateLimiter(
+        config=RateLimitConfig(
+            requests_per_minute=requests_per_minute,
+            requests_per_hour=requests_per_hour,
+            burst_size=min(3, requests_per_minute // 5),
+        )
+    )
+    await rate_limiter.initialize()
+
+    # Create a mock request for rate limiting check
+    from starlette.datastructures import Headers
+    from fastapi import Request as FastAPIRequest
+
+    class MockRequest:
+        def __init__(self, user_id: Optional[str], client_host: str = "127.0.0.1"):
+            self.state = type("State", (), {"user_id": user_id, "user_tier": tier})()
+            self.client = type("Client", (), {"host": client_host})()
+            self.headers = Headers()
+
+    mock_request = MockRequest(str(user.id) if user else None)
+    is_allowed, metadata = await rate_limiter.check_rate_limit(mock_request)
+
+    if not is_allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "error": "rate_limit_exceeded",
+                "message": f"Conversion rate limit exceeded for {tier} tier. Maximum {requests_per_minute} conversions per minute.",
+                "retry_after": metadata.get("retry_after", 60),
+                "rate_limit": {
+                    "limit": metadata["limit_minute"],
+                    "remaining": metadata["remaining_minute"],
+                    "reset_at": metadata["reset_at_minute"],
+                },
+            },
+        )
+
+    await rate_limiter.close()
+
     # Metering check for subscription tier limits (Issue #977)
     # Use API usage metering for API key auth, web usage metering for JWT
     is_api_key_auth = user and credentials and credentials.credentials.startswith("mpk_")
@@ -745,6 +855,7 @@ async def create_conversion(
     # This enables concurrent conversions and better resource management
     # Also start the conversion processing with AI Engine integration
     try:
+        timeout_seconds = get_conversion_timeout(tier)
         await enqueue_task(
             name="conversion",
             payload={
@@ -754,10 +865,13 @@ async def create_conversion(
                 "original_filename": safe_filename,
                 "target_version": conversion_options.target_version,
                 "options": conversion_options.model_dump(),
+                "subscription_tier": tier,
             },
             priority=TaskPriority.NORMAL,
+            timeout_seconds=timeout_seconds,
+            subscription_tier=tier,
         )
-        logger.info(f"Conversion task enqueued for job: {conversion_id}")
+        logger.info(f"Conversion task enqueued for job: {conversion_id} with {timeout_seconds}s timeout")
 
         # Start AI Engine conversion in background task for real-time progress updates
         if background_tasks:
