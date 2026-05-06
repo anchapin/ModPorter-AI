@@ -138,6 +138,7 @@ async def trigger_conversion(job_id: str) -> None:
     """Trigger the conversion pipeline for a job."""
     try:
         from main import simulate_ai_conversion, try_ai_engine_or_fallback
+
         await try_ai_engine_or_fallback(job_id)
     except Exception as e:
         logger.error(f"Failed to trigger conversion for job {job_id}: {e}")
@@ -196,8 +197,12 @@ async def start_plugin_conversion(
         "options": request.options,
         "result_url": None,
         "error_message": None,
-        "created_at": job.created_at.isoformat() if job.created_at else datetime.now(timezone.utc).isoformat(),
-        "updated_at": job.updated_at.isoformat() if job.updated_at else datetime.now(timezone.utc).isoformat(),
+        "created_at": job.created_at.isoformat()
+        if job.created_at
+        else datetime.now(timezone.utc).isoformat(),
+        "updated_at": job.updated_at.isoformat()
+        if job.updated_at
+        else datetime.now(timezone.utc).isoformat(),
     }
 
     await cache.set_job_status(str(job.id), mirror_data)
