@@ -1681,3 +1681,128 @@ export const downloadConversionReport = async (
   window.URL.revokeObjectURL(url);
   document.body.removeChild(a);
 };
+
+/**
+ * Premium Conversion Types
+ */
+export interface PremiumConvertRequest {
+  instruction: string;
+  java_source: string;
+  model?: string;
+}
+
+export interface PremiumConvertResponse {
+  success: boolean;
+  reasoning: string;
+  bedrock_manifest: string;
+  bedrock_script: string;
+  model_used: string;
+  latency_ms: number;
+  error: string;
+}
+
+export interface PremiumModelsResponse {
+  models: Record<string, string>;
+}
+
+export interface PremiumEstimateResponse {
+  model: string;
+  input_tokens_est: number;
+  output_tokens_est: number;
+  cost_usd_est: number;
+}
+
+/**
+ * Premium conversion using frontier AI models via OpenRouter
+ */
+export const premiumConvert = async (
+  request: PremiumConvertRequest,
+  token?: string
+): Promise<PremiumConvertResponse> => {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/premium/convert`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({
+      detail: 'Premium conversion failed',
+    }));
+    throw new ApiError(
+      errorData.detail || 'Premium conversion failed',
+      response.status
+    );
+  }
+
+  return response.json();
+};
+
+/**
+ * List available premium conversion models
+ */
+export const listPremiumModels = async (
+  token?: string
+): Promise<PremiumModelsResponse> => {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/premium/models`, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({
+      detail: 'Failed to fetch premium models',
+    }));
+    throw new ApiError(
+      errorData.detail || 'Failed to fetch premium models',
+      response.status
+    );
+  }
+
+  return response.json();
+};
+
+/**
+ * Estimate premium conversion cost
+ */
+export const estimatePremiumCost = async (
+  request: PremiumConvertRequest,
+  token?: string
+): Promise<PremiumEstimateResponse> => {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/premium/estimate`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({
+      detail: 'Failed to estimate premium cost',
+    }));
+    throw new ApiError(
+      errorData.detail || 'Failed to estimate premium cost',
+      response.status
+    );
+  }
+
+  return response.json();
+};

@@ -43,6 +43,7 @@ export const hasFeatureAccess = (
     slack_support: 'studio',
     conversion_history_1y: 'studio',
     advanced_analytics: 'studio',
+    premium_conversion: 'studio',
     on_premise: 'enterprise',
     unlimited_api: 'enterprise',
     custom_integrations: 'enterprise',
@@ -71,6 +72,7 @@ export type PremiumFeature =
   | 'slack_support'
   | 'conversion_history_1y'
   | 'advanced_analytics'
+  | 'premium_conversion'
   | 'on_premise'
   | 'unlimited_api'
   | 'custom_integrations'
@@ -94,6 +96,7 @@ export const FEATURE_GATE_MESSAGES: Record<PremiumFeature, string> = {
   slack_support: 'Upgrade to Studio for Slack support',
   conversion_history_1y: 'Upgrade to Studio for 1-year conversion history',
   advanced_analytics: 'Upgrade to Studio for advanced analytics',
+  premium_conversion: 'Upgrade to Studio for premium AI conversion with frontier models',
   on_premise: 'Contact sales for on-premise deployment',
   unlimited_api: 'Contact sales for unlimited API access',
   custom_integrations: 'Contact sales for custom integrations',
