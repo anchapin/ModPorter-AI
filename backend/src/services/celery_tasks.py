@@ -371,7 +371,7 @@ def _enqueue_task_sync(
         logger.info(f"Task {task.id} ({name}) enqueued with priority {task.priority.name}")
         return {"task_id": task.id, "status": "queued"}
 
-    return asyncio.get_event_loop().run_until_complete(_enqueue())
+    return asyncio.run(_enqueue())
 
 
 @celery_app.task(name="services.celery_tasks.get_task_status")
