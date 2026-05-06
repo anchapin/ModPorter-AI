@@ -756,3 +756,119 @@ async def apply_correction(correction_id: str, db: AsyncSession = Depends(get_db
         "correction_id": str(correction.id),
         "applied_at": correction.applied_at.isoformat(),
     }
+
+
+class IssueReportRequest(BaseModel):
+    job_id: str
+    mod_name: str
+    version: str
+    conversion_score: float
+    failing_categories: List[str] = []
+    description: str
+    severity: str = "medium"
+    contact_email: Optional[str] = None
+
+    model_config = ConfigDict(
+        validate_assignment=True,
+        json_schema_extra={
+            "examples": [
+                {
+                    "job_id": "123e4567-e89b-12d3-a456-426614174000",
+                    "mod_name": "My Awesome Mod",
+                    "version": "3.2.1",
+                    "conversion_score": 72.5,
+                    "failing_categories": ["Custom Rendering", "Network Packets"],
+                    "description": "Entities are not spawning correctly in Bedrock edition.",
+                    "severity": "high",
+                    "contact_email": "user@example.com",
+                }
+            ]
+        },
+    )
+
+
+class IssueReportResponse(BaseModel):
+    message: str
+    report_id: str
+    severity: str
+    expected_response_time: str
+
+
+@router.post(
+    "/feedback/issues",
+    response_model=IssueReportResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def submit_issue_report(
+    report: IssueReportRequest, db: AsyncSession = Depends(get_db)
+):
+    """Submit an issue report for a conversion job (beta feedback)."""
+    from datetime import datetime, timezone
+    from db.models import IssueReport
+
+    logger.info(f"Receiving issue report for job {report.job_id}")
+
+    try:
+        job_uuid = uuid.UUID(report.job_id)
+    except ValueError:
+        logger.warning(f"Invalid job ID format: {report.job_id}")
+        raise HTTPException(status_code=400, detail="Invalid job ID format")
+
+    valid_severities = ["low", "medium", "high", "critical"]
+    if report.severity not in valid_severities:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid severity. Must be one of: {', '.join(valid_severities)}",
+        )
+
+    try:
+        job = await crud.get_job(db, report.job_id)
+        if not job:
+            logger.warning(f"Job not found: {report.job_id}")
+            raise HTTPException(
+                status_code=404, detail=f"Conversion job with ID '{report.job_id}' not found"
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        if "not found" in str(e).lower():
+            logger.warning(f"Job not found via exception: {report.job_id}")
+            raise HTTPException(
+                status_code=404, detail=f"Conversion job with ID '{report.job_id}' not found"
+            )
+        logger.error(f"Database error checking job {report.job_id}: {e}")
+        raise HTTPException(status_code=500, detail="Error validating job ID")
+
+    failing_categories_str = ", ".join(report.failing_categories) if report.failing_categories else None
+
+    db_report = IssueReport(
+        job_id=job_uuid,
+        mod_name=report.mod_name,
+        version=report.version,
+        conversion_score=report.conversion_score,
+        description=report.description,
+        severity=report.severity,
+        failing_categories=failing_categories_str,
+        contact_email=report.contact_email,
+        status="pending",
+    )
+    db.add(db_report)
+    await db.commit()
+    await db.refresh(db_report)
+
+    response_times = {
+        "critical": "< 2 hours",
+        "high": "< 24 hours",
+        "medium": "< 3 days",
+        "low": "< 1 week",
+    }
+    expected_response = response_times.get(report.severity, "< 1 week")
+
+    logger.info(f"Issue report created: {db_report.id} for job {report.job_id}")
+
+    return IssueReportResponse(
+        message="Thank you for your report! Our team will investigate this issue.",
+        report_id=str(db_report.id),
+        severity=report.severity,
+        expected_response_time=expected_response,
+    )
