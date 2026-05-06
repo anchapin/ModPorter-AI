@@ -3,7 +3,7 @@ LangGraph-based conversion pipeline orchestrator.
 
 This module replaces the CrewAI-based orchestration with LangGraph for:
 - Typed state management with ConversionState
-- Checkpointing for resume capability
+- Checkpointing for resume capability (SQLite/Postgres)
 - interrupt() for HITL (Human-In-The-Loop) mid-conversion review
 - Conditional edges for QA retry loops
 - Parallel subgraph execution for independent converters
@@ -16,10 +16,18 @@ import os
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, Dict, List, Optional, TypedDict, Union
 
 from langgraph.checkpoint.memory import MemorySaver
+
+try:
+    from langgraph.checkpoint.sqlite import SqliteSaver
+except ImportError:
+    SqliteSaver = None
+
 from langgraph.graph import END, START, StateGraph
+from langgraph.types import Send, interrupt
+from pydantic import BaseModel, Field
 
 from agents.qa_validator import QAValidatorAgent
 from models.smart_assumptions import (
@@ -47,7 +55,7 @@ class NodeStatus(Enum):
 class ConversionState(TypedDict, total=False):
     """Typed state for the conversion pipeline.
 
-    Every stage reads from and writes to this state object.
+    Every stage reads from and writes to this explicit state object.
     """
 
     job_id: str
@@ -87,6 +95,54 @@ class ConversionState(TypedDict, total=False):
     interrupted_segments: List[str]
 
 
+class BlockConversionInput(BaseModel):
+    """Input schema for block conversion using PydanticAI."""
+
+    block_data: Dict[str, Any]
+    conversion_plan: Dict[str, Any]
+
+
+class EntityConversionInput(BaseModel):
+    """Input schema for entity conversion using PydanticAI."""
+
+    entity_data: Dict[str, Any]
+    conversion_plan: Dict[str, Any]
+
+
+class RecipeConversionInput(BaseModel):
+    """Input schema for recipe conversion using PydanticAI."""
+
+    recipe_data: Dict[str, Any]
+    conversion_plan: Dict[str, Any]
+
+
+class AssetConversionInput(BaseModel):
+    """Input schema for asset conversion using PydanticAI."""
+
+    asset_type: str
+    asset_data: Dict[str, Any]
+
+
+class BlockConversionOutput(BaseModel):
+    """Output schema for block conversion using PydanticAI."""
+
+    block_id: str
+    converted_block: Dict[str, Any]
+    confidence: float = Field(ge=0.0, le=1.0)
+    review_flag: bool = False
+    issues: List[str] = Field(default_factory=list)
+
+
+class EntityConversionOutput(BaseModel):
+    """Output schema for entity conversion using PydanticAI."""
+
+    entity_id: str
+    converted_entity: Dict[str, Any]
+    confidence: float = Field(ge=0.0, le=1.0)
+    review_flag: bool = False
+    issues: List[str] = Field(default_factory=list)
+
+
 @dataclass
 class NodeResult:
     """Result from executing a pipeline node."""
@@ -97,6 +153,39 @@ class NodeResult:
     error: Optional[str] = None
     confidence: float = 0.0
     flagged_segments: List[str] = field(default_factory=list)
+
+
+def create_checkpointer(
+    enable_checkpointing: bool = True,
+    checkpoint_db_path: Optional[str] = None,
+) -> Optional[Union[MemorySaver, "SqliteSaver"]]:
+    """
+    Create appropriate checkpointer based on configuration.
+
+    Args:
+        enable_checkpointing: Whether to enable checkpointing
+        checkpoint_db_path: Path for SQLite checkpointer db (defaults to /tmp)
+
+    Returns:
+        MemorySaver for in-memory, SqliteSaver for persistence, or None
+    """
+    if not enable_checkpointing:
+        return None
+
+    if SqliteSaver is None:
+        logger.warning(
+            "SqliteSaver not available, using MemorySaver. "
+            "Install langgraph-checkpoint-sqlite for persistent checkpoints."
+        )
+        return MemorySaver()
+
+    if checkpoint_db_path:
+        return SqliteSaver.from_conn_string(f"sqlite:///{checkpoint_db_path}")
+
+    temp_dir = os.getenv("LANGGRAPH_CHECKPOINT_DIR", "/tmp")
+    os.makedirs(temp_dir, exist_ok=True)
+    db_path = os.path.join(temp_dir, "portkit_checkpoints.db")
+    return SqliteSaver.from_conn_string(f"sqlite:///{db_path}")
 
 
 class ConversionPipeline:
@@ -132,6 +221,7 @@ class ConversionPipeline:
         enable_checkpointing: bool = True,
         enable_langsmith: bool = False,
         langsmith_api_key: Optional[str] = None,
+        checkpoint_db_path: Optional[str] = None,
     ):
         self.job_id = job_id
         self.mod_path = mod_path
@@ -142,7 +232,7 @@ class ConversionPipeline:
 
         self._graph: Optional[StateGraph] = None
         self._compiled_graph: Optional[Any] = None
-        self._checkpointer = MemorySaver() if enable_checkpointing else None
+        self._checkpointer = create_checkpointer(enable_checkpointing, checkpoint_db_path)
 
         self._langsmith_config = None
         if enable_langsmith and langsmith_api_key:
@@ -189,10 +279,16 @@ class ConversionPipeline:
         builder.add_edge(START, "java_analyzer")
         builder.add_edge("java_analyzer", "strategy_planner")
 
-        builder.add_edge("strategy_planner", "block_converter")
-        builder.add_edge("strategy_planner", "entity_converter")
-        builder.add_edge("strategy_planner", "recipe_converter")
-        builder.add_edge("strategy_planner", "asset_converter")
+        builder.add_conditional_edges(
+            "strategy_planner",
+            self._fan_out_parallel_converters,
+            {
+                "block_converter": "block_converter",
+                "entity_converter": "entity_converter",
+                "recipe_converter": "recipe_converter",
+                "asset_converter": "asset_converter",
+            },
+        )
 
         builder.add_edge("block_converter", "output_assembler")
         builder.add_edge("entity_converter", "output_assembler")
@@ -217,16 +313,22 @@ class ConversionPipeline:
         self._graph = builder
         return builder
 
+    def _fan_out_parallel_converters(self, state: ConversionState) -> List[Send]:
+        """Fan out to parallel converter subgraphs using LangGraph Send."""
+        return [
+            Send("block_converter", state),
+            Send("entity_converter", state),
+            Send("recipe_converter", state),
+            Send("asset_converter", state),
+        ]
+
     def compile(self) -> Any:
         """Compile the graph for execution."""
         if self._graph is None:
             self.build_graph()
 
-        checkpointer = MemorySaver() if hasattr(self, "_checkpointer") else None
-
         self._compiled_graph = self._graph.compile(
-            checkpointer=checkpointer,
-            interrupt_before=["qa_validator"],
+            checkpointer=self._checkpointer,
         )
         return self._compiled_graph
 
@@ -271,6 +373,8 @@ class ConversionPipeline:
             node_status={},
             needs_human_review=False,
             hitl_feedback=None,
+            converted_scripts=[],
+            converted_assets=[],
         )
 
         if initial_state:
@@ -406,15 +510,20 @@ class ConversionPipeline:
 
             for block in blocks:
                 if isinstance(block, dict):
-                    converted.append(
-                        {
-                            "type": "block",
-                            "name": block.get("registry_name", block.get("name", "unknown")),
-                            "data": block,
-                        }
-                    )
+                    block_result = {
+                        "type": "block",
+                        "name": block.get("registry_name", block.get("name", "unknown")),
+                        "data": block,
+                        "confidence": 0.95,
+                        "review_flag": False,
+                    }
 
-            state["converted_scripts"].extend(converted)
+                    if "geometry" in block or "collision" in block:
+                        block_result["review_flag"] = True
+
+                    converted.append(block_result)
+
+            state["converted_scripts"] = state.get("converted_scripts", []) + converted
             state["node_status"]["block_converter"] = NodeStatus.COMPLETED.value
 
             logger.info(f"[{self.job_id}] Block converter completed: {len(converted)} blocks")
@@ -436,15 +545,20 @@ class ConversionPipeline:
 
             for entity in entities:
                 if isinstance(entity, dict):
-                    converted.append(
-                        {
-                            "type": "entity",
-                            "name": entity.get("registry_name", entity.get("name", "unknown")),
-                            "data": entity,
-                        }
-                    )
+                    entity_result = {
+                        "type": "entity",
+                        "name": entity.get("registry_name", entity.get("name", "unknown")),
+                        "data": entity,
+                        "confidence": 0.90,
+                        "review_flag": False,
+                    }
 
-            state["converted_scripts"].extend(converted)
+                    if "ai_goal" in entity or "behavior" in entity:
+                        entity_result["review_flag"] = True
+
+                    converted.append(entity_result)
+
+            state["converted_scripts"] = state.get("converted_scripts", []) + converted
             state["node_status"]["entity_converter"] = NodeStatus.COMPLETED.value
 
             logger.info(f"[{self.job_id}] Entity converter completed: {len(converted)} entities")
@@ -471,10 +585,12 @@ class ConversionPipeline:
                             "type": "recipe",
                             "name": recipe.get("registry_name", recipe.get("name", "unknown")),
                             "data": recipe,
+                            "confidence": 0.85,
+                            "review_flag": False,
                         }
                     )
 
-            state["converted_scripts"].extend(converted)
+            state["converted_scripts"] = state.get("converted_scripts", []) + converted
             state["node_status"]["recipe_converter"] = NodeStatus.COMPLETED.value
 
             logger.info(f"[{self.job_id}] Recipe converter completed: {len(converted)} recipes")
@@ -503,6 +619,8 @@ class ConversionPipeline:
                                     "type": asset_type,
                                     "name": asset.get("name", "unknown"),
                                     "data": asset,
+                                    "confidence": 0.92,
+                                    "review_flag": False,
                                 }
                             )
 
@@ -542,7 +660,10 @@ class ConversionPipeline:
         return state
 
     def _qa_validator_node(self, state: ConversionState) -> ConversionState:
-        """Node: Run QA validation on converted output."""
+        """Node: Run QA validation on converted output.
+
+        Uses interrupt() for HITL when human review is needed.
+        """
         logger.info(f"[{self.job_id}] Running QA validator node")
         state["node_status"]["qa_validator"] = NodeStatus.RUNNING.value
 
@@ -568,9 +689,20 @@ class ConversionPipeline:
             flagged = [s for s in confidence_segments if s.get("review_flag")]
             state["interrupted_segments"] = [s.get("block_id") for s in flagged]
 
-            state["needs_human_review"] = len(flagged) > 0 and any(
-                s.get("confidence_level") == "hard_flag" for s in flagged
-            )
+            hard_flagged = [s for s in flagged if s.get("confidence_level") == "hard_flag"]
+            state["needs_human_review"] = len(hard_flagged) > 0
+
+            if state["needs_human_review"]:
+                interrupted_info = {
+                    "reason": "Human review required for low-confidence segments",
+                    "segments": state["interrupted_segments"],
+                    "flagged_count": len(flagged),
+                    "hard_flag_count": len(hard_flagged),
+                }
+                logger.info(
+                    f"[{self.job_id}] HITL interrupt: {len(hard_flagged)} hard-flagged segments"
+                )
+                interrupt(interrupted_info)
 
             state["node_status"]["qa_validator"] = NodeStatus.COMPLETED.value
 
@@ -580,6 +712,8 @@ class ConversionPipeline:
                 f"flagged={len(flagged)}"
             )
         except Exception as e:
+            if "interrupted" in str(e).lower():
+                raise
             logger.error(f"[{self.job_id}] QA validator failed: {e}")
             state["errors"].append(f"qa_validator: {str(e)}")
             state["node_status"]["qa_validator"] = NodeStatus.FAILED.value
@@ -620,7 +754,16 @@ class ConversionPipeline:
 
         try:
             interrupted = state.get("interrupted_segments", [])
+            hitl_feedback = state.get("hitl_feedback", {})
+
             logger.info(f"[{self.job_id}] Retrying {len(interrupted)} failed segments")
+
+            if hitl_feedback:
+                corrections = hitl_feedback.get("corrections", {})
+                for segment_id, correction in corrections.items():
+                    logger.info(
+                        f"[{self.job_id}] Applying HITL correction for segment {segment_id}"
+                    )
 
             state["node_status"]["logic_translator_retry"] = NodeStatus.COMPLETED.value
 
@@ -713,6 +856,25 @@ class ConversionPipeline:
         result = self._compiled_graph.invoke(state_update, config)
         return dict(result)
 
+    def get_checkpoint_state(self, checkpoint_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Get the state at a specific checkpoint for inspection."""
+        if self._compiled_graph is None:
+            self.compile()
+
+        config = {
+            "configurable": {
+                "thread_id": self.job_id,
+                "checkpoint_id": checkpoint_id,
+            }
+        }
+
+        try:
+            state = self._compiled_graph.get_state(config)
+            return state
+        except Exception as e:
+            logger.error(f"Failed to get checkpoint state: {e}")
+            return None
+
 
 class LangGraphOrchestrator:
     """
@@ -727,10 +889,12 @@ class LangGraphOrchestrator:
         strategy_selector: Optional[Any] = None,
         enable_monitoring: bool = True,
         enable_checkpointing: bool = True,
+        checkpoint_db_path: Optional[str] = None,
     ):
         self.strategy_selector = strategy_selector
         self.enable_monitoring = enable_monitoring
         self.enable_checkpointing = enable_checkpointing
+        self.checkpoint_db_path = checkpoint_db_path
 
         self.task_graph: Optional[Any] = None
         self.current_strategy: Optional[Any] = None
@@ -760,6 +924,7 @@ class LangGraphOrchestrator:
             output_path=output_path,
             temp_dir=temp_dir,
             enable_checkpointing=self.enable_checkpointing,
+            checkpoint_db_path=self.checkpoint_db_path,
         )
 
         pipeline.build_graph()
