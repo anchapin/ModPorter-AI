@@ -49,6 +49,21 @@ from agents.texture_converter.validation import (
     validate_texture,
     validate_textures_batch,
 )
+from agents.texture_converter.diffusion_lora import (
+    MinecraftTextureLoRA,
+    TextureConversionPipeline,
+    TextureConversionConfig,
+    LoRATrainingConfig,
+    TexturePairDataset,
+    TextureConversionMode,
+    DiffusionModelType,
+    ConversionResult,
+    QualityMetric,
+    TexturePair,
+    compute_ssim,
+    compute_lpips,
+    prepare_training_dataset,
+)
 
 __all__ = [
     "convert_single_texture",
@@ -64,6 +79,19 @@ __all__ = [
     "extract_textures_from_jar",
     "extract_texture_atlas_from_jar",
     "convert_jar_textures_to_bedrock",
+    "MinecraftTextureLoRA",
+    "TextureConversionPipeline",
+    "TextureConversionConfig",
+    "LoRATrainingConfig",
+    "TexturePairDataset",
+    "TextureConversionMode",
+    "DiffusionModelType",
+    "ConversionResult",
+    "QualityMetric",
+    "TexturePair",
+    "compute_ssim",
+    "compute_lpips",
+    "prepare_training_dataset",
 ]
 
 convert_single_texture = _convert_single_texture

@@ -2445,7 +2445,9 @@
   border-radius: 6px;
   font-family: inherit;
   font-size: 0.9rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .formInput:focus,

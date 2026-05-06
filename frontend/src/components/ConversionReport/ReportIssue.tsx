@@ -30,10 +30,14 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [description, setDescription] = useState('');
-  const [severity, setSeverity] = useState<'low' | 'medium' | 'high' | 'critical'>('medium');
+  const [severity, setSeverity] = useState<
+    'low' | 'medium' | 'high' | 'critical'
+  >('medium');
   const [contactEmail, setContactEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'success' | 'error' | null>(null);
+  const [submitStatus, setSubmitStatus] = useState<'success' | 'error' | null>(
+    null
+  );
   const [submitMessage, setSubmitMessage] = useState('');
 
   const handleSubmit = async () => {
@@ -61,7 +65,9 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({
 
       await submitIssueReport(payload);
       setSubmitStatus('success');
-      setSubmitMessage('Thank you! Your issue report has been submitted. We will investigate and get back to you.');
+      setSubmitMessage(
+        'Thank you! Your issue report has been submitted. We will investigate and get back to you.'
+      );
       setDescription('');
       setContactEmail('');
       setSeverity('medium');
@@ -100,7 +106,9 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({
             </div>
             <div className={styles.metaItem}>
               <span className={styles.metaLabel}>Conversion Score:</span>
-              <span className={styles.metaValue}>{conversionScore.toFixed(1)}%</span>
+              <span className={styles.metaValue}>
+                {conversionScore.toFixed(1)}%
+              </span>
             </div>
           </div>
 
@@ -109,7 +117,9 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({
               <span className={styles.failingLabel}>Affected mods:</span>
               <div className={styles.failingTags}>
                 {failingCategories.map((cat, idx) => (
-                  <span key={idx} className={styles.failingTag}>{cat}</span>
+                  <span key={idx} className={styles.failingTag}>
+                    {cat}
+                  </span>
                 ))}
               </div>
             </div>
@@ -126,10 +136,18 @@ export const ReportIssue: React.FC<ReportIssueProps> = ({
               className={styles.formSelect}
               disabled={isSubmitting}
             >
-              <option value="low">Low - Minor issue, conversion mostly works</option>
-              <option value="medium">Medium - Noticeable problem affecting gameplay</option>
-              <option value="high">High - Major issue, large portion not working</option>
-              <option value="critical">Critical - Conversion completely broken</option>
+              <option value="low">
+                Low - Minor issue, conversion mostly works
+              </option>
+              <option value="medium">
+                Medium - Noticeable problem affecting gameplay
+              </option>
+              <option value="high">
+                High - Major issue, large portion not working
+              </option>
+              <option value="critical">
+                Critical - Conversion completely broken
+              </option>
             </select>
           </div>
 
