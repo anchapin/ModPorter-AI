@@ -157,6 +157,16 @@ def _get_redis_sync():
 import redis
 
 
+def _run_async(coro):
+    """Run an async coroutine, creating an event loop if needed."""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
+
+
 class CeleryTaskBase(Task):
     """Base class for Celery tasks with retry logic."""
 
@@ -371,7 +381,7 @@ def _enqueue_task_sync(
         logger.info(f"Task {task.id} ({name}) enqueued with priority {task.priority.name}")
         return {"task_id": task.id, "status": "queued"}
 
-    return asyncio.run(_enqueue())
+    return _run_async(_enqueue())
 
 
 @celery_app.task(name="services.celery_tasks.get_task_status")
@@ -497,7 +507,7 @@ def handle_conversion_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     file_id = payload.get("file_id")
     logger.info(f"Processing conversion job: {job_id}")
     try:
-        return asyncio.run(_process(payload))
+        return _run_async(_process(payload))
     except Exception as e:
         logger.error(f"Conversion job {job_id} failed: {e}")
         raise
@@ -510,7 +520,7 @@ def handle_asset_conversion_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     asset_id = payload.get("asset_id")
     logger.info(f"Processing asset conversion: {asset_id}")
     try:
-        return asyncio.run(_svc.convert_asset(asset_id))
+        return _run_async(_svc.convert_asset(asset_id))
     except Exception as e:
         logger.error(f"Asset conversion {asset_id} failed: {e}")
         raise
@@ -534,7 +544,7 @@ def handle_java_analysis_task(payload: Dict[str, Any]) -> Dict[str, Any]:
                 source_code = mod.source_code or ""
                 return analyze_java_file(source_code, f"mod_{mod_id}.java")
 
-        result = asyncio.run(_analyze())
+        result = _run_async(_analyze())
         return {"mod_id": mod_id, "status": "analyzed", "result": result}
     except Exception as e:
         logger.error(f"Java analysis {mod_id} failed: {e}")
@@ -549,7 +559,7 @@ def handle_texture_extraction_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     logger.info(f"Processing texture extraction: {jar_path}")
     try:
         extractor = TextureMetadataExtractor()
-        result = asyncio.run(extractor.extract_from_jar(jar_path))
+        result = _run_async(extractor.extract_from_jar(jar_path))
         return {"jar_path": jar_path, "status": "extracted", "result": result}
     except Exception as e:
         logger.error(f"Texture extraction {jar_path} failed: {e}")
@@ -563,7 +573,7 @@ def handle_model_conversion_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     model_id = payload.get("model_id")
     logger.info(f"Processing model conversion: {model_id}")
     try:
-        return asyncio.run(_svc.convert_asset(model_id))
+        return _run_async(_svc.convert_asset(model_id))
     except Exception as e:
         logger.error(f"Model conversion {model_id} failed: {e}")
         raise
