@@ -353,8 +353,12 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
       {/* Report Issue Section - For beta users to report conversion problems */}
       <ReportIssue
         jobId={job_id}
-        modName={converted_mods?.[0]?.name || failed_mods?.[0]?.name || 'Unknown'}
-        version={converted_mods?.[0]?.version || failed_mods?.[0]?.version || '1.0'}
+        modName={
+          converted_mods?.[0]?.name || failed_mods?.[0]?.name || 'Unknown'
+        }
+        version={
+          converted_mods?.[0]?.version || failed_mods?.[0]?.version || '1.0'
+        }
         conversionScore={summary.overall_success_rate}
         failingCategories={failed_mods?.map((m) => m.name) || []}
       />
