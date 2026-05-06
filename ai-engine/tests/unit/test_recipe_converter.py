@@ -591,11 +591,13 @@ class TestCustomForgeRecipeTypes:
 
     def test_is_custom_recipe_type(self, agent):
         """Test custom recipe type detection"""
-        assert agent._is_custom_recipe_type("farmersdelight:cooking") is True
-        assert agent._is_custom_recipe_type("create:sequenced_assembly") is True
-        assert agent._is_custom_recipe_type("create:mixing") is True
-        assert agent._is_custom_recipe_type("minecraft:crafting_shaped") is False
-        assert agent._is_custom_recipe_type("unknown:custom_type") is False
+        from agents.recipe.custom_types import is_custom_recipe_type
+
+        assert is_custom_recipe_type("farmersdelight:cooking") is True
+        assert is_custom_recipe_type("create:sequenced_assembly") is True
+        assert is_custom_recipe_type("create:mixing") is True
+        assert is_custom_recipe_type("minecraft:crafting_shaped") is False
+        assert is_custom_recipe_type("unknown:custom_type") is False
 
 
 class TestCreateCustomRecipeTypes:

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The RAG (Retrieval Augmented Generation) Testing Suite is a comprehensive test framework designed to evaluate and validate the performance and quality of the RAG system implementation in ModPorter AI. This suite ensures that the AI agents can effectively retrieve and utilize knowledge from specialized knowledge bases.
+The RAG (Retrieval Augmented Generation) Testing Suite is a comprehensive test framework designed to evaluate and validate the performance and quality of the RAG system implementation in PortKit. This suite ensures that the AI agents can effectively retrieve and utilize knowledge from specialized knowledge bases.
 
 ## Architecture
 

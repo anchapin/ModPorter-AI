@@ -65,8 +65,10 @@ def test_can_import_agents():
             # Read and verify agent has expected structure
             with open(item_path, "r") as f:
                 content = f.read()
-            # Verify agent has basic structure
-            assert "class" in content, f"{item_path} should define a class"
+            # Verify agent has basic structure - allow deprecated wrappers that re-export via __all__
+            assert "class" in content or "__all__" in content, (
+                f"{item_path} should define a class or re-export via __all__"
+            )
 
 
 def test_python_path():

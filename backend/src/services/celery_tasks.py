@@ -23,10 +23,15 @@ import redis.asyncio as aioredis
 
 from services.celery_config import celery_app, REDIS_URL
 from services.audit_logger import get_audit_logger
+from services.sentry_config import init_celery_sentry, capture_conversion_error, capture_llm_error
+import sentry_sdk
 
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Initialize Sentry for Celery workers
+init_celery_sentry()
 
 
 class TaskStatus(Enum):
@@ -39,6 +44,29 @@ class TaskStatus(Enum):
     CANCELLED = "cancelled"
     DEAD_LETTER = "dead_letter"
     RETRYING = "retrying"
+    TIMEOUT = "timeout"  # Issue #1151: Timeout status for clean timeout response
+
+
+@dataclass
+class TimeoutResult:
+    """Structured timeout response (not a 500) - Issue #1151"""
+
+    status: str = "timeout"
+    message: str = ""
+    timeout_seconds: int = 0
+    tier: str = "free"
+    can_retry: bool = True
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "status": "timeout",
+            "error_code": "CONVERSION_TIMEOUT",
+            "message": self.message,
+            "timeout_seconds": self.timeout_seconds,
+            "tier": self.tier,
+            "can_retry": self.can_retry,
+            "retry_after_seconds": min(self.timeout_seconds * 2, 3600),
+        }
 
 
 class TaskPriority(IntEnum):
@@ -157,16 +185,37 @@ def _get_redis_sync():
 import redis
 
 
+def _run_async(coro):
+    """Run an async coroutine, creating an event loop if needed."""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
+
+
 class CeleryTaskBase(Task):
     """Base class for Celery tasks with retry logic."""
 
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         """Handle task failure."""
         logger.error(f"Task {task_id} failed: {exc}")
+        sentry_sdk.capture_exception(exc, scope={
+            "task_id": task_id,
+            "task_name": self.name,
+            "args": args,
+            "kwargs": kwargs,
+        })
 
     def on_retry(self, exc, task_id, args, kwargs, einfo):
         """Handle task retry."""
         logger.info(f"Task {task_id} retrying: {exc}")
+        sentry_sdk.capture_message(f"Task retry: {task_id}", level="warning", scope={
+            "task_id": task_id,
+            "task_name": self.name,
+            "retry_count": self.request.retries,
+        })
 
 
 @celery_app.task(bind=True, base=CeleryTaskBase, name="services.celery_tasks.process_task")
@@ -212,8 +261,16 @@ def process_task(self, task_id: str) -> Dict[str, Any]:
 
     except SoftTimeLimitExceeded:
         logger.error(f"Task {task_id} soft time limit exceeded")
-        _fail_task(r, task_id, "Soft time limit exceeded", retry=False)
-        return {"status": "error", "message": "Soft time limit exceeded"}
+        _timeout_task(r, task_id)
+        return {
+            "status": "timeout",
+            "error_code": "CONVERSION_TIMEOUT",
+            "message": f"Conversion job exceeded time limit",
+            "timeout_seconds": task.timeout_seconds,
+            "tier": task.payload.get("subscription_tier", "free"),
+            "can_retry": True,
+            "retry_after_seconds": min(task.timeout_seconds * 2, 3600),
+        }
     except Exception as exc:
         logger.error(f"Task {task_id} failed: {exc}")
         retry = _fail_task(r, task_id, str(exc), retry=True)
@@ -280,6 +337,23 @@ def _fail_task(r, task_id: str, error: str, retry: bool = True) -> bool:
         return False
 
 
+def _timeout_task(r, task_id: str) -> None:
+    """Mark task as timed out with structured response - Issue #1151"""
+    task_data = r.get(f"portkit:task:{task_id}")
+    if not task_data:
+        return
+
+    task = TaskData.from_dict(json.loads(task_data))
+    task.status = TaskStatus.TIMEOUT
+    task.completed_at = datetime.now(timezone.utc)
+    task.error = "Conversion job timed out"
+
+    r.set(f"portkit:task:{task_id}", json.dumps(task.to_dict()), ex=86400)
+    r.srem(PROCESSING_SET, task_id)
+    r.hincrby(METRICS_KEY, "tasks_timed_out", 1)
+    logger.warning(f"Task {task_id} timed out")
+
+
 @celery_app.task(name="services.celery_tasks.cleanup_old_tasks")
 def cleanup_old_tasks(max_age_hours: int = 24) -> Dict[str, Any]:
     """Clean up old completed/failed tasks."""
@@ -333,41 +407,45 @@ def process_retry_queue() -> Dict[str, Any]:
     return {"requeued": requeued}
 
 
-@celery_app.task(name="services.celery_tasks.enqueue_task")
-def enqueue_task(
+@celery_app.task(name="services.celery_tasks._enqueue_task_sync")
+def _enqueue_task_sync(
     name: str,
     payload: Dict[str, Any],
     priority: int = 1,
     max_retries: int = 3,
     timeout_seconds: int = 300,
 ) -> Dict[str, Any]:
-    """Enqueue a new task via Celery."""
-    r = _get_redis_sync()
+    """Internal: Enqueue a new task via Celery (synchronous)."""
 
-    task = TaskData(
-        id=str(uuid.uuid4()),
-        name=name,
-        payload=payload,
-        priority=TaskPriority(priority),
-        max_retries=max_retries,
-        timeout_seconds=timeout_seconds,
-    )
+    async def _enqueue():
+        r = redis.from_url(REDIS_URL, decode_responses=True)
 
-    r.set(f"portkit:task:{task.id}", json.dumps(task.to_dict()), ex=86400)
+        task = TaskData(
+            id=str(uuid.uuid4()),
+            name=name,
+            payload=payload,
+            priority=TaskPriority(priority),
+            max_retries=max_retries,
+            timeout_seconds=timeout_seconds,
+        )
 
-    queue_name = QUEUE_NAMES[task.priority]
-    r.zadd(queue_name, {task.id: time.time()})
-    r.hincrby(METRICS_KEY, "tasks_enqueued", 1)
+        r.set(f"portkit:task:{task.id}", json.dumps(task.to_dict()), ex=86400)
 
-    celery_app.send_task(
-        "services.celery_tasks.process_task",
-        args=[task.id],
-        queue=queue_name,
-        timeout=timeout_seconds,
-    )
+        queue_name = QUEUE_NAMES[task.priority]
+        r.zadd(queue_name, {task.id: time.time()})
+        r.hincrby(METRICS_KEY, "tasks_enqueued", 1)
 
-    logger.info(f"Task {task.id} ({name}) enqueued with priority {task.priority.name}")
-    return {"task_id": task.id, "status": "queued"}
+        celery_app.send_task(
+            "services.celery_tasks.process_task",
+            args=[task.id],
+            queue=queue_name,
+            timeout=timeout_seconds,
+        )
+
+        logger.info(f"Task {task.id} ({name}) enqueued with priority {task.priority.name}")
+        return {"task_id": task.id, "status": "queued"}
+
+    return _run_async(_enqueue())
 
 
 @celery_app.task(name="services.celery_tasks.get_task_status")
@@ -487,53 +565,110 @@ def health_check() -> Dict[str, Any]:
 
 def handle_conversion_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Handle conversion task - runs in worker process."""
+    from services.conversion_service import process_conversion_task as _process
+
     job_id = payload.get("job_id")
     file_id = payload.get("file_id")
     logger.info(f"Processing conversion job: {job_id}")
-    return {
-        "job_id": job_id,
-        "status": "completed",
-        "result_url": f"/api/v1/conversions/{job_id}/download",
-    }
+    try:
+        return _run_async(_process(payload))
+    except Exception as e:
+        logger.error(f"Conversion job {job_id} failed: {e}")
+        raise
 
 
 def handle_asset_conversion_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Handle asset conversion task."""
+    from services.asset_conversion_service import asset_conversion_service as _svc
+
     asset_id = payload.get("asset_id")
     logger.info(f"Processing asset conversion: {asset_id}")
-    return {"asset_id": asset_id, "status": "converted"}
+    try:
+        return _run_async(_svc.convert_asset(asset_id))
+    except Exception as e:
+        logger.error(f"Asset conversion {asset_id} failed: {e}")
+        raise
 
 
 def handle_java_analysis_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Handle Java analysis task."""
+    from services.java_parser import analyze_java_file
+    from db import crud
+    from db.base import AsyncSessionLocal
+
     mod_id = payload.get("mod_id")
     logger.info(f"Processing Java analysis: {mod_id}")
-    return {"mod_id": mod_id, "status": "analyzed"}
+    try:
+
+        async def _analyze():
+            async with AsyncSessionLocal() as session:
+                mod = await crud.get_mod(session, mod_id)
+                if not mod:
+                    raise ValueError(f"Mod {mod_id} not found")
+                source_code = mod.source_code or ""
+                return analyze_java_file(source_code, f"mod_{mod_id}.java")
+
+        result = _run_async(_analyze())
+        return {"mod_id": mod_id, "status": "analyzed", "result": result}
+    except Exception as e:
+        logger.error(f"Java analysis {mod_id} failed: {e}")
+        raise
 
 
 def handle_texture_extraction_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Handle texture extraction task."""
+    from ai_engine.utils.texture_metadata_extractor import TextureMetadataExtractor
+
     jar_path = payload.get("jar_path")
     logger.info(f"Processing texture extraction: {jar_path}")
-    return {"jar_path": jar_path, "status": "extracted"}
+    try:
+        extractor = TextureMetadataExtractor()
+        result = _run_async(extractor.extract_from_jar(jar_path))
+        return {"jar_path": jar_path, "status": "extracted", "result": result}
+    except Exception as e:
+        logger.error(f"Texture extraction {jar_path} failed: {e}")
+        raise
 
 
 def handle_model_conversion_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Handle model conversion task."""
+    from services.asset_conversion_service import asset_conversion_service as _svc
+
     model_id = payload.get("model_id")
     logger.info(f"Processing model conversion: {model_id}")
-    return {"model_id": model_id, "status": "converted"}
+    try:
+        return _run_async(_svc.convert_asset(model_id))
+    except Exception as e:
+        logger.error(f"Model conversion {model_id} failed: {e}")
+        raise
 
 
 # Legacy compatibility - expose same interface as old task_queue_enhanced
-async def celery_enqueue(
+async def enqueue_task(
     name: str,
     payload: Dict[str, Any],
     priority: TaskPriority = TaskPriority.NORMAL,
     max_retries: int = 3,
     timeout_seconds: int = 300,
+    subscription_tier: str = "free",
 ) -> TaskData:
-    """Async wrapper for enqueueing tasks - maintains compatibility with old code."""
+    """Async wrapper for enqueueing tasks - maintains compatibility with old code.
+
+    Args:
+        name: Task name (conversion, asset_conversion, etc.)
+        payload: Task payload data
+        priority: Task priority (LOW, NORMAL, HIGH, CRITICAL)
+        max_retries: Maximum retry attempts
+        timeout_seconds: Task timeout in seconds (overrides tier-based default if > 0)
+        subscription_tier: User's subscription tier for timeout calculation (Issue #1151)
+    """
+    # Issue #1151: Use tier-based timeout if not explicitly overridden
+    if timeout_seconds == 300:
+        from services.celery_config import get_conversion_timeout
+
+        tier_timeout = get_conversion_timeout(subscription_tier)
+        timeout_seconds = tier_timeout
+
     task = TaskData(
         id=str(uuid.uuid4()),
         name=name,
@@ -544,7 +679,7 @@ async def celery_enqueue(
     )
 
     r = redis.from_url(REDIS_URL, decode_responses=True)
-    r.set(f"task:{task.id}", json.dumps(task.to_dict()), ex=86400)
+    r.set(f"portkit:task:{task.id}", json.dumps(task.to_dict()), ex=86400)
 
     queue_name = QUEUE_NAMES[priority]
     r.zadd(queue_name, {task.id: time.time()})
@@ -555,9 +690,14 @@ async def celery_enqueue(
         args=[task.id],
         queue=queue_name,
         timeout=timeout_seconds,
+        soft_timeout=timeout_seconds - 30,  # Soft timeout 30s before hard timeout
     )
 
     return task
+
+
+# Backwards compatibility alias
+celery_enqueue = enqueue_task
 
 
 # Conversion task shortcuts
@@ -589,6 +729,106 @@ def texture_extraction_task(jar_path: str) -> Dict[str, Any]:
 def model_conversion_task(model_id: str) -> Dict[str, Any]:
     """Convenience task for model conversion."""
     return handle_model_conversion_task({"model_id": model_id})
+
+
+@shared_task(
+    name="services.celery_tasks.llm_inference_task",
+    bind=True,
+    max_retries=3,
+    default_retry_delay=5,
+)
+def llm_inference_task(
+    self,
+    messages: List[Dict[str, str]],
+    model: Optional[str] = None,
+    temperature: float = 0.1,
+    max_tokens: int = 4096,
+) -> Dict[str, Any]:
+    """
+    Self-hosted LLM inference via RunPod Flash or SGLang/vLLM.
+
+    Phase 2 (Issue #1203): Replaces hosted OpenRouter API calls with
+    self-hosted inference after #997 produces fine-tuned model weights.
+
+    Architecture:
+    - Celery worker picks up task from Redis queue
+    - Calls RunPod Flash endpoint (vLLM + fine-tuned model)
+    - Or calls SGLang/vLLM via OpenAI-compatible API
+    - Result stored in Redis, returned to client
+
+    Args:
+        self: Celery task instance (provided by bind=True)
+        messages: Chat messages list [{"role": "user", "content": "..."}]
+        model: Model name (uses SELF_HOSTED_MODEL env var if None)
+        temperature: Sampling temperature (default 0.1)
+        max_tokens: Max output tokens (default 4096)
+
+    Returns:
+        Dict with success, content, model, provider, duration, cost, error
+    """
+    from utils.self_hosted_inference import (
+        SelfHostedInferenceClient,
+        InferenceConfig,
+        InferenceProvider,
+        InferenceMode,
+    )
+    import os
+
+    provider_str = os.getenv("INFERENCE_PROVIDER", "openrouter").lower()
+    provider = InferenceProvider.OPENROUTER
+    if provider_str == "runpod_flash":
+        provider = InferenceProvider.RUNPOD_FLASH
+    elif provider_str == "sglang":
+        provider = InferenceProvider.SGLANG
+    elif provider_str == "vllm":
+        provider = InferenceProvider.VLLM
+
+    config = InferenceConfig(
+        provider=provider,
+        mode=InferenceMode.SELF_HOSTED,
+        model_name=model or os.getenv("SELF_HOSTED_MODEL", "Qwen3-Coder-7B"),
+        endpoint_url=os.getenv("SELF_HOSTED_ENDPOINT") or os.getenv("RUNPOD_ENDPOINT"),
+        api_key=os.getenv("SELF_HOSTED_API_KEY") or os.getenv("RUNPOD_API_KEY"),
+        runpod_endpoint_id=os.getenv("RUNPOD_ENDPOINT_ID"),
+        runpod_api_key=os.getenv("RUNPOD_API_KEY"),
+        sglang_url=os.getenv("SGLANG_URL"),
+        vllm_url=os.getenv("VLLM_URL"),
+        max_tokens=max_tokens,
+        temperature=temperature,
+    )
+
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    client = SelfHostedInferenceClient(config)
+
+    try:
+        result = loop.run_until_complete(
+            client.complete(
+                messages=messages,
+                model=config.model_name,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+        )
+
+        return {
+            "success": result.success,
+            "content": result.content,
+            "model": result.model,
+            "provider": result.provider,
+            "input_tokens": result.input_tokens,
+            "output_tokens": result.output_tokens,
+            "duration": result.duration,
+            "cost": result.cost,
+            "error": result.error,
+        }
+    except Exception as e:
+        logger.error(f"LLM inference task failed: {e}")
+        raise self.retry(exc=e)
 
 
 @celery_app.task(name="services.celery_tasks.purge_orphaned_files")

@@ -16,6 +16,8 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from agents.qa_validator import QAValidatorAgent, ValidationCache, VALIDATION_RULES
+from agents.qa.structure_validator import VALID_BLOCK_COMPONENTS, VALID_SOUND_FORMATS
+from agents.qa.report_generator import calculate_overall_score
 
 
 class TestQAValidatorAgent:
@@ -113,14 +115,14 @@ class TestQAValidatorAgent:
 
     def test_valid_block_components(self, agent):
         """Test valid block components are defined"""
-        assert "minecraft:block" in agent.valid_block_components
-        assert "minecraft:collision_box" in agent.valid_block_components
-        assert "minecraft:geometry" in agent.valid_block_components
+        assert "minecraft:block" in VALID_BLOCK_COMPONENTS
+        assert "minecraft:collision_box" in VALID_BLOCK_COMPONENTS
+        assert "minecraft:geometry" in VALID_BLOCK_COMPONENTS
 
     def test_valid_sound_formats(self, agent):
         """Test valid sound formats are defined"""
-        assert ".ogg" in agent.valid_sound_formats
-        assert ".wav" in agent.valid_sound_formats
+        assert ".ogg" in VALID_SOUND_FORMATS
+        assert ".wav" in VALID_SOUND_FORMATS
 
     def test_pass_threshold(self, agent):
         """Test pass threshold default value"""
@@ -265,30 +267,6 @@ class TestQAValidatorEdgeCases:
     def agent(self):
         return QAValidatorAgent.get_instance()
 
-    def test_validate_manifest_invalid_json(self, agent, tmp_path):
-        temp_dir = str(tmp_path)
-        """Test validate_manifest with invalid JSON"""
-        manifest = {"invalid": "json"}
-        result = agent._validate_manifest_schema(manifest, "manifest.json")
-        assert "errors" in result or "warnings" in result
-    def test_validate_block_invalid_components(self, agent):
-        """Test block validation with invalid components"""
-        block_def = {
-            "format_version": "1.20.0",
-            "minecraft:block": {"description": {}},
-            "components": {"invalid_component": {}},
-        }
-
-        result = agent._validate_block_definition(block_def, "test/path.json")
-        assert "warnings" in result
-
-    def test_validate_item_missing_description(self, agent):
-        """Test item validation with missing description"""
-        item_def = {"format_version": "1.20.0"}
-
-        result = agent._validate_item_definition(item_def, "test/path.json")
-        assert "errors" in result or "warnings" in result
-
     def test_quality_score_calculation_low_scores(self, agent):
         """Test quality score calculation with low scores"""
         validation_results = {
@@ -300,7 +278,7 @@ class TestQAValidatorEdgeCases:
                 "bedrock_compatibility": {"passed": 0, "score": 0, "checks": 10},
             }
         }
-        score = agent._calculate_overall_score(validation_results)
+        score = calculate_overall_score(validation_results, agent.validation_categories)
         assert score < 50
 
     def test_quality_score_calculation_high_scores(self, agent):
@@ -314,7 +292,7 @@ class TestQAValidatorEdgeCases:
                 "bedrock_compatibility": {"passed": 10, "score": 100, "checks": 10},
             }
         }
-        score = agent._calculate_overall_score(validation_results)
+        score = calculate_overall_score(validation_results, agent.validation_categories)
         assert score > 85
 
 

@@ -2325,3 +2325,172 @@
   font-weight: 500;
   border: 1px solid #bbdefb;
 }
+
+/* Report Issue Section - Beta Feedback */
+.reportIssueSection {
+  margin-top: 2rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.reportIssueToggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #991b1b;
+  font-weight: 500;
+  text-align: left;
+  transition: background-color 0.2s;
+}
+
+.reportIssueToggle:hover {
+  background-color: #fee2e2;
+}
+
+.reportIssueIcon {
+  font-size: 1.25rem;
+}
+
+.toggleArrow {
+  margin-left: auto;
+  font-size: 0.75rem;
+}
+
+.reportIssueForm {
+  padding: 1.5rem;
+  background-color: white;
+  border-top: 1px solid #fecaca;
+}
+
+.reportIssueMeta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: #fef2f2;
+  border-radius: 6px;
+}
+
+.metaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.metaLabel {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metaValue {
+  font-weight: 600;
+  color: #374151;
+}
+
+.failingCategories {
+  margin-bottom: 1.5rem;
+}
+
+.failingLabel {
+  display: block;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.failingTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.failingTag {
+  padding: 0.25rem 0.75rem;
+  background-color: #fee2e2;
+  color: #991b1b;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.formGroup {
+  margin-bottom: 1.25rem;
+}
+
+.formLabel {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.formInput,
+.formSelect,
+.formTextarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.formInput:focus,
+.formSelect:focus,
+.formTextarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.formTextarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.reportIssueError {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.reportIssueSuccess {
+  color: #166534;
+  background-color: #dcfce7;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.reportIssueSubmit {
+  padding: 0.875rem 1.5rem;
+  background-color: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.reportIssueSubmit:hover {
+  background-color: #b91c1c;
+}
+
+.reportIssueSubmit:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}

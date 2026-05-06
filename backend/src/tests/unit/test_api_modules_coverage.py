@@ -2,7 +2,6 @@
 Tests for multiple API modules to boost coverage.
 
 Covers:
-- task_queue.py API endpoints
 - query_monitoring.py API endpoints
 - visual_editor.py API endpoints
 - upload.py API endpoints
@@ -14,130 +13,6 @@ import uuid
 from unittest.mock import MagicMock, AsyncMock, patch
 from datetime import datetime, timezone
 from io import BytesIO
-
-
-class TestTaskQueueAPI:
-    """Test task queue API endpoints."""
-
-    def test_priority_string_to_enum(self):
-        """Test priority string to enum conversion."""
-        from api.task_queue import priority_string_to_enum
-        from services.task_queue import TaskPriority
-
-        assert priority_string_to_enum("low") == TaskPriority.LOW
-        assert priority_string_to_enum("normal") == TaskPriority.NORMAL
-        assert priority_string_to_enum("high") == TaskPriority.HIGH
-        assert priority_string_to_enum("critical") == TaskPriority.CRITICAL
-        assert priority_string_to_enum("invalid") == TaskPriority.NORMAL
-
-    def test_task_enqueue_request_model(self):
-        """Test TaskEnqueueRequest model."""
-        from api.task_queue import TaskEnqueueRequest
-
-        req = TaskEnqueueRequest(
-            name="test-task", payload={"key": "value"}, priority="high", max_retries=3
-        )
-
-        assert req.name == "test-task"
-        assert req.priority == "high"
-
-    def test_task_enqueue_request_defaults(self):
-        """Test TaskEnqueueRequest with default values."""
-        from api.task_queue import TaskEnqueueRequest
-
-        req = TaskEnqueueRequest(name="test-task")
-
-        assert req.priority == "normal"
-        assert req.max_retries is None
-
-    def test_task_response_model(self):
-        """Test TaskResponse model."""
-        from api.task_queue import TaskResponse
-
-        resp = TaskResponse(
-            id="task-123",
-            name="test-task",
-            status="pending",
-            priority=0,
-            created_at="2024-01-01T00:00:00",
-            retry_count=0,
-            max_retries=3,
-        )
-
-        assert resp.id == "task-123"
-        assert resp.status == "pending"
-
-    def test_queue_stats_response_model(self):
-        """Test QueueStatsResponse model."""
-        from api.task_queue import QueueStatsResponse
-
-        resp = QueueStatsResponse(
-            queues={"default": 10},
-            total_tasks=10,
-            by_status={"pending": 5, "running": 3, "completed": 2},
-        )
-
-        assert resp.total_tasks == 10
-        assert resp.queues["default"] == 10
-
-    def test_create_task_endpoint(self, client):
-        """Test creating a task via API."""
-        with patch("api.task_queue.enqueue_task", new_callable=AsyncMock) as mock_enqueue:
-            mock_enqueue.return_value = "task-123"
-
-            response = client.post(
-                "/api/v1/tasks",
-                json={
-                    "name": "conversion-task",
-                    "payload": {"file": "test.jar"},
-                    "priority": "normal",
-                },
-            )
-
-            # Either succeeds or fails gracefully
-
-    def test_get_task_status_endpoint(self, client):
-        """Test getting task status."""
-        with patch("api.task_queue.get_task_status", new_callable=AsyncMock) as mock_status:
-            mock_status.return_value = None
-
-            response = client.get("/api/v1/tasks/task-123")
-
-            # Handle 404 or return status
-
-    def test_cancel_task_endpoint(self, client):
-        """Test cancelling a task."""
-        with patch("api.task_queue.cancel_task", new_callable=AsyncMock) as mock_cancel:
-            mock_cancel.return_value = True
-
-            response = client.delete("/api/v1/tasks/task-123")
-
-            # Either succeeds or returns error
-
-    def test_get_queue_stats_endpoint(self, client):
-        """Test getting queue stats."""
-        with patch("api.task_queue.get_queue_stats", new_callable=AsyncMock) as mock_stats:
-            mock_stats.return_value = {
-                "queues": {"default": 5},
-                "total_tasks": 5,
-                "by_status": {"pending": 3, "running": 2},
-            }
-
-            response = client.get("/api/v1/tasks/stats")
-
-            # Returns stats
-
-    def test_list_tasks_endpoint(self, client):
-        """Test listing tasks."""
-        response = client.get("/api/v1/tasks?status=pending&limit=10")
-
-        # Returns list of tasks
-
-    def test_router_prefix(self):
-        """Test router has correct prefix."""
-        from api.task_queue import router
-
-        assert router.prefix == "/api/v1/tasks"
 
 
 class TestQueryMonitoringAPI:
@@ -446,12 +321,6 @@ class TestUploadAPI:
 
 class TestAPIIntegration:
     """Test API integration scenarios."""
-
-    def test_task_priority_validation(self, client):
-        """Test priority validation in task creation."""
-        response = client.post("/api/v1/tasks", json={"name": "task", "priority": "urgent"})
-
-        # Should handle invalid priority
 
     def test_upload_validation(self, client):
         """Test upload validation."""

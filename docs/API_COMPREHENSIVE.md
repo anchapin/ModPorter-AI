@@ -1,8 +1,8 @@
-# ModPorter AI - Comprehensive API Documentation
+# PortKit - Comprehensive API Documentation
 
 ## 🚀 Overview
 
-ModPorter AI provides a RESTful API for converting Minecraft Java Edition mods to Bedrock Edition add-ons. This document covers all available endpoints, authentication, best practices, and integration examples.
+PortKit provides a RESTful API for converting Minecraft Java Edition mods to Bedrock Edition add-ons.
 
 ## 🌐 Base URLs
 

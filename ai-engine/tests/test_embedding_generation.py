@@ -8,6 +8,7 @@ addressing Issue #435.
 import pytest
 import numpy as np
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 import sys
 
 # Add ai-engine to path
@@ -17,6 +18,7 @@ sys.path.insert(0, str(ai_engine_root))
 from utils.embedding_generator import (
     create_rag_embedding_service,
     LocalEmbeddingGenerator,
+    RAGEmbeddingService,
 )
 
 
@@ -60,10 +62,49 @@ class TestEmbeddingGeneration:
         assert service._embedding_generator is not None
 
     def test_store_and_search(self):
-        """Test storing and searching embeddings."""
+        """Test storing and searching embeddings with mocked storage."""
         service = create_rag_embedding_service("local")
 
-        # Store some embeddings
+        mock_storage = MagicMock()
+        mock_storage.store_embedding.return_value = True
+
+        stored_items = []
+
+        def mock_store(document_id, content, embedding, metadata=None):
+            stored_items.append({
+                "document_id": document_id,
+                "content": content,
+                "embedding": embedding,
+                "metadata": metadata or {},
+            })
+            return True
+
+        mock_storage.store_embedding.side_effect = mock_store
+
+        def mock_search(query_embedding, top_k=5, filters=None):
+            if not stored_items:
+                return []
+            similarities = []
+            for item in stored_items:
+                sim = np.dot(query_embedding, item["embedding"]) / (
+                    np.linalg.norm(query_embedding) * np.linalg.norm(item["embedding"]) + 1e-8
+                )
+                similarities.append((sim, item))
+            similarities.sort(key=lambda x: x[0], reverse=True)
+            return [
+                {
+                    "document_id": item["document_id"],
+                    "content": item["content"],
+                    "metadata": item["metadata"],
+                    "similarity": sim,
+                }
+                for sim, item in similarities[:top_k]
+            ]
+
+        mock_storage.search_similar.side_effect = mock_search
+
+        service._storage = mock_storage
+
         success = service.generate_and_store(
             "doc1", "This is a test document about Minecraft blocks", {"type": "test"}
         )
@@ -74,16 +115,11 @@ class TestEmbeddingGeneration:
         )
         assert success is True
 
-        # Search
         results = service.search("Minecraft blocks", top_k=2)
 
         assert len(results) > 0
-        # Verify results have required fields
         assert "document_id" in results[0]
         assert "similarity" in results[0]
-        # Note: With fallback embedding (no sentence-transformers),
-        # results may not be semantically accurate - that's expected
-        # The important thing is that storage and retrieval work
 
     def test_embedding_caching(self):
         """Test embedding result caching."""

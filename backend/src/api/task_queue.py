@@ -8,15 +8,22 @@ Issue: #379 - Implement async task queue (Phase 3)
 from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
-from services.task_queue import (
+from services.celery_tasks import (
     TaskStatus,
     TaskPriority,
-    get_task_queue,
     enqueue_task,
     get_task_status,
     cancel_task,
     get_queue_stats,
+    list_tasks,
 )
+
+
+# Re-export for compatibility
+async def get_task_queue():
+    """Legacy compatibility - queue operations now go through Celery."""
+    pass
+
 
 router = APIRouter(prefix="/api/v1/tasks", tags=["task-queue"])
 
@@ -53,8 +60,9 @@ class QueueStatsResponse(BaseModel):
     """Response model for queue statistics"""
 
     queues: Dict[str, int]
-    total_tasks: int
-    by_status: Dict[str, int]
+    total_queued: int
+    total_processing: int
+    total_dead_letter: int
 
 
 def priority_string_to_enum(priority: str) -> TaskPriority:
@@ -152,7 +160,7 @@ async def cancel_task_endpoint(task_id: str):
 
 
 @router.get("", response_model=List[TaskResponse])
-async def list_tasks(
+async def list_tasks_endpoint(
     status: Optional[str] = Query(None, description="Filter by status"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of tasks to return"),
 ):
@@ -171,8 +179,7 @@ async def list_tasks(
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
 
-    queue = await get_task_queue()
-    tasks = await queue.list_tasks(status=task_status, limit=limit)
+    tasks = await list_tasks(status=task_status, limit=limit)
 
     return [
         TaskResponse(
@@ -204,6 +211,7 @@ async def get_queue_statistics():
 
     return QueueStatsResponse(
         queues=stats["queues"],
-        total_tasks=stats["total_tasks"],
-        by_status=stats["by_status"],
+        total_queued=stats["total_queued"],
+        total_processing=stats["total_processing"],
+        total_dead_letter=stats["total_dead_letter"],
     )

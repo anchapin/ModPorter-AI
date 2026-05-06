@@ -9,6 +9,7 @@ python-multipart==0.0.26
 # Let crewai manage langchain package versions to avoid conflicts
 crewai>=0.11.0,<1.0.0
 openai>=1.0.0,<3.0.0
+langgraph>=1.1.0
 sentence-transformers>=5.1.2,<6.0.0
 langchain-openai>=0.3.35  # Required by crewai for OpenAI integration
 

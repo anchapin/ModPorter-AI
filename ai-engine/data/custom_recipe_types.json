@@ -1,0 +1,79 @@
+{
+  "metadata": {
+    "description": "Custom Forge recipe type definitions for NeoForge, Farmer's Delight, Create, and other mods",
+    "source": "recipe_converter.py extraction",
+    "type_count": 14
+  },
+  "types": {
+    "farmersdelight:cooking": {
+      "category": "cooking_pot",
+      "description": "Cooking pot recipe",
+      "convertible": true
+    },
+    "farmersdelight:cutting": {
+      "category": "cutting_board",
+      "description": "Cutting board recipe",
+      "convertible": true
+    },
+    "create:sequenced_assembly": {
+      "category": "sequenced_assembly",
+      "description": "Sequenced assembly recipe",
+      "convertible": false
+    },
+    "create:mechanical_crafting": {
+      "category": "mechanical_crafting",
+      "description": "Mechanical crafting (9x9 grid)",
+      "convertible": true
+    },
+    "create:mixing": {
+      "category": "mixing",
+      "description": "Mixing recipe",
+      "convertible": false
+    },
+    "create:pressing": {
+      "category": "pressing",
+      "description": "Pressing recipe",
+      "convertible": true
+    },
+    "create:deploying": {
+      "category": "deploying",
+      "description": "Deploying recipe",
+      "convertible": true
+    },
+    "create:milling": {
+      "category": "milling",
+      "description": "Milling recipe (Millstone)",
+      "convertible": true
+    },
+    "create:crushing": {
+      "category": "crushing",
+      "description": "Crushing recipe (Crushing Wheels)",
+      "convertible": true
+    },
+    "create:splashing": {
+      "category": "splashing",
+      "description": "Splashing recipe (Water)",
+      "convertible": true
+    },
+    "create:compacting": {
+      "category": "compacting",
+      "description": "Compacting recipe",
+      "convertible": true
+    },
+    "create:filling": {
+      "category": "filling",
+      "description": "Filling recipe",
+      "convertible": false
+    },
+    "create:emptying": {
+      "category": "emptying",
+      "description": "Emptying recipe",
+      "convertible": false
+    },
+    "forge:conditional": {
+      "category": "conditional",
+      "description": "Conditional recipe",
+      "convertible": false
+    }
+  }
+}
