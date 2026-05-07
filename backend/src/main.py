@@ -47,7 +47,13 @@ from services.rate_limiter import (
 )
 from services.security_headers import SecurityHeadersMiddleware
 from services.logging_middleware import LoggingMiddleware, RequestContextMiddleware
-from services.sentry_config import init_sentry, capture_conversion_error, capture_conversion_success, track_conversion_failure_rate, flush
+from services.sentry_config import (
+    init_sentry,
+    capture_conversion_error,
+    capture_conversion_success,
+    track_conversion_failure_rate,
+    flush,
+)
 
 # Import API routers
 from api import (
