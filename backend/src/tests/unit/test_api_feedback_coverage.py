@@ -272,8 +272,9 @@ class TestGetAgentPerformance:
     def test_get_agent_performance_import_error(self):
         app = _make_app()
         client = TestClient(app)
-        resp = client.get("/ai/performance/agents")
-        assert resp.status_code == 503
+        with patch.dict("sys.modules", {"rl.agent_optimizer": None}):
+            resp = client.get("/ai/performance/agents")
+            assert resp.status_code == 503
 
 
 class TestGetSpecificAgentPerformance:
@@ -282,8 +283,9 @@ class TestGetSpecificAgentPerformance:
     def test_get_specific_agent_import_error(self):
         app = _make_app()
         client = TestClient(app)
-        resp = client.get("/ai/performance/agents/java_analyzer")
-        assert resp.status_code == 503
+        with patch.dict("sys.modules", {"rl.agent_optimizer": None}):
+            resp = client.get("/ai/performance/agents/java_analyzer")
+            assert resp.status_code == 503
 
 
 class TestCompareAgentPerformance:
@@ -292,11 +294,12 @@ class TestCompareAgentPerformance:
     def test_compare_agents_import_error(self):
         app = _make_app()
         client = TestClient(app)
-        resp = client.post(
-            "/ai/performance/compare",
-            json=["java_analyzer", "asset_converter"],
-        )
-        assert resp.status_code == 503
+        with patch.dict("sys.modules", {"rl.agent_optimizer": None}):
+            resp = client.post(
+                "/ai/performance/compare",
+                json=["java_analyzer", "asset_converter"],
+            )
+            assert resp.status_code == 503
 
     def test_compare_agents_too_few(self):
         app = _make_app()
