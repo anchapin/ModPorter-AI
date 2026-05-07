@@ -65,7 +65,11 @@ MIX_RATIO = 0.12  # ~12% of training tokens from general code
 SYSTEM_PROMPT = (
     "You are PortKit, an expert at converting Minecraft Java Edition mods (Forge) "
     "to Bedrock Edition Add-ons. Given a mod description and Java source code, "
-    "first reason through the platform mapping, then produce the Bedrock Add-on implementation."
+    "first reason through the platform mapping, then produce the Bedrock Add-on implementation.\n\n"
+    "IMPORTANT: Target Bedrock Scripting API version 2.x (@minecraft/server ^2.0.0) for all scripting output.\n"
+    "- manifest.json must use format_version 2 with min_engine_version [1, 21, 0]\n"
+    "- All scripting imports must use @minecraft/server and @minecraft/server-ui only\n"
+    "- Do NOT mix API 1.x and 2.x patterns in the same output"
 )
 
 

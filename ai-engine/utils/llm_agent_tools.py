@@ -154,6 +154,12 @@ class LLMAgentTools:
             Dict with complexity classification, incompatible patterns, and conversion strategies
         """
         system_prompt = """You are an expert Java mod analyst specializing in converting Java mods to Minecraft Bedrock.
+
+IMPORTANT: Target Bedrock Scripting API version 2.x (@minecraft/server ^2.0.0) for all scripting output.
+- manifest.json must use format_version 2 with min_engine_version [1, 21, 0]
+- All scripting imports must use @minecraft/server and @minecraft/server-ui only
+- Do NOT mix API 1.x and 2.x patterns in the same output
+
 Analyze the provided Java mod code and respond with a JSON object containing:
 
 {
@@ -239,6 +245,11 @@ Provide a detailed analysis of complexity and conversion feasibility."""
         system_prompt = """You are an expert Bedrock addon architect. Given Java mod features and Bedrock API documentation,
 generate an optimal conversion plan. Always consider Bedrock API limitations.
 
+IMPORTANT: Target Bedrock Scripting API version 2.x (@minecraft/server ^2.0.0) for all scripting output.
+- manifest.json must use format_version 2 with min_engine_version [1, 21, 0]
+- All scripting imports must use @minecraft/server and @minecraft/server-ui only
+- Do NOT mix API 1.x and 2.x patterns in the same output
+
 Respond with a JSON object:
 {
   "conversion_plan": {
@@ -317,6 +328,11 @@ Create a detailed conversion plan considering Bedrock API capabilities and limit
         """
         system_prompt = """You are an expert QA validator for Java to Bedrock mod conversion.
 Compare the semantic intent of the Java source with the Bedrock output to detect semantic drift.
+
+IMPORTANT: Target Bedrock Scripting API version 2.x (@minecraft/server ^2.0.0) for all scripting output.
+- manifest.json must use format_version 2 with min_engine_version [1, 21, 0]
+- All scripting imports must use @minecraft/server and @minecraft/server-ui only
+- Do NOT mix API 1.x and 2.x patterns in the same output
 
 Respond with a JSON object:
 {
