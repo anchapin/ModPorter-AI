@@ -72,6 +72,7 @@ async def get_optional_user(
         return await verify_api_key(db, token)
 
     from security.auth import verify_token
+
     user_id = verify_token(token)
     if not user_id:
         return None
@@ -82,6 +83,7 @@ async def get_optional_user(
         return None
 
     from sqlalchemy import select
+
     result = await db.execute(select(User).where(User.id == user_uuid))
     return result.scalar_one_or_none()
 
@@ -191,9 +193,7 @@ async def list_premium_models(
     """
     from ai_engine.mmsd.premium_client import MODEL_CONFIGS
 
-    return PremiumModelsResponse(
-        models={k: v["model_id"] for k, v in MODEL_CONFIGS.items()}
-    )
+    return PremiumModelsResponse(models={k: v["model_id"] for k, v in MODEL_CONFIGS.items()})
 
 
 @router.post("/estimate", response_model=PremiumEstimateResponse)
