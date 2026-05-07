@@ -18,7 +18,7 @@ import re
 import time
 import logging
 from typing import Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import httpx
 
@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ConversionResult:
     """Result of a Java → Bedrock conversion."""
+
     success: bool
     reasoning: str = ""
     bedrock_manifest: str = ""
@@ -85,7 +86,6 @@ public class CustomOreMod {
 ```
 
 Convert this to a Bedrock Add-on.""",
-
         "assistant": """## Conversion Plan
 
 1. **Block Registration**: Java uses `RegistryEvent.Register<Block>` → Bedrock uses `blocks.json` + custom block definition in the behavior pack
@@ -187,7 +187,6 @@ public class MagicWandMod {
 ```
 
 Convert this to a Bedrock Add-on.""",
-
         "assistant": """## Conversion Plan
 
 1. **Item Registration**: Java uses `RegistryEvent.Register<Item>` → Bedrock uses `items.json` with custom item definition
@@ -290,7 +289,6 @@ public class SummoningStaff extends Item {
 ```
 
 Convert this to a Bedrock Add-on.""",
-
         "assistant": """## Conversion Plan
 
 1. **Entity Spawning**: Java's `new EntityWolf(world)` + `world.spawnEntity()` → Bedrock's `dimension.spawnEntity()`
@@ -506,9 +504,7 @@ class PortKitPremium:
             tier="premium",
         )
 
-    def _call_model(
-        self, model_key: str, instruction: str, java_source: str
-    ) -> ConversionResult:
+    def _call_model(self, model_key: str, instruction: str, java_source: str) -> ConversionResult:
         """Call a single model and parse the response."""
         cfg = MODEL_CONFIGS[model_key]
         base_url = API_BASES[cfg["provider"]]
@@ -536,7 +532,7 @@ class PortKitPremium:
                 latency_ms = int((time.time() - t0) * 1000)
 
                 if resp.status_code == 429:
-                    wait = min(2 ** attempt * 2, 30)
+                    wait = min(2**attempt * 2, 30)
                     logger.warning(f"Rate limited, retrying in {wait}s...")
                     time.sleep(wait)
                     continue
@@ -573,7 +569,7 @@ class PortKitPremium:
                         model_used=model_key,
                         tier="premium",
                     )
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
             except Exception as e:
                 return ConversionResult(
                     success=False,
@@ -599,26 +595,24 @@ class PortKitPremium:
             messages.append({"role": "assistant", "content": example["assistant"]})
 
         # Add the actual request
-        messages.append({
-            "role": "user",
-            "content": (
-                f"Mod Description: {instruction}\n\n"
-                f"Java Source:\n{java_source}\n\n"
-                "Convert this to a Bedrock Add-on."
-            ),
-        })
+        messages.append(
+            {
+                "role": "user",
+                "content": (
+                    f"Mod Description: {instruction}\n\n"
+                    f"Java Source:\n{java_source}\n\n"
+                    "Convert this to a Bedrock Add-on."
+                ),
+            }
+        )
 
         return messages
 
-    def _parse_output(
-        self, output: str, model_key: str, latency_ms: int
-    ) -> ConversionResult:
+    def _parse_output(self, output: str, model_key: str, latency_ms: int) -> ConversionResult:
         """Parse model output into structured result."""
         # Extract reasoning
         reasoning = ""
-        plan_match = re.search(
-            r"## Conversion Plan\s*(.*?)(?=## Bedrock|$)", output, re.DOTALL
-        )
+        plan_match = re.search(r"## Conversion Plan\s*(.*?)(?=## Bedrock|$)", output, re.DOTALL)
         if plan_match:
             reasoning = plan_match.group(1).strip()
 
@@ -631,9 +625,7 @@ class PortKitPremium:
                 break
 
         # Extract JS blocks
-        js_blocks = re.findall(
-            r"```(?:javascript|js)\s*(.*?)\s*```", output, re.DOTALL
-        )
+        js_blocks = re.findall(r"```(?:javascript|js)\s*(.*?)\s*```", output, re.DOTALL)
         script = max(js_blocks, key=len).strip() if js_blocks else ""
 
         success = bool(reasoning and (manifest or script))
@@ -696,15 +688,20 @@ class PortKitPremium:
 
 # ── CLI ──────────────────────────────────────────────────────────────────────
 
+
 def main():
     """Quick test: convert a sample Java mod via premium API."""
     import argparse
 
     parser = argparse.ArgumentParser(description="PortKit Premium Converter")
     parser.add_argument("--java", required=True, help="Path to Java source file")
-    parser.add_argument("--instruction", "-i", default="Custom Minecraft mod", help="Mod description")
+    parser.add_argument(
+        "--instruction", "-i", default="Custom Minecraft mod", help="Mod description"
+    )
     parser.add_argument("--model", "-m", default="deepseek-v4-pro", help="Model to use")
-    parser.add_argument("--dry-run", action="store_true", help="Show prompt + cost estimate, don't call API")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Show prompt + cost estimate, don't call API"
+    )
     args = parser.parse_args()
 
     java_source = open(args.java).read()

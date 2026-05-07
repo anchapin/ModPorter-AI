@@ -10,9 +10,9 @@ class MojmapMappingValidator:
     """
 
     SRG_PATTERNS = [
-        r"\bfunc_\d+",          # func_123456
-        r"\bfield_\d+",         # field_123456
-        r"\bclass_\d+",         # class_123456 (inner classes)
+        r"\bfunc_\d+",  # func_123456
+        r"\bfield_\d+",  # field_123456
+        r"\bclass_\d+",  # class_123456 (inner classes)
         r"net_minecraft_\w",  # net_minecraft_X (at least one char after underscore)
     ]
 

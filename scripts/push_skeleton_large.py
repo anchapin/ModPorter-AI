@@ -3,6 +3,7 @@
 Push large ai-engine skeleton by splitting into 3 focused sub-files,
 then pushing via direct GitHub API with httpx (avoids curl arg limits).
 """
+
 import sys
 import json
 import base64
@@ -36,7 +37,14 @@ ai_pipeline_content = build_module_skeleton(
 )
 ai_support_content = build_module_skeleton(
     REPO_DIR,
-    ["ai-engine/converters", "ai-engine/knowledge", "ai-engine/engines", "ai-engine/models", "ai-engine/tools", "ai-engine/utils"],
+    [
+        "ai-engine/converters",
+        "ai-engine/knowledge",
+        "ai-engine/engines",
+        "ai-engine/models",
+        "ai-engine/tools",
+        "ai-engine/utils",
+    ],
     "AI Engine — Converters, Knowledge & Utils",
     max_files=30,
 )
@@ -63,30 +71,36 @@ files_to_push = [
     ("ai-engine/SKELETON.md", ai_index_content),  # Replace large file with index
 ]
 
+
 def get_file_sha(token: str, path: str) -> str | None:
     """Get current SHA of a file (needed for updates)."""
     url = f"https://api.github.com/repos/{OWNER}/{REPO}/contents/{path}"
-    resp = httpx.get(url, headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"}, follow_redirects=True)
+    resp = httpx.get(
+        url,
+        headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"},
+        follow_redirects=True,
+    )
     if resp.status_code == 200:
         return resp.json().get("sha")
     return None
+
 
 def push_file_api(token: str, path: str, content: str, message: str) -> tuple[bool, str]:
     """Push a file via GitHub Contents API."""
     url = f"https://api.github.com/repos/{OWNER}/{REPO}/contents/{path}"
     b64_content = base64.b64encode(content.encode("utf-8")).decode("ascii")
-    
+
     payload = {
         "message": message,
         "content": b64_content,
         "branch": BRANCH,
     }
-    
+
     # Get existing SHA if file exists
     sha = get_file_sha(token, path)
     if sha:
         payload["sha"] = sha
-    
+
     resp = httpx.put(
         url,
         headers={
@@ -98,48 +112,50 @@ def push_file_api(token: str, path: str, content: str, message: str) -> tuple[bo
         timeout=60.0,
         follow_redirects=True,
     )
-    
+
     if resp.status_code in (200, 201):
         commit_sha = resp.json().get("commit", {}).get("sha", "?")[:8]
         return True, f"committed {commit_sha}"
     else:
         return False, f"HTTP {resp.status_code}: {resp.text[:200]}"
 
+
 def main():
     # Get GitHub token via Composio auth
     import subprocess
+
     result = subprocess.run(
-        ["surething", "auth", "token", "github"],
-        capture_output=True, text=True
+        ["surething", "auth", "token", "github"], capture_output=True, text=True
     )
     try:
         token_data = json.loads(result.stdout)
         token = token_data.get("token", "")
     except Exception:
         token = ""
-    
+
     if not token:
         # Try environment
         import os
+
         token = os.environ.get("GITHUB_TOKEN", "")
-    
+
     if not token:
         print("ERROR: No GitHub token available")
         sys.exit(1)
-    
+
     print(f"Pushing {len(files_to_push)} ai-engine skeleton files...\n")
-    
+
     for path, content in files_to_push:
         size_kb = len(content) / 1024
         print(f"  Pushing {path} ({size_kb:.1f} KB)...")
         success, msg = push_file_api(
-            token, path, content,
-            f"chore(docs): auto-update ai-engine skeleton — {path}"
+            token, path, content, f"chore(docs): auto-update ai-engine skeleton — {path}"
         )
         status = "✓" if success else "✗"
         print(f"  {status} {path} — {msg}")
-    
+
     print("\nDone.")
+
 
 if __name__ == "__main__":
     main()
