@@ -66,7 +66,7 @@ class TestMODELCONFIGS:
             assert model in MODEL_CONFIGS, f"{model} not in MODEL_CONFIGS"
 
 
-class TestFEW_SHOT_EXAMPLES:
+class TestFewShotExamples:
     """Tests for few-shot examples."""
 
     def test_few_shot_examples_exist(self):
