@@ -51,8 +51,12 @@ class TestConversionsAPITargeted:
     @patch("api.conversions.os.makedirs")
     @patch("api.conversions.shutil.copyfileobj")
     @patch("builtins.open", new_callable=mock_open)
+    @patch("api.conversions.cache")
+    @patch("api.conversions.get_celery_monitor")
     async def test_create_conversion_success(
         self,
+        mock_get_celery_monitor,
+        mock_cache,
         mock_file_open,
         mock_copyfileobj,
         mock_makedirs,
@@ -64,9 +68,16 @@ class TestConversionsAPITargeted:
         client,
         mock_security_scanner,
     ):
-        # Setup mocks
         mock_get_db.return_value = AsyncMock()
         mock_get_scanner.return_value = mock_security_scanner
+
+        mock_cache.set_job_status = AsyncMock()
+        mock_cache.set_progress = AsyncMock()
+        mock_cache.get_job_status = AsyncMock(return_value=None)
+
+        mock_monitor = MagicMock()
+        mock_monitor.check_queue_health.return_value = {"healthy": True, "alerts": []}
+        mock_get_celery_monitor.return_value = mock_monitor
 
         mock_conv_service = MagicMock()
         mock_get_conversion_service.return_value = mock_conv_service
@@ -77,17 +88,12 @@ class TestConversionsAPITargeted:
         mock_job.status = "queued"
         mock_job.created_at = datetime.now(timezone.utc)
 
-        # Make create_job an AsyncMock
         mock_crud.create_job = AsyncMock(return_value=mock_job)
 
-        # Test data
         file_content = b"fake jar content"
         files = {"file": ("test.jar", file_content, "application/java-archive")}
         options = json.dumps({"assumptions": "aggressive", "target_version": "1.21.0"})
         data = {"options": options}
-
-        # We need to bypass some async file operations or mock them
-        # Since we're using TestClient, it's synchronous but the endpoint is async
 
         with patch("api.conversions.validate_file_size", return_value=(True, "")):
             response = client.post("/api/v1/conversions", files=files, data=data)
