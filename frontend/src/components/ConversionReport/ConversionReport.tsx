@@ -12,7 +12,7 @@ import type {
   FeatureConversionDetail,
   LogEntry,
 } from '../../types/api';
-import { submitFeedback, submitIssueReport } from '../../services/api';
+import { submitFeedback } from '../../services/api';
 import ReportIssue from './ReportIssue';
 import styles from './ConversionReport.module.css';
 
