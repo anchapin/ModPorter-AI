@@ -78,6 +78,15 @@ class EnhancedConversionCrew:
         self.packaging_agent_instance = PackagingAgent()
         self.qa_validator_agent = QAValidatorAgent()
 
+        # Initialize FewShotEnhancerAgent for hybrid conversion
+        try:
+            from agents.fewshot_enhancer_agent import FewShotEnhancerAgent
+            self.fewshot_enhancer_agent = FewShotEnhancerAgent()
+            logger.info("Initialized FewShotEnhancerAgent for hybrid conversion")
+        except ImportError as e:
+            logger.warning(f"FewShotEnhancerAgent not available: {e}")
+            self.fewshot_enhancer_agent = None
+
         logger.info("Initialized all agent instances")
 
     def _register_agents(self):
@@ -120,6 +129,14 @@ class EnhancedConversionCrew:
                 "entity_converter",
                 self._create_entity_converter_executor(),
             )
+
+        # Register FewShotEnhancerAgent for hybrid conversion
+        if self.fewshot_enhancer_agent:
+            self.orchestrator.register_agent(
+                "fewshot_enhancer",
+                self._create_fewshot_enhancer_executor(),
+            )
+            logger.info("Registered FewShotEnhancerAgent with orchestrator")
 
         logger.info("Registered all agents with orchestrator")
 
@@ -462,6 +479,58 @@ class EnhancedConversionCrew:
                 raise
             except Exception as e:
                 logger.error(f"Entity converter execution failed: {e}")
+                raise
+
+        return executor
+
+    def _create_fewshot_enhancer_executor(self):
+        """Create executor for FewShotEnhancerAgent (hybrid conversion first pass)"""
+
+        def executor(task_data: Dict[str, Any]) -> Dict[str, Any]:
+            """Execute few-shot enhancement task"""
+            try:
+                java_source = task_data.get("java_source", "")
+                instruction = task_data.get("instruction", "Custom Minecraft mod")
+
+                if not java_source:
+                    raise ValueError("java_source is required for few-shot enhancement")
+
+                if not self.fewshot_enhancer_agent:
+                    raise RuntimeError("FewShotEnhancerAgent not initialized")
+
+                logger.info("Starting few-shot enhancement")
+                start_time = time.time()
+
+                result = self.fewshot_enhancer_agent.enhance(
+                    java_source=java_source,
+                    instruction=instruction,
+                )
+
+                end_time = time.time()
+
+                enhancement_result = {
+                    "success": result.success,
+                    "reasoning": result.reasoning,
+                    "bedrock_manifest": result.bedrock_manifest,
+                    "bedrock_script": result.bedrock_script,
+                    "model_used": result.model_used,
+                    "latency_ms": result.latency_ms,
+                    "quality_score": result.quality_score,
+                    "error": result.error,
+                    "execution_time": end_time - start_time,
+                }
+
+                logger.info(
+                    f"Few-shot enhancement completed: "
+                    f"success={result.success}, "
+                    f"quality={result.quality_score}/10, "
+                    f"time={result.latency_ms}ms"
+                )
+
+                return enhancement_result
+
+            except Exception as e:
+                logger.error(f"Few-shot enhancer execution failed: {e}")
                 raise
 
         return executor
