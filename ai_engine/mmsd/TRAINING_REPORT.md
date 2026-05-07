@@ -145,7 +145,74 @@ python3 ai_engine/mmsd/train_portkit_coder.py
 
 ---
 
-## 4. Evaluation
+## 4. Training Recipe (Catastrophic Forgetting Mitigation)
+
+Fine-tuning exclusively on MMSD domain-specific pairs risks **catastrophic forgetting**: the model overwrites general Java/JS knowledge with Minecraft-specific patterns. The fix is a **general programming data mix** (12% of training tokens).
+
+### Why 12%?
+
+- At `r=64` (QLoRA rank), many weights are updated → high risk of forgetting
+- 5–15% is the standard range cited in fine-tuning literature
+- 12% preserves general reasoning while allowing MMSD specialization
+
+### Mixing Procedure
+
+```python
+from datasets import load_dataset, concatenate_datasets
+
+# 1. Load MMSD (validated_pairs.jsonl)
+mmsd = load_dataset("json", data_files="validated_pairs.jsonl")["train"]  # 1,400 pairs
+
+# 2. Load general code dataset — filter to Java + JavaScript
+general = load_dataset("m-a-p/CodeFeedback-Filtered-Instruction", split="train")
+general_java_js = general.filter(lambda x: x["lang"] in ["java", "javascript"])
+
+# 3. Sample ~200 general pairs, shuffle deterministically
+general_sample = general_java_js.shuffle(seed=42).select(range(200))
+
+# 4. Format general examples to match Stage A prompt template
+# (system prompt + user instruction + assistant code response)
+
+# 5. Mix to achieve ~12% general / ~88% MMSD by token count
+mixed = concatenate_datasets([mmsd_formatted, general_formatted])
+mixed_token_ratio = min(general_tokens / (mmsd_tokens + general_tokens), 0.12)
+
+# 6. Shuffle and split 90/10
+mixed = mixed.shuffle(seed=42)
+```
+
+### General Code Dataset
+
+| Property | Value |
+|----------|-------|
+| Dataset | `m-a-p/CodeFeedback-Filtered-Instruction` |
+| Languages | Java, JavaScript |
+| Sample size | ~200 instruction pairs |
+| Prompt template | General code assistant (not PortKit-specific) |
+| Caching | `/tmp/portkit_general_code/general_code_sample.jsonl` |
+
+### Expected Effects
+
+| Metric | Without Mix | With Mix (12%) |
+|--------|------------|----------------|
+| General Java/JS tasks | Degraded | ≤ 2% regression |
+| MMSD task quality | Baseline | Improved consistency |
+| Edge cases (abstract classes, generics, lambdas) | May degrade | Better handling |
+
+### Verification
+
+To evaluate the effect of the mix on general code tasks:
+```bash
+python3 ai_engine/mmsd/evaluate.py \
+    --model alexchapin/portkit-coder-7b-merged \
+    --baseline Qwen/Qwen2.5-Coder-7B-Instruct \
+    --eval-data ai_engine/mmsd/data/processed/validated_pairs.jsonl \
+    --output evaluation_results.json
+```
+
+---
+
+## 5. Evaluation
 
 ### Evaluation Script
 ```bash
@@ -171,7 +238,7 @@ python3 ai_engine/mmsd/evaluate.py \
 
 ---
 
-## 5. Hugging Face Hub Repositories
+## 6. Hugging Face Hub Repositories
 
 | Repository | Description | URL |
 |------------|-------------|-----|
@@ -182,7 +249,7 @@ Both repos are set to **private** visibility.
 
 ---
 
-## 6. Pipeline Verification
+## 7. Pipeline Verification
 
 The training pipeline was verified end-to-end using `Qwen/Qwen2.5-Coder-0.5B` on CPU:
 
