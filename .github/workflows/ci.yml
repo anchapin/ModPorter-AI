@@ -1100,8 +1100,8 @@ jobs:
         run: node scripts/generate-bundle-report.cjs frontend/dist
 
       - name: Upload bundle report
-        uses: actions/upload-artifact@v7
         if: always() && needs.changes.outputs.frontend == 'true'
+        uses: actions/upload-artifact@v7
         with:
           name: bundle-report
           path: frontend/dist/bundle-report.json

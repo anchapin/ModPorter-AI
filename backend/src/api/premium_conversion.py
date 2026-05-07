@@ -126,7 +126,7 @@ async def premium_convert(
         "success": true,
         "reasoning": "## Conversion Plan\n\n1. Block registration...",
         "bedrock_manifest": "{\"format_version\": 2, ...}",
-        "bedrock_script": "import { world } from '@minecraft/server';\\n...",
+        "bedrock_script": "import { world } from '@minecraft/server';\n...",
         "model_used": "deepseek-v4-pro",
         "latency_ms": 4500,
         "error": ""

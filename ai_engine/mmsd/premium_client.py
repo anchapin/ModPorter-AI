@@ -625,8 +625,19 @@ class PortKitPremium:
                 break
 
         # Extract JS blocks
-        js_blocks = re.findall(r"```(?:javascript|js)\s*(.*?)\s*```", output, re.DOTALL)
-        script = max(js_blocks, key=len).strip() if js_blocks else ""
+js_blocks = re.findall(
+            r"```(?:javascript|js)\s*(.*?)\s*```", output, re.DOTALL
+        )
+        script = ""
+        for block in js_blocks:
+            stripped = block.strip()
+            if stripped.startswith(("{", "[")):
+                continue
+            if any(stripped.startswith(kw) for kw in ("import ", "export ", "function ", "const ", "let ", "var ", "class ", "async ")):
+                script = stripped
+                break
+            if len(stripped) > len(script):
+                script = stripped
 
         success = bool(reasoning and (manifest or script))
 

@@ -43,9 +43,67 @@ def mock_security_scanner():
 
 
 class TestConversionsAPITargeted:
-    @pytest.mark.skip(reason="Requires full test infrastructure: Redis, database, valid JAR file")
-    async def test_create_conversion_success(self):
-        pass
+@patch("api.conversions.get_db")
+    @patch("api.conversions.get_security_scanner")
+    @patch("api.conversions.enqueue_task", new_callable=AsyncMock)
+    @patch("api.conversions.crud")
+    @patch("api.conversions.get_conversion_service")
+    @patch("api.conversions.os.makedirs")
+    @patch("api.conversions.shutil.copyfileobj")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("api.conversions.cache")
+    @patch("api.conversions.get_celery_monitor")
+    async def test_create_conversion_success(
+        self,
+        mock_get_celery_monitor,
+        mock_cache,
+        mock_file_open,
+        mock_copyfileobj,
+        mock_makedirs,
+        mock_get_conversion_service,
+        mock_crud,
+        mock_enqueue,
+        mock_get_scanner,
+        mock_get_db,
+        client,
+        mock_security_scanner,
+    ):
+        mock_get_db.return_value = AsyncMock()
+        mock_get_scanner.return_value = mock_security_scanner
+
+        mock_cache.set_job_status = AsyncMock()
+        mock_cache.set_progress = AsyncMock()
+        mock_cache.get_job_status = AsyncMock(return_value=None)
+
+        mock_monitor = MagicMock()
+        mock_monitor.check_queue_health.return_value = {"healthy": True, "alerts": []}
+        mock_get_celery_monitor.return_value = mock_monitor
+
+        mock_conv_service = MagicMock()
+        mock_get_conversion_service.return_value = mock_conv_service
+
+        conversion_id = str(uuid.uuid4())
+        mock_job = MagicMock()
+        mock_job.id = conversion_id
+        mock_job.status = "queued"
+        mock_job.created_at = datetime.now(timezone.utc)
+
+        mock_crud.create_job = AsyncMock(return_value=mock_job)
+
+        file_content = b"fake jar content"
+        files = {"file": ("test.jar", file_content, "application/java-archive")}
+        options = json.dumps({"assumptions": "aggressive", "target_version": "1.21.0"})
+        data = {"options": options}
+
+        with patch("api.conversions.validate_file_size", return_value=(True, "")):
+            response = client.post("/api/v1/conversions", files=files, data=data)
+
+        assert response.status_code == 202
+        assert response.json()["conversion_id"] == conversion_id
+        assert response.json()["status"] == "queued"
+
+        mock_crud.create_job.assert_called_once()
+        mock_enqueue.assert_called_once()
 
     @patch("api.conversions.get_db")
     @patch("api.conversions.crud")
