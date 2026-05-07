@@ -18,14 +18,19 @@ class TestEnhancedConversionCrew:
              patch('orchestration.crew_integration.LogicTranslatorAgent') as mock_logic, \
              patch('orchestration.crew_integration.AssetConverterAgent') as mock_asset, \
              patch('orchestration.crew_integration.PackagingAgent') as mock_pkg, \
-             patch('orchestration.crew_integration.QAValidatorAgent') as mock_qa:
+             patch('orchestration.crew_integration.QAValidatorAgent') as mock_qa, \
+             patch('agents.fewshot_enhancer_agent.FewShotEnhancerAgent') as mock_fewshot:
+            mock_fewshot_instance = MagicMock()
+            mock_fewshot.return_value = mock_fewshot_instance
             yield {
                 'java': mock_java,
                 'bedrock': mock_bedrock,
                 'logic': mock_logic,
                 'asset': mock_asset,
                 'pkg': mock_pkg,
-                'qa': mock_qa
+                'qa': mock_qa,
+                'fewshot': mock_fewshot,
+                'fewshot_instance': mock_fewshot_instance,
             }
 
     @pytest.fixture
@@ -285,3 +290,59 @@ class TestEnhancedConversionCrew:
         crew.qa_validator_agent.get_tools.side_effect = Exception("Fail")
         with pytest.raises(Exception):
             crew._create_qa_validator_executor()({})
+
+    def test_fewshot_enhancer_executor(self, crew, mock_agents):
+        """Test FewShotEnhancer executor logic."""
+        executor = crew._create_fewshot_enhancer_executor()
+
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.reasoning = "1. **Item Registration**"
+        mock_result.bedrock_manifest = '{"format_version": 2}'
+        mock_result.bedrock_script = 'world.afterEvents.entityHitEntity.subscribe(() => {});'
+        mock_result.model_used = "deepseek-v4-pro"
+        mock_result.latency_ms = 5000
+        mock_result.quality_score = 6.5
+        mock_result.error = ""
+
+        crew.fewshot_enhancer_agent.enhance.return_value = mock_result
+
+        result = executor({
+            "java_source": "public class Test {}",
+            "instruction": "Test sword mod",
+        })
+
+        assert result["success"] is True
+        assert result["reasoning"] == "1. **Item Registration**"
+        assert result["bedrock_manifest"] == '{"format_version": 2}'
+        assert result["model_used"] == "deepseek-v4-pro"
+        assert result["quality_score"] == 6.5
+
+    def test_fewshot_enhancer_executor_no_source(self, crew):
+        """Test FewShotEnhancer executor error when java_source is missing."""
+        executor = crew._create_fewshot_enhancer_executor()
+        with pytest.raises(ValueError, match="java_source is required"):
+            executor({})
+
+    def test_fewshot_enhancer_executor_handles_failure(self, crew, mock_agents):
+        """Test FewShotEnhancer executor handles API failure."""
+        executor = crew._create_fewshot_enhancer_executor()
+
+        crew.fewshot_enhancer_agent.enhance.side_effect = Exception("API Error")
+
+        with pytest.raises(Exception, match="API Error"):
+            executor({
+                "java_source": "public class Test {}",
+                "instruction": "Test mod",
+            })
+
+    def test_fewshot_enhancer_initialized_when_available(self, crew, mock_agents):
+        """Test FewShotEnhancerAgent is initialized when FewShotEnhancerAgent is available."""
+        assert crew.fewshot_enhancer_agent is not None
+        mock_agents['fewshot'].assert_called_once()
+
+    def test_initialization_with_fewshot_agent(self, crew, mock_agents):
+        """Test basic initialization includes FewShotEnhancerAgent."""
+        assert crew.java_analyzer_agent is not None
+        assert crew.fewshot_enhancer_agent is not None
+        assert crew.orchestrator.register_agent.called
