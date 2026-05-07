@@ -14,12 +14,11 @@ Supports fallback to local fine-tuned model via the standard tier.
 """
 
 import os
-import json
 import re
 import time
 import logging
 from typing import Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import httpx
 
@@ -635,7 +634,18 @@ class PortKitPremium:
         js_blocks = re.findall(
             r"```(?:javascript|js)\s*(.*?)\s*```", output, re.DOTALL
         )
-        script = max(js_blocks, key=len).strip() if js_blocks else ""
+        script = ""
+        for block in js_blocks:
+            stripped = block.strip()
+            # Skip JSON accidentally placed in JS blocks
+            if stripped.startswith(("{", "[")):
+                continue
+            # Prefer blocks starting with JS keywords
+            if any(stripped.startswith(kw) for kw in ("import ", "export ", "function ", "const ", "let ", "var ", "class ", "async ")):
+                script = stripped
+                break
+            if len(stripped) > len(script):
+                script = stripped
 
         success = bool(reasoning and (manifest or script))
 

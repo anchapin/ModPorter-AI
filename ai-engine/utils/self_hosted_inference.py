@@ -7,17 +7,84 @@ Phase 2: RunPod Flash + vLLM (post #997 fine-tune)
 Phase 3: SGLang vs vLLM benchmark (PortKit prompt shapes)
 
 Issue: #1203 - Self-hosted LLM inference deployment
+Issue: #1320 - Enforce Q5_K_M minimum quantization for production inference
 """
 
 import asyncio
 import logging
 import os
+import re
 import time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
+
+
+MIN_QUANT_BITS_GGUF = 5
+MIN_QUANT_BITS_AWQ = 4
+MIN_AWQ_GROUP_SIZE = 128
+
+QUANT_BIT_ORDER = ["Q2_K", "Q3_K", "Q4_K", "Q4_0", "Q5_K", "Q5_K_M", "Q6_K", "Q8_0"]
+
+
+def _parse_quant_bits(model_name: str) -> Optional[int]:
+    """Extract quantization bit depth from a model filename or identifier."""
+    pattern = re.compile(r"Q([0-9]+)_?K?|Q([0-9]+)\.")
+    for match in pattern.finditer(model_name):
+        bits = match.group(1) or match.group(2)
+        if bits:
+            try:
+                return int(bits)
+            except ValueError:
+                pass
+    return None
+
+
+def check_quantization_floor(
+    model_name: str,
+    quant_type: str = "gguf",
+    awq_group_size: Optional[int] = None,
+) -> tuple[bool, str]:
+    """
+    Check if a model meets the minimum quantization floor.
+
+    For GGUF: minimum Q5_K_M (5-bit)
+    For AWQ/EXL2: minimum 4-bit with group_size ≤ 128
+
+    Returns (passes, detail_str).
+    """
+    if quant_type in ("gguf", "llama"):
+        bits = _parse_quant_bits(model_name)
+        if bits is None:
+            return True, "quantization bit depth unknown (GGUF)"
+        if bits < MIN_QUANT_BITS_GGUF:
+            return False, (
+                f"model is {bits}-bit; Q5_K_M (5-bit) is the minimum floor for GGUF. "
+                f"Models below Q5_K_M produce syntax errors in code generation."
+            )
+        detail = f"GGUF {bits}-bit (meets Q5_K_M floor)"
+        return True, detail
+
+    elif quant_type in ("awq", "exl2", "gptq"):
+        bits = _parse_quant_bits(model_name)
+        if bits is None:
+            return True, "quantization bit depth unknown (AWQ/EXL2)"
+        if bits < MIN_QUANT_BITS_AWQ:
+            return False, (
+                f"model is {bits}-bit; AWQ/EXL2 requires 4-bit minimum. "
+                f"Use AWQ 4-bit with group_size ≤ {MIN_AWQ_GROUP_SIZE}."
+            )
+        if awq_group_size is not None and awq_group_size > MIN_AWQ_GROUP_SIZE:
+            return False, (
+                f"AWQ group_size={awq_group_size} exceeds maximum {MIN_AWQ_GROUP_SIZE}. "
+                f"For reliable code generation, use group_size ≤ {MIN_AWQ_GROUP_SIZE}."
+            )
+        detail = f"AWQ/EXL2 {bits}-bit group_size={awq_group_size or 'default'} (meets floor)"
+        return True, detail
+
+    return True, "quantization type unrecognized, skipping check"
 
 
 class InferenceProvider(str, Enum):
@@ -64,6 +131,10 @@ class InferenceConfig:
     # vLLM specific
     vllm_url: Optional[str] = None
 
+    # Quantization metadata (used for floor validation)
+    model_quant_type: str = "gguf"
+    awq_group_size: Optional[int] = None
+
     # Performance tuning
     max_tokens: int = 4096
     temperature: float = 0.1
@@ -77,6 +148,14 @@ class InferenceConfig:
     # Cold start optimization
     warmup_requests: int = 1
     keep_alive: int = 300  # seconds
+
+    def validate_quantization(self) -> tuple[bool, str]:
+        """Validate that the configured model meets the quantization floor."""
+        return check_quantization_floor(
+            self.model_name,
+            quant_type=self.model_quant_type,
+            awq_group_size=self.awq_group_size,
+        )
 
 
 @dataclass
@@ -142,6 +221,8 @@ class SelfHostedInferenceClient:
             runpod_api_key=os.getenv("RUNPOD_API_KEY"),
             sglang_url=os.getenv("SGLANG_URL"),
             vllm_url=os.getenv("VLLM_URL"),
+            model_quant_type=os.getenv("MODEL_QUANT_TYPE", "gguf").lower(),
+            awq_group_size=int(os.getenv("AWQ_GROUP_SIZE", "128")),
             max_tokens=int(os.getenv("MAX_TOKENS", "4096")),
             temperature=float(os.getenv("LLM_TEMPERATURE", "0.1")),
             timeout=int(os.getenv("INFERENCE_TIMEOUT", "120")),
@@ -150,6 +231,14 @@ class SelfHostedInferenceClient:
 
     def _initialize_client(self):
         """Initialize the appropriate HTTP client based on provider"""
+        passes, detail = self.config.validate_quantization()
+        if not passes:
+            logger.warning(
+                f"QUANTIZATION FLOOR WARNING for model '{self.config.model_name}': {detail}"
+            )
+        else:
+            logger.info(f"Quantization check for '{self.config.model_name}': {detail}")
+
         if self.config.endpoint_url:
             try:
                 from openai import OpenAI

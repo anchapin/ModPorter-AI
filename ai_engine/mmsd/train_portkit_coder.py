@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 """
 PortKit Coder Fine-Tuning — Stage A (Reasoning + Code Generation)
-Fine-tunes Qwen2.5-Coder-7B-Instruct with QLoRA on MMSD synthesis pairs.
+Fine-tunes Qwen2.5-Coder-7B-Instruct with QLoRA on MMSD synthesis pairs,
+mixed with general Java/JS code data (12% ratio) to mitigate catastrophic forgetting.
 
 Data pipeline:
 1. git clone portkit repo (sparse) + git lfs pull for synthesis_pairs.jsonl
 2. Run structural validation → validated_pairs.jsonl
-3. Format as ChatML conversations (system + user + assistant)
-4. 90/10 train/eval split (no shuffle, deterministic)
-5. QLoRA fine-tuning with SFTTrainer
-6. Push LoRA adapter + merged model to HF Hub
+3. Download and sample general Java/JS code pairs from HuggingFace (~200 examples)
+4. Format as ChatML conversations (system + user + assistant)
+5. Mix datasets: ~12% general / ~88% MMSD by token count
+6. 90/10 train/eval split (no shuffle, deterministic)
+7. QLoRA fine-tuning with SFTTrainer
+8. Push LoRA adapter + merged model to HF Hub
 """
 
 import os
@@ -52,6 +55,12 @@ WARMUP = 0.05
 SCHEDULER = "cosine"
 SEED = 42
 TRAIN_RATIO = 0.9
+
+# Catastrophic forgetting mitigation: general code mix
+GENERAL_CODE_DATASET = "m-a-p/CodeFeedback-Filtered-Instruction"
+GENERAL_CODE_LANGUAGES = ["java", "javascript"]
+GENERAL_CODE_SAMPLE_SIZE = 200
+MIX_RATIO = 0.12  # ~12% of training tokens from general code
 
 SYSTEM_PROMPT = (
     "You are PortKit, an expert at converting Minecraft Java Edition mods (Forge) "
@@ -216,6 +225,148 @@ def format_stage_a(example: dict) -> dict:
     }
 
 
+GENERAL_SYSTEM_PROMPT = (
+    "You are a general-purpose code assistant. Provide clear, correct code solutions "
+    "with concise explanations when helpful."
+)
+
+
+def format_general_code(example: dict) -> dict:
+    instruction = example.get("instruction", example.get("input", ""))
+    response = example.get("output", example.get("response", ""))
+
+    if not instruction or not response:
+        return None
+
+    return {
+        "messages": [
+            {"role": "system", "content": GENERAL_SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": f"Write code for: {instruction}",
+            },
+            {
+                "role": "assistant",
+                "content": response,
+            },
+        ]
+    }
+
+
+def load_general_code_dataset() -> list:
+    """Download and sample general Java/JS code pairs for catastrophic forgetting mitigation."""
+    try:
+        from datasets import load_dataset
+    except ImportError:
+        print("[general] datasets not installed, skipping general code mix")
+        return []
+
+    cache_dir = Path("/tmp/portkit_general_code")
+    cache_dir.mkdir(exist_ok=True)
+
+    sample_file = cache_dir / "general_code_sample.jsonl"
+    if sample_file.exists() and sample_file.stat().st_size > 1000:
+        print(f"[general] Using cached sample from {sample_file}")
+        examples = []
+        with open(sample_file) as f:
+            for line in f:
+                if line.strip():
+                    examples.append(json.loads(line))
+        return examples
+
+    print(f"[general] Loading {GENERAL_CODE_DATASET}...")
+    try:
+        dataset = load_dataset(
+            GENERAL_CODE_DATASET,
+            split="train",
+            trust_remote_code=True,
+            cache_dir=str(cache_dir),
+        )
+    except Exception as e:
+        print(f"[general] Failed to load dataset: {e}")
+        return []
+
+    lang_field = None
+    for candidate in ["lang", "language", " Programming_Language"]:
+        if candidate in dataset.column_names:
+            lang_field = candidate
+            break
+
+    if lang_field is None:
+        print(f"[general] No language column found. Columns: {dataset.column_names}")
+        return []
+
+    print(f"[general] Filtering to {GENERAL_CODE_LANGUAGES}...")
+    filtered = dataset.filter(lambda x: x.get(lang_field) in GENERAL_CODE_LANGUAGES)
+
+    if len(filtered) == 0:
+        print("[general] No examples found after filtering, skipping mix")
+        return []
+
+    sample_size = min(GENERAL_CODE_SAMPLE_SIZE, len(filtered))
+    print(f"[general] Sampling {sample_size} examples from {len(filtered)} filtered")
+
+    try:
+        sampled = filtered.shuffle(seed=SEED).select(range(sample_size))
+    except Exception as e:
+        print(f"[general] Shuffle/select failed: {e}")
+        sampled = filtered.select(range(min(sample_size, len(filtered))))
+
+    examples = []
+    for item in sampled:
+        formatted = format_general_code(item)
+        if formatted is not None:
+            examples.append(formatted)
+
+    with open(sample_file, "w") as f:
+        for ex in examples:
+            f.write(json.dumps(ex) + "\n")
+
+    print(f"[general] Saved {len(examples)} formatted examples")
+    return examples
+
+
+def count_tokens(messages: list, tokenizer) -> int:
+    """Rough token count for a messages list using the tokenizer."""
+    text = ""
+    for msg in messages:
+        text += msg["role"] + ": " + msg["content"] + "\n"
+    return len(tokenizer.encode(text))
+
+
+def mix_datasets(mmsd_examples: list, general_examples: list, target_ratio: float = MIX_RATIO) -> list:
+    """Mix MMSD and general code examples to achieve target token ratio (~12%)."""
+    if not general_examples:
+        return mmsd_examples
+
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
+
+    mmsd_tokens = sum(count_tokens(ex["messages"], tokenizer) for ex in mmsd_examples)
+    general_tokens = sum(count_tokens(ex["messages"], tokenizer) for ex in general_examples)
+
+    print(f"[mix] MMSD tokens: {mmsd_tokens:,}, General tokens: {general_tokens:,}")
+
+    target_general_tokens = int(mmsd_tokens * target_ratio / (1 - target_ratio))
+    general_count = general_examples
+    current_general_tokens = general_tokens
+
+    if current_general_tokens > target_general_tokens:
+        scale = target_general_tokens / current_general_tokens
+        n = max(1, int(len(general_examples) * scale))
+        general_count = general_examples[:n]
+        current_general_tokens = sum(count_tokens(ex["messages"], tokenizer) for ex in general_count)
+        print(f"[mix] Scaled general sample to {len(general_count)} examples to hit target ratio")
+
+    actual_ratio = current_general_tokens / (mmsd_tokens + current_general_tokens)
+    print(f"[mix] Target ratio: {target_ratio:.1%}, Actual ratio: {actual_ratio:.1%}")
+
+    mixed = mmsd_examples + general_count
+    import random
+    random.seed(SEED)
+    random.shuffle(mixed)
+    return mixed
+
+
 # ── Main ───────────────────────────────────────────────────────────────────
 
 
@@ -242,9 +393,17 @@ def main():
 
     n = len(pairs)
     split = int(n * TRAIN_RATIO)
-    train_ds = Dataset.from_list([format_stage_a(p) for p in pairs[:split]])
+    mmsd_train = [format_stage_a(p) for p in pairs[:split]]
     eval_ds = Dataset.from_list([format_stage_a(p) for p in pairs[split:]])
-    print(f"Data: {n} total → {len(train_ds)} train, {len(eval_ds)} eval")
+
+    general_examples = load_general_code_dataset()
+    if general_examples:
+        mixed_train = mix_datasets(mmsd_train, general_examples, target_ratio=MIX_RATIO)
+        train_ds = Dataset.from_list(mixed_train)
+        print(f"Data: {n} total → {len(train_ds)} train (mixed, {len(general_examples)} general), {len(eval_ds)} eval")
+    else:
+        train_ds = Dataset.from_list(mmsd_train)
+        print(f"Data: {n} total → {len(train_ds)} train, {len(eval_ds)} eval")
 
     # ── Model ───────────────────────────────────────────────────────────────
     print("\nLoading model...")
@@ -374,7 +533,17 @@ def main():
             "warmup": WARMUP,
             "scheduler": SCHEDULER,
         },
-        "data": {"total": n, "train": len(train_ds), "eval": len(eval_ds)},
+        "data": {
+            "total": n,
+            "train": len(train_ds),
+            "eval": len(eval_ds),
+            "general_code_mix": {
+                "dataset": GENERAL_CODE_DATASET,
+                "sample_size": GENERAL_CODE_SAMPLE_SIZE,
+                "target_ratio": MIX_RATIO,
+                "languages": GENERAL_CODE_LANGUAGES,
+            },
+        },
         "results": {
             "train_loss": train_metrics.get("train_loss"),
             "eval_loss": eval_metrics.get("eval_loss"),
