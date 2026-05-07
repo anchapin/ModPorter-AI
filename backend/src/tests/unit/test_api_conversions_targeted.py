@@ -69,7 +69,9 @@ class TestConversionsAPITargeted:
         client,
         mock_security_scanner,
     ):
-        mock_rate_limiter.return_value = AsyncMock()
+        mock_rate_limiter.return_value.initialize = AsyncMock()
+        mock_rate_limiter.return_value.close = AsyncMock()
+        mock_rate_limiter.return_value.check_rate_limit = AsyncMock(return_value=(True, {}))
         mock_get_db.return_value = AsyncMock()
         mock_get_security_scanner.return_value = mock_security_scanner
 
