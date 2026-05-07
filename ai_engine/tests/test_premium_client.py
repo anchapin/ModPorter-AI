@@ -5,7 +5,8 @@ Run with: pytest ai_engine/tests/test_premium_client.py -v
 """
 
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
+import httpx
 
 
 class TestConversionResult:
@@ -65,7 +66,7 @@ class TestMODELCONFIGS:
             assert model in MODEL_CONFIGS, f"{model} not in MODEL_CONFIGS"
 
 
-class TestFewShotExamples:
+class TestFEW_SHOT_EXAMPLES:
     """Tests for few-shot examples."""
 
     def test_few_shot_examples_exist(self):
@@ -126,7 +127,8 @@ class TestPortKitPremiumInit:
         from ai_engine.mmsd.premium_client import PortKitPremium
 
         client = PortKitPremium(
-            api_key="sk-test-key", fallback_models=["kimi-k2", "deepseek-v4-pro"]
+            api_key="sk-test-key",
+            fallback_models=["kimi-k2", "deepseek-v4-pro"]
         )
         assert client.fallback_models == ["kimi-k2", "deepseek-v4-pro"]
         client.close()
@@ -173,7 +175,9 @@ class TestPortKitPremiumMethods:
 
         client = PortKitPremium(api_key="sk-test-key")
         cost = client.estimate_cost(
-            instruction="Test mod", java_source="public class Test {}", model="kimi-k2"
+            instruction="Test mod",
+            java_source="public class Test {}",
+            model="kimi-k2"
         )
 
         assert cost["model"] == "kimi-k2"
@@ -232,6 +236,8 @@ import { world } from "@minecraft/server";
         client.close()
 
     def test_parse_output_handles_missing_sections(self):
+        from ai_engine.mmsd.premium_client import ConversionResult
+
         from ai_engine.mmsd.premium_client import PortKitPremium
 
         client = PortKitPremium(api_key="sk-test-key")
