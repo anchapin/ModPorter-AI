@@ -79,7 +79,9 @@ class TestSubmitIssueReport:
 
             result = await submit_issue_report(report, mock_db)
 
-            assert result.message == "Thank you for your report! Our team will investigate this issue."
+            assert (
+                result.message == "Thank you for your report! Our team will investigate this issue."
+            )
             assert result.severity == "high"
             assert result.report_id is not None
             assert result.expected_response_time == "< 24 hours"
@@ -98,6 +100,7 @@ class TestSubmitIssueReport:
         )
 
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc_info:
             await submit_issue_report(report, mock_db)
         assert exc_info.value.status_code == 400
@@ -116,6 +119,7 @@ class TestSubmitIssueReport:
         )
 
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc_info:
             await submit_issue_report(report, mock_db)
         assert exc_info.value.status_code == 400
@@ -136,6 +140,7 @@ class TestSubmitIssueReport:
             )
 
             from fastapi import HTTPException
+
             with pytest.raises(HTTPException) as exc_info:
                 await submit_issue_report(report, mock_db)
             assert exc_info.value.status_code == 404
