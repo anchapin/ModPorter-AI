@@ -105,7 +105,7 @@ async def premium_convert(
     current_user: Optional[User] = Depends(get_optional_user),
     _: bool = Depends(require_feature_flag("premium_features")),
 ):
-    """
+    r"""
     Premium conversion using frontier AI models.
 
     Uses OpenRouter API with frontier models (DeepSeek V4 Pro, Kimi K2, GLM-5)
@@ -126,7 +126,7 @@ async def premium_convert(
         "success": true,
         "reasoning": "## Conversion Plan\n\n1. Block registration...",
         "bedrock_manifest": "{\"format_version\": 2, ...}",
-        "bedrock_script": "import { world } from '@minecraft/server';\\n...",
+        "bedrock_script": "import { world } from '@minecraft/server';\n...",
         "model_used": "deepseek-v4-pro",
         "latency_ms": 4500,
         "error": ""
