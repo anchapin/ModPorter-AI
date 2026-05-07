@@ -58,7 +58,7 @@ def init_sentry():
         before_send=_filter_events,
         integrations=[
             FastApiIntegration(transaction_naming="http"),
-            CeleryIntegration(monitor_all_tasks=True),
+            CeleryIntegration(monitor_beat_tasks=True),
             RedisIntegration(),
             SqlalchemyIntegration(),
             HttpxIntegration(),
@@ -87,7 +87,7 @@ def init_celery_sentry():
         send_default_pii=False,
         before_send=_filter_events,
         integrations=[
-            CeleryIntegration(monitor_all_tasks=True),
+            CeleryIntegration(monitor_beat_tasks=True),
             RedisIntegration(),
             SqlalchemyIntegration(),
         ],
