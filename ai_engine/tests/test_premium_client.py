@@ -5,8 +5,7 @@ Run with: pytest ai_engine/tests/test_premium_client.py -v
 """
 
 import pytest
-from unittest.mock import patch, MagicMock
-import httpx
+from unittest.mock import patch
 
 
 class TestConversionResult:
@@ -236,8 +235,6 @@ import { world } from "@minecraft/server";
         client.close()
 
     def test_parse_output_handles_missing_sections(self):
-        from ai_engine.mmsd.premium_client import ConversionResult
-
         from ai_engine.mmsd.premium_client import PortKitPremium
 
         client = PortKitPremium(api_key="sk-test-key")
