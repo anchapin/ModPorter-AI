@@ -14,12 +14,11 @@ Supports fallback to local fine-tuned model via the standard tier.
 """
 
 import os
-import json
 import re
 import time
 import logging
 from typing import Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import httpx
 
