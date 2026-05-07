@@ -1092,14 +1092,16 @@ jobs:
         run: cd frontend && pnpm prettier --check .
 
       - name: Build frontend with bundle analysis
+        if: needs.changes.outputs.frontend == 'true'
         run: cd frontend && pnpm build:analyze
 
       - name: Generate bundle size report
+        if: needs.changes.outputs.frontend == 'true'
         run: node scripts/generate-bundle-report.cjs frontend/dist
 
       - name: Upload bundle report
+        if: always() && needs.changes.outputs.frontend == 'true'
         uses: actions/upload-artifact@v7
-        if: always()
         with:
           name: bundle-report
           path: frontend/dist/bundle-report.json
