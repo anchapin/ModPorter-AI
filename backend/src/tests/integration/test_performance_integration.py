@@ -13,14 +13,18 @@ class TestPerformanceIntegration:
 
     def setup_method(self):
         """Setup test environment."""
+        # Import fresh to avoid module-level state issues
+        from api.performance import mock_benchmark_runs, mock_benchmark_reports, mock_scenarios
+
         self.client = TestClient(app)
 
-        # Clear mock data
+        # Clear mock data - ensure clean state for each test
         mock_benchmark_runs.clear()
         mock_benchmark_reports.clear()
         mock_scenarios.clear()
 
-        # Ensure baseline scenario exists
+        # Ensure baseline scenario exists - use unique ID to avoid cross-test pollution
+        mock_scenarios.clear()
         mock_scenarios["baseline_idle_001"] = {
             "scenario_id": "baseline_idle_001",
             "scenario_name": "Idle Performance",
