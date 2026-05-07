@@ -14,9 +14,9 @@ import pytest
 # Check if real services should be used
 USE_REAL_SERVICES = os.getenv("USE_REAL_SERVICES", "0") == "1"
 REAL_DB_URL = os.getenv(
-    "TEST_DATABASE_URL", "postgresql+asyncpg://postgres:password@localhost:5436/modporter_test"
+    "TEST_DATABASE_URL", "postgresql+asyncpg://postgres:password@localhost:5434/modporter_test"
 )
-REAL_REDIS_URL = os.getenv("TEST_REDIS_URL", "redis://localhost:6381/0")
+REAL_REDIS_URL = os.getenv("TEST_REDIS_URL", "redis://localhost:6380/0")
 REAL_AI_ENGINE_URL = os.getenv("TEST_AI_ENGINE_URL", "http://localhost:8080")
 
 

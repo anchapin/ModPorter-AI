@@ -18,6 +18,7 @@ class TestPerformanceIntegration:
         # Clear mock data
         mock_benchmark_runs.clear()
         mock_benchmark_reports.clear()
+        mock_scenarios.clear()
 
         # Ensure baseline scenario exists
         mock_scenarios["baseline_idle_001"] = {
