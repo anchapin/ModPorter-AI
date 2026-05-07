@@ -1,0 +1,54 @@
+# RunPod serverless inference server for PortKit's fine-tuned Qwen2.5-Coder-7B.
+#
+# Build and push:
+#   docker build -f ai-engine/services/Dockerfile.runpod -t portkit-inference .
+#   docker tag portkit-inference:latest alexchapin/portkit-inference:latest
+#   docker push alexchapin/portkit-inference:latest
+#
+# Deploy on RunPod:
+#   1. Go to runpod.io → Serverless → New Endpoint
+#   2. Select "My Docker Image" → enter alexchapin/portkit-inference
+#   3. GPU: RTX 4090 16GB (or A100 40GB)
+#   4. Max vRAM: 14GiB (for 16GB model + 8192 ctx)
+#   5. Min vRAM: 14GiB
+#   6. Timeout: 300s
+#   7. Env vars: HF_TOKEN (required for private model repo)
+#   8. Deploy
+#
+# Or use runpodctl:
+#   runpodctl create serverless endpoint --image alexchapin/portkit-inference:latest \
+#     --gpuType RTX_4090 --minMemory 14 --maxMemory 14 --timeout 300
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        curl \
+        git \
+        libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install vLLM, transformers, huggingface libs
+RUN pip install --no-cache-dir \
+        vllm>=0.6.0 \
+        transformers>=4.44.0 \
+        huggingface_hub>=0.24.0 \
+        hf-transfer>=0.1.0 \
+        accelerate>=0.34.0 \
+        fastapi \
+        uvicorn \
+        httpx
+
+ENV HF_HUB_ENABLE_HF_TRANSFER=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Download model at startup via entrypoint script
+COPY ai-engine/services/runpod_entrypoint.sh /entrypoint.sh
+COPY ai-engine/services/runpod_server.py /app/
+RUN chmod +x /entrypoint.sh
+
+EXPOSE 8000
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["python", "-m", "uvicorn", "runpod_server:app", "--host", "0.0.0.0", "--port", "8000"]

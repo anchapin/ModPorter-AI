@@ -178,6 +178,59 @@ config = InferenceConfig(
 )
 ```
 
+## Quantization Standards (#1320)
+
+**Critical for code generation quality.** Models below the quantization floor produce syntax errors (mismatched brackets, truncated JSON, invalid JavaScript) that break Bedrock compilation.
+
+### Minimum Quantization Floor
+
+| Format | Minimum | Notes |
+|--------|---------|-------|
+| **GGUF** | **Q5_K_M** (5-bit) | Q4 and below introduce measurable syntax errors in code generation |
+| **AWQ / EXL2** | **4-bit, group_size ≤ 128** | group_size 128 preserves more precision than default 128 |
+| **vLLM / SGLang** | Same as above | Both use the same model files; enforce via quantization type |
+
+### Why Q5_K_M?
+
+> "Q5_K_M (5-bit) quantization is the absolute minimum threshold for reliable code generation; 4-bit and below often introduce syntax errors (e.g., mismatched brackets) that break compilation."
+
+Bedrock Add-on output is structured code: `manifest.json` must be valid JSON with exact field names, and `.js` files must parse without syntax errors. Q4 quantization artifacts (off-by-one token predictions, truncated outputs) silently produce invalid output that fails downstream validation.
+
+### Configuration
+
+Set quantization metadata via environment variables:
+
+```bash
+# Model file name includes quantization, e.g.:
+#   Qwen2.5-Coder-7B-Instruct-Q5_K_M.gguf
+#   portkit-coder-7b-merged-Q5_K_M.gguf
+
+# Quantization type (gguf | awq | exl2 | gptq)
+MODEL_QUANT_TYPE=gguf
+
+# For AWQ only: group size (default 128)
+AWQ_GROUP_SIZE=128
+```
+
+The inference client validates the quantization floor on startup and logs a warning if the model is below threshold.
+
+### Selecting Quantized Models
+
+For Qwen2.5-Coder-7B on HuggingFace, Bartowski's quantized variants:
+
+| Quantization | File Pattern | Bedrock Quality |
+|--------------|-------------|-----------------|
+| Q6_K | `*Q6_K*` | Best; ~7.5GB |
+| Q5_K_M | `*Q5_K_M*` | Recommended minimum; ~4.8GB |
+| Q4_K_M | `*Q4_K_M*` | Avoid — syntax errors in code generation |
+
+```bash
+# Example: Download Q5_K_M GGUF via huggingface-cli
+huggingface-cli download Bartowski/Qwen2.5-Coder-7B-Instruct-GGUF \
+  Qwen2.5-Coder-7B-Instruct-Q5_K_M.gguf \
+  --local-dir ./models
+```
+
 ## Phase 3: SGLang Benchmark
 
 **When**: Post-beta, after Phase 2 is stable
