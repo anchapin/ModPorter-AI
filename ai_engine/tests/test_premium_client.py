@@ -6,6 +6,7 @@ Run with: pytest ai_engine/tests/test_premium_client.py -v
 
 import pytest
 from unittest.mock import patch
+import httpx  # noqa: F401 - used dynamically in test methods
 
 
 class TestConversionResult:
@@ -65,7 +66,7 @@ class TestMODELCONFIGS:
             assert model in MODEL_CONFIGS, f"{model} not in MODEL_CONFIGS"
 
 
-class TestFEW_SHOT_EXAMPLES:
+class TestFewShotExamples:
     """Tests for few-shot examples."""
 
     def test_few_shot_examples_exist(self):

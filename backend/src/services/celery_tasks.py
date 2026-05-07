@@ -186,13 +186,27 @@ import redis
 
 
 def _run_async(coro):
-    """Run an async coroutine, creating an event loop if needed."""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    """Run an async coroutine from synchronous context.
+
+    This is used by Celery task handlers (which run synchronously) to call
+    async service functions.
+
+    When no event loop exists, creates a new one and runs the coroutine.
+    When called from an already-running async context, runs in a separate
+    thread with its own event loop to avoid blocking.
+    """
     try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         return loop.run_until_complete(coro)
-    finally:
-        loop.close()
+
+    import concurrent.futures
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(asyncio.run, coro)
+        return future.result(timeout=300)
 
 
 class CeleryTaskBase(Task):
@@ -685,7 +699,7 @@ async def enqueue_task(
         timeout_seconds=timeout_seconds,
     )
 
-    r = redis.from_url(REDIS_URL, decode_responses=True)
+    r = _get_redis_sync()
     r.set(f"portkit:task:{task.id}", json.dumps(task.to_dict()), ex=86400)
 
     queue_name = QUEUE_NAMES[priority]

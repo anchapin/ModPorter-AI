@@ -27,28 +27,64 @@ from pathlib import Path
 
 # Dirs to skip entirely
 SKIP_DIRS = {
-    "__pycache__", ".git", "node_modules", ".venv", "venv", "dist", "build",
-    ".next", "coverage", ".nyc_output", "htmlcov", ".pytest_cache", ".ruff_cache",
-    "pytest-of-alex", "training_data", "6ByLntZdir8UwV2KplisY", "notebooks",
-    "examples", "prototyping", "research",
+    "__pycache__",
+    ".git",
+    "node_modules",
+    ".venv",
+    "venv",
+    "dist",
+    "build",
+    ".next",
+    "coverage",
+    ".nyc_output",
+    "htmlcov",
+    ".pytest_cache",
+    ".ruff_cache",
+    "pytest-of-alex",
+    "training_data",
+    "6ByLntZdir8UwV2KplisY",
+    "notebooks",
+    "examples",
+    "prototyping",
+    "research",
 }
 
 # Subdirs per module to include in skeletons
 AI_ENGINE_MODULES = [
-    "agents", "converters", "search", "orchestration", "qa",
-    "crew", "knowledge", "engines", "learning", "models", "tools", "utils",
+    "agents",
+    "converters",
+    "search",
+    "orchestration",
+    "qa",
+    "crew",
+    "knowledge",
+    "engines",
+    "learning",
+    "models",
+    "tools",
+    "utils",
 ]
 BACKEND_MODULES = [
-    "src/api", "src/services", "src/models", "src/db", "src/security",
+    "src/api",
+    "src/services",
+    "src/models",
+    "src/db",
+    "src/security",
 ]
 FRONTEND_MODULES = [
-    "src/components", "src/pages", "src/api", "src/services", "src/hooks",
-    "src/types", "src/contexts",
+    "src/components",
+    "src/pages",
+    "src/api",
+    "src/services",
+    "src/hooks",
+    "src/types",
+    "src/contexts",
 ]
 
 MAX_SKELETON_FILES_PER_MODULE = 60  # avoid runaway output
 
 # ─────────────────────────── PYTHON AST EXTRACTION ─────────────────────────
+
 
 def extract_python_skeleton(filepath: Path, repo_root: Path) -> str | None:
     """Extract class/function signatures from a Python file using AST."""
@@ -74,15 +110,63 @@ def extract_python_skeleton(filepath: Path, repo_root: Path) -> str | None:
 
     # Key third-party imports (skip stdlib + relative)
     stdlib = {
-        "os", "sys", "re", "io", "json", "time", "math", "abc", "enum",
-        "typing", "pathlib", "datetime", "logging", "hashlib", "base64",
-        "collections", "functools", "itertools", "dataclasses", "contextlib",
-        "asyncio", "threading", "subprocess", "shutil", "tempfile", "uuid",
-        "copy", "warnings", "inspect", "textwrap", "struct", "array", "pickle",
-        "traceback", "weakref", "gc", "platform", "signal", "socket",
-        "http", "urllib", "email", "html", "xml", "csv", "sqlite3",
-        "unittest", "types", "operator", "string", "random", "secrets",
-        "multiprocessing", "concurrent", "queue", "heapq", "bisect",
+        "os",
+        "sys",
+        "re",
+        "io",
+        "json",
+        "time",
+        "math",
+        "abc",
+        "enum",
+        "typing",
+        "pathlib",
+        "datetime",
+        "logging",
+        "hashlib",
+        "base64",
+        "collections",
+        "functools",
+        "itertools",
+        "dataclasses",
+        "contextlib",
+        "asyncio",
+        "threading",
+        "subprocess",
+        "shutil",
+        "tempfile",
+        "uuid",
+        "copy",
+        "warnings",
+        "inspect",
+        "textwrap",
+        "struct",
+        "array",
+        "pickle",
+        "traceback",
+        "weakref",
+        "gc",
+        "platform",
+        "signal",
+        "socket",
+        "http",
+        "urllib",
+        "email",
+        "html",
+        "xml",
+        "csv",
+        "sqlite3",
+        "unittest",
+        "types",
+        "operator",
+        "string",
+        "random",
+        "secrets",
+        "multiprocessing",
+        "concurrent",
+        "queue",
+        "heapq",
+        "bisect",
     }
     imports = []
     for node in ast.walk(tree):
@@ -186,6 +270,7 @@ def _format_function_sig(node) -> str:
 
 # ─────────────────────────── TYPESCRIPT EXTRACTION ─────────────────────────
 
+
 def extract_typescript_skeleton(filepath: Path, repo_root: Path) -> str | None:
     """Extract interfaces, types, and function signatures from TypeScript files."""
     try:
@@ -266,6 +351,7 @@ def extract_typescript_skeleton(filepath: Path, repo_root: Path) -> str | None:
 
 # ─────────────────────────── MODULE SKELETON BUILDER ───────────────────────
 
+
 def build_module_skeleton(
     repo_root: Path, rel_dirs: list[str], label: str, max_files: int = MAX_SKELETON_FILES_PER_MODULE
 ) -> str:
@@ -289,7 +375,11 @@ def build_module_skeleton(
             # Skip dirs in SKIP_DIRS
             if any(part in SKIP_DIRS for part in filepath.parts):
                 continue
-            if filepath.name.startswith("test_") or "/tests/" in str(filepath) or "/testing/" in str(filepath):
+            if (
+                filepath.name.startswith("test_")
+                or "/tests/" in str(filepath)
+                or "/testing/" in str(filepath)
+            ):
                 continue
             if filepath.name == "__init__.py" and filepath.stat().st_size < 200:
                 continue
@@ -804,6 +894,7 @@ CURSORRULES = """\
 """
 
 # ─────────────────────────── MAIN ─────────────────────────────────────────
+
 
 def main():
     repo_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("/tmp/portkit")

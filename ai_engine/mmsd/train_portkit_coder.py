@@ -334,7 +334,9 @@ def count_tokens(messages: list, tokenizer) -> int:
     return len(tokenizer.encode(text))
 
 
-def mix_datasets(mmsd_examples: list, general_examples: list, target_ratio: float = MIX_RATIO) -> list:
+def mix_datasets(
+    mmsd_examples: list, general_examples: list, target_ratio: float = MIX_RATIO
+) -> list:
     """Mix MMSD and general code examples to achieve target token ratio (~12%)."""
     if not general_examples:
         return mmsd_examples
@@ -354,7 +356,9 @@ def mix_datasets(mmsd_examples: list, general_examples: list, target_ratio: floa
         scale = target_general_tokens / current_general_tokens
         n = max(1, int(len(general_examples) * scale))
         general_count = general_examples[:n]
-        current_general_tokens = sum(count_tokens(ex["messages"], tokenizer) for ex in general_count)
+        current_general_tokens = sum(
+            count_tokens(ex["messages"], tokenizer) for ex in general_count
+        )
         print(f"[mix] Scaled general sample to {len(general_count)} examples to hit target ratio")
 
     actual_ratio = current_general_tokens / (mmsd_tokens + current_general_tokens)
@@ -362,6 +366,7 @@ def mix_datasets(mmsd_examples: list, general_examples: list, target_ratio: floa
 
     mixed = mmsd_examples + general_count
     import random
+
     random.seed(SEED)
     random.shuffle(mixed)
     return mixed
@@ -400,7 +405,9 @@ def main():
     if general_examples:
         mixed_train = mix_datasets(mmsd_train, general_examples, target_ratio=MIX_RATIO)
         train_ds = Dataset.from_list(mixed_train)
-        print(f"Data: {n} total → {len(train_ds)} train (mixed, {len(general_examples)} general), {len(eval_ds)} eval")
+        print(
+            f"Data: {n} total → {len(train_ds)} train (mixed, {len(general_examples)} general), {len(eval_ds)} eval"
+        )
     else:
         train_ds = Dataset.from_list(mmsd_train)
         print(f"Data: {n} total → {len(train_ds)} train, {len(eval_ds)} eval")
