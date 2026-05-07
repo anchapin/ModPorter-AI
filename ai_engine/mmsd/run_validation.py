@@ -1,6 +1,7 @@
 import os
 import json
 from ai_engine.mmsd.validators.code_validator import CodeValidator
+from ai_engine.mmsd.validators.mojmap_validator import MojmapMappingValidator
 
 
 def _has_error_fields(entry):
@@ -22,11 +23,13 @@ def main():
 
     print("---- Running Validation on Synthetic Pairs ---")
     validator = CodeValidator()
+    mojmap_validator = MojmapMappingValidator()
 
     valid_count = 0
     total_count = 0
     skipped_error = 0
     skipped_invalid = 0
+    skipped_non_mojmap = 0
 
     with open(input_path, "r") as in_f, open(output_path, "w") as out_f:
         for line in in_f:
@@ -44,15 +47,22 @@ def main():
                 java_ok, java_msg = validator.validate_java(entry["java_source"])
                 bedrock_ok, bedrock_msg = validator.validate_bedrock_json(entry["bedrock_source"])
 
-                if java_ok and bedrock_ok:
-                    print(f"  VALID")
-                    out_f.write(json.dumps(entry) + "\n")
-                    valid_count += 1
-                else:
+                if not java_ok or not bedrock_ok:
                     print(f"  INVALID (Java: {java_ok}, Bedrock: {bedrock_ok})")
                     print(f"    Java Error: {java_msg[:100]}")
                     print(f"    Bedrock Error: {bedrock_msg[:100]}")
                     skipped_invalid += 1
+                    continue
+
+                mojmap_ok, mojmap_msg = mojmap_validator.validate(entry["java_source"])
+                if not mojmap_ok:
+                    print(f"  SKIP (non-Mojmap: {mojmap_msg})")
+                    skipped_non_mojmap += 1
+                    continue
+
+                print(f"  VALID")
+                out_f.write(json.dumps(entry) + "\n")
+                valid_count += 1
 
             except Exception as e:
                 print(f"  Error processing line {total_count}: {e}")
@@ -61,6 +71,7 @@ def main():
     print(f"  {valid_count} / {total_count} pairs passed.")
     print(f"  Skipped (error fields): {skipped_error}")
     print(f"  Skipped (validation):   {skipped_invalid}")
+    print(f"  Skipped (non-Mojmap):   {skipped_non_mojmap}")
     print(f"Clean dataset saved to {output_path}")
 
 
