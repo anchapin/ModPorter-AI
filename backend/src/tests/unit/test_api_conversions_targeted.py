@@ -43,7 +43,8 @@ def mock_security_scanner():
 
 
 class TestConversionsAPITargeted:
-@patch("api.conversions.get_db")
+    @patch("api.conversions.RateLimiter")
+    @patch("api.conversions.get_db")
     @patch("api.conversions.get_security_scanner")
     @patch("api.conversions.enqueue_task", new_callable=AsyncMock)
     @patch("api.conversions.crud")
@@ -62,14 +63,15 @@ class TestConversionsAPITargeted:
         mock_makedirs,
         mock_get_conversion_service,
         mock_crud,
-        mock_enqueue,
-        mock_get_scanner,
+        mock_get_security_scanner,
         mock_get_db,
+        mock_rate_limiter,
         client,
         mock_security_scanner,
     ):
+        mock_rate_limiter.return_value = AsyncMock()
         mock_get_db.return_value = AsyncMock()
-        mock_get_scanner.return_value = mock_security_scanner
+        mock_get_security_scanner.return_value = mock_security_scanner
 
         mock_cache.set_job_status = AsyncMock()
         mock_cache.set_progress = AsyncMock()
