@@ -638,6 +638,84 @@ X-RateLimit-Reset: 1640995200
 
 ---
 
+## Premium Conversion
+
+Premium conversion uses frontier AI models (DeepSeek V4 Pro, Kimi K2, GLM-5) via OpenRouter for high-quality Java→Bedrock mod conversion.
+
+### Convert with Premium Models
+
+**Endpoint:** `POST /api/v1/premium/convert`
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Request Body:**
+```json
+{
+    "instruction": "Custom swords mod that adds glowing diamond swords",
+    "java_source": "public class MySwordMod { ... }",
+    "model": "deepseek-v4-pro"
+}
+```
+
+**Response (200):**
+```json
+{
+    "success": true,
+    "reasoning": "## Conversion Plan\n\n1. **Block Registration**...",
+    "bedrock_manifest": "{\"format_version\": 2, \"header\": {...}}",
+    "bedrock_script": "import { world } from '@minecraft/server';\nworld.afterEvents.worldInitialize.subscribe(() => { ... });",
+    "model_used": "deepseek-v4-pro",
+    "latency_ms": 4500,
+    "error": ""
+}
+```
+
+### List Available Models
+
+**Endpoint:** `GET /api/v1/premium/models`
+
+**Response (200):**
+```json
+{
+    "models": {
+        "deepseek-v4-pro": "deepseek/deepseek-chat-v3.1",
+        "kimi-k2": "moonshotai/kimi-k2",
+        "glm-5": "thudm/glm-4-32b",
+        "deepseek-v4-flash": "deepseek/deepseek-chat-v3-0324"
+    }
+}
+```
+
+### Estimate Conversion Cost
+
+**Endpoint:** `POST /api/v1/premium/estimate`
+
+**Request Body:**
+```json
+{
+    "instruction": "My mod description",
+    "java_source": "public class MyMod {}",
+    "model": "deepseek-v4-pro"
+}
+```
+
+**Response (200):**
+```json
+{
+    "model": "deepseek-v4-pro",
+    "input_tokens_est": 1200,
+    "output_tokens_est": 2048,
+    "cost_usd_est": 0.0054
+}
+```
+
+**Note:** Premium conversion requires `OPENROUTER_API_KEY` to be configured on the server. Cost is approximately $0.006 per conversion.
+
+---
+
 ## SDKs and Libraries
 
 ### Python

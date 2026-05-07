@@ -225,6 +225,22 @@ print(f'✅ Success: {response.content}')
 - [RAG System Overview](../RAG.md) - Detailed RAG implementation documentation
 - [Project Documentation](../docs/project-docs.md) - General project information
 
+### BYOK (Bring Your Own Key)
+
+Users can provide their own OpenRouter API key for premium conversion using frontier models:
+
+```python
+from ai_engine.mmsd.premium_client import PortKitPremium
+
+with PortKitPremium() as client:
+    result = client.convert(
+        instruction="Custom swords mod",
+        java_source=java_code,
+    )
+```
+
+See `mmsd/premium_client.py` for full documentation.
+
 ## Support
 
 For issues or questions about the AI Engine:
