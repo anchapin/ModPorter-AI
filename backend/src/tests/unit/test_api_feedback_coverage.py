@@ -282,7 +282,9 @@ class TestGetAgentPerformance:
         mock_rl.agent_optimizer.__getattr__ = raise_on_import
 
         app = _make_app()
-        with patch.dict(sys.modules, {"rl": mock_rl, "rl.agent_optimizer": mock_rl.agent_optimizer}):
+        with patch.dict(
+            sys.modules, {"rl": mock_rl, "rl.agent_optimizer": mock_rl.agent_optimizer}
+        ):
             client = TestClient(app)
             resp = client.get("/ai/performance/agents")
         assert resp.status_code == 503
@@ -304,7 +306,9 @@ class TestGetSpecificAgentPerformance:
         mock_rl.agent_optimizer.__getattr__ = raise_on_import
 
         app = _make_app()
-        with patch.dict(sys.modules, {"rl": mock_rl, "rl.agent_optimizer": mock_rl.agent_optimizer}):
+        with patch.dict(
+            sys.modules, {"rl": mock_rl, "rl.agent_optimizer": mock_rl.agent_optimizer}
+        ):
             client = TestClient(app)
             resp = client.get("/ai/performance/agents/java_analyzer")
         assert resp.status_code == 503
@@ -326,7 +330,9 @@ class TestCompareAgentPerformance:
         mock_rl.agent_optimizer.__getattr__ = raise_on_import
 
         app = _make_app()
-        with patch.dict(sys.modules, {"rl": mock_rl, "rl.agent_optimizer": mock_rl.agent_optimizer}):
+        with patch.dict(
+            sys.modules, {"rl": mock_rl, "rl.agent_optimizer": mock_rl.agent_optimizer}
+        ):
             client = TestClient(app)
             resp = client.post(
                 "/ai/performance/compare",
