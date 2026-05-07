@@ -270,36 +270,69 @@ class TestGetAgentPerformance:
     """Tests for GET /ai/performance/agents"""
 
     def test_get_agent_performance_import_error(self):
+        import types
+        import sys
+
+        mock_rl = types.ModuleType("rl")
+
+        def raise_on_import(name, *args):
+            raise ImportError("simulated import error")
+
+        mock_rl.agent_optimizer = types.ModuleType("rl.agent_optimizer")
+        mock_rl.agent_optimizer.__getattr__ = raise_on_import
+
         app = _make_app()
-        client = TestClient(app)
-        with patch.dict("sys.modules", {"rl.agent_optimizer": None}):
+        with patch.dict(sys.modules, {"rl": mock_rl, "rl.agent_optimizer": mock_rl.agent_optimizer}):
+            client = TestClient(app)
             resp = client.get("/ai/performance/agents")
-            assert resp.status_code == 503
+        assert resp.status_code == 503
 
 
 class TestGetSpecificAgentPerformance:
     """Tests for GET /ai/performance/agents/{agent_type}"""
 
     def test_get_specific_agent_import_error(self):
+        import types
+        import sys
+
+        mock_rl = types.ModuleType("rl")
+
+        def raise_on_import(name, *args):
+            raise ImportError("simulated import error")
+
+        mock_rl.agent_optimizer = types.ModuleType("rl.agent_optimizer")
+        mock_rl.agent_optimizer.__getattr__ = raise_on_import
+
         app = _make_app()
-        client = TestClient(app)
-        with patch.dict("sys.modules", {"rl.agent_optimizer": None}):
+        with patch.dict(sys.modules, {"rl": mock_rl, "rl.agent_optimizer": mock_rl.agent_optimizer}):
+            client = TestClient(app)
             resp = client.get("/ai/performance/agents/java_analyzer")
-            assert resp.status_code == 503
+        assert resp.status_code == 503
 
 
 class TestCompareAgentPerformance:
     """Tests for POST /ai/performance/compare"""
 
     def test_compare_agents_import_error(self):
+        import types
+        import sys
+
+        mock_rl = types.ModuleType("rl")
+
+        def raise_on_import(name, *args):
+            raise ImportError("simulated import error")
+
+        mock_rl.agent_optimizer = types.ModuleType("rl.agent_optimizer")
+        mock_rl.agent_optimizer.__getattr__ = raise_on_import
+
         app = _make_app()
-        client = TestClient(app)
-        with patch.dict("sys.modules", {"rl.agent_optimizer": None}):
+        with patch.dict(sys.modules, {"rl": mock_rl, "rl.agent_optimizer": mock_rl.agent_optimizer}):
+            client = TestClient(app)
             resp = client.post(
                 "/ai/performance/compare",
                 json=["java_analyzer", "asset_converter"],
             )
-            assert resp.status_code == 503
+        assert resp.status_code == 503
 
     def test_compare_agents_too_few(self):
         app = _make_app()

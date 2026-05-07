@@ -12,6 +12,7 @@ sys.path.insert(0, str(src_dir))
 
 # Set testing environment variable BEFORE importing main
 os.environ["TESTING"] = "true"
+os.environ["DISABLE_REDIS"] = "true"
 os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only-12345678901234567890"
 os.environ["REFRESH_TOKEN_SECRET"] = "test-refresh-secret-key-for-testing-only-123456789012"
 os.environ["JWT_SECRET_KEY"] = "test-jwt-secret-key-for-testing-only-123456789012345678"
@@ -302,6 +303,7 @@ def reset_storage_env():
         "REDIS_SOCKET_KEEPALIVE",
         "REDIS_RETRY_ON_TIMEOUT",
         "REDIS_HEALTH_CHECK_INTERVAL",
+        "DISABLE_REDIS",
     ]
 
     original_env = {var: os.environ.get(var) for var in storage_and_redis_env_vars}
