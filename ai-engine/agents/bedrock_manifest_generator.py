@@ -49,7 +49,7 @@ class BedrockManifestGenerator:
 
     def __init__(self):
         self.format_version = 2
-        self.default_min_engine = [1, 19, 0]
+        self.default_min_engine = [1, 21, 0]
 
         # Bedrock manifest schema for validation
         self.manifest_schema = {

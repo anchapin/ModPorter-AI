@@ -57,6 +57,20 @@ def validate_manifest(manifest: dict, path: str) -> Dict[str, Any]:
         errors.append(f"{path}: Version must be array of 3 integers, got {version}")
 
     checks += 1
+    min_engine_version = header.get("min_engine_version", [])
+    min_engine_rule = rules.get("min_engine_version", [1, 21, 0])
+    if isinstance(min_engine_version, list) and len(min_engine_version) == 3:
+        if min_engine_version >= min_engine_rule:
+            passed += 1
+        else:
+            errors.append(
+                f"{path}: min_engine_version {min_engine_version} is below required {min_engine_rule} "
+                f"(Bedrock Scripting API 2.x requires [1, 21, 0])"
+            )
+    else:
+        errors.append(f"{path}: min_engine_version must be array of 3 integers, got {min_engine_version}")
+
+    checks += 1
     modules = manifest.get("modules", [])
     if modules and isinstance(modules, list):
         passed += 1

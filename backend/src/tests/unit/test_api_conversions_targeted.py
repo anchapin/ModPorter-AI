@@ -43,30 +43,29 @@ def mock_security_scanner():
 
 
 class TestConversionsAPITargeted:
-    @patch("api.conversions.get_celery_monitor")
-    @patch("api.conversions.cache")
-    @patch("builtins.open", new_callable=mock_open)
-    @patch("api.conversions.shutil.copyfileobj")
-    @patch("api.conversions.os.makedirs")
-    @patch("api.conversions.get_conversion_service")
-    @patch("api.conversions.crud")
-    @patch("api.conversions.enqueue_task", new_callable=AsyncMock)
-    @patch("api.conversions.get_security_scanner")
-    @patch("api.conversions.get_db")
     @patch("api.conversions.RateLimiter")
+    @patch("api.conversions.get_db")
+    @patch("api.conversions.get_security_scanner")
+    @patch("api.conversions.enqueue_task", new_callable=AsyncMock)
+    @patch("api.conversions.crud")
+    @patch("api.conversions.get_conversion_service")
+    @patch("api.conversions.os.makedirs")
+    @patch("api.conversions.shutil.copyfileobj")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("api.conversions.cache")
+    @patch("api.conversions.get_celery_monitor")
     async def test_create_conversion_success(
         self,
-        mock_rate_limiter,
-        mock_get_db,
-        mock_get_security_scanner,
-        mock_enqueue,
-        mock_crud,
-        mock_get_conversion_service,
-        mock_makedirs,
-        mock_copyfileobj,
-        mock_file_open,
-        mock_cache,
         mock_get_celery_monitor,
+        mock_cache,
+        mock_file_open,
+        mock_copyfileobj,
+        mock_makedirs,
+        mock_get_conversion_service,
+        mock_crud,
+        mock_get_security_scanner,
+        mock_get_db,
+        mock_rate_limiter,
         client,
         mock_security_scanner,
     ):
