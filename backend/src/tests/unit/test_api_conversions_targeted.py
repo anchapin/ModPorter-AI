@@ -56,6 +56,7 @@ class TestConversionsAPITargeted:
     @patch("api.conversions.get_celery_monitor")
     async def test_create_conversion_success(
         self,
+        mock_rate_limiter,
         mock_get_celery_monitor,
         mock_cache,
         mock_file_open,
@@ -63,7 +64,7 @@ class TestConversionsAPITargeted:
         mock_makedirs,
         mock_get_conversion_service,
         mock_crud,
-        mock_get_security_scanner,
+mock_get_security_scanner,
         mock_get_db,
         mock_rate_limiter,
         client,

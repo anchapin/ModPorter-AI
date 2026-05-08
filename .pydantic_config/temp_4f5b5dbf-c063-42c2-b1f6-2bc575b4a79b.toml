@@ -1,0 +1,44 @@
+output_dir = "outputs"
+batch_size = 2
+micro_batch_size = 2
+rollouts_per_example = 2
+advantage_type = "drgrpo"
+seq_len = 2048
+mask_env_responses = true
+mask_truncated_completions = false
+zero_truncated_completions = false
+length_bonus = 0.0
+num_train_workers = 1
+max_steps = 2
+async_level = 2
+bench = false
+seed = 42
+
+[client]
+timeout = 1200
+base_url = "http://localhost:8000/v1"
+api_key_var = "OPENAI_API_KEY"
+server_type = "vllm"
+
+[model]
+name = "Qwen/Qwen3.5-2B"
+trust_remote_code = false
+
+[sampling]
+temperature = 1.0
+repetition_penalty = 1.0
+min_tokens = 0
+
+[environment]
+id = "portkit-mod-convert"
+
+[environment.args]
+
+[buffer]
+from_scratch = true
+type = "simple"
+
+[log]
+level = "info"
+file = true
+log_data = false

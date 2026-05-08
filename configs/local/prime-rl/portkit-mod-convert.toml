@@ -1,0 +1,50 @@
+inference_gpu_ids = [0]
+trainer_gpu_ids = [0]
+
+max_steps = 20
+max_async_level = 1
+
+[model]
+name = "Qwen/Qwen3.5-2B"
+
+[optim]
+lr = 3e-6
+
+[trainer.model.lora]
+rank = 8
+alpha = 16
+dropout = 0.0
+target_modules = [
+    "q_proj",
+    "k_proj",
+    "v_proj",
+    "o_proj",
+    "gate_proj",
+    "up_proj",
+    "down_proj"
+]
+
+[orchestrator]
+batch_size = 8
+rollouts_per_example = 4
+seq_len = 512
+mask_truncated_completions = false
+
+[orchestrator.sampling]
+max_tokens = 512
+
+[orchestrator.buffer]
+online_difficulty_filtering = false
+
+[[orchestrator.env]]
+id = "portkit-mod-convert"
+
+[inference.model]
+name = "Qwen/Qwen3.5-2B"
+
+[inference.server]
+host = "127.0.0.1"
+port = 8000
+
+[inference.gpu_memory_utilization]
+= 0.7

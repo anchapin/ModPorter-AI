@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "prime_lab": {
+      "command": "/home/alex/.local/share/uv/tools/prime/bin/python",
+      "args": [
+        "-c",
+        "from prime_cli.main import run; run()",
+        "lab",
+        "mcp",
+        "--workspace",
+        "/home/alex/Projects/portkit"
+      ]
+    }
+  }
+}

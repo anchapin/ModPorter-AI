@@ -1,0 +1,16 @@
+[project]
+name = "portkit-mod-convert"
+description = "PortKit Mod Conversion environment for Minecraft Java-to-Bedrock"
+tags = ["code-generation", "multi-turn", "sandbox"]
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "verifiers>=0.1.13.dev8",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
