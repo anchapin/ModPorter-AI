@@ -1,0 +1,49 @@
+output_dir = "outputs"
+max_steps = 2
+async_level = 2
+recompute_logprobs = false
+bench = false
+
+[model]
+name = "Qwen/Qwen3.5-2B"
+attn = "flash_attention_2"
+reshard_after_forward = true
+trust_remote_code = false
+ep = 1
+tp = 1
+cp = 1
+impl = "hf"
+log_signature = false
+load_using_meta = false
+optimization_dtype = "float32"
+reduce_dtype = "float32"
+moe_use_grouped_mm = true
+
+[model.debug]
+random_init = false
+
+[data]
+
+[loss]
+norm_type = "token"
+type = "grpo"
+clip_ratio = 8.0
+
+[optim]
+lr = 1e-06
+weight_decay = 0.01
+max_norm = 1.0
+type = "adamw"
+betas1 = 0.9
+betas2 = 0.999
+
+[scheduler]
+type = "constant"
+
+[weights]
+save_async = true
+
+[log]
+level = "info"
+file = true
+log_data = false

@@ -8,6 +8,7 @@ VALIDATION_RULES = {
         "required_fields": ["uuid", "name", "version", "description"],
         "uuid_pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
         "version_format": "array_3_ints",
+        "min_engine_version": [1, 21, 0],
     },
     "blocks": {
         "required_fields": ["format_version", "minecraft:block"],

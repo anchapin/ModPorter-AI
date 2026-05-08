@@ -25,7 +25,7 @@ class ManifestGenerator:
                 "description": "",
                 "uuid": "",
                 "version": [1, 0, 0],
-                "min_engine_version": [1, 19, 0],
+                "min_engine_version": [1, 21, 0],
             },
             "modules": [],
         }
@@ -115,7 +115,7 @@ class ManifestGenerator:
                     "description": mod_description,
                     "uuid": str(uuid.uuid4()),
                     "version": mod_version,
-                    "min_engine_version": [1, 19, 0],
+                    "min_engine_version": [1, 21, 0],
                 },
                 "modules": [],
             }

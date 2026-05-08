@@ -62,7 +62,7 @@ def create_comprehensive_addon():
                 "description": "Comprehensive test behavior pack",
                 "uuid": "12345678-1234-1234-1234-123456789abc",
                 "version": [1, 0, 0],
-                "min_engine_version": [1, 19, 0],
+                "min_engine_version": [1, 21, 0],
             },
             "modules": [
                 {
@@ -123,7 +123,7 @@ def create_comprehensive_addon():
                 "description": "Comprehensive test resource pack",
                 "uuid": "abcd1234-ef56-7890-abcd-ef1234567890",  # Valid UUID format
                 "version": [1, 0, 0],
-                "min_engine_version": [1, 19, 0],
+                "min_engine_version": [1, 21, 0],
             },
             "modules": [
                 {
