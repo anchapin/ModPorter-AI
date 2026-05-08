@@ -503,7 +503,6 @@ async def process_conversion(
     job_id: str,
     mod_file_path: str,
     options: Dict[str, Any],
-    experiment_variant: Optional[str] = None,
 ):
     """Process a conversion job using the AI crew or LangGraph pipeline"""
 
@@ -525,7 +524,7 @@ async def process_conversion(
         job_status.progress = 10
         await job_manager.set_job_status(job_id, job_status)
 
-        logger.info(f"Processing conversion for job {job_id} with variant {experiment_variant} (langgraph={use_langgraph})")
+        logger.info(f"Processing conversion for job {job_id} (langgraph={use_langgraph})")
 
         # Create progress callback for real-time updates if available
         if PROGRESS_CALLBACK_AVAILABLE and create_progress_callback:
@@ -552,10 +551,6 @@ async def process_conversion(
             await _process_with_langgraph_pipeline(
                 job_id, mod_file_path, output_path, options, job_manager, progress_callback
             )
-        else:
-            await _process_with_crewai(
-                job_id, mod_file_path, output_path, options, experiment_variant, job_manager, progress_callback
-            )
 
     except Exception as e:
         logger.error(f"Conversion failed for job {job_id}: {e}", exc_info=True)
@@ -579,114 +574,6 @@ async def process_conversion(
                 logger.info(f"Cleaned up progress callback for job {job_id}")
             except Exception as e:
                 logger.warning(f"Failed to cleanup progress callback: {e}")
-
-
-async def _process_with_crewai(
-    job_id: str,
-    mod_file_path: str,
-    output_path: str,
-    options: Dict[str, Any],
-    experiment_variant: Optional[str],
-    job_manager: Any,
-    progress_callback: Optional[Any],
-) -> None:
-    """Process conversion using the CrewAI pipeline."""
-    try:
-        # Initialize conversion crew with variant if specified and pass progress callback
-        crew = PortkitConversionCrew(
-            variant_id=experiment_variant, progress_callback=progress_callback
-        )
-        logger.info(f"PortkitConversionCrew initialized with variant: {experiment_variant}")
-
-        # Update status for analysis stage
-        job_status = await job_manager.get_job_status(job_id)
-        if job_status:
-            job_status.current_stage = "analysis"
-            job_status.message = "Analyzing Java mod structure"
-            job_status.progress = 20
-            await job_manager.set_job_status(job_id, job_status)
-
-        # Execute the actual AI conversion using the conversion crew
-        from pathlib import Path
-
-        conversion_result = crew.convert_mod(
-            mod_path=Path(mod_file_path),
-            output_path=Path(output_path),
-            smart_assumptions=options.get("smart_assumptions", True),
-            include_dependencies=options.get("include_dependencies", True),
-        )
-
-        # Update progress based on conversion result
-        if conversion_result.get("status") == "failed":
-            # Mark job as failed
-            job_status = await job_manager.get_job_status(job_id)
-            if job_status:
-                job_status.status = "failed"
-                job_status.message = (
-                    f"Conversion failed: {conversion_result.get('error', 'Unknown error')}"
-                )
-                await job_manager.set_job_status(job_id, job_status)
-            logger.error(
-                f"Conversion failed for job {job_id}: {conversion_result.get('error')}"
-            )
-            return
-
-        # Update progress through conversion stages
-        stages = [
-            ("planning", "Creating conversion plan", 40),
-            ("translation", "Translating logic to Bedrock", 60),
-            ("assets", "Converting assets", 80),
-            ("packaging", "Packaging Bedrock addon", 90),
-            ("validation", "Validating conversion", 95),
-        ]
-
-        for stage, message, progress in stages:
-            job_status = await job_manager.get_job_status(job_id)
-            if job_status:
-                job_status.current_stage = stage
-                job_status.message = message
-                job_status.progress = progress
-                await job_manager.set_job_status(job_id, job_status)
-
-            # Short delay to show progress
-            import asyncio
-            await asyncio.sleep(0.5)
-
-        # Verify output file was created
-        if not os.path.exists(output_path):
-            logger.error(f"Output file not created by conversion crew: {output_path}")
-            logger.error(
-                "This indicates a serious conversion failure that should not be masked"
-            )
-
-            # Mark job as failed explicitly instead of creating a fake successful output
-            job_status = await job_manager.get_job_status(job_id)
-            if job_status:
-                job_status.status = "failed"
-                job_status.message = "Conversion crew failed to produce output file - this indicates a serious error in the conversion process"
-                await job_manager.set_job_status(job_id, job_status)
-            return
-
-        logger.info(f"Conversion completed successfully: {output_path}")
-
-        # Mark as completed
-        job_status = await job_manager.get_job_status(job_id)
-        if job_status:
-            job_status.status = "completed"
-            job_status.message = "Conversion completed successfully"
-            job_status.completed_at = datetime.now(timezone.utc)
-            await job_manager.set_job_status(job_id, job_status)
-
-        logger.info(f"Completed conversion for job {job_id}")
-
-    except Exception as conversion_error:
-        logger.error(f"Failed to convert mod {mod_file_path}: {conversion_error}")
-        # Mark job as failed if conversion fails
-        job_status = await job_manager.get_job_status(job_id)
-        if job_status:
-            job_status.status = "failed"
-            job_status.message = f"Conversion failed: {str(conversion_error)}"
-            await job_manager.set_job_status(job_id, job_status)
 
 
 async def _process_with_langgraph_pipeline(
