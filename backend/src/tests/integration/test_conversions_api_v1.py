@@ -53,6 +53,5 @@ class TestConversionsAPI:
         )
         assert response.status_code == 400
         data = response.json()
-        # Error handler returns 'message' or 'user_message', not 'detail'
-        assert "message" in data
-        assert "File type .txt not supported" in data["message"]
+        assert "user_message" in data
+        assert "File type .txt not supported" in data["user_message"]

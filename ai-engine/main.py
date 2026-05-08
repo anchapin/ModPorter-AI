@@ -199,6 +199,25 @@ class RedisJobManager:
             logger.error(f"Failed to delete job from Redis: {e}", exc_info=True)
 
 
+class InMemoryJobManager:
+    """Fallback job manager using in-memory dict when Redis is unavailable."""
+
+    def __init__(self):
+        self._jobs: Dict[str, "ConversionStatus"] = {}
+
+    async def set_job_status(self, job_id: str, status: "ConversionStatus") -> None:
+        """Store job status in memory."""
+        self._jobs[job_id] = status
+
+    async def get_job_status(self, job_id: str) -> Optional["ConversionStatus"]:
+        """Retrieve job status from memory."""
+        return self._jobs.get(job_id)
+
+    async def delete_job(self, job_id: str) -> None:
+        """Remove job from memory."""
+        self._jobs.pop(job_id, None)
+
+
 job_manager = None
 
 
@@ -296,8 +315,10 @@ async def startup_event():
         logger.info("Portkit Engine startup complete")
 
     except Exception as e:
-        logger.error(f"Failed to initialize AI Engine: {e}", exc_info=True)
-        raise HTTPException(status_code=503, detail="Service initialization failed")
+        logger.warning(f"Redis not available for AI Engine startup: {e}. Using in-memory fallback.")
+        redis_client = None
+        job_manager = InMemoryJobManager()
+        logger.info("AI Engine started with in-memory job manager (Redis unavailable)")
 
 
 @app.get("/api/v1/health", response_model=HealthResponse, tags=["health"])
