@@ -237,10 +237,10 @@ dependencies = [
 
     # AI Framework
     "crewai>=0.11.0",  # Latest available is 0.11.2
-    "langchain>=0.3.28",
+    "langchain>=0.3.30",
     "langchain-openai>=0.3.35",
     "langchain-ollama>=0.3.10",
-    "openai>=2.32.0",
+    "openai>=2.36.0",
     "sentence-transformers",
 
     # Vector Database (pin version for embedchain compatibility)
@@ -272,7 +272,7 @@ dependencies = [
     "redis>=4.5.0",
     
     # Configuration Management
-    "pydantic>=2.13.3",
+    "pydantic>=2.13.4",
     "pydantic-settings",
     
     # Monitoring
