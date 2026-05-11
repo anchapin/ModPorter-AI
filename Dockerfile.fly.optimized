@@ -6,7 +6,7 @@
 # =============================================================================
 # Stage 1: Frontend build (with cache mount for npm)
 # =============================================================================
-FROM node:25-alpine AS frontend-builder
+FROM node:26-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 # Use cache mount for node_modules - persists between builds

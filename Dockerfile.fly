@@ -2,7 +2,7 @@
 # Builds all services in one container for simplified deployment
 
 # Frontend build stage
-FROM node:25-alpine AS frontend-builder
+FROM node:26-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci --legacy-peer-deps
