@@ -5,7 +5,7 @@ Contains the main AssetConverterAgent class and core configuration.
 """
 
 import logging
-from typing import Dict, List, Tuple
+from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +82,7 @@ class AssetConverterAgent:
             validate_texture_tool,
             generate_fallback_texture_tool,
         )
+
         return [
             analyze_assets_tool,
             convert_textures_tool,

@@ -10,8 +10,6 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from PIL import Image
-
 # Optional audio import (removed in Python 3.14)
 try:
     from pydub import AudioSegment
@@ -180,7 +178,9 @@ class AssetConverterAgent:
         ]
 
     # Delegate texture methods to texture_converter subpackage
-    def _convert_single_texture(self, texture_path: str, metadata: Dict, usage: str, output_dir: Path = None) -> Dict:
+    def _convert_single_texture(
+        self, texture_path: str, metadata: Dict, usage: str, output_dir: Path = None
+    ) -> Dict:
         return _tc_convert_single_texture(self, texture_path, metadata, usage, output_dir)
 
     def _generate_texture_pack_structure(self, textures: List[Dict]) -> Dict:
@@ -192,13 +192,21 @@ class AssetConverterAgent:
     def detect_texture_atlas(self, texture_path: str) -> Dict:
         return detect_texture_atlas(self, texture_path)
 
-    def extract_texture_atlas(self, atlas_path: str, output_dir: str, tile_size: int = 16, naming_pattern: str = "tile_{x}_{y}") -> Dict:
+    def extract_texture_atlas(
+        self,
+        atlas_path: str,
+        output_dir: str,
+        tile_size: int = 16,
+        naming_pattern: str = "tile_{x}_{y}",
+    ) -> Dict:
         return extract_texture_atlas(self, atlas_path, output_dir, tile_size, naming_pattern)
 
     def parse_atlas_metadata(self, mcmeta_path: str) -> Dict:
         return parse_atlas_metadata(self, mcmeta_path)
 
-    def convert_atlas_to_bedrock(self, atlas_path: str, output_dir: str, texture_names: List[str] = None) -> Dict:
+    def convert_atlas_to_bedrock(
+        self, atlas_path: str, output_dir: str, texture_names: List[str] = None
+    ) -> Dict:
         return convert_atlas_to_bedrock(self, atlas_path, output_dir, texture_names)
 
     def convert_java_texture_path(self, java_path: str, bedrock_type: str = "blocks") -> str:
@@ -207,7 +215,9 @@ class AssetConverterAgent:
     def validate_texture(self, texture_path: str) -> Dict:
         return _validate_texture(self, texture_path)
 
-    def generate_fallback_for_jar(self, output_path: str, block_name: str, texture_type: str = "blocks") -> Dict:
+    def generate_fallback_for_jar(
+        self, output_path: str, block_name: str, texture_type: str = "blocks"
+    ) -> Dict:
         return generate_fallback_for_jar(self, output_path, block_name, texture_type)
 
     def _get_recommended_resolution(self, width: int, height: int) -> str:
@@ -219,7 +229,9 @@ class AssetConverterAgent:
     def _assess_conversion_complexity(self, analysis: Dict) -> str:
         return _assess_conversion_complexity(self, analysis)
 
-    def extract_textures_from_jar(self, jar_path: str, output_dir: str, texture_types: Optional[List[str]] = None) -> Dict:
+    def extract_textures_from_jar(
+        self, jar_path: str, output_dir: str, texture_types: Optional[List[str]] = None
+    ) -> Dict:
         return _extract_textures_from_jar(self, jar_path, output_dir, texture_types)
 
     def _map_java_texture_to_bedrock(self, java_path: str) -> str:
@@ -237,10 +249,14 @@ class AssetConverterAgent:
     def validate_textures_batch(self, texture_paths: List[str], metadata: Dict = None) -> Dict:
         return validate_textures_batch(self, texture_paths, metadata)
 
-    def extract_texture_atlas_from_jar(self, jar_path: str, atlas_type: str, output_dir: str) -> Dict:
+    def extract_texture_atlas_from_jar(
+        self, jar_path: str, atlas_type: str, output_dir: str
+    ) -> Dict:
         return extract_texture_atlas_from_jar(self, jar_path, atlas_type, output_dir)
 
-    def convert_jar_textures_to_bedrock(self, jar_path: str, output_dir: str, namespace: str = None) -> Dict:
+    def convert_jar_textures_to_bedrock(
+        self, jar_path: str, output_dir: str, namespace: str = None
+    ) -> Dict:
         return convert_jar_textures_to_bedrock(self, jar_path, output_dir, namespace)
 
     def _generate_fallback_texture(self, usage: str = "block", size: tuple = (16, 16)):
@@ -262,19 +278,27 @@ class AssetConverterAgent:
     def _generate_model_structure(self, models: List[Dict]) -> Dict:
         return _generate_model_structure(self, models)
 
-    def _extract_models_from_jar(self, jar_path: str, output_dir: str, namespace: str = None) -> Dict:
+    def _extract_models_from_jar(
+        self, jar_path: str, output_dir: str, namespace: str = None
+    ) -> Dict:
         return extract_models_from_jar(jar_path, output_dir, namespace)
 
     def _parse_blockstate(self, blockstate_data: Dict) -> Dict:
         return parse_blockstate(blockstate_data)
 
-    def _resolve_parent_model(self, model_data: Dict, model_cache: Dict, namespace: str = None) -> Tuple[List[Dict], List[str]]:
+    def _resolve_parent_model(
+        self, model_data: Dict, model_cache: Dict, namespace: str = None
+    ) -> Tuple[List[Dict], List[str]]:
         return resolve_parent_model(model_data, model_cache, namespace)
 
-    def _get_model_elements_with_inheritance(self, model_json: Dict, all_models: Dict, namespace: str = None) -> Tuple[List[Dict], List[str]]:
+    def _get_model_elements_with_inheritance(
+        self, model_json: Dict, all_models: Dict, namespace: str = None
+    ) -> Tuple[List[Dict], List[str]]:
         return get_model_elements_with_inheritance(model_json, all_models, namespace)
 
-    def _convert_blockstate(self, blockstate_path: str, model_output_dir: str, all_models: Dict, namespace: str = None) -> Dict:
+    def _convert_blockstate(
+        self, blockstate_path: str, model_output_dir: str, all_models: Dict, namespace: str = None
+    ) -> Dict:
         return convert_blockstate(self, blockstate_path, model_output_dir, all_models, namespace)
 
     # Delegate audio methods to audio_converter subpackage
@@ -359,8 +383,6 @@ def analyze_assets_tool(asset_data: str) -> str:
 
 def analyze_assets(asset_data: str) -> str:
     """Analyze assets for conversion."""
-    agent = AssetConverterAgent.get_instance()
-
     # Analyze assets using agent's analysis capabilities
     try:
         data = json.loads(asset_data) if isinstance(asset_data, str) else asset_data
@@ -385,17 +407,25 @@ def analyze_assets(asset_data: str) -> str:
         if ext in [".png", ".jpg", ".jpeg", ".tga", ".bmp"]:
             results["textures"]["count"] += 1
             if ext != ".png":
-                results["textures"]["conversions_needed"].append({"path": path, "needs_conversion": True})
+                results["textures"]["conversions_needed"].append(
+                    {"path": path, "needs_conversion": True}
+                )
         elif ext in [".obj", ".fbx", ".json"]:
             results["models"]["count"] += 1
             if ext != ".geo.json":
-                results["models"]["conversions_needed"].append({"path": path, "needs_conversion": True})
+                results["models"]["conversions_needed"].append(
+                    {"path": path, "needs_conversion": True}
+                )
         elif ext in [".ogg", ".wav", ".mp3"]:
             results["audio"]["count"] += 1
             if ext != ".ogg":
-                results["audio"]["conversions_needed"].append({"path": path, "needs_conversion": True})
+                results["audio"]["conversions_needed"].append(
+                    {"path": path, "needs_conversion": True}
+                )
         else:
             results["other"]["count"] += 1
             results["other"]["files"].append(path)
 
-    return json.dumps({"success": True, "analysis_results": results, "total_assets": len(asset_list)})
+    return json.dumps(
+        {"success": True, "analysis_results": results, "total_assets": len(asset_list)}
+    )

@@ -7,7 +7,7 @@ Contains utility and analysis functions for asset conversion.
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +19,14 @@ def _is_power_of_2(n: int) -> bool:
 
 def _assess_conversion_complexity(analysis: Dict) -> str:
     """Assess the overall conversion complexity"""
-    total_issues = len(analysis["textures"]["issues"]) + len(analysis["models"]["issues"]) + len(analysis["audio"]["issues"])
-    total_assets = analysis["textures"]["count"] + analysis["models"]["count"] + analysis["audio"]["count"]
+    total_issues = (
+        len(analysis["textures"]["issues"])
+        + len(analysis["models"]["issues"])
+        + len(analysis["audio"]["issues"])
+    )
+    total_assets = (
+        analysis["textures"]["count"] + analysis["models"]["count"] + analysis["audio"]["count"]
+    )
 
     if total_assets == 0:
         return "none"
@@ -36,7 +42,7 @@ def _assess_conversion_complexity(analysis: Dict) -> str:
 
 
 @staticmethod
-def analyze_assets_tool(asset_data: str) -> str:
+def analyze_assets_tool(asset_data: str) -> str:  # noqa: C901
     """Analyze assets for conversion."""
     from agents.asset_converter.base import AssetConverterAgent
 
@@ -53,8 +59,13 @@ def analyze_assets_tool(asset_data: str) -> str:
         needs_conversion = False
 
         # Check resolution
-        if width > agent.texture_constraints["max_resolution"] or height > agent.texture_constraints["max_resolution"]:
-            issues.append(f"Resolution {width}x{height} exceeds maximum {agent.texture_constraints['max_resolution']}")
+        if (
+            width > agent.texture_constraints["max_resolution"]
+            or height > agent.texture_constraints["max_resolution"]
+        ):
+            issues.append(
+                f"Resolution {width}x{height} exceeds maximum {agent.texture_constraints['max_resolution']}"
+            )
             needs_conversion = True
 
         # Check if power of 2
@@ -94,15 +105,21 @@ def analyze_assets_tool(asset_data: str) -> str:
 
         # Check complexity
         if vertex_count > agent.model_constraints["max_vertices"]:
-            issues.append(f"Vertex count {vertex_count} exceeds maximum {agent.model_constraints['max_vertices']}")
+            issues.append(
+                f"Vertex count {vertex_count} exceeds maximum {agent.model_constraints['max_vertices']}"
+            )
             needs_conversion = True
 
         if texture_count > agent.model_constraints["max_textures"]:
-            issues.append(f"Texture count {texture_count} exceeds maximum {agent.model_constraints['max_textures']}")
+            issues.append(
+                f"Texture count {texture_count} exceeds maximum {agent.model_constraints['max_textures']}"
+            )
             needs_conversion = True
 
         if bone_count > agent.model_constraints["supported_bones"]:
-            issues.append(f"Bone count {bone_count} exceeds maximum {agent.model_constraints['supported_bones']}")
+            issues.append(
+                f"Bone count {bone_count} exceeds maximum {agent.model_constraints['supported_bones']}"
+            )
             needs_conversion = True
 
         # Check format
@@ -115,7 +132,11 @@ def analyze_assets_tool(asset_data: str) -> str:
             "issues": issues,
             "current_format": file_ext,
             "target_format": agent.model_formats["output"],
-            "complexity": {"vertices": vertex_count, "textures": texture_count, "bones": bone_count},
+            "complexity": {
+                "vertices": vertex_count,
+                "textures": texture_count,
+                "bones": bone_count,
+            },
         }
 
     def _analyze_audio(audio_path: str, metadata: Dict) -> Dict:
@@ -130,17 +151,23 @@ def analyze_assets_tool(asset_data: str) -> str:
 
         # Check file size
         if file_size_mb > agent.audio_constraints["max_file_size_mb"]:
-            issues.append(f"File size {file_size_mb}MB exceeds maximum {agent.audio_constraints['max_file_size_mb']}MB")
+            issues.append(
+                f"File size {file_size_mb}MB exceeds maximum {agent.audio_constraints['max_file_size_mb']}MB"
+            )
             needs_conversion = True
 
         # Check sample rate
         if sample_rate not in agent.audio_constraints["sample_rates"]:
-            issues.append(f"Sample rate {sample_rate} not in supported rates {agent.audio_constraints['sample_rates']}")
+            issues.append(
+                f"Sample rate {sample_rate} not in supported rates {agent.audio_constraints['sample_rates']}"
+            )
             needs_conversion = True
 
         # Check duration
         if duration > agent.audio_constraints["max_duration_seconds"]:
-            issues.append(f"Duration {duration}s exceeds maximum {agent.audio_constraints['max_duration_seconds']}s")
+            issues.append(
+                f"Duration {duration}s exceeds maximum {agent.audio_constraints['max_duration_seconds']}s"
+            )
             needs_conversion = True
 
         # Check format
@@ -153,7 +180,11 @@ def analyze_assets_tool(asset_data: str) -> str:
             "issues": issues,
             "current_format": file_ext,
             "target_format": agent.audio_formats["output"],
-            "current_specs": {"file_size_mb": file_size_mb, "sample_rate": sample_rate, "duration": duration},
+            "current_specs": {
+                "file_size_mb": file_size_mb,
+                "sample_rate": sample_rate,
+                "duration": duration,
+            },
         }
 
     try:
@@ -213,13 +244,19 @@ def analyze_assets_tool(asset_data: str) -> str:
         audio_count = analysis_results["audio"]["count"]
 
         if texture_count > 0:
-            recommendations.append(f"Convert {texture_count} textures to PNG format with power-of-2 dimensions")
+            recommendations.append(
+                f"Convert {texture_count} textures to PNG format with power-of-2 dimensions"
+            )
         if model_count > 0:
             recommendations.append(f"Convert {model_count} models to Bedrock geometry format")
         if audio_count > 0:
             recommendations.append(f"Convert {audio_count} audio files to OGG format")
 
-        total_issues = len(analysis_results["textures"]["issues"]) + len(analysis_results["models"]["issues"]) + len(analysis_results["audio"]["issues"])
+        total_issues = (
+            len(analysis_results["textures"]["issues"])
+            + len(analysis_results["models"]["issues"])
+            + len(analysis_results["audio"]["issues"])
+        )
         if total_issues > 0:
             recommendations.append(f"Address {total_issues} compatibility issues")
 
@@ -236,7 +273,9 @@ def analyze_assets_tool(asset_data: str) -> str:
 
     except Exception as e:
         logger.error(f"Unhandled error in analyze_assets: {e}", exc_info=True)
-        return json.dumps({"success": False, "error": f"Failed to analyze assets: {str(e)}"}, indent=2)
+        return json.dumps(
+            {"success": False, "error": f"Failed to analyze assets: {str(e)}"}, indent=2
+        )
 
 
 @staticmethod
@@ -254,7 +293,11 @@ def convert_models_tool(model_list: str) -> str:
     from agents.asset_converter.base import AssetConverterAgent
 
     agent = AssetConverterAgent.get_instance()
-    return agent.convert_models_tool(model_list) if hasattr(agent, 'convert_models_tool') else str({"success": False, "error": "Model conversion not available"})
+    return (
+        agent.convert_models_tool(model_list)
+        if hasattr(agent, "convert_models_tool")
+        else str({"success": False, "error": "Model conversion not available"})
+    )
 
 
 @staticmethod
@@ -263,7 +306,11 @@ def convert_audio_tool(audio_list: str) -> str:
     from agents.asset_converter.base import AssetConverterAgent
 
     agent = AssetConverterAgent.get_instance()
-    return agent.convert_audio_tool(audio_list) if hasattr(agent, 'convert_audio_tool') else str({"success": False, "error": "Audio conversion not available"})
+    return (
+        agent.convert_audio_tool(audio_list)
+        if hasattr(agent, "convert_audio_tool")
+        else str({"success": False, "error": "Audio conversion not available"})
+    )
 
 
 @staticmethod
@@ -274,11 +321,12 @@ def validate_bedrock_assets_tool(asset_paths: str) -> str:
     agent = AssetConverterAgent.get_instance()
     try:
         import json
+
         data = json.loads(asset_paths)
         paths = data if isinstance(data, list) else data.get("paths", [])
         results = []
         for path in paths:
-            validation = agent.validate_texture(path) if path.endswith('.png') else {"valid": True}
+            validation = agent.validate_texture(path) if path.endswith(".png") else {"valid": True}
             results.append({"path": path, "validation": validation})
         return json.dumps({"success": True, "results": results}, indent=2)
     except Exception as e:
@@ -300,7 +348,9 @@ def convert_java_texture_path_tool(java_path: str, bedrock_type: str = "blocks")
     from agents.asset_converter.base import AssetConverterAgent
 
     agent = AssetConverterAgent.get_instance()
-    return json.dumps({"success": True, "bedrock_path": agent.convert_java_texture_path(java_path, bedrock_type)})
+    return json.dumps(
+        {"success": True, "bedrock_path": agent.convert_java_texture_path(java_path, bedrock_type)}
+    )
 
 
 @staticmethod
