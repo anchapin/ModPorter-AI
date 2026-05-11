@@ -86,13 +86,25 @@ QUICK_RETRY_POLICY = RetryPolicy(
 class AsyncTaskQueue:
     """Async task queue with Redis backend - thin wrapper around celery_tasks functions."""
 
-    def __init__(self):
+    def __init__(
+        self,
+        redis_url: str = "redis://localhost:6379",
+        max_retries: int = 3,
+        default_timeout: int = 300,
+        dead_letter_enabled: bool = True,
+        # Deprecated/unused params accepted for backward compatibility
+        name: str = None,
+        payload: Dict = None,
+        priority: "TaskPriority" = None,
+    ):
+        # Accept redis_url for backward compatibility but ignore it
+        # (this is a shim - real implementation uses celery_tasks)
         pass
 
     async def enqueue(
-        self, task_name: str, payload: Dict, priority: TaskPriority = TaskPriority.NORMAL
+        self, name: str, payload: Dict, priority: TaskPriority = TaskPriority.NORMAL
     ) -> TaskData:
-        return await enqueue_task(task_name, payload, priority)
+        return await enqueue_task(name, payload, priority)
 
     async def get_status(self, task_id: str) -> Optional[Dict]:
         return get_task_status(task_id)
@@ -106,6 +118,16 @@ class AsyncTaskQueue:
     async def health(self) -> QueueHealth:
         stats = await self.get_stats()
         return QueueHealth.from_stats(stats)
+
+    # Backward-compatibility methods (delegated to health())
+    async def get_queue_health(self) -> QueueHealth:
+        return await self.health()
+
+
+async def get_queue_health() -> QueueHealth:
+    """Get queue health - backward-compatibility shim."""
+    stats = get_queue_stats()
+    return QueueHealth.from_stats(stats)
 
 
 __all__ = [
@@ -129,6 +151,7 @@ __all__ = [
     "reprocess_dead_letter_task",
     "health_check",
     "process_retry_queue",
+    "get_queue_health",
     # Queue class
     "AsyncTaskQueue",
     # Task data
