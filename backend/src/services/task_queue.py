@@ -32,12 +32,40 @@ from services.celery_tasks import (
 from services.celery_tasks import TaskData as Task
 
 
-# Alias TaskData as AsyncTaskQueue for code that expects the class
+# Full AsyncTaskQueue for backward compatibility with full attribute support
 class AsyncTaskQueue:
-    """Async task queue - wrapper around celery_tasks functions for backward compatibility."""
+    """Async task queue with Redis backend - wrapper around celery_tasks functions for backward compatibility."""
 
-    def __init__(self):
-        pass
+    def __init__(
+        self,
+        redis_url: str = "redis://localhost:6379",
+        max_retries: int = 3,
+        default_timeout: int = 300,
+        dead_letter_enabled: bool = True,
+        # Additional params accepted for backward compatibility
+        name: str = None,
+        payload: Dict = None,
+        priority: "TaskPriority" = None,
+    ):
+        # Store instance attributes for backward compatibility
+        self.redis_url = redis_url
+        self.max_retries = max_retries
+        self.default_timeout = default_timeout
+        self.dead_letter_enabled = dead_letter_enabled
+
+        # Queue names for each priority level
+        self._queue_names = {
+            TaskPriority.LOW: "task_queue:low",
+            TaskPriority.NORMAL: "task_queue:normal",
+            TaskPriority.HIGH: "task_queue:high",
+            TaskPriority.CRITICAL: "task_queue:critical",
+        }
+
+        # Dead letter queue name (for backward compatibility)
+        self._dead_letter_queue = "task_queue:dead_letter"
+
+        # Track running tasks
+        self._running_tasks = {}
 
     async def enqueue(
         self, name: str, payload: Dict, priority: TaskPriority = TaskPriority.NORMAL

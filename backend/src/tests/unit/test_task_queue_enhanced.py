@@ -277,6 +277,7 @@ class TestTaskLifecycle:
             "cancelled",
             "dead_letter",
             "retrying",
+            "timeout",  # Issue #1151: Timeout status added
         }
 
         actual_states = {status.value for status in TaskStatus}
