@@ -1,22 +1,17 @@
 """
-Celery tasks for distributed task processing.
+Celery tasks subpackage.
 
-Replaces the custom AsyncTaskQueue implementation from task_queue_enhanced.py
-with Celery-backed workers for retry logic, dead-letter queues, and monitoring.
+Organized into logical modules:
+- base: TaskStatus, TaskPriority, TaskData, retry policies, queue constants
+- conversion_tasks: Handlers and tasks for conversion jobs
+- cleanup_tasks: File cleanup and orphaned file purge tasks
+- notification_tasks: Email and notification tasks
+- queue_tasks: Queue management tasks (status, stats, dead letter)
+- inference_tasks: LLM inference tasks
 
-Issue: #1098 - Consolidate task queues: remove task_queue.py duplicate, migrate to Celery
-
-This module is now a compatibility shim. The actual implementation has been split
-into the tasks/ subpackage for better organization:
-- tasks.base: TaskStatus, TaskPriority, TaskData, retry policies
-- tasks.conversion_tasks: Handlers and tasks for conversion jobs  
-- tasks.cleanup_tasks: File cleanup and orphaned file purge tasks
-- tasks.queue_tasks: Queue management tasks (status, stats, dead letter)
-- tasks.notification_tasks: Email and notification tasks
-- tasks.inference_tasks: LLM inference tasks
+Issue: #1098 - Consolidate task queues
 """
 
-# Re-export everything from the new tasks subpackage for backwards compatibility
 from tasks.base import (
     TaskStatus,
     TaskPriority,
@@ -33,19 +28,20 @@ from tasks.base import (
     TASK_KEY_PREFIX,
 )
 
+# Import handlers for task routing
 from tasks.conversion_tasks import (
     handle_conversion_task,
     handle_asset_conversion_task,
+    handle_model_conversion_task,
     handle_java_analysis_task,
     handle_texture_extraction_task,
-    handle_model_conversion_task,
+)
+
+# Import tasks for Celery worker
+from tasks.conversion_tasks import (
     conversion_task,
     asset_conversion_task,
-    java_analysis_task,
-    texture_extraction_task,
     model_conversion_task,
-    enqueue_task,
-    enqueue_conversion_task,
 )
 
 from tasks.cleanup_tasks import (
@@ -68,38 +64,15 @@ from tasks.notification_tasks import (
     send_conversion_complete_email,
     send_conversion_failed_email,
     send_rate_limit_warning,
-    send_admin_alert,
 )
 
-from tasks.inference_tasks import (
-    llm_inference_task,
-    heavy_task,
-)
-
-# Import Celery app for convenience
+# Re-export Celery app for convenience
 from services.celery_config import celery_app
-
-# Ensure Sentry is initialized for Celery workers
-from services.sentry_config import init_celery_sentry
-init_celery_sentry()
-
-# Legacy imports from original module structure
-import json
-import asyncio
-import uuid
-import time
-import logging
-from datetime import datetime, timedelta, timezone
-
-logger = logging.getLogger(__name__)
-
-# Re-export _get_task_handler and _run_async for internal use
-from tasks.conversion_tasks import _get_redis_sync, _run_async
 
 __all__ = [
     # Base types
     "TaskStatus",
-    "TaskPriority",
+    "TaskPriority", 
     "TaskData",
     "TimeoutResult",
     "RetryPolicy",
@@ -112,17 +85,15 @@ __all__ = [
     "METRICS_KEY",
     "RETRY_QUEUE",
     "TASK_KEY_PREFIX",
-    # Handler functions
+    # Handlers
     "handle_conversion_task",
     "handle_asset_conversion_task",
+    "handle_model_conversion_task",
     "handle_java_analysis_task",
     "handle_texture_extraction_task",
-    "handle_model_conversion_task",
-    # Celery tasks
+    # Tasks
     "conversion_task",
     "asset_conversion_task",
-    "java_analysis_task",
-    "texture_extraction_task",
     "model_conversion_task",
     "cleanup_old_tasks",
     "purge_orphaned_files",
@@ -137,12 +108,6 @@ __all__ = [
     "send_conversion_complete_email",
     "send_conversion_failed_email",
     "send_rate_limit_warning",
-    "send_admin_alert",
-    "llm_inference_task",
-    "heavy_task",
-    # Async enqueue function (legacy compatibility)
-    "enqueue_task",
-    "enqueue_conversion_task",
     # Celery app
     "celery_app",
 ]
