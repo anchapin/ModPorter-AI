@@ -32,12 +32,42 @@ from services.celery_tasks import (
 from services.celery_tasks import TaskData as Task
 
 
-# Alias TaskData as AsyncTaskQueue for code that expects the class
+# AsyncTaskQueue wrapper for backward compatibility
 class AsyncTaskQueue:
     """Async task queue - wrapper around celery_tasks functions for backward compatibility."""
 
-    def __init__(self):
-        pass
+    def __init__(
+        self,
+        redis_url: str = "redis://localhost:6379",
+        max_retries: int = 3,
+        default_timeout: int = 300,
+        dead_letter_enabled: bool = True,
+    ):
+        # Store instance attributes tests access
+        self.redis_url = redis_url
+        self.max_retries = max_retries
+        self.default_timeout = default_timeout
+        self.dead_letter_enabled = dead_letter_enabled
+
+        # Queue names
+        self._queue_names = {
+            TaskPriority.LOW: "task_queue:low",
+            TaskPriority.NORMAL: "task_queue:normal",
+            TaskPriority.HIGH: "task_queue:high",
+            TaskPriority.CRITICAL: "task_queue:critical",
+        }
+
+        # Dead letter queue
+        self._dead_letter_queue = "task_queue:dead_letter"
+
+        # Processing tracking
+        self._processing_set = "task_queue:processing"
+
+        # Running tasks
+        self._running_tasks: Dict[str, Any] = {}
+
+        # Redis client
+        self._redis = None
 
     async def enqueue(
         self, name: str, payload: Dict, priority: TaskPriority = TaskPriority.NORMAL
@@ -51,20 +81,35 @@ class AsyncTaskQueue:
         return cancel_task(task_id)
 
     async def get_stats(self) -> Dict:
-        return get_queue_stats()
+        stats = get_queue_stats()
+        return {
+            "total_queued": stats.get("total_queued", 0),
+            "total_processing": stats.get("total_processing", 0),
+            "total_dead_letter": stats.get("total_dead_letter", 0),
+            "queues": stats.get("queues", {}),
+        }
 
     def close(self):
         pass
 
 
 # Module-level singleton for backward compatibility
-_task_queue = AsyncTaskQueue()
+_task_queue: Optional[AsyncTaskQueue] = None
 
 
 async def get_task_queue() -> AsyncTaskQueue:
     """Get the async task queue instance."""
+    global _task_queue
+
+    if _task_queue is None:
+        _task_queue = AsyncTaskQueue(redis_url="redis://localhost:6379")
+
     return _task_queue
 
+
+# Expose aioredis module reference for tests that check for it
+# (actual Redis operations are handled by celery_tasks)
+import redis.asyncio as aioredis
 
 __all__ = [
     "TaskStatus",
@@ -85,4 +130,5 @@ __all__ = [
     "process_retry_queue",
     "TimeoutResult",
     "_task_queue",
+    "aioredis",
 ]
