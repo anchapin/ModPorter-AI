@@ -37,6 +37,7 @@ def cleanup_old_tasks(max_age_hours: int = 24) -> Dict[str, Any]:
         task_data = r.get(key)
         if task_data:
             import json
+
             task_dict = json.loads(task_data)
             status = task_dict.get("status")
             if status in ("completed", "failed", "cancelled", "dead_letter"):
@@ -52,7 +53,7 @@ def cleanup_old_tasks(max_age_hours: int = 24) -> Dict[str, Any]:
 
 
 @celery_app.task(name="services.tasks.cleanup_tasks.purge_orphaned_files")
-def purge_orphaned_files(max_age_hours: int = 24) -> Dict[str, Any]:
+def purge_orphaned_files(max_age_hours: int = 24) -> Dict[str, Any]:  # noqa: C901
     """
     Purge orphaned JAR files older than max_age_hours.
 

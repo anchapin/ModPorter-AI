@@ -41,11 +41,12 @@ from services.celery_tasks import (
 # Re-export Task class for backward compatibility
 from services.celery_tasks import TaskData as Task
 
+
 # QueueHealth for enhanced queue monitoring
 @dataclass
 class QueueHealth:
     """Health metrics for queue monitoring."""
-    
+
     is_healthy: bool
     queue_size: int
     processing_count: int
@@ -53,7 +54,7 @@ class QueueHealth:
     average_wait_time_ms: float
     last_health_check: datetime
     issues: List[str] = field(default_factory=list)
-    
+
     @classmethod
     def from_stats(cls, stats: Dict) -> "QueueHealth":
         """Create QueueHealth from queue stats."""
@@ -84,22 +85,24 @@ QUICK_RETRY_POLICY = RetryPolicy(
 # AsyncTaskQueue for backward compatibility
 class AsyncTaskQueue:
     """Async task queue with Redis backend - thin wrapper around celery_tasks functions."""
-    
+
     def __init__(self):
         pass
-    
-    async def enqueue(self, task_name: str, payload: Dict, priority: TaskPriority = TaskPriority.NORMAL) -> TaskData:
+
+    async def enqueue(
+        self, task_name: str, payload: Dict, priority: TaskPriority = TaskPriority.NORMAL
+    ) -> TaskData:
         return await enqueue_task(task_name, payload, priority)
-    
+
     async def get_status(self, task_id: str) -> Optional[Dict]:
         return get_task_status(task_id)
-    
+
     async def cancel(self, task_id: str) -> bool:
         return cancel_task(task_id)
-    
+
     async def get_stats(self) -> Dict:
         return get_queue_stats()
-    
+
     async def health(self) -> QueueHealth:
         stats = await self.get_stats()
         return QueueHealth.from_stats(stats)
@@ -108,7 +111,7 @@ class AsyncTaskQueue:
 __all__ = [
     # Base types
     "TaskStatus",
-    "TaskPriority", 
+    "TaskPriority",
     "Task",
     "RetryPolicy",
     "QueueHealth",

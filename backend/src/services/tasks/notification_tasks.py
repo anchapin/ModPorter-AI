@@ -3,7 +3,7 @@ Notification-related Celery tasks.
 
 Includes:
 - Conversion completion emails
-- Failure notification emails  
+- Failure notification emails
 - Rate limit warnings
 - Admin alerts
 
@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 def _run_async(coro):
     """Run an async coroutine from synchronous context."""
     import asyncio
+
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
@@ -28,6 +29,7 @@ def _run_async(coro):
         return loop.run_until_complete(coro)
 
     import concurrent.futures
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         future = executor.submit(asyncio.run, coro)
         return future.result(timeout=300)
@@ -42,7 +44,7 @@ def send_conversion_complete_email(
 ) -> Dict[str, Any]:
     """
     Send conversion completion email to user.
-    
+
     Issue: #1164 - Async conversion job status with progress indicator and completion email
     """
     from services.email_service import email_service
@@ -77,7 +79,7 @@ def send_conversion_failed_email(
 ) -> Dict[str, Any]:
     """
     Send conversion failure notification email to user.
-    
+
     Issue: #1164 - Async conversion job status with progress indicator and completion email
     """
     from services.email_service import email_service
@@ -112,7 +114,7 @@ def send_rate_limit_warning(
 ) -> Dict[str, Any]:
     """
     Send rate limit warning email to user.
-    
+
     Issue: #1151 - Per-user rate limiting for conversion jobs
     """
     from services.email_service import email_service
@@ -146,7 +148,7 @@ def send_admin_alert(
 ) -> Dict[str, Any]:
     """
     Send admin alert for system issues.
-    
+
     Used for:
     - High dead letter queue
     - Queue backup

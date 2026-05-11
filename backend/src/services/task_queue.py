@@ -28,28 +28,31 @@ from services.celery_tasks import (
     process_retry_queue,
 )
 
-# Re-export Task class for backward compatibility  
+# Re-export Task class for backward compatibility
 from services.celery_tasks import TaskData as Task
+
 
 # Alias TaskData as AsyncTaskQueue for code that expects the class
 class AsyncTaskQueue:
     """Async task queue - wrapper around celery_tasks functions for backward compatibility."""
-    
+
     def __init__(self):
         pass
-    
-    async def enqueue(self, name: str, payload: Dict, priority: TaskPriority = TaskPriority.NORMAL) -> TaskData:
+
+    async def enqueue(
+        self, name: str, payload: Dict, priority: TaskPriority = TaskPriority.NORMAL
+    ) -> TaskData:
         return await enqueue_task(name, payload, priority)
-    
+
     async def get_status(self, task_id: str) -> Optional[Dict]:
         return get_task_status(task_id)
-    
+
     async def cancel(self, task_id: str) -> bool:
         return cancel_task(task_id)
-    
+
     async def get_stats(self) -> Dict:
         return get_queue_stats()
-    
+
     def close(self):
         pass
 
@@ -67,7 +70,7 @@ __all__ = [
     "TaskStatus",
     "TaskPriority",
     "Task",
-    "RetryPolicy", 
+    "RetryPolicy",
     "AsyncTaskQueue",
     "DEFAULT_RETRY_POLICY",
     "CONVERSION_RETRY_POLICY",

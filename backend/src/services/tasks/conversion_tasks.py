@@ -8,7 +8,16 @@ from typing import Dict, Any, Optional, List
 from celery import shared_task
 import logging
 
-from tasks.base import TaskData, TaskPriority, QUEUE_NAMES, METRICS_KEY, DEAD_LETTER_QUEUE, PROCESSING_SET, RETRY_QUEUE, DEFAULT_RETRY_POLICY
+from tasks.base import (
+    TaskData,
+    TaskPriority,
+    QUEUE_NAMES,
+    METRICS_KEY,
+    DEAD_LETTER_QUEUE,
+    PROCESSING_SET,
+    RETRY_QUEUE,
+    DEFAULT_RETRY_POLICY,
+)
 from services.celery_config import celery_app, REDIS_URL
 import redis
 import time
@@ -26,6 +35,7 @@ def _get_redis_sync():
 def _run_async(coro):
     """Run an async coroutine from synchronous context."""
     import asyncio
+
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
@@ -34,6 +44,7 @@ def _run_async(coro):
         return loop.run_until_complete(coro)
 
     import concurrent.futures
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         future = executor.submit(asyncio.run, coro)
         return future.result(timeout=300)

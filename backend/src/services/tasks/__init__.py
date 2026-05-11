@@ -33,8 +33,6 @@ from tasks.conversion_tasks import (
     handle_conversion_task,
     handle_asset_conversion_task,
     handle_model_conversion_task,
-    handle_java_analysis_task,
-    handle_texture_extraction_task,
 )
 
 # Import tasks for Celery worker
@@ -72,7 +70,7 @@ from services.celery_config import celery_app
 __all__ = [
     # Base types
     "TaskStatus",
-    "TaskPriority", 
+    "TaskPriority",
     "TaskData",
     "TimeoutResult",
     "RetryPolicy",
@@ -89,8 +87,6 @@ __all__ = [
     "handle_conversion_task",
     "handle_asset_conversion_task",
     "handle_model_conversion_task",
-    "handle_java_analysis_task",
-    "handle_texture_extraction_task",
     # Tasks
     "conversion_task",
     "asset_conversion_task",

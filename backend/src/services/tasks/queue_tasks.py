@@ -57,9 +57,9 @@ def cancel_task(task_id: str) -> bool:
         task_dict = json.loads(task_data)
         if task_dict["status"] == TaskStatus.QUEUED.value:
             task_dict["status"] = TaskStatus.CANCELLED.value
-            task_dict["completed_at"] = __import__("datetime").datetime.now(
-                __import__("datetime").timezone.utc
-            ).isoformat()
+            task_dict["completed_at"] = (
+                __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()
+            )
             r.set(f"portkit:task:{task_id}", json.dumps(task_dict), ex=86400)
 
             for queue_name in QUEUE_NAMES.values():
@@ -151,9 +151,9 @@ def health_check() -> Dict[str, Any]:
         "healthy": len(issues) == 0,
         "issues": issues,
         "stats": stats,
-        "checked_at": __import__("datetime").datetime.now(
-            __import__("datetime").timezone.utc
-        ).isoformat(),
+        "checked_at": __import__("datetime")
+        .datetime.now(__import__("datetime").timezone.utc)
+        .isoformat(),
     }
 
 
