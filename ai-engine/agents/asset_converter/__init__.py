@@ -166,18 +166,73 @@ class AssetConverterAgent:
 
     def get_tools(self) -> List:
         """Get tools available to this agent"""
+        # Import tool functions at call time to avoid circular imports
+        from agents.asset_converter.tools import (
+            analyze_assets_tool,
+            convert_textures_tool,
+            convert_models_tool,
+            convert_audio_tool,
+            validate_bedrock_assets_tool,
+            extract_jar_textures_tool,
+            convert_java_texture_path_tool,
+            validate_texture_tool,
+            generate_fallback_texture_tool,
+        )
         return [
-            AssetConverterAgent.analyze_assets_tool,
-            AssetConverterAgent.convert_textures_tool,
-            AssetConverterAgent.convert_models_tool,
-            AssetConverterAgent.convert_audio_tool,
-            AssetConverterAgent.validate_bedrock_assets_tool,
-            # New tools for Issue #650 - JAR Texture Extraction
-            AssetConverterAgent.extract_jar_textures_tool,
-            AssetConverterAgent.convert_java_texture_path_tool,
-            AssetConverterAgent.validate_texture_tool,
-            AssetConverterAgent.generate_fallback_texture_tool,
+            analyze_assets_tool,
+            convert_textures_tool,
+            convert_models_tool,
+            convert_audio_tool,
+            validate_bedrock_assets_tool,
+            extract_jar_textures_tool,
+            convert_java_texture_path_tool,
+            validate_texture_tool,
+            generate_fallback_texture_tool,
         ]
+
+    # Backward-compat tool method aliases (delegate to static tools via instance)
+    def _run_tool(self, tool_name: str, *args, **kwargs):
+        from agents.asset_converter import tools as _tools
+        tool_func = getattr(_tools, tool_name, None)
+        if tool_func:
+            return tool_func(*args, **kwargs)
+        return json.dumps({"success": False, "error": f"Tool {tool_name} not found"})
+
+    def analyze_assets_tool(self, asset_data: str) -> str:
+        from agents.asset_converter.tools import analyze_assets_tool as _tool
+        return _tool(asset_data)
+
+    def convert_textures_tool(self, texture_data: str) -> str:
+        from agents.asset_converter.tools import convert_textures_tool as _tool
+        return _tool(texture_data)
+
+    def convert_models_tool(self, model_list: str) -> str:
+        from agents.asset_converter.tools import convert_models_tool as _tool
+        return _tool(model_list)
+
+    def convert_audio_tool(self, audio_list: str) -> str:
+        from agents.asset_converter.tools import convert_audio_tool as _tool
+        return _tool(audio_list)
+
+    def validate_bedrock_assets_tool(self, asset_paths: str) -> str:
+        from agents.asset_converter.tools import validate_bedrock_assets_tool as _tool
+        return _tool(asset_paths)
+
+    def extract_jar_textures_tool(self, jar_path: str, output_dir: str) -> str:
+        from agents.asset_converter.tools import extract_jar_textures_tool as _tool
+        return _tool(jar_path, output_dir)
+
+    def convert_java_texture_path_tool(self, java_path: str, bedrock_type: str = "blocks") -> str:
+        from agents.asset_converter.tools import convert_java_texture_path_tool as _tool
+        return _tool(java_path, bedrock_type)
+
+    def validate_texture_tool(self, texture_path: str) -> str:
+        from agents.asset_converter.tools import validate_texture_tool as _tool
+        return _tool(texture_path)
+
+    def generate_fallback_texture_tool(self, output_path: str, usage: str = "block") -> str:
+        from agents.asset_converter.tools import generate_fallback_texture_tool as _tool
+        return _tool(output_path, usage)
 
     # Delegate texture methods to texture_converter subpackage
     def _convert_single_texture(self, texture_path: str, metadata: Dict, usage: str, output_dir: Path = None) -> Dict:
@@ -219,8 +274,38 @@ class AssetConverterAgent:
     def _assess_conversion_complexity(self, analysis: Dict) -> str:
         return _assess_conversion_complexity(self, analysis)
 
-    def extract_textures_from_jar(self, jar_path: str, output_dir: str, texture_types: Optional[List[str]] = None) -> Dict:
-        return _extract_textures_from_jar(self, jar_path, output_dir, texture_types)
+    def extract_textures_from_jar(self, jar_path: str, output_dir: str, texture_types: Optional[List[str]] = None, namespace: str = None) -> Dict:
+        return _extract_textures_from_jar(self, jar_path, output_dir, texture_types, namespace)
+
+    def _analyze_texture(self, texture_path: str, metadata: Dict) -> Dict:
+        """Analyze a single texture for conversion needs."""
+        width = metadata.get("width", 16)
+        height = metadata.get("height", 16)
+        channels = metadata.get("channels", "rgba")
+        ext = Path(texture_path).suffix.lower()
+        issues = []
+        needs_conversion = False
+        if width > self.texture_constraints["max_resolution"] or height > self.texture_constraints["max_resolution"]:
+            issues.append(f"Resolution {width}x{height} exceeds maximum")
+            needs_conversion = True
+        if self.texture_constraints["must_be_power_of_2"]:
+            if not self._is_power_of_2(width) or not self._is_power_of_2(height):
+                issues.append(f"Resolution {width}x{height} is not power of 2")
+                needs_conversion = True
+        if ext != self.texture_formats["output"]:
+            needs_conversion = True
+        if channels not in self.texture_constraints["supported_channels"]:
+            issues.append(f"Unsupported channel format: {channels}")
+            needs_conversion = True
+        return {
+            "path": texture_path,
+            "needs_conversion": needs_conversion,
+            "issues": issues,
+            "current_format": ext,
+            "target_format": self.texture_formats["output"],
+            "current_resolution": f"{width}x{height}",
+            "recommended_resolution": self._get_recommended_resolution(width, height),
+        }
 
     def _map_java_texture_to_bedrock(self, java_path: str) -> str:
         return _map_java_texture_to_bedrock(self, java_path)
