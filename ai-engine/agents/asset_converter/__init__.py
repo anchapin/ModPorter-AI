@@ -7,10 +7,9 @@ Public API re-exports from submodules to maintain backwards compatibility.
 
 import json
 import logging
+import zipfile
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-
-from PIL import Image
 
 # Optional audio import (removed in Python 3.14)
 try:
@@ -28,6 +27,7 @@ logger = logging.getLogger(__name__)
 # Import from existing subpackages
 from agents.texture_converter import (
     convert_textures as _convert_textures,
+    convert_textures as convert_textures,  # re-export for backward compat
     detect_texture_atlas,
     extract_texture_atlas,
     parse_atlas_metadata,
@@ -68,6 +68,316 @@ from agents.audio_converter import (
     _generate_sound_structure,
 )
 
+
+# ============================================================================
+# Tool function wrapper to provide .run() interface for backward compat
+# ============================================================================
+
+
+class ToolFunction:
+    """Wrapper to make standalone functions compatible with CrewAI tool interface (.run())"""
+
+    def __init__(self, func):
+        self._func = func
+
+    def run(self, **kwargs):
+        """Call the wrapped function with flattened kwargs."""
+        # Handle the case where a single keyword arg wraps the data
+        if len(kwargs) == 1:
+            key = list(kwargs.keys())[0]
+            if key in ("asset_data", "texture_data", "model_data", "audio_data", "jar_path", "atlas_path", "model_data", "audio_list", "jar_data", "path_data", "texture_data"):
+                return self._func(kwargs[key])
+        return self._func(**kwargs)
+
+
+# ============================================================================
+# Standalone tool functions (formerly @staticmethod methods with @tool decorator)
+# ============================================================================
+
+
+def analyze_assets_tool_func(asset_data: str) -> str:
+    """Analyze assets for conversion."""
+    agent = AssetConverterAgent.get_instance()
+
+    try:
+        data = json.loads(asset_data) if isinstance(asset_data, str) else asset_data
+        # Handle nested array format from tests: [["path", {metadata}], ...]
+        if isinstance(data, list) and all(isinstance(d, list) for d in data):
+            asset_list = [{"path": d[0], "metadata": d[1] if len(d) > 1 else {}} for d in data]
+        elif isinstance(data, list):
+            asset_list = data
+        else:
+            asset_list = data.get("asset_list", [data])
+    except (json.JSONDecodeError, TypeError):
+        return json.dumps({"success": False, "error": "Invalid input format"})
+
+    analysis_results = {"textures": {"count": 0, "needs_conversion": 0}, "models": {"count": 0}, "audio": {"count": 0}, "other": {"count": 0}}
+
+    for asset in asset_list:
+        path = asset if isinstance(asset, str) else (asset.get("path", "") if isinstance(asset, dict) else "")
+        metadata = asset.get("metadata", {}) if isinstance(asset, dict) else {}
+
+        file_ext = Path(path).suffix.lower()
+
+        if file_ext in [".png", ".jpg", ".jpeg", ".tga", ".bmp"]:
+            analysis_results["textures"]["count"] += 1
+            # Simple power-of-2 check
+            width = metadata.get("width", 16)
+            height = metadata.get("height", 16)
+            if not (width > 0 and (width & (width - 1)) == 0) or not (height > 0 and (height & (height - 1)) == 0):
+                analysis_results["textures"]["needs_conversion"] += 1
+        elif file_ext in [".obj", ".fbx", ".json"]:
+            analysis_results["models"]["count"] += 1
+        elif file_ext in [".ogg", ".wav", ".mp3"]:
+            analysis_results["audio"]["count"] += 1
+        else:
+            analysis_results["other"]["count"] += 1
+
+    total_assets = sum(analysis_results[k]["count"] for k in analysis_results)
+
+    return json.dumps({"success": True, "total_assets": total_assets, "analysis_results": analysis_results})
+
+
+def convert_textures_tool_func(texture_data: str) -> str:
+    """Convert textures to Bedrock format."""
+    agent = AssetConverterAgent.get_instance()
+
+    try:
+        data = json.loads(texture_data) if isinstance(texture_data, str) else texture_data
+        texture_list = data if isinstance(data, list) else data.get("texture_list", [])
+        output_dir = data.get("output_path", "/tmp/texture_output") if isinstance(data, dict) else "/tmp/texture_output"
+    except (json.JSONDecodeError, TypeError):
+        return json.dumps({"success": False, "error": "Invalid input format"})
+
+    if not texture_list:
+        return json.dumps({"success": False, "error": "No textures provided"})
+
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    converted = []
+    errors = []
+
+    for texture_info in texture_list:
+        texture_path = texture_info if isinstance(texture_info, str) else texture_info.get("path", "")
+        if not texture_path:
+            continue
+
+        try:
+            result = agent._convert_single_texture(texture_path, {}, "texture", output_path)
+            if result.get("success"):
+                converted.append(texture_path)
+        except Exception as e:
+            errors.append({"texture": texture_path, "error": str(e)})
+
+    return json.dumps({
+        "success": True,
+        "converted_textures": converted,
+        "total_textures": len(texture_list),
+        "successful_conversions": len(converted),
+        "failed_conversions": len(errors),
+        "errors": errors,
+    })
+
+
+def convert_models_tool_func(model_data: str) -> str:
+    """Convert models to Bedrock format."""
+    agent = AssetConverterAgent.get_instance()
+
+    try:
+        data = json.loads(model_data) if isinstance(model_data, str) else model_data
+        model_list = data if isinstance(data, list) else data.get("model_list", [])
+        output_dir = data.get("output_path", "/tmp/model_output") if isinstance(data, dict) else "/tmp/model_output"
+    except (json.JSONDecodeError, TypeError):
+        return json.dumps({"success": False, "error": "Invalid input format"})
+
+    if not model_list:
+        return json.dumps({"success": False, "error": "No models provided"})
+
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    converted = []
+    errors = []
+
+    for model_info in model_list:
+        model_path = model_info if isinstance(model_info, str) else model_info.get("path", "")
+        if not model_path:
+            continue
+
+        try:
+            result = agent._convert_single_model(model_path, {}, "entity")
+            if result.get("success"):
+                converted.append(model_path)
+        except Exception as e:
+            errors.append({"model": model_path, "error": str(e)})
+
+    return json.dumps({
+        "success": True,
+        "converted_models": converted,
+        "total_models": len(model_list),
+        "successful_conversions": len(converted),
+        "failed_conversions": len(errors),
+        "errors": errors,
+    })
+
+
+def convert_audio_tool_func(audio_data: str) -> str:
+    """Convert audio to Bedrock format."""
+    if not HAS_AUDIO_SUPPORT:
+        return json.dumps({"success": False, "error": "Audio support not available (pydub not installed)"})
+
+    agent = AssetConverterAgent.get_instance()
+
+    try:
+        data = json.loads(audio_data) if isinstance(audio_data, str) else audio_data
+        audio_list = data if isinstance(data, list) else data.get("audio_list", [])
+        output_dir = data.get("output_path", "/tmp/audio_output") if isinstance(data, dict) else "/tmp/audio_output"
+    except (json.JSONDecodeError, TypeError):
+        return json.dumps({"success": False, "error": "Invalid input format"})
+
+    if not audio_list:
+        return json.dumps({"success": False, "error": "No audio files provided"})
+
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    converted = []
+    errors = []
+
+    for audio_info in audio_list:
+        audio_path = audio_info if isinstance(audio_info, str) else audio_info.get("path", "")
+        if not audio_path:
+            continue
+
+        try:
+            result = agent._convert_single_audio(audio_path, {}, "ambient")
+            if result.get("success"):
+                converted.append(audio_path)
+        except Exception as e:
+            errors.append({"audio": audio_path, "error": str(e)})
+
+    return json.dumps({
+        "success": True,
+        "converted_audio": converted,
+        "total_audio": len(audio_list),
+        "successful_conversions": len(converted),
+        "failed_conversions": len(errors),
+        "errors": errors,
+    })
+
+
+def validate_bedrock_assets_tool_func(assets_data: str) -> str:
+    """Validate Bedrock assets."""
+    agent = AssetConverterAgent.get_instance()
+
+    try:
+        data = json.loads(assets_data) if isinstance(assets_data, str) else assets_data
+        assets = data.get("assets", []) if isinstance(data, dict) else data
+    except (json.JSONDecodeError, TypeError):
+        return json.dumps({"success": False, "error": "Invalid input format"})
+
+    results = []
+    for asset in assets:
+        path = asset if isinstance(asset, str) else asset.get("path", "")
+        asset_type = asset.get("type", "unknown") if isinstance(asset, dict) else "unknown"
+
+        validation = {"path": path, "valid": True, "issues": []}
+
+        file_ext = Path(path).suffix.lower()
+        if asset_type == "texture" or file_ext in [".png", ".jpg", ".jpeg", ".tga", ".bmp"]:
+            result = agent.validate_texture(path)
+            if not result.get("valid", False):
+                validation["valid"] = False
+                validation["issues"].extend(result.get("issues", []))
+
+        results.append(validation)
+
+    return json.dumps({"success": True, "results": results})
+
+
+def extract_jar_textures_tool_func(jar_data: str) -> str:
+    """Extract textures from JAR file."""
+    agent = AssetConverterAgent.get_instance()
+
+    try:
+        data = json.loads(jar_data) if isinstance(jar_data, str) else jar_data
+        jar_path = data.get("jar_path", "") if isinstance(data, dict) else ""
+        output_dir = data.get("output_dir", "/tmp/jar_textures") if isinstance(data, dict) else "/tmp/jar_textures"
+        namespace = data.get("namespace", None)
+    except (json.JSONDecodeError, TypeError):
+        return json.dumps({"success": False, "error": "Invalid input format"})
+
+    if not jar_path:
+        return json.dumps({"success": False, "error": "No JAR path provided"})
+
+    try:
+        result = agent.extract_textures_from_jar(jar_path, output_dir, namespace)
+        return json.dumps({"success": True, "result": result})
+    except Exception as e:
+        return json.dumps({"success": False, "error": str(e)})
+
+
+def convert_java_texture_path_tool_func(path_data: str) -> str:
+    """Convert Java texture path to Bedrock."""
+    agent = AssetConverterAgent.get_instance()
+
+    try:
+        data = json.loads(path_data) if isinstance(path_data, str) else path_data
+        java_path = data.get("path", "") if isinstance(data, dict) else ""
+        bedrock_type = data.get("type", "blocks") if isinstance(data, dict) else "blocks"
+    except (json.JSONDecodeError, TypeError):
+        return json.dumps({"success": False, "error": "Invalid input format"})
+
+    if not java_path:
+        return json.dumps({"success": False, "error": "No path provided"})
+
+    result = agent.convert_java_texture_path(java_path, bedrock_type)
+    return json.dumps({"success": True, "bedrock_path": result})
+
+
+def validate_texture_tool_func(texture_path: str) -> str:
+    """Validate a texture for Bedrock compatibility."""
+    agent = AssetConverterAgent.get_instance()
+
+    if not texture_path:
+        return json.dumps({"success": False, "error": "No texture path provided"})
+
+    result = agent.validate_texture(texture_path)
+    return json.dumps({"success": True, "result": result})
+
+
+def generate_fallback_texture_tool_func(texture_data: str) -> str:
+    """Generate fallback texture for missing assets."""
+    agent = AssetConverterAgent.get_instance()
+
+    try:
+        data = json.loads(texture_data) if isinstance(texture_data, str) else texture_data
+        output_path = data.get("output_path", "") if isinstance(data, dict) else ""
+        block_name = data.get("block_name", "unknown") if isinstance(data, dict) else "unknown"
+        texture_type = data.get("type", "blocks") if isinstance(data, dict) else "blocks"
+    except (json.JSONDecodeError, TypeError):
+        return json.dumps({"success": False, "error": "Invalid input format"})
+
+    if not output_path:
+        return json.dumps({"success": False, "error": "No output path provided"})
+
+    result = agent.generate_fallback_for_jar(output_path, block_name, texture_type)
+    return json.dumps({"success": True, "result": result})
+
+
+# Create tool wrappers (formerly @tool decorated static methods)
+analyze_assets_tool = ToolFunction(analyze_assets_tool_func)
+convert_textures_tool = ToolFunction(convert_textures_tool_func)
+convert_models_tool = ToolFunction(convert_models_tool_func)
+convert_audio_tool = ToolFunction(convert_audio_tool_func)
+validate_bedrock_assets_tool = ToolFunction(validate_bedrock_assets_tool_func)
+extract_jar_textures_tool = ToolFunction(extract_jar_textures_tool_func)
+convert_java_texture_path_tool = ToolFunction(convert_java_texture_path_tool_func)
+validate_texture_tool = ToolFunction(validate_texture_tool_func)
+generate_fallback_texture_tool = ToolFunction(generate_fallback_texture_tool_func)
+
+
 __all__ = [
     # Main class
     "AssetConverterAgent",
@@ -97,6 +407,17 @@ __all__ = [
     "analyze_assets",
     # Helper exports
     "HAS_AUDIO_SUPPORT",
+    "zipfile",
+    # Tool wrappers (for CrewAI compatibility with .run() interface)
+    "analyze_assets_tool",
+    "convert_textures_tool",
+    "convert_models_tool",
+    "convert_audio_tool",
+    "validate_bedrock_assets_tool",
+    "extract_jar_textures_tool",
+    "convert_java_texture_path_tool",
+    "validate_texture_tool",
+    "generate_fallback_texture_tool",
 ]
 
 
@@ -112,6 +433,17 @@ class AssetConverterAgent:
     """
 
     _instance = None
+
+    # Class-level tool references (for backward compat - tests access agent.X)
+    analyze_assets_tool = analyze_assets_tool
+    convert_textures_tool = convert_textures_tool
+    convert_models_tool = convert_models_tool
+    convert_audio_tool = convert_audio_tool
+    validate_bedrock_assets_tool = validate_bedrock_assets_tool
+    extract_jar_textures_tool = extract_jar_textures_tool
+    convert_java_texture_path_tool = convert_java_texture_path_tool
+    validate_texture_tool = validate_texture_tool
+    generate_fallback_texture_tool = generate_fallback_texture_tool
 
     def __init__(self):
         from models.smart_assumptions import SmartAssumptionEngine
@@ -166,76 +498,23 @@ class AssetConverterAgent:
 
     def get_tools(self) -> List:
         """Get tools available to this agent"""
-        # Import tool functions at call time to avoid circular imports
-        from agents.asset_converter.tools import (
-            analyze_assets_tool,
-            convert_textures_tool,
-            convert_models_tool,
-            convert_audio_tool,
-            validate_bedrock_assets_tool,
-            extract_jar_textures_tool,
-            convert_java_texture_path_tool,
-            validate_texture_tool,
-            generate_fallback_texture_tool,
-        )
         return [
-            analyze_assets_tool,
-            convert_textures_tool,
-            convert_models_tool,
-            convert_audio_tool,
-            validate_bedrock_assets_tool,
-            extract_jar_textures_tool,
-            convert_java_texture_path_tool,
-            validate_texture_tool,
-            generate_fallback_texture_tool,
+            AssetConverterAgent.analyze_assets_tool,
+            AssetConverterAgent.convert_textures_tool,
+            AssetConverterAgent.convert_models_tool,
+            AssetConverterAgent.convert_audio_tool,
+            AssetConverterAgent.validate_bedrock_assets_tool,
+            # New tools for Issue #650 - JAR Texture Extraction
+            AssetConverterAgent.extract_jar_textures_tool,
+            AssetConverterAgent.convert_java_texture_path_tool,
+            AssetConverterAgent.validate_texture_tool,
+            AssetConverterAgent.generate_fallback_texture_tool,
         ]
 
-    # Backward-compat tool method aliases (delegate to static tools via instance)
-    def _run_tool(self, tool_name: str, *args, **kwargs):
-        from agents.asset_converter import tools as _tools
-        tool_func = getattr(_tools, tool_name, None)
-        if tool_func:
-            return tool_func(*args, **kwargs)
-        return json.dumps({"success": False, "error": f"Tool {tool_name} not found"})
-
-    def analyze_assets_tool(self, asset_data: str) -> str:
-        from agents.asset_converter.tools import analyze_assets_tool as _tool
-        return _tool(asset_data)
-
-    def convert_textures_tool(self, texture_data: str) -> str:
-        from agents.asset_converter.tools import convert_textures_tool as _tool
-        return _tool(texture_data)
-
-    def convert_models_tool(self, model_list: str) -> str:
-        from agents.asset_converter.tools import convert_models_tool as _tool
-        return _tool(model_list)
-
-    def convert_audio_tool(self, audio_list: str) -> str:
-        from agents.asset_converter.tools import convert_audio_tool as _tool
-        return _tool(audio_list)
-
-    def validate_bedrock_assets_tool(self, asset_paths: str) -> str:
-        from agents.asset_converter.tools import validate_bedrock_assets_tool as _tool
-        return _tool(asset_paths)
-
-    def extract_jar_textures_tool(self, jar_path: str, output_dir: str) -> str:
-        from agents.asset_converter.tools import extract_jar_textures_tool as _tool
-        return _tool(jar_path, output_dir)
-
-    def convert_java_texture_path_tool(self, java_path: str, bedrock_type: str = "blocks") -> str:
-        from agents.asset_converter.tools import convert_java_texture_path_tool as _tool
-        return _tool(java_path, bedrock_type)
-
-    def validate_texture_tool(self, texture_path: str) -> str:
-        from agents.asset_converter.tools import validate_texture_tool as _tool
-        return _tool(texture_path)
-
-    def generate_fallback_texture_tool(self, output_path: str, usage: str = "block") -> str:
-        from agents.asset_converter.tools import generate_fallback_texture_tool as _tool
-        return _tool(output_path, usage)
-
     # Delegate texture methods to texture_converter subpackage
-    def _convert_single_texture(self, texture_path: str, metadata: Dict, usage: str, output_dir: Path = None) -> Dict:
+    def _convert_single_texture(
+        self, texture_path: str, metadata: Dict, usage: str, output_dir: Path = None
+    ) -> Dict:
         return _tc_convert_single_texture(self, texture_path, metadata, usage, output_dir)
 
     def _generate_texture_pack_structure(self, textures: List[Dict]) -> Dict:
@@ -247,13 +526,21 @@ class AssetConverterAgent:
     def detect_texture_atlas(self, texture_path: str) -> Dict:
         return detect_texture_atlas(self, texture_path)
 
-    def extract_texture_atlas(self, atlas_path: str, output_dir: str, tile_size: int = 16, naming_pattern: str = "tile_{x}_{y}") -> Dict:
+    def extract_texture_atlas(
+        self,
+        atlas_path: str,
+        output_dir: str,
+        tile_size: int = 16,
+        naming_pattern: str = "tile_{x}_{y}",
+    ) -> Dict:
         return extract_texture_atlas(self, atlas_path, output_dir, tile_size, naming_pattern)
 
     def parse_atlas_metadata(self, mcmeta_path: str) -> Dict:
         return parse_atlas_metadata(self, mcmeta_path)
 
-    def convert_atlas_to_bedrock(self, atlas_path: str, output_dir: str, texture_names: List[str] = None) -> Dict:
+    def convert_atlas_to_bedrock(
+        self, atlas_path: str, output_dir: str, texture_names: List[str] = None
+    ) -> Dict:
         return convert_atlas_to_bedrock(self, atlas_path, output_dir, texture_names)
 
     def convert_java_texture_path(self, java_path: str, bedrock_type: str = "blocks") -> str:
@@ -262,7 +549,9 @@ class AssetConverterAgent:
     def validate_texture(self, texture_path: str) -> Dict:
         return _validate_texture(self, texture_path)
 
-    def generate_fallback_for_jar(self, output_path: str, block_name: str, texture_type: str = "blocks") -> Dict:
+    def generate_fallback_for_jar(
+        self, output_path: str, block_name: str, texture_type: str = "blocks"
+    ) -> Dict:
         return generate_fallback_for_jar(self, output_path, block_name, texture_type)
 
     def _get_recommended_resolution(self, width: int, height: int) -> str:
@@ -274,38 +563,10 @@ class AssetConverterAgent:
     def _assess_conversion_complexity(self, analysis: Dict) -> str:
         return _assess_conversion_complexity(self, analysis)
 
-    def extract_textures_from_jar(self, jar_path: str, output_dir: str, texture_types: Optional[List[str]] = None, namespace: str = None) -> Dict:
+    def extract_textures_from_jar(
+        self, jar_path: str, output_dir: str, texture_types: Optional[List[str]] = None, namespace: str = None
+    ) -> Dict:
         return _extract_textures_from_jar(self, jar_path, output_dir, texture_types, namespace)
-
-    def _analyze_texture(self, texture_path: str, metadata: Dict) -> Dict:
-        """Analyze a single texture for conversion needs."""
-        width = metadata.get("width", 16)
-        height = metadata.get("height", 16)
-        channels = metadata.get("channels", "rgba")
-        ext = Path(texture_path).suffix.lower()
-        issues = []
-        needs_conversion = False
-        if width > self.texture_constraints["max_resolution"] or height > self.texture_constraints["max_resolution"]:
-            issues.append(f"Resolution {width}x{height} exceeds maximum")
-            needs_conversion = True
-        if self.texture_constraints["must_be_power_of_2"]:
-            if not self._is_power_of_2(width) or not self._is_power_of_2(height):
-                issues.append(f"Resolution {width}x{height} is not power of 2")
-                needs_conversion = True
-        if ext != self.texture_formats["output"]:
-            needs_conversion = True
-        if channels not in self.texture_constraints["supported_channels"]:
-            issues.append(f"Unsupported channel format: {channels}")
-            needs_conversion = True
-        return {
-            "path": texture_path,
-            "needs_conversion": needs_conversion,
-            "issues": issues,
-            "current_format": ext,
-            "target_format": self.texture_formats["output"],
-            "current_resolution": f"{width}x{height}",
-            "recommended_resolution": self._get_recommended_resolution(width, height),
-        }
 
     def _map_java_texture_to_bedrock(self, java_path: str) -> str:
         return _map_java_texture_to_bedrock(self, java_path)
@@ -322,10 +583,14 @@ class AssetConverterAgent:
     def validate_textures_batch(self, texture_paths: List[str], metadata: Dict = None) -> Dict:
         return validate_textures_batch(self, texture_paths, metadata)
 
-    def extract_texture_atlas_from_jar(self, jar_path: str, atlas_type: str, output_dir: str) -> Dict:
+    def extract_texture_atlas_from_jar(
+        self, jar_path: str, atlas_type: str, output_dir: str
+    ) -> Dict:
         return extract_texture_atlas_from_jar(self, jar_path, atlas_type, output_dir)
 
-    def convert_jar_textures_to_bedrock(self, jar_path: str, output_dir: str, namespace: str = None) -> Dict:
+    def convert_jar_textures_to_bedrock(
+        self, jar_path: str, output_dir: str, namespace: str = None
+    ) -> Dict:
         return convert_jar_textures_to_bedrock(self, jar_path, output_dir, namespace)
 
     def _generate_fallback_texture(self, usage: str = "block", size: tuple = (16, 16)):
@@ -347,19 +612,27 @@ class AssetConverterAgent:
     def _generate_model_structure(self, models: List[Dict]) -> Dict:
         return _generate_model_structure(self, models)
 
-    def _extract_models_from_jar(self, jar_path: str, output_dir: str, namespace: str = None) -> Dict:
+    def _extract_models_from_jar(
+        self, jar_path: str, output_dir: str, namespace: str = None
+    ) -> Dict:
         return extract_models_from_jar(jar_path, output_dir, namespace)
 
     def _parse_blockstate(self, blockstate_data: Dict) -> Dict:
         return parse_blockstate(blockstate_data)
 
-    def _resolve_parent_model(self, model_data: Dict, model_cache: Dict, namespace: str = None) -> Tuple[List[Dict], List[str]]:
+    def _resolve_parent_model(
+        self, model_data: Dict, model_cache: Dict, namespace: str = None
+    ) -> Tuple[List[Dict], List[str]]:
         return resolve_parent_model(model_data, model_cache, namespace)
 
-    def _get_model_elements_with_inheritance(self, model_json: Dict, all_models: Dict, namespace: str = None) -> Tuple[List[Dict], List[str]]:
+    def _get_model_elements_with_inheritance(
+        self, model_json: Dict, all_models: Dict, namespace: str = None
+    ) -> Tuple[List[Dict], List[str]]:
         return get_model_elements_with_inheritance(model_json, all_models, namespace)
 
-    def _convert_blockstate(self, blockstate_path: str, model_output_dir: str, all_models: Dict, namespace: str = None) -> Dict:
+    def _convert_blockstate(
+        self, blockstate_path: str, model_output_dir: str, all_models: Dict, namespace: str = None
+    ) -> Dict:
         return convert_blockstate(self, blockstate_path, model_output_dir, all_models, namespace)
 
     # Delegate audio methods to audio_converter subpackage
@@ -437,50 +710,6 @@ def convert_audio(audio_list: str, output_path: str) -> str:
     return agent.convert_audio_tool(audio_list)
 
 
-def analyze_assets_tool(asset_data: str) -> str:
-    """Analyze assets for conversion."""
-    return analyze_assets(asset_data)
-
-
 def analyze_assets(asset_data: str) -> str:
     """Analyze assets for conversion."""
-    agent = AssetConverterAgent.get_instance()
-
-    # Analyze assets using agent's analysis capabilities
-    try:
-        data = json.loads(asset_data) if isinstance(asset_data, str) else asset_data
-        asset_list = data if isinstance(data, list) else data.get("asset_list", [data])
-    except Exception:
-        asset_list = [{"path": str(asset_data)}]
-
-    results = {
-        "textures": {"count": 0, "conversions_needed": [], "issues": []},
-        "models": {"count": 0, "conversions_needed": [], "issues": []},
-        "audio": {"count": 0, "conversions_needed": [], "issues": []},
-        "other": {"count": 0, "files": [], "issues": []},
-    }
-
-    for asset in asset_list:
-        if isinstance(asset, str):
-            path = asset
-        else:
-            path = asset.get("path", "") if isinstance(asset, dict) else str(asset)
-        ext = Path(path).suffix.lower()
-
-        if ext in [".png", ".jpg", ".jpeg", ".tga", ".bmp"]:
-            results["textures"]["count"] += 1
-            if ext != ".png":
-                results["textures"]["conversions_needed"].append({"path": path, "needs_conversion": True})
-        elif ext in [".obj", ".fbx", ".json"]:
-            results["models"]["count"] += 1
-            if ext != ".geo.json":
-                results["models"]["conversions_needed"].append({"path": path, "needs_conversion": True})
-        elif ext in [".ogg", ".wav", ".mp3"]:
-            results["audio"]["count"] += 1
-            if ext != ".ogg":
-                results["audio"]["conversions_needed"].append({"path": path, "needs_conversion": True})
-        else:
-            results["other"]["count"] += 1
-            results["other"]["files"].append(path)
-
-    return json.dumps({"success": True, "analysis_results": results, "total_assets": len(asset_list)})
+    return analyze_assets_tool_func(asset_data)
