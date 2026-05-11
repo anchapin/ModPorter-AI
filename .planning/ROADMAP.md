@@ -677,3 +677,15 @@ Phase 21.0 (Coverage Optimization)
 - *Computational Domain-Specific Evaluation* (70%) — the AutoMat paper (Can Coding Agents Reproduce Findings in Materials Science) offers a methodology for evaluating how agents handle Minecraft-specific code and procedures.
 
 *Full digest: [.planning/research/digest-2026-05-04.md](.planning/research/digest-2026-05-04.md)*
+
+---
+
+## Research Scout Update — 2026-05-11
+
+## Suggested Roadmap Updates
+
+* **Reasoning Trace Clustering & Candidate Selection (VecCISC)**: Add to **Milestone v0.3 (QA & Testing)**. Implement a multi-agent "Self-Consistency" layer that generates multiple translation candidates for complex Java mappings and uses reasoning clustering to select the output with the highest cross-agent confidence.
+* **Minecraft "Vibe Failure" Validation Suite (Vibe Econometrics)**: Add to **Milestone v0.3 (QA & Testing)**. Create a specific validation phase targeting "vibe inference" errors—where code is syntactically valid Bedrock Scripting API but violates unstated domain assumptions (e.g., ticking frequency limits or memory-intensive JSON structures) that LLMs often overlook.
+* **Agentic Reasoning Discovery for Complex Logic (LLMs Improving LLMs)**: Add to **Milestone v2.5 (Automation & Scale)**. Integrate an automated framework to discover optimal agentic patterns for test-time scaling, specifically for high-complexity conversions like Java NBT logic to Bedrock Component-based data.
+
+*Full digest: [.planning/research/digest-2026-05-11.md](.planning/research/digest-2026-05-11.md)*
