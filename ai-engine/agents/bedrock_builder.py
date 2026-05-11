@@ -12,7 +12,6 @@ import zipfile
 from pathlib import Path
 from typing import Any, Dict, List
 
-from crewai.tools import tool
 from jinja2 import Environment, FileSystemLoader
 from PIL import Image
 
@@ -855,30 +854,22 @@ class BedrockBuilderAgent:
         """Legacy method for compatibility."""
         return []
 
-    @tool
     @staticmethod
     def build_bedrock_structure_tool(structure_data: str) -> str:
         """Build basic Bedrock addon structure."""
-        # Implementation placeholder
         return json.dumps({"success": True, "message": "Structure created"})
 
-    @tool
     @staticmethod
     def generate_block_definitions_tool(block_data: str) -> str:
         """Generate Bedrock block definition files."""
-        # Implementation placeholder
         return json.dumps({"success": True, "message": "Block definitions generated"})
 
-    @tool
     @staticmethod
     def convert_assets_tool(asset_data: str) -> str:
         """Convert assets to Bedrock format."""
-        # Implementation placeholder
         return json.dumps({"success": True, "message": "Assets converted"})
 
-    @tool
     @staticmethod
     def package_addon_tool(package_data: str) -> str:
         """Package addon into .mcaddon file."""
-        # Implementation placeholder
         return json.dumps({"success": True, "message": "Addon packaged"})

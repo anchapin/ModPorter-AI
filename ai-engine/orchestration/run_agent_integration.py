@@ -1,5 +1,5 @@
 """
-RunAgent Integration with CrewAI Conversion System
+RunAgent Integration Module
 
 This module integrates the RunAgent constraint-guided execution framework
 with the existing multi-agent conversion pipeline.
@@ -260,9 +260,9 @@ def _check_addon_valid(package_output: Any) -> bool:
 
 class RunAgentCrewBridge:
     """
-    Bridge between RunAgent framework and CrewAI conversion crew.
+    Bridge between RunAgent framework and conversion crew.
 
-    Wraps the standard CrewAI conversion process with constraint validation
+    Wraps the standard conversion process with constraint validation
     and step-wise enforcement.
     """
 
