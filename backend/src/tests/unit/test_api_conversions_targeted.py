@@ -64,9 +64,8 @@ class TestConversionsAPITargeted:
         mock_makedirs,
         mock_get_conversion_service,
         mock_crud,
-mock_get_security_scanner,
+        mock_get_security_scanner,
         mock_get_db,
-        mock_rate_limiter,
         client,
         mock_security_scanner,
     ):
