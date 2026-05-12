@@ -21,14 +21,14 @@ def _convert_single_texture(
     """
     cache_key = f"{texture_path}_{usage}_{hash(str(metadata))}"
 
-    if cache_key in agent._conversion_cache:
+    if cache_key in self._conversion_cache:
         logger.debug(f"Using cached result for texture conversion: {texture_path}")
-        return agent._conversion_cache[cache_key]
+        return self._conversion_cache[cache_key]
 
     try:
         if not Path(texture_path).exists():
             logger.warning(f"Texture file not found: {texture_path}. Generating fallback texture.")
-            img = agent._generate_fallback_texture(usage)
+            img = self._generate_fallback_texture(usage)
             original_dimensions = img.size
             is_valid_png = False
             optimizations_applied = ["Generated fallback texture"]
@@ -45,7 +45,7 @@ def _convert_single_texture(
                 logger.warning(
                     f"Failed to open texture {texture_path}: {open_error}. Generating fallback texture."
                 )
-                img = agent._generate_fallback_texture(usage)
+                img = self._generate_fallback_texture(usage)
                 original_dimensions = img.size
                 is_valid_png = False
                 optimizations_applied = ["Generated fallback texture due to open error"]
@@ -53,18 +53,18 @@ def _convert_single_texture(
         width, height = img.size
         resized = False
 
-        max_res = agent.texture_constraints.get("max_resolution", 1024)
-        must_be_power_of_2 = agent.texture_constraints.get("must_be_power_of_2", True)
+        max_res = self.texture_constraints.get("max_resolution", 1024)
+        must_be_power_of_2 = self.texture_constraints.get("must_be_power_of_2", True)
 
         new_width, new_height = width, height
 
         needs_pot_resize = must_be_power_of_2 and (
-            not agent._is_power_of_2(width) or not agent._is_power_of_2(height)
+            not self._is_power_of_2(width) or not self._is_power_of_2(height)
         )
 
         if needs_pot_resize:
-            new_width = agent._next_power_of_2(width)
-            new_height = agent._next_power_of_2(height)
+            new_width = self._next_power_of_2(width)
+            new_height = self._next_power_of_2(height)
             resized = True
 
         if new_width > max_res or new_height > max_res:
@@ -72,11 +72,11 @@ def _convert_single_texture(
             new_height = min(new_height, max_res)
             resized = True
 
-        if resized and must_be_power_of_2:
-            if not agent._is_power_of_2(new_width):
-                new_width = agent._previous_power_of_2(new_width)
-            if not agent._is_power_of_2(new_height):
-                new_height = agent._previous_power_of_2(new_height)
+        if resized:
+            if not self._is_power_of_2(new_width):
+                new_width = self._previous_power_of_2(new_width)
+            if not self._is_power_of_2(new_height):
+                new_height = self._previous_power_of_2(new_height)
 
         if resized and (new_width != width or new_height != height):
             img = img.resize((new_width, new_height), Image.LANCZOS)
@@ -194,13 +194,13 @@ def _convert_single_texture(
             "was_fallback": not Path(texture_path).exists(),
         }
 
-        agent._conversion_cache[cache_key] = result
+        self._conversion_cache[cache_key] = result
 
         return result
     except Exception as e:
         logger.error(f"Texture conversion error for {texture_path}: {e}")
         error_result = {"success": False, "original_path": str(texture_path), "error": str(e)}
-        agent._conversion_cache[cache_key] = error_result
+        self._conversion_cache[cache_key] = error_result
         return error_result
 
 
