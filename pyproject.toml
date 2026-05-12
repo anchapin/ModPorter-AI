@@ -17,6 +17,8 @@ exclude = [
     "docs/",      # Documentation
     "temp_init.py",  # UTF-16 encoded file
     "pytest-of-alex/",  # pytest forked test isolation directories
+    "unsloth_compiled_cache/",  # auto-generated torch.compile cache files (at repo root)
+    "scripts/unsloth_compiled_cache/",  # auto-generated torch.compile cache files
 ]
 
 [tool.ruff.lint]
@@ -87,7 +89,8 @@ ignore = [
 "tests/integration/*" = ["E402", "F401", "E712", "F541", "F841"]
 
 # Scripts - allow unused variables and imports (legacy code)
-"scripts/*" = ["E402", "F401", "F841", "C901"]
+# Also allow naming convention violations (E741, N806, N812) for scripts that follow different conventions
+"scripts/*" = ["E402", "F401", "F841", "C901", "E741", "N806", "N812"]
 
 # Test files - allow unused imports (test fixtures may have intentional unused imports)
 "conftest.py" = ["F401"]
