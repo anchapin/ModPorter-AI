@@ -70,9 +70,9 @@ class AsyncTaskQueue:
         self._redis = None
 
     async def enqueue(
-        self, name: str, payload: Dict, priority: TaskPriority = TaskPriority.NORMAL
+        self, name: str, payload: Dict, priority: TaskPriority = TaskPriority.NORMAL, max_retries: int = None
     ) -> TaskData:
-        return await enqueue_task(name, payload, priority)
+        return await enqueue_task(name, payload, priority, max_retries=max_retries)
 
     async def get_status(self, task_id: str) -> Optional[Dict]:
         return get_task_status(task_id)
@@ -100,8 +100,15 @@ class AsyncTaskQueue:
     async def connect(self):
         """Connect to Redis (no-op for celery backend)."""
         import redis.asyncio as aioredis
-        self._redis = aioredis.from_url(self.redis_url)
+        self._redis = await aioredis.from_url(self.redis_url)
         return self
+
+    async def _get_redis(self):
+        """Internal: get Redis client (for test mocking compatibility)."""
+        if self._redis is None:
+            import redis.asyncio as aioredis
+            self._redis = await aioredis.from_url(self.redis_url)
+        return self._redis
 
     async def dequeue(
         self, priority: TaskPriority = TaskPriority.NORMAL, timeout: int = 5
@@ -121,10 +128,6 @@ class AsyncTaskQueue:
 
     def get_redis(self):
         """Get the Redis client (stub for tests)."""
-        return self._redis
-
-    def _get_redis(self):
-        """Internal: get Redis client (for test mocking compatibility)."""
         return self._redis
 
 
