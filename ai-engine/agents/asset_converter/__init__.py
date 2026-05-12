@@ -723,6 +723,47 @@ class AssetConverterAgent:
     def _assess_conversion_complexity(self, analysis: Dict) -> str:
         return _assess_conversion_complexity(self, analysis)
 
+    def _analyze_texture(self, texture_path: str, metadata: Dict) -> Dict:
+        """Analyze a single texture for conversion needs"""
+        width = metadata.get("width", 16)
+        height = metadata.get("height", 16)
+        channels = metadata.get("channels", "rgba")
+        file_ext = Path(texture_path).suffix.lower()
+
+        issues = []
+        needs_conversion = False
+
+        if (
+            width > self.texture_constraints["max_resolution"]
+            or height > self.texture_constraints["max_resolution"]
+        ):
+            issues.append(
+                f"Resolution {width}x{height} exceeds maximum {self.texture_constraints['max_resolution']}"
+            )
+            needs_conversion = True
+
+        if self.texture_constraints["must_be_power_of_2"]:
+            if not self._is_power_of_2(width) or not self._is_power_of_2(height):
+                issues.append(f"Resolution {width}x{height} is not power of 2")
+                needs_conversion = True
+
+        if file_ext != self.texture_formats["output"]:
+            needs_conversion = True
+
+        if channels not in self.texture_constraints["supported_channels"]:
+            issues.append(f"Unsupported channel format: {channels}")
+            needs_conversion = True
+
+        return {
+            "path": texture_path,
+            "needs_conversion": needs_conversion,
+            "issues": issues,
+            "current_format": file_ext,
+            "target_format": self.texture_formats["output"],
+            "current_resolution": f"{width}x{height}",
+            "recommended_resolution": self._get_recommended_resolution(width, height),
+        }
+
     def extract_textures_from_jar(
         self, jar_path: str, output_dir: str, namespace: str = None
     ) -> Dict:
@@ -868,8 +909,3 @@ def convert_audio(audio_list: str, output_path: str) -> str:
     """Convert audio to Bedrock format"""
     agent = AssetConverterAgent.get_instance()
     return agent.convert_audio_tool(audio_list)
-
-
-def analyze_assets(asset_data: str) -> str:
-    """Analyze assets for conversion."""
-    return analyze_assets_tool_func(asset_data)
