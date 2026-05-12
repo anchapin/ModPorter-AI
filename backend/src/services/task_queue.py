@@ -92,6 +92,32 @@ class AsyncTaskQueue:
     def close(self):
         pass
 
+    async def connect(self):
+        """Connect to Redis (no-op for celery backend)."""
+        import redis.asyncio as aioredis
+        self._redis = aioredis.from_url(self.redis_url)
+        return self
+
+    async def dequeue(
+        self, priority: TaskPriority = TaskPriority.NORMAL, timeout: int = 5
+    ) -> Optional[Dict]:
+        """Dequeue a task from the queue (stub - celery handles internally)."""
+        return None
+
+    async def complete(self, task_id: str, result: Any = None) -> bool:
+        """Mark a task as completed."""
+        return True
+
+    async def fail(
+        self, task_id: str, error: str, retry: bool = True
+    ) -> bool:
+        """Mark a task as failed."""
+        return True
+
+    def get_redis(self):
+        """Get the Redis client (stub for tests)."""
+        return self._redis
+
 
 # Module-level singleton for backward compatibility
 _task_queue: Optional[AsyncTaskQueue] = None
