@@ -7,7 +7,13 @@ with code that imports from services.task_queue.
 Issue: #1098 - Consolidate task queues to Celery
 """
 
+import json
+import logging
+import uuid
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
+
+import redis.asyncio as aioredis
 
 # Re-export from celery_tasks for backward compatibility
 from services.celery_tasks import (
@@ -30,6 +36,8 @@ from services.celery_tasks import (
 
 # Re-export Task class for backward compatibility
 from services.celery_tasks import TaskData as Task
+
+logger = logging.getLogger(__name__)
 
 
 # AsyncTaskQueue wrapper for backward compatibility
@@ -69,65 +77,201 @@ class AsyncTaskQueue:
         # Redis client
         self._redis = None
 
+    async def connect(self) -> None:
+        """Connect to Redis"""
+        self._redis = await aioredis.from_url(self.redis_url, decode_responses=True)
+        logger.info("Connected to Redis for task queue")
+
+    async def disconnect(self) -> None:
+        """Disconnect from Redis"""
+        if self._redis:
+            await self._redis.close()
+            self._redis = None
+            logger.info("Disconnected from Redis")
+
+    async def _get_redis(self) -> aioredis.Redis:
+        """Get Redis client, connecting if needed"""
+        if self._redis is None:
+            await self.connect()
+        return self._redis
+
     async def enqueue(
-        self, name: str, payload: Dict, priority: TaskPriority = TaskPriority.NORMAL, max_retries: int = None
-    ) -> TaskData:
-        return await enqueue_task(name, payload, priority, max_retries=max_retries)
+        self,
+        name: str,
+        payload: Dict[str, Any],
+        priority: TaskPriority = TaskPriority.NORMAL,
+        max_retries: Optional[int] = None,
+    ):
+        """Add a task to the queue."""
+        redis = await self._get_redis()
+
+        task = Task(
+            id=str(uuid.uuid4()),
+            name=name,
+            payload=payload,
+            priority=priority,
+            max_retries=max_retries if max_retries is not None else self.max_retries,
+        )
+
+        # Store task data
+        await redis.set(
+            f"task:{task.id}",
+            json.dumps(task.to_dict()),
+            ex=86400,
+        )
+
+        # Add to priority queue
+        queue_name = self._queue_names[priority]
+        await redis.zadd(queue_name, {task.id: priority.value})
+
+        logger.info(f"Task {task.id} ({name}) enqueued with priority {priority.name}")
+
+        return task
+
+    async def dequeue(self, priority: TaskPriority = None, timeout: int = 5) -> Optional[Task]:
+        """Get the next task from the queue. Checks queues in priority order."""
+        redis = await self._get_redis()
+
+        # Check queues in priority order if no specific priority given
+        priorities = [priority] if priority else [
+            TaskPriority.CRITICAL,
+            TaskPriority.HIGH,
+            TaskPriority.NORMAL,
+            TaskPriority.LOW,
+        ]
+
+        for p in priorities:
+            queue_name = self._queue_names[p]
+            task_ids = await redis.zpopmin(queue_name, count=1)
+
+            if task_ids:
+                task_id = (
+                    task_ids[0][0].decode()
+                    if isinstance(task_ids[0][0], bytes)
+                    else task_ids[0][0]
+                )
+
+                task_data = await redis.get(f"task:{task_id}")
+
+                if task_data:
+                    task_dict = json.loads(task_data)
+                    task = Task(
+                        id=task_dict["id"],
+                        name=task_dict["name"],
+                        payload=task_dict["payload"],
+                        status=TaskStatus(task_dict["status"]),
+                        priority=TaskPriority(task_dict["priority"]),
+                        created_at=datetime.fromisoformat(task_dict["created_at"]),
+                        retry_count=task_dict.get("retry_count", 0),
+                        max_retries=task_dict.get("max_retries", self.max_retries),
+                    )
+
+                    task.status = TaskStatus.PROCESSING
+                    task.started_at = datetime.now(timezone.utc)
+
+                    await redis.set(f"task:{task.id}", json.dumps(task.to_dict()), ex=86400)
+
+                    logger.info(f"Task {task.id} ({task.name}) dequeued")
+                    return task
+
+        return None
+
+    async def complete(self, task_id: str, result: Any = None) -> None:
+        """Mark a task as completed"""
+        redis = await self._get_redis()
+
+        task_data = await redis.get(f"task:{task_id}")
+        if task_data:
+            task_dict = json.loads(task_data)
+            task_dict["status"] = TaskStatus.COMPLETED.value
+            task_dict["completed_at"] = datetime.now(timezone.utc).isoformat()
+            task_dict["result"] = result
+
+            await redis.set(f"task:{task_id}", json.dumps(task_dict), ex=86400)
+            logger.info(f"Task {task_id} completed")
+
+    async def fail(self, task_id: str, error: str, retry: bool = True) -> bool:
+        """Mark a task as failed"""
+        redis = await self._get_redis()
+
+        task_data = await redis.get(f"task:{task_id}")
+        if not task_data:
+            return False
+
+        task_dict = json.loads(task_data)
+        task_dict["error"] = error
+
+        retry_count = task_dict.get("retry_count", 0)
+        max_retries = task_dict.get("max_retries", self.max_retries)
+
+        if retry and retry_count < max_retries:
+            # Retry: increment count and re-queue
+            task_dict["retry_count"] = retry_count + 1
+            task_dict["status"] = TaskStatus.PENDING.value
+            priority = TaskPriority(task_dict["priority"])
+            queue_name = self._queue_names[priority]
+            await redis.zadd(queue_name, {task_id: priority.value})
+            await redis.set(f"task:{task_id}", json.dumps(task_dict), ex=86400)
+            logger.info(f"Task {task_id} failed, retry {retry_count + 1}/{max_retries}")
+            return True
+        else:
+            # Move to dead letter
+            task_dict["status"] = TaskStatus.FAILED.value
+            await redis.set(f"task:{task_id}", json.dumps(task_dict), ex=86400)
+            if self.dead_letter_enabled:
+                await redis.zadd(self._dead_letter_queue, {task_id: 1})
+            logger.info(f"Task {task_id} failed permanently, moved to dead letter")
+            return False
 
     async def get_status(self, task_id: str) -> Optional[Dict]:
-        return get_task_status(task_id)
+        """Get task status"""
+        redis = await self._get_redis()
+        task_data = await redis.get(f"task:{task_id}")
+        if task_data:
+            return json.loads(task_data)
+        return None
 
     async def cancel(self, task_id: str) -> bool:
-        return cancel_task(task_id)
+        """Cancel a task"""
+        redis = await self._get_redis()
+        task_data = await redis.get(f"task:{task_id}")
+        if task_data:
+            task_dict = json.loads(task_data)
+            task_dict["status"] = TaskStatus.CANCELLED.value
+            task_dict["cancelled_at"] = datetime.now(timezone.utc).isoformat()
+            await redis.set(f"task:{task_id}", json.dumps(task_dict), ex=86400)
+            # Remove from queue
+            for q in self._queue_names.values():
+                await redis.zrem(q, task_id)
+            logger.info(f"Task {task_id} cancelled")
+            return True
+        return False
 
     async def get_stats(self) -> Dict:
-        stats = get_queue_stats()
-        return {
-            "total_queued": stats.get("total_queued", 0),
-            "total_processing": stats.get("total_processing", 0),
-            "total_dead_letter": stats.get("total_dead_letter", 0),
-            "queues": stats.get("queues", {}),
-        }
+        """Get queue statistics"""
+        redis = await self._get_redis()
+        stats = {"total_queued": 0, "total_processing": 0, "total_dead_letter": 0, "queues": {}}
+
+        for name, queue_name in self._queue_names.items():
+            count = await redis.zcard(queue_name)
+            stats["queues"][name.value] = count
+            stats["total_queued"] += count
+
+        stats["total_dead_letter"] = await redis.zcard(self._dead_letter_queue)
+
+        processing_keys = []
+        async for key in redis.scan_iter(match="task_queue:processing:*"):
+            processing_keys.append(key)
+        stats["total_processing"] = len(processing_keys)
+
+        return stats
 
     def close(self):
         """Close the queue connection."""
-        pass
-
-    async def disconnect(self):
-        """Disconnect from Redis (async for test compatibility)."""
         self._redis = None
 
-    async def connect(self):
-        """Connect to Redis (no-op for celery backend)."""
-        import redis.asyncio as aioredis
-        self._redis = await aioredis.from_url(self.redis_url)
-        return self
-
-    async def _get_redis(self):
-        """Internal: get Redis client (for test mocking compatibility)."""
-        if self._redis is None:
-            import redis.asyncio as aioredis
-            self._redis = await aioredis.from_url(self.redis_url)
-        return self._redis
-
-    async def dequeue(
-        self, priority: TaskPriority = TaskPriority.NORMAL, timeout: int = 5
-    ) -> Optional[Dict]:
-        """Dequeue a task from the queue (stub - celery handles internally)."""
-        return None
-
-    async def complete(self, task_id: str, result: Any = None) -> bool:
-        """Mark a task as completed."""
-        return True
-
-    async def fail(
-        self, task_id: str, error: str, retry: bool = True
-    ) -> bool:
-        """Mark a task as failed."""
-        return True
-
     def get_redis(self):
-        """Get the Redis client (stub for tests)."""
+        """Get the Redis client (sync stub for tests)."""
         return self._redis
 
 
@@ -144,10 +288,6 @@ async def get_task_queue() -> AsyncTaskQueue:
 
     return _task_queue
 
-
-# Expose aioredis module reference for tests that check for it
-# (actual Redis operations are handled by celery_tasks)
-import redis.asyncio as aioredis
 
 __all__ = [
     "TaskStatus",
