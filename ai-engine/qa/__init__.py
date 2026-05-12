@@ -16,6 +16,17 @@ from qa.reviewer import ReviewerAgent, review
 from qa.semantic_checker import SemanticCheckerAgent, check_semantics
 from qa.translator import TranslatorAgent, translate
 from qa.validators import AgentOutput, validate_agent_output
+from qa.veccisc import (
+    VecCISCConsistencyChecker,
+    VecCISCConfig,
+    ReasoningTrace,
+    ReasoningStep,
+    TraceCluster,
+    ClusteredResult,
+    ClusteringAlgorithm,
+    create_reasoning_trace,
+    veccisc_consistency_check,
+)
 
 __all__ = [
     "QAContext",
@@ -40,4 +51,14 @@ __all__ = [
     "SelectionStrategy",
     "create_candidate_result",
     "dpc_consistency_check",
+    # VecCISC
+    "VecCISCConsistencyChecker",
+    "VecCISCConfig",
+    "ReasoningTrace",
+    "ReasoningStep",
+    "TraceCluster",
+    "ClusteredResult",
+    "ClusteringAlgorithm",
+    "create_reasoning_trace",
+    "veccisc_consistency_check",
 ]
