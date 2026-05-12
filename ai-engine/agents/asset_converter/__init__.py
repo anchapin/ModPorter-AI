@@ -22,6 +22,14 @@ except ImportError:
     AudioSegment = None
     CouldntDecodeError = Exception
 
+# PIL Image for texture processing
+try:
+    from PIL import Image as _PILImage
+    Image = _PILImage
+except ImportError:
+    Image = None
+    _PILImage = None
+
 logger = logging.getLogger(__name__)
 
 # Import from existing subpackages
@@ -79,6 +87,11 @@ class ToolFunction:
 
     def __init__(self, func):
         self._func = func
+
+    @property
+    def func(self):
+        """Access the wrapped function directly (for tests using .func())."""
+        return self._func
 
     def run(self, **kwargs):
         """Call the wrapped function with flattened kwargs."""
@@ -517,6 +530,51 @@ class AssetConverterAgent:
         self, texture_path: str, metadata: Dict, usage: str, output_dir: Path = None
     ) -> Dict:
         return _tc_convert_single_texture(self, texture_path, metadata, usage, output_dir)
+
+    def _analyze_texture(self, texture_path: str, metadata: Dict) -> Dict:
+        """Analyze a single texture for conversion needs."""
+        width = metadata.get("width", 16)
+        height = metadata.get("height", 16)
+        channels = metadata.get("channels", "rgba")
+        file_ext = Path(texture_path).suffix.lower()
+
+        issues = []
+        needs_conversion = False
+
+        # Check resolution
+        if (
+            width > self.texture_constraints["max_resolution"]
+            or height > self.texture_constraints["max_resolution"]
+        ):
+            issues.append(
+                f"Resolution {width}x{height} exceeds maximum {self.texture_constraints['max_resolution']}"
+            )
+            needs_conversion = True
+
+        # Check if power of 2
+        if self.texture_constraints["must_be_power_of_2"]:
+            if not self._is_power_of_2(width) or not self._is_power_of_2(height):
+                issues.append(f"Resolution {width}x{height} is not power of 2")
+                needs_conversion = True
+
+        # Check format
+        if file_ext != self.texture_formats["output"]:
+            needs_conversion = True
+
+        # Check channels
+        if channels not in self.texture_constraints["supported_channels"]:
+            issues.append(f"Unsupported channel format: {channels}")
+            needs_conversion = True
+
+        return {
+            "path": texture_path,
+            "needs_conversion": needs_conversion,
+            "issues": issues,
+            "current_format": file_ext,
+            "target_format": self.texture_formats["output"],
+            "current_resolution": f"{width}x{height}",
+            "recommended_resolution": self._get_recommended_resolution(width, height),
+        }
 
     def _generate_texture_pack_structure(self, textures: List[Dict]) -> Dict:
         return _tc_generate_texture_pack_structure(self, textures)
