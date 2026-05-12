@@ -46,7 +46,9 @@ MODEL_NAME = "unsloth/Qwen2.5-Coder-1.5B-Instruct"
 MAX_SEQ_LENGTH = 1024
 
 # Short prompts to maximize completion space
-SYSTEM_PROMPT = "Convert this Minecraft Java mod to a Bedrock Add-on with manifest.json and JS files."
+SYSTEM_PROMPT = (
+    "Convert this Minecraft Java mod to a Bedrock Add-on with manifest.json and JS files."
+)
 MAX_COMPLETION_LENGTH = 512
 JAVA_TOKEN_BUDGET = 150  # truncate Java source to this many tokens (~600 chars)
 
@@ -56,23 +58,46 @@ JAVA_TOKEN_BUDGET = 150  # truncate Java source to this many tokens (~600 chars)
 # =============================================================================
 
 BEDROCK_APIS = [
-    r'@minecraft/server', r'@minecraft/server-ui', r'@minecraft/server-net',
-    r'world\.afterEvents', r'world\.beforeEvents', r'system\.run',
-    r'BlockPermutation', r'BlockTypes', r'ItemTypes', r'EntityTypes',
-    r'Dimension', r'Player', r'Block', r'ItemStack', r'Container',
-    r'MinecraftItemTypes', r'MinecraftBlockTypes',
+    r"@minecraft/server",
+    r"@minecraft/server-ui",
+    r"@minecraft/server-net",
+    r"world\.afterEvents",
+    r"world\.beforeEvents",
+    r"system\.run",
+    r"BlockPermutation",
+    r"BlockTypes",
+    r"ItemTypes",
+    r"EntityTypes",
+    r"Dimension",
+    r"Player",
+    r"Block",
+    r"ItemStack",
+    r"Container",
+    r"MinecraftItemTypes",
+    r"MinecraftBlockTypes",
 ]
 
 JAVA_ONLY_APIS = [
-    r'net\.forge', r'net\.minecraft\.(src|util|block|item|entity|world|server|client)',
-    r'ForgeEventBus', r'IEventBus', r'DeferredRegister', r'RegistryObject',
-    r'FMLCommonSetupEvent', r'FMLClientSetupEvent', r'@Mod\b', r'@SubscribeEvent',
-    r'GameRegistry', r'@EventHandler', r'cpw\.mods', r'net\.minecraftforge\.fml',
+    r"net\.forge",
+    r"net\.minecraft\.(src|util|block|item|entity|world|server|client)",
+    r"ForgeEventBus",
+    r"IEventBus",
+    r"DeferredRegister",
+    r"RegistryObject",
+    r"FMLCommonSetupEvent",
+    r"FMLClientSetupEvent",
+    r"@Mod\b",
+    r"@SubscribeEvent",
+    r"GameRegistry",
+    r"@EventHandler",
+    r"cpw\.mods",
+    r"net\.minecraftforge\.fml",
 ]
 
 
 def _extract_json_blocks(text):
     return re.findall(r"```json\s*(.*?)\s*```", text, re.DOTALL)
+
 
 def _extract_js_blocks(text):
     return re.findall(r"```(?:javascript|js)\s*([\s\S]*?)```", text)
@@ -83,11 +108,13 @@ def _score_manifest_structure(completion, reference):
     ref_blocks = _extract_json_blocks(reference)
     if not ref_blocks:
         return 0.5
+
     def find_manifest(blocks):
         for b in blocks:
-            if 'format_version' in b or ('header' in b and ('name' in b or 'uuid' in b)):
+            if "format_version" in b or ("header" in b and ("name" in b or "uuid" in b)):
                 return b
         return None
+
     ref_manifest = find_manifest(ref_blocks)
     comp_manifest = find_manifest(comp_blocks)
     if ref_manifest is None:
@@ -95,30 +122,32 @@ def _score_manifest_structure(completion, reference):
     if comp_manifest is None:
         return 0.0
     score = 0.0
-    if 'format_version' in comp_manifest:
+    if "format_version" in comp_manifest:
         score += 0.15
         ref_ver = re.search(r'format_version["\s:]+([0-9.]+)', ref_manifest)
         comp_ver = re.search(r'format_version["\s:]+([0-9.]+)', comp_manifest)
         if ref_ver and comp_ver and ref_ver.group(1) == comp_ver.group(1):
             score += 0.05
-    if 'header' in comp_manifest:
+    if "header" in comp_manifest:
         score += 0.15
-        header_fields = ['name', 'description', 'uuid', 'version', 'min_engine_version']
-        ref_header = ref_manifest[ref_manifest.find('header'):ref_manifest.find('header') + 500]
-        comp_header = comp_manifest[comp_manifest.find('header'):comp_manifest.find('header') + 500]
+        header_fields = ["name", "description", "uuid", "version", "min_engine_version"]
+        ref_header = ref_manifest[ref_manifest.find("header") : ref_manifest.find("header") + 500]
+        comp_header = comp_manifest[
+            comp_manifest.find("header") : comp_manifest.find("header") + 500
+        ]
         matched = sum(1 for f in header_fields if f in comp_header and f in ref_header)
         total = sum(1 for f in header_fields if f in ref_header)
         if total > 0:
             score += 0.10 * (matched / total)
-    if 'modules' in comp_manifest:
+    if "modules" in comp_manifest:
         score += 0.10
-    if 'dependencies' in comp_manifest:
+    if "dependencies" in comp_manifest:
         score += 0.05
     try:
         json.loads(comp_manifest)
         score += 0.15
     except json.JSONDecodeError:
-        if comp_manifest.count('{') > 0 and comp_manifest.count('{') == comp_manifest.count('}'):
+        if comp_manifest.count("{") > 0 and comp_manifest.count("{") == comp_manifest.count("}"):
             score += 0.05
     return min(score, 1.0)
 
@@ -133,8 +162,8 @@ def _score_js_quality(completion, reference):
     comp_js = "\n".join(comp_js_blocks)
     ref_js = "\n".join(ref_js_blocks)
     score = 0.0
-    ref_funcs = set(re.findall(r'function\s+(\w+)', ref_js))
-    comp_funcs = set(re.findall(r'function\s+(\w+)', comp_js))
+    ref_funcs = set(re.findall(r"function\s+(\w+)", ref_js))
+    comp_funcs = set(re.findall(r"function\s+(\w+)", comp_js))
     if ref_funcs:
         score += 0.20 * (len(ref_funcs & comp_funcs) / len(ref_funcs))
     else:
@@ -142,20 +171,22 @@ def _score_js_quality(completion, reference):
     bedrock_apis_found = sum(1 for api in BEDROCK_APIS if re.search(api, comp_js))
     if bedrock_apis_found > 0:
         score += min(0.20, 0.05 * bedrock_apis_found)
-    ref_controls = len(re.findall(r'\b(if|for|while|switch|try)\b', ref_js))
-    comp_controls = len(re.findall(r'\b(if|for|while|switch|try)\b', comp_js))
+    ref_controls = len(re.findall(r"\b(if|for|while|switch|try)\b", ref_js))
+    comp_controls = len(re.findall(r"\b(if|for|while|switch|try)\b", comp_js))
     if ref_controls > 0:
         score += 0.15 * min(comp_controls / ref_controls, 1.5) / 1.5
-    ref_vars = set(re.findall(r'(?:let|const|var)\s+(\w+)', ref_js))
-    comp_vars = set(re.findall(r'(?:let|const|var)\s+(\w+)', comp_js))
+    ref_vars = set(re.findall(r"(?:let|const|var)\s+(\w+)", ref_js))
+    comp_vars = set(re.findall(r"(?:let|const|var)\s+(\w+)", comp_js))
     if ref_vars:
         score += 0.10 * (len(ref_vars & comp_vars) / len(ref_vars))
     ref_len = len(ref_js)
     comp_len = len(comp_js)
     if ref_len > 0:
         ratio = comp_len / ref_len
-        if 0.3 <= ratio <= 2.0: score += 0.15
-        elif 0.1 <= ratio <= 3.0: score += 0.08
+        if 0.3 <= ratio <= 2.0:
+            score += 0.15
+        elif 0.1 <= ratio <= 3.0:
+            score += 0.08
     java_apis_found = sum(1 for api in JAVA_ONLY_APIS if re.search(api, comp_js))
     score -= 0.10 * java_apis_found
     return max(score, 0.0)
@@ -171,8 +202,8 @@ def _score_json_validity(completion):
             json.loads(block)
             total_score += 1.0
         except json.JSONDecodeError:
-            opens = block.count('{') + block.count('[')
-            closes = block.count('}') + block.count(']')
+            opens = block.count("{") + block.count("[")
+            closes = block.count("}") + block.count("]")
             if opens > 0 and abs(opens - closes) <= 1:
                 total_score += 0.5
             elif opens > 0:
@@ -184,12 +215,18 @@ def _score_length_ratio(completion, reference):
     ref_len = max(len(reference), 1)
     comp_len = len(completion)
     ratio = comp_len / ref_len
-    if ratio < 0.1: return 0.0
-    elif ratio < 0.3: return 0.3
-    elif 0.5 <= ratio <= 2.0: return 1.0
-    elif 0.3 <= ratio < 0.5: return 0.6
-    elif 2.0 < ratio <= 3.0: return 0.7
-    else: return 0.5
+    if ratio < 0.1:
+        return 0.0
+    elif ratio < 0.3:
+        return 0.3
+    elif 0.5 <= ratio <= 2.0:
+        return 1.0
+    elif 0.3 <= ratio < 0.5:
+        return 0.6
+    elif 2.0 < ratio <= 3.0:
+        return 0.7
+    else:
+        return 0.5
 
 
 def _score_hallucination_penalty(completion):
@@ -211,12 +248,20 @@ def compute_base_reward(completion, reference):
     bedrock = _score_bedrock_apis(comp)
     length = _score_length_ratio(comp, ref)
     halluc = _score_hallucination_penalty(comp)
-    return max(0.20 * manifest + 0.25 * js + 0.15 * json_v + 0.10 * bedrock + 0.15 * length - 0.15 * halluc, 0.0)
+    return max(
+        0.20 * manifest
+        + 0.25 * js
+        + 0.15 * json_v
+        + 0.10 * bedrock
+        + 0.15 * length
+        - 0.15 * halluc,
+        0.0,
+    )
 
 
 def dapo_soft_overlong_penalty(completion_length, max_length, cache_zone=128, max_penalty=0.15):
     """DAPO-inspired soft overlong punishment (scaled for our reward range).
-    
+
     Linear ramp penalty in the cache zone before max_length.
     Returns a penalty in [-max_penalty, 0].
     Scaled to not overwhelm the base reward (~0.1–0.4 range).
@@ -230,8 +275,15 @@ def dapo_soft_overlong_penalty(completion_length, max_length, cache_zone=128, ma
         return -max_penalty
 
 
-def compute_reward_with_aux(completion, reference, completion_length, max_length,
-                            finished_with_eos=False, eos_bonus=0.15, cache_zone=128):
+def compute_reward_with_aux(
+    completion,
+    reference,
+    completion_length,
+    max_length,
+    finished_with_eos=False,
+    eos_bonus=0.15,
+    cache_zone=128,
+):
     """Full reward with DAPO overlong penalty + EOS bonus."""
     base = compute_base_reward(completion, reference)
     overlong = dapo_soft_overlong_penalty(completion_length, max_length, cache_zone)
@@ -243,9 +295,10 @@ def compute_reward_with_aux(completion, reference, completion_length, max_length
 # Dataset with difficulty scoring and curriculum
 # =============================================================================
 
+
 def build_curriculum_dataset(tokenizer, tier="all"):
     """Build dataset filtered by difficulty tier.
-    
+
     Tiers:
       easy:   ref_tokens <= 200, fits in available space
       medium: 200 < ref_tokens <= 400, fits in available space
@@ -258,76 +311,83 @@ def build_curriculum_dataset(tokenizer, tier="all"):
         for line in f:
             if line.strip():
                 pairs.append(json.loads(line))
-    
-    train_pairs = pairs[:int(len(pairs) * 0.9)]
-    
+
+    train_pairs = pairs[: int(len(pairs) * 0.9)]
+
     # Score each pair
     scored = []
     for i, p in enumerate(train_pairs):
-        inst_tokens = len(tokenizer.encode(p['instruction']))
-        ref_tokens = len(tokenizer.encode(p['bedrock_source']))
-        java_tokens = len(tokenizer.encode(p['java_source']))
-        
+        inst_tokens = len(tokenizer.encode(p["instruction"]))
+        ref_tokens = len(tokenizer.encode(p["bedrock_source"]))
+        java_tokens = len(tokenizer.encode(p["java_source"]))
+
         # Overhead: system prompt + role markers + user template
         overhead = len(tokenizer.encode(SYSTEM_PROMPT)) + 30
         prompt_tokens = overhead + inst_tokens + min(java_tokens, JAVA_TOKEN_BUDGET)
         avail = MAX_SEQ_LENGTH - prompt_tokens
         can_fit = avail >= ref_tokens and avail >= 128
-        
-        scored.append({
-            'idx': i,
-            'pair': p,
-            'ref_tokens': ref_tokens,
-            'can_fit': can_fit,
-            'avail': avail,
-            'difficulty': ref_tokens,
-        })
-    
+
+        scored.append(
+            {
+                "idx": i,
+                "pair": p,
+                "ref_tokens": ref_tokens,
+                "can_fit": can_fit,
+                "avail": avail,
+                "difficulty": ref_tokens,
+            }
+        )
+
     # Filter by tier
     if tier == "easy":
-        filtered = [s for s in scored if s['ref_tokens'] <= 200 and s['can_fit']]
+        filtered = [s for s in scored if s["ref_tokens"] <= 200 and s["can_fit"]]
     elif tier == "medium":
-        filtered = [s for s in scored if 200 < s['ref_tokens'] <= 400 and s['can_fit']]
+        filtered = [s for s in scored if 200 < s["ref_tokens"] <= 400 and s["can_fit"]]
     elif tier == "easy_medium":
-        filtered = [s for s in scored if s['ref_tokens'] <= 400 and s['can_fit']]
+        filtered = [s for s in scored if s["ref_tokens"] <= 400 and s["can_fit"]]
     elif tier == "hard":
-        filtered = [s for s in scored if s['ref_tokens'] > 400 or not s['can_fit']]
+        filtered = [s for s in scored if s["ref_tokens"] > 400 or not s["can_fit"]]
     else:
         filtered = scored
-    
+
     print(f"  Dataset tier='{tier}': {len(filtered)} samples (of {len(train_pairs)} total)")
-    
+
     # Build prompts with truncated Java source
     data = []
     for s in filtered:
-        p = s['pair']
+        p = s["pair"]
         # Truncate Java source to budget
-        java_text = p['java_source']
+        java_text = p["java_source"]
         java_encoded = tokenizer.encode(java_text)
         if len(java_encoded) > JAVA_TOKEN_BUDGET:
             java_text = tokenizer.decode(java_encoded[:JAVA_TOKEN_BUDGET])
             # Cut at last newline for clean truncation
-            last_nl = java_text.rfind('\n')
+            last_nl = java_text.rfind("\n")
             if last_nl > len(java_text) // 2:
                 java_text = java_text[:last_nl] + "\n// ... (truncated)"
-        
-        prompt = (f"{SYSTEM_PROMPT}\n\n"
-                  f"Mod: {p['instruction']}\n\n"
-                  f"Java:\n{java_text}\n\n"
-                  f"Convert to Bedrock Add-on:")
-        
-        data.append({
-            "prompt": prompt,
-            "reference": p["bedrock_source"],
-            "difficulty": s['difficulty'],
-        })
-    
+
+        prompt = (
+            f"{SYSTEM_PROMPT}\n\n"
+            f"Mod: {p['instruction']}\n\n"
+            f"Java:\n{java_text}\n\n"
+            f"Convert to Bedrock Add-on:"
+        )
+
+        data.append(
+            {
+                "prompt": prompt,
+                "reference": p["bedrock_source"],
+                "difficulty": s["difficulty"],
+            }
+        )
+
     return data
 
 
 # =============================================================================
 # Main
 # =============================================================================
+
 
 def main():
     start_time = time.time()
@@ -367,9 +427,12 @@ def main():
 
     print("\n[3] Applying fresh LoRA...")
     model = FastLanguageModel.get_peft_model(
-        model, r=8, lora_alpha=16,
+        model,
+        r=8,
+        lora_alpha=16,
         target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
-        lora_dropout=0.0, bias="none",
+        lora_dropout=0.0,
+        bias="none",
         use_gradient_checkpointing="unsloth",
     )
     model.print_trainable_parameters()
@@ -392,27 +455,32 @@ def main():
 
     # Reward function with EOS bonus + DAPO overlong penalty
     EOS_TOKENS = ["<|im_end|>", "<|endoftext|>", tokenizer.eos_token or ""]
-    
+
     def reward_fn_stage1(completions, prompts_list=None, **kwargs):
         ref_list = kwargs.get("reference", None)
         rewards = []
         for i, completion in enumerate(completions):
             if isinstance(completion, list) and len(completion) > 0:
-                comp_text = completion[0].get("content", "") if isinstance(completion[0], dict) else str(completion[0])
+                comp_text = (
+                    completion[0].get("content", "")
+                    if isinstance(completion[0], dict)
+                    else str(completion[0])
+                )
             else:
                 comp_text = str(completion)
             ref = ref_list[i] if ref_list and i < len(ref_list) else ""
-            
+
             # Check if completion ended with EOS
             finished = False
             for eos in EOS_TOKENS:
                 if eos and comp_text.rstrip().endswith(eos):
                     finished = True
                     break
-            
+
             comp_len = len(tokenizer.encode(comp_text))
             reward = compute_reward_with_aux(
-                comp_text, ref,
+                comp_text,
+                ref,
                 completion_length=comp_len,
                 max_length=MAX_COMPLETION_LENGTH,
                 finished_with_eos=finished,
@@ -526,9 +594,12 @@ def main():
     model = PeftModel.from_pretrained(model, f"{output_dir}/stage1/final")
     model = model.merge_and_unload()
     model = FastLanguageModel.get_peft_model(
-        model, r=8, lora_alpha=16,
+        model,
+        r=8,
+        lora_alpha=16,
         target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
-        lora_dropout=0.0, bias="none",
+        lora_dropout=0.0,
+        bias="none",
         use_gradient_checkpointing="unsloth",
     )
     print(f"  VRAM: {torch.cuda.memory_allocated() / 1e9:.2f} GB")
@@ -606,80 +677,90 @@ def main():
     print("=" * 70)
 
     model.eval()
-    
+
     # Load test samples (val split)
     pairs = []
     with open(DATASET_PATH) as f:
         for line in f:
             if line.strip():
                 pairs.append(json.loads(line))
-    val_pairs = pairs[int(len(pairs) * 0.9):]
-    
+    val_pairs = pairs[int(len(pairs) * 0.9) :]
+
     np.random.seed(42)
     eval_indices = np.random.choice(len(val_pairs), min(10, len(val_pairs)), replace=False)
-    
+
     eval_rewards = []
     eval_components = []
     for idx in eval_indices:
         p = val_pairs[idx]
         # Use same prompt format as training
-        java_text = p['java_source']
+        java_text = p["java_source"]
         java_encoded = tokenizer.encode(java_text)
         if len(java_encoded) > JAVA_TOKEN_BUDGET:
             java_text = tokenizer.decode(java_encoded[:JAVA_TOKEN_BUDGET])
-        
-        user_msg = (f"Mod: {p['instruction']}\n\n"
-                    f"Java:\n{java_text}\n\n"
-                    f"Convert to Bedrock Add-on:")
-        
+
+        user_msg = f"Mod: {p['instruction']}\n\nJava:\n{java_text}\n\nConvert to Bedrock Add-on:"
+
         msgs = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_msg},
         ]
         text = tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
-        inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=MAX_SEQ_LENGTH).to("cuda")
-        
+        inputs = tokenizer(
+            text, return_tensors="pt", truncation=True, max_length=MAX_SEQ_LENGTH
+        ).to("cuda")
+
         with torch.no_grad():
             out = model.generate(
-                **inputs, max_new_tokens=512, temperature=0.3, top_p=0.95,
-                do_sample=True, pad_token_id=tokenizer.pad_token_id,
+                **inputs,
+                max_new_tokens=512,
+                temperature=0.3,
+                top_p=0.95,
+                do_sample=True,
+                pad_token_id=tokenizer.pad_token_id,
             )
         resp = tokenizer.decode(out[0], skip_special_tokens=True)
         if "assistant" in resp:
             resp = resp.split("assistant")[-1].strip()
-        
-        ref = p['bedrock_source']
+
+        ref = p["bedrock_source"]
         reward = compute_base_reward(resp, ref)
         eval_rewards.append(reward)
-        
+
         # Components
         manifest = _score_manifest_structure(resp, ref)
         js = _score_js_quality(resp, ref)
         json_v = _score_json_validity(resp)
         bedrock = _score_bedrock_apis(resp)
         halluc = _score_hallucination_penalty(resp)
-        eval_components.append({'manifest': manifest, 'js': js, 'json_v': json_v, 'bedrock': bedrock, 'halluc': halluc})
-        
+        eval_components.append(
+            {"manifest": manifest, "js": js, "json_v": json_v, "bedrock": bedrock, "halluc": halluc}
+        )
+
         has_json = bool(_extract_json_blocks(resp))
         has_js = bool(_extract_js_blocks(resp))
-        print(f"  Sample {idx}: reward={reward:.3f} manifest={manifest:.2f} js={js:.2f} "
-              f"json={json_v:.2f} bedrock={bedrock:.2f} halluc={halluc:.2f}")
+        print(
+            f"  Sample {idx}: reward={reward:.3f} manifest={manifest:.2f} js={js:.2f} "
+            f"json={json_v:.2f} bedrock={bedrock:.2f} halluc={halluc:.2f}"
+        )
         print(f"    has_manifest={has_json} has_js={has_js} len={len(resp)}")
         print(f"    Preview: {resp[:150]}...")
 
     elapsed = time.time() - start_time
-    
+
     mean_reward = np.mean(eval_rewards)
     mean_comp = {k: np.mean([c[k] for c in eval_components]) for k in eval_components[0]}
-    
+
     print(f"\n{'✓' * 3} Phase 5 complete!")
     print(f"  Stage 1: {output_dir}/stage1/final/")
     print(f"  Final:   {output_dir}/final/")
     print(f"  Eval:    {mean_reward:.3f} (10 samples)")
-    print(f"  Components: manifest={mean_comp['manifest']:.3f} js={mean_comp['js']:.3f} "
-          f"json={mean_comp['json_v']:.3f} bedrock={mean_comp['bedrock']:.3f} halluc={mean_comp['halluc']:.3f}")
-    print(f"  Total time: {elapsed/60:.1f} min")
-    
+    print(
+        f"  Components: manifest={mean_comp['manifest']:.3f} js={mean_comp['js']:.3f} "
+        f"json={mean_comp['json_v']:.3f} bedrock={mean_comp['bedrock']:.3f} halluc={mean_comp['halluc']:.3f}"
+    )
+    print(f"  Total time: {elapsed / 60:.1f} min")
+
     print(f"\n  Comparison:")
     print(f"    Phase 3 (0.5B, dense reward):   eval=0.237 (10-sample)")
     print(f"    Phase 4b (1.5B, SFT+GRPO):      eval=0.304 (10-sample)")

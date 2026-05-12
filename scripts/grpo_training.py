@@ -47,6 +47,7 @@ DATASET_PATH = PROJECT_ROOT / "ai_engine/mmsd/data/processed/validated_pairs.jso
 # Reward functions
 # =============================================================================
 
+
 def _extract_json_blocks(text: str) -> list[str]:
     return re.findall(r"```json\s*(\{[^}]*(?:\{[^}]*\}[^}]*)*\})", text, re.DOTALL)
 
@@ -80,7 +81,9 @@ def _score_structural_alignment(completion: str, reference: str) -> float:
             field_match = len(ref_fields & comp_fields) / max(len(ref_fields | comp_fields), 1)
             ref_ver = re.search(r'format_version["\s:]+([0-9.]+)', ref_manifest)
             comp_ver = re.search(r'format_version["\s:]+([0-9.]+)', comp_manifest)
-            ver_match = 1.0 if (ref_ver and comp_ver and ref_ver.group(1) == comp_ver.group(1)) else 0.5
+            ver_match = (
+                1.0 if (ref_ver and comp_ver and ref_ver.group(1) == comp_ver.group(1)) else 0.5
+            )
             score += 0.4 * (0.7 * field_match + 0.3 * ver_match)
 
     if ref_sections["js"]:
@@ -88,11 +91,15 @@ def _score_structural_alignment(completion: str, reference: str) -> float:
         ref_js = " ".join(ref_sections["js"])
         comp_js = " ".join(comp_sections["js"]) if comp_sections["js"] else ""
         if comp_js:
-            ref_funcs = set(re.findall(r'function\s+(\w+)', ref_js))
-            comp_funcs = set(re.findall(r'function\s+(\w+)', comp_js))
-            func_match = len(ref_funcs & comp_funcs) / max(len(ref_funcs | comp_funcs), 1) if ref_funcs else 0
-            ref_controls = len(re.findall(r'\b(if|for|while|switch)\b', ref_js))
-            comp_controls = len(re.findall(r'\b(if|for|while|switch)\b', comp_js))
+            ref_funcs = set(re.findall(r"function\s+(\w+)", ref_js))
+            comp_funcs = set(re.findall(r"function\s+(\w+)", comp_js))
+            func_match = (
+                len(ref_funcs & comp_funcs) / max(len(ref_funcs | comp_funcs), 1)
+                if ref_funcs
+                else 0
+            )
+            ref_controls = len(re.findall(r"\b(if|for|while|switch)\b", ref_js))
+            comp_controls = len(re.findall(r"\b(if|for|while|switch)\b", comp_js))
             control_ratio = min(comp_controls / max(ref_controls, 1), 1.0) if ref_controls else 0.5
             score += 0.35 * (0.5 * func_match + 0.5 * control_ratio)
 
@@ -141,6 +148,7 @@ def compute_reward(completion: str, reference: str) -> float:
 # Dataset loading
 # =============================================================================
 
+
 def load_dataset(max_samples=200):
     if not DATASET_PATH.exists():
         raise FileNotFoundError(f"Dataset not found at {DATASET_PATH}")
@@ -149,22 +157,30 @@ def load_dataset(max_samples=200):
         for line in f:
             if line.strip():
                 pairs.append(json.loads(line))
-    train_pairs = pairs[:int(len(pairs) * 0.9)]
+    train_pairs = pairs[: int(len(pairs) * 0.9)]
 
     def build_prompt(row: dict) -> str:
-        system = ("You are PortKit, an expert at converting Minecraft Java Edition mods (Forge) "
-                  "to Bedrock Edition Add-ons. Given a mod description and Java source code, "
-                  "first reason through the platform map, then produce the Bedrock Add-on implementation.")
-        user = (f"Mod Description: {row['instruction']}\n\nJava Source:\n{row['java_source']}\n\n"
-                "Convert this to a Bedrock Add-on. First explain your conversion approach, then provide the files.")
+        system = (
+            "You are PortKit, an expert at converting Minecraft Java Edition mods (Forge) "
+            "to Bedrock Edition Add-ons. Given a mod description and Java source code, "
+            "first reason through the platform map, then produce the Bedrock Add-on implementation."
+        )
+        user = (
+            f"Mod Description: {row['instruction']}\n\nJava Source:\n{row['java_source']}\n\n"
+            "Convert this to a Bedrock Add-on. First explain your conversion approach, then provide the files."
+        )
         return system + "\n\n" + user
 
-    return [{"prompt": build_prompt(p), "answer": p["bedrock_source"]} for p in train_pairs[:max_samples]]
+    return [
+        {"prompt": build_prompt(p), "answer": p["bedrock_source"]}
+        for p in train_pairs[:max_samples]
+    ]
 
 
 # =============================================================================
 # Main
 # =============================================================================
+
 
 def main():
     print("=" * 60)
@@ -211,7 +227,7 @@ def main():
     # ------------------------------------------------------------------
     print("\n[3] Applying LoRA adapters...")
     lora_config = LoraConfig(
-        r=4,                  # Small rank for 8.6 GB VRAM
+        r=4,  # Small rank for 8.6 GB VRAM
         lora_alpha=8,
         target_modules=["q_proj", "v_proj"],  # Minimal targets
         lora_dropout=0.0,
@@ -250,10 +266,10 @@ def main():
         gradient_accumulation_steps=4,
         max_steps=max_steps,
         num_train_epochs=1,
-        learning_rate=2e-5,         # Higher for LoRA (10x base)
+        learning_rate=2e-5,  # Higher for LoRA (10x base)
         lr_scheduler_type="cosine",
         warmup_steps=3,
-        optim="adafactor",          # Lower memory than adamw (no momentum states)
+        optim="adafactor",  # Lower memory than adamw (no momentum states)
         weight_decay=0.01,
         max_grad_norm=1.0,
         # Precision - fp16 for RDNA2 (no native bf16)
@@ -266,10 +282,10 @@ def main():
         temperature=0.8,
         top_p=0.95,
         # GRPO specifics
-        beta=0.0,                   # No ref model = saves ~50% VRAM
-        epsilon=0.2,                # Lower clip
-        epsilon_high=None,          # Defaults to epsilon (0.2) at init
-        loss_type="dapo",           # Default, best for RL
+        beta=0.0,  # No ref model = saves ~50% VRAM
+        epsilon=0.2,  # Lower clip
+        epsilon_high=None,  # Defaults to epsilon (0.2) at init
+        loss_type="dapo",  # Default, best for RL
         scale_rewards="group",
         mask_truncated_completions=True,
         # Memory
@@ -311,16 +327,23 @@ def main():
             user_msg += f"Java (excerpt):\n{java}\n"
         user_msg += "Provide manifest.json and main.js."
 
-        prompts.append([
-            {"role": "system", "content": "You are PortKit, an expert at converting Minecraft Java mods to Bedrock Add-ons. Provide the manifest.json and JavaScript implementation."},
-            {"role": "user", "content": user_msg},
-        ])
+        prompts.append(
+            [
+                {
+                    "role": "system",
+                    "content": "You are PortKit, an expert at converting Minecraft Java mods to Bedrock Add-ons. Provide the manifest.json and JavaScript implementation.",
+                },
+                {"role": "user", "content": user_msg},
+            ]
+        )
         references.append(d["answer"])
 
-    train_dataset = Dataset.from_dict({
-        "prompt": prompts,
-        "reference": references,
-    })
+    train_dataset = Dataset.from_dict(
+        {
+            "prompt": prompts,
+            "reference": references,
+        }
+    )
     print(f"  Dataset: {len(train_dataset)} rows")
 
     # ------------------------------------------------------------------
@@ -344,7 +367,11 @@ def main():
         for i, completion in enumerate(completions):
             # Extract text from completion (list of message dicts)
             if isinstance(completion, list) and len(completion) > 0:
-                comp_text = completion[0].get("content", "") if isinstance(completion[0], dict) else str(completion[0])
+                comp_text = (
+                    completion[0].get("content", "")
+                    if isinstance(completion[0], dict)
+                    else str(completion[0])
+                )
             else:
                 comp_text = str(completion)
 
@@ -378,7 +405,9 @@ def main():
     # ------------------------------------------------------------------
     print(f"\n[7] Starting GRPO training...")
     print(f"  VRAM before training: {torch.cuda.memory_allocated() / 1e9:.2f} GB")
-    print(f"  Steps: {max_steps} | Generations/sample: {num_generations} | Max completion len: {max_completion_length}")
+    print(
+        f"  Steps: {max_steps} | Generations/sample: {num_generations} | Max completion len: {max_completion_length}"
+    )
     print("  " + "=" * 50)
 
     try:
@@ -409,11 +438,16 @@ def main():
     model.eval()
     sample = data[0]
     msgs = [
-        {"role": "system", "content": "You are PortKit, an expert at converting Minecraft Java Edition mods to Bedrock Edition Add-ons."},
+        {
+            "role": "system",
+            "content": "You are PortKit, an expert at converting Minecraft Java Edition mods to Bedrock Edition Add-ons.",
+        },
         {"role": "user", "content": sample["prompt"][:500]},
     ]
     text = tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=max_seq_length).to("cuda")
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=max_seq_length).to(
+        "cuda"
+    )
     with torch.no_grad():
         out = model.generate(
             **inputs,

@@ -58,26 +58,50 @@ SYSTEM_PROMPT = (
 # =============================================================================
 
 BEDROCK_APIS = [
-    r'@minecraft/server', r'@minecraft/server-ui', r'@minecraft/server-net',
-    r'world\.afterEvents', r'world\.beforeEvents', r'system\.run',
-    r'BlockPermutation', r'BlockTypes', r'ItemTypes', r'EntityTypes',
-    r'Dimension', r'Player', r'Block', r'ItemStack', r'Container',
-    r'MinecraftItemTypes', r'MinecraftBlockTypes',
+    r"@minecraft/server",
+    r"@minecraft/server-ui",
+    r"@minecraft/server-net",
+    r"world\.afterEvents",
+    r"world\.beforeEvents",
+    r"system\.run",
+    r"BlockPermutation",
+    r"BlockTypes",
+    r"ItemTypes",
+    r"EntityTypes",
+    r"Dimension",
+    r"Player",
+    r"Block",
+    r"ItemStack",
+    r"Container",
+    r"MinecraftItemTypes",
+    r"MinecraftBlockTypes",
 ]
 
 JAVA_ONLY_APIS = [
-    r'net\.forge', r'net\.minecraft\.(src|util|block|item|entity|world|server|client)',
-    r'ForgeEventBus', r'IEventBus', r'DeferredRegister', r'RegistryObject',
-    r'FMLCommonSetupEvent', r'FMLClientSetupEvent', r'@Mod\b', r'@SubscribeEvent',
-    r'GameRegistry', r'@EventHandler', r'cpw\.mods', r'net\.minecraftforge\.fml',
+    r"net\.forge",
+    r"net\.minecraft\.(src|util|block|item|entity|world|server|client)",
+    r"ForgeEventBus",
+    r"IEventBus",
+    r"DeferredRegister",
+    r"RegistryObject",
+    r"FMLCommonSetupEvent",
+    r"FMLClientSetupEvent",
+    r"@Mod\b",
+    r"@SubscribeEvent",
+    r"GameRegistry",
+    r"@EventHandler",
+    r"cpw\.mods",
+    r"net\.minecraftforge\.fml",
 ]
 
 
 def _extract_json_blocks(text):
     return re.findall(r"```json\s*(.*?)\s*```", text, re.DOTALL)
 
+
 def _extract_js_blocks(text):
     return re.findall(r"```(?:javascript|js)\s*([\s\S]*?)```", text)
+
 
 def _score_manifest_structure(completion, reference):
     comp_blocks = _extract_json_blocks(completion)
@@ -87,7 +111,7 @@ def _score_manifest_structure(completion, reference):
 
     def find_manifest(blocks):
         for b in blocks:
-            if 'format_version' in b or ('header' in b and ('name' in b or 'uuid' in b)):
+            if "format_version" in b or ("header" in b and ("name" in b or "uuid" in b)):
                 return b
         return None
 
@@ -99,30 +123,32 @@ def _score_manifest_structure(completion, reference):
         return 0.0
 
     score = 0.0
-    if 'format_version' in comp_manifest:
+    if "format_version" in comp_manifest:
         score += 0.15
         ref_ver = re.search(r'format_version["\s:]+([0-9.]+)', ref_manifest)
         comp_ver = re.search(r'format_version["\s:]+([0-9.]+)', comp_manifest)
         if ref_ver and comp_ver and ref_ver.group(1) == comp_ver.group(1):
             score += 0.05
-    if 'header' in comp_manifest:
+    if "header" in comp_manifest:
         score += 0.15
-        header_fields = ['name', 'description', 'uuid', 'version', 'min_engine_version']
-        ref_header = ref_manifest[ref_manifest.find('header'):ref_manifest.find('header') + 500]
-        comp_header = comp_manifest[comp_manifest.find('header'):comp_manifest.find('header') + 500]
+        header_fields = ["name", "description", "uuid", "version", "min_engine_version"]
+        ref_header = ref_manifest[ref_manifest.find("header") : ref_manifest.find("header") + 500]
+        comp_header = comp_manifest[
+            comp_manifest.find("header") : comp_manifest.find("header") + 500
+        ]
         matched = sum(1 for f in header_fields if f in comp_header and f in ref_header)
         total = sum(1 for f in header_fields if f in ref_header)
         if total > 0:
             score += 0.10 * (matched / total)
-    if 'modules' in comp_manifest:
+    if "modules" in comp_manifest:
         score += 0.10
-    if 'dependencies' in comp_manifest:
+    if "dependencies" in comp_manifest:
         score += 0.05
     try:
         json.loads(comp_manifest)
         score += 0.15
     except json.JSONDecodeError:
-        if comp_manifest.count('{') > 0 and comp_manifest.count('{') == comp_manifest.count('}'):
+        if comp_manifest.count("{") > 0 and comp_manifest.count("{") == comp_manifest.count("}"):
             score += 0.05
     return min(score, 1.0)
 
@@ -139,8 +165,8 @@ def _score_js_quality(completion, reference):
     ref_js = "\n".join(ref_js_blocks)
     score = 0.0
 
-    ref_funcs = set(re.findall(r'function\s+(\w+)', ref_js))
-    comp_funcs = set(re.findall(r'function\s+(\w+)', comp_js))
+    ref_funcs = set(re.findall(r"function\s+(\w+)", ref_js))
+    comp_funcs = set(re.findall(r"function\s+(\w+)", comp_js))
     if ref_funcs:
         func_overlap = len(ref_funcs & comp_funcs) / len(ref_funcs)
         score += 0.20 * func_overlap
@@ -151,14 +177,14 @@ def _score_js_quality(completion, reference):
     if bedrock_apis_found > 0:
         score += min(0.20, 0.05 * bedrock_apis_found)
 
-    ref_controls = len(re.findall(r'\b(if|for|while|switch|try)\b', ref_js))
-    comp_controls = len(re.findall(r'\b(if|for|while|switch|try)\b', comp_js))
+    ref_controls = len(re.findall(r"\b(if|for|while|switch|try)\b", ref_js))
+    comp_controls = len(re.findall(r"\b(if|for|while|switch|try)\b", comp_js))
     if ref_controls > 0:
         ratio = min(comp_controls / ref_controls, 1.5) / 1.5
         score += 0.15 * ratio
 
-    ref_vars = set(re.findall(r'(?:let|const|var)\s+(\w+)', ref_js))
-    comp_vars = set(re.findall(r'(?:let|const|var)\s+(\w+)', comp_js))
+    ref_vars = set(re.findall(r"(?:let|const|var)\s+(\w+)", ref_js))
+    comp_vars = set(re.findall(r"(?:let|const|var)\s+(\w+)", comp_js))
     if ref_vars:
         var_overlap = len(ref_vars & comp_vars) / len(ref_vars)
         score += 0.10 * var_overlap
@@ -187,8 +213,8 @@ def _score_json_validity(completion):
             json.loads(block)
             total_score += 1.0
         except json.JSONDecodeError:
-            opens = block.count('{') + block.count('[')
-            closes = block.count('}') + block.count(']')
+            opens = block.count("{") + block.count("[")
+            closes = block.count("}") + block.count("]")
             if opens > 0 and abs(opens - closes) <= 1:
                 total_score += 0.5
             elif opens > 0:
@@ -236,13 +262,16 @@ def compute_reward(completion, reference):
     bedrock = _score_bedrock_apis(comp)
     length = _score_length_ratio(comp, ref)
     halluc = _score_hallucination_penalty(comp)
-    reward = 0.20 * manifest + 0.25 * js + 0.15 * json_v + 0.10 * bedrock + 0.15 * length - 0.15 * halluc
+    reward = (
+        0.20 * manifest + 0.25 * js + 0.15 * json_v + 0.10 * bedrock + 0.15 * length - 0.15 * halluc
+    )
     return max(reward, 0.0)
 
 
 # =============================================================================
 # Dataset
 # =============================================================================
+
 
 def load_dataset(max_samples=200):
     if not DATASET_PATH.exists():
@@ -252,22 +281,30 @@ def load_dataset(max_samples=200):
         for line in f:
             if line.strip():
                 pairs.append(json.loads(line))
-    train_pairs = pairs[:int(len(pairs) * 0.9)]
+    train_pairs = pairs[: int(len(pairs) * 0.9)]
 
     def build_prompt(row):
-        system = ("You are PortKit, an expert at converting Minecraft Java Edition mods (Forge) "
-                  "to Bedrock Edition Add-ons. Given a mod description and Java source code, "
-                  "first reason through the platform map, then produce the Bedrock Add-on implementation.")
-        user = (f"Mod Description: {row['instruction']}\n\nJava Source:\n{row['java_source']}\n\n"
-                "Convert this to a Bedrock Add-on. First explain your conversion approach, then provide the files.")
+        system = (
+            "You are PortKit, an expert at converting Minecraft Java Edition mods (Forge) "
+            "to Bedrock Edition Add-ons. Given a mod description and Java source code, "
+            "first reason through the platform map, then produce the Bedrock Add-on implementation."
+        )
+        user = (
+            f"Mod Description: {row['instruction']}\n\nJava Source:\n{row['java_source']}\n\n"
+            "Convert this to a Bedrock Add-on. First explain your conversion approach, then provide the files."
+        )
         return system + "\n\n" + user
 
-    return [{"prompt": build_prompt(p), "answer": p["bedrock_source"]} for p in train_pairs[:max_samples]]
+    return [
+        {"prompt": build_prompt(p), "answer": p["bedrock_source"]}
+        for p in train_pairs[:max_samples]
+    ]
 
 
 # =============================================================================
 # Main
 # =============================================================================
+
 
 def main():
     start_time = time.time()
@@ -307,9 +344,12 @@ def main():
     # Apply fresh LoRA for GRPO
     print("\n[3] Applying fresh LoRA for GRPO...")
     model = FastLanguageModel.get_peft_model(
-        model, r=8, lora_alpha=16,
+        model,
+        r=8,
+        lora_alpha=16,
         target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
-        lora_dropout=0.0, bias="none",
+        lora_dropout=0.0,
+        bias="none",
         use_gradient_checkpointing="unsloth",
     )
     model.print_trainable_parameters()
@@ -377,7 +417,11 @@ def main():
         rewards = []
         for i, completion in enumerate(completions):
             if isinstance(completion, list) and len(completion) > 0:
-                comp_text = completion[0].get("content", "") if isinstance(completion[0], dict) else str(completion[0])
+                comp_text = (
+                    completion[0].get("content", "")
+                    if isinstance(completion[0], dict)
+                    else str(completion[0])
+                )
             else:
                 comp_text = str(completion)
             ref = ref_list[i] if ref_list and i < len(ref_list) else ""
@@ -434,7 +478,7 @@ def main():
     # Evaluate
     print("\n[9] Quick evaluation (3 samples)...")
     model.eval()
-    eval_samples = [data[0], data[len(data)//2], data[-1]]
+    eval_samples = [data[0], data[len(data) // 2], data[-1]]
     eval_rewards = []
     for idx, sample in enumerate(eval_samples):
         msgs = [
@@ -442,11 +486,17 @@ def main():
             {"role": "user", "content": sample["prompt"][:800]},
         ]
         text = tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
-        inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=MAX_SEQ_LENGTH).to("cuda")
+        inputs = tokenizer(
+            text, return_tensors="pt", truncation=True, max_length=MAX_SEQ_LENGTH
+        ).to("cuda")
         with torch.no_grad():
             out = model.generate(
-                **inputs, max_new_tokens=512, temperature=0.3, top_p=0.95,
-                do_sample=True, pad_token_id=tokenizer.pad_token_id,
+                **inputs,
+                max_new_tokens=512,
+                temperature=0.3,
+                top_p=0.95,
+                do_sample=True,
+                pad_token_id=tokenizer.pad_token_id,
             )
         resp = tokenizer.decode(out[0], skip_special_tokens=True)
         if "assistant" in resp:
@@ -464,8 +514,10 @@ def main():
     elapsed = time.time() - start_time
     print(f"\n{'✓' * 3} Phase 4b complete!")
     print(f"  Model: {output_dir}/final/")
-    print(f"  Eval rewards: {[f'{r:.3f}' for r in eval_rewards]} (mean={np.mean(eval_rewards):.3f})")
-    print(f"  Total time: {elapsed/60:.1f} min")
+    print(
+        f"  Eval rewards: {[f'{r:.3f}' for r in eval_rewards]} (mean={np.mean(eval_rewards):.3f})"
+    )
+    print(f"  Total time: {elapsed / 60:.1f} min")
 
     # Compare with previous phases
     print(f"\n  Comparison:")
