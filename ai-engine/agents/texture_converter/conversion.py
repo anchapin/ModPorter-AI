@@ -9,11 +9,14 @@ from typing import Dict, List
 
 from PIL import Image
 
+from agents.texture_converter.fallback import _generate_fallback_texture
+from agents.texture_converter.validation import validate_texture
+
 logger = logging.getLogger(__name__)
 
 
 def _convert_single_texture(
-    self, texture_path: str, metadata: Dict, usage: str, output_dir: Path = None
+    agent, texture_path: str, metadata: Dict, usage: str, output_dir: Path = None
 ) -> Dict:
     """
     Convert a single texture file to Bedrock format with enhanced validation and optimization.
@@ -21,14 +24,14 @@ def _convert_single_texture(
     """
     cache_key = f"{texture_path}_{usage}_{hash(str(metadata))}"
 
-    if cache_key in self._conversion_cache:
+    if cache_key in agent._conversion_cache:
         logger.debug(f"Using cached result for texture conversion: {texture_path}")
-        return self._conversion_cache[cache_key]
+        return agent._conversion_cache[cache_key]
 
     try:
         if not Path(texture_path).exists():
             logger.warning(f"Texture file not found: {texture_path}. Generating fallback texture.")
-            img = self._generate_fallback_texture(usage)
+            img = _generate_fallback_texture(agent, usage)
             original_dimensions = img.size
             is_valid_png = False
             optimizations_applied = ["Generated fallback texture"]
@@ -45,7 +48,7 @@ def _convert_single_texture(
                 logger.warning(
                     f"Failed to open texture {texture_path}: {open_error}. Generating fallback texture."
                 )
-                img = self._generate_fallback_texture(usage)
+                img = _generate_fallback_texture(agent, usage)
                 original_dimensions = img.size
                 is_valid_png = False
                 optimizations_applied = ["Generated fallback texture due to open error"]
@@ -53,18 +56,18 @@ def _convert_single_texture(
         width, height = img.size
         resized = False
 
-        max_res = self.texture_constraints.get("max_resolution", 1024)
-        must_be_power_of_2 = self.texture_constraints.get("must_be_power_of_2", True)
+        max_res = agent.texture_constraints.get("max_resolution", 1024)
+        must_be_power_of_2 = agent.texture_constraints.get("must_be_power_of_2", True)
 
         new_width, new_height = width, height
 
         needs_pot_resize = must_be_power_of_2 and (
-            not self._is_power_of_2(width) or not self._is_power_of_2(height)
+            not agent._is_power_of_2(width) or not agent._is_power_of_2(height)
         )
 
         if needs_pot_resize:
-            new_width = self._next_power_of_2(width)
-            new_height = self._next_power_of_2(height)
+            new_width = agent._next_power_of_2(width)
+            new_height = agent._next_power_of_2(height)
             resized = True
 
         if new_width > max_res or new_height > max_res:
@@ -73,10 +76,10 @@ def _convert_single_texture(
             resized = True
 
         if resized and must_be_power_of_2:
-            if not self._is_power_of_2(new_width):
-                new_width = self._previous_power_of_2(new_width)
-            if not self._is_power_of_2(new_height):
-                new_height = self._previous_power_of_2(new_height)
+            if not agent._is_power_of_2(new_width):
+                new_width = agent._previous_power_of_2(new_width)
+            if not agent._is_power_of_2(new_height):
+                new_height = agent._previous_power_of_2(new_height)
 
         if resized and (new_width != width or new_height != height):
             img = img.resize((new_width, new_height), Image.LANCZOS)
@@ -194,13 +197,13 @@ def _convert_single_texture(
             "was_fallback": not Path(texture_path).exists(),
         }
 
-        self._conversion_cache[cache_key] = result
+        agent._conversion_cache[cache_key] = result
 
         return result
     except Exception as e:
         logger.error(f"Texture conversion error for {texture_path}: {e}")
         error_result = {"success": False, "original_path": str(texture_path), "error": str(e)}
-        self._conversion_cache[cache_key] = error_result
+        agent._conversion_cache[cache_key] = error_result
         return error_result
 
 
@@ -357,8 +360,8 @@ def convert_textures(agent, texture_list: str, output_path: str) -> str:
                     usage = texture_data.get("usage", "block")
                     metadata = texture_data.get("metadata", {})
 
-                conversion_result = self._convert_single_texture(
-                    texture_path, metadata, usage, output_path
+                conversion_result = _convert_single_texture(
+                    agent, texture_path, metadata, usage, output_path
                 )
 
                 if conversion_result.get("success"):
@@ -401,7 +404,7 @@ def convert_textures(agent, texture_list: str, output_path: str) -> str:
 
 
 def convert_jar_textures_to_bedrock(
-    self, jar_path: str, output_dir: str, namespace: str = None
+    agent, jar_path: str, output_dir: str, namespace: str = None
 ) -> Dict:
     """
     Complete pipeline to extract textures from JAR and convert to Bedrock format.
@@ -424,7 +427,7 @@ def convert_jar_textures_to_bedrock(
     }
 
     try:
-        extract_result = self.extract_textures_from_jar(jar_path, output_dir, namespace)
+        extract_result = agent.extract_textures_from_jar(jar_path, output_dir, namespace)
 
         if not extract_result["success"]:
             results["errors"].append(
@@ -438,14 +441,15 @@ def convert_jar_textures_to_bedrock(
             texture_path = texture_info["output_path"]
 
             try:
-                validation = self.validate_texture(texture_path)
+                validation = validate_texture(agent, texture_path)
 
                 if not validation["valid"]:
                     results["failed"].append({"path": texture_path, "errors": validation["errors"]})
                     results["warnings"].extend(validation["warnings"])
                     continue
 
-                conversion_result = self._convert_single_texture(
+                conversion_result = _convert_single_texture(
+                    agent,
                     texture_path,
                     {},
                     "block",
@@ -461,7 +465,7 @@ def convert_jar_textures_to_bedrock(
                         }
                     )
                 else:
-                    fallback = self._generate_fallback_texture("block")
+                    fallback = _generate_fallback_texture(agent, "block")
                     fallback_path = Path(texture_path)
                     fallback.save(fallback_path, "PNG")
 
@@ -488,10 +492,10 @@ def convert_jar_textures_to_bedrock(
 
 def _get_recommended_resolution(agent, width: int, height: int) -> str:
     """Get recommended resolution for texture"""
-    max_res = self.texture_constraints["max_resolution"]
+    max_res = agent.texture_constraints["max_resolution"]
 
-    target_width = min(max_res, self._next_power_of_2(width))
-    target_height = min(max_res, self._next_power_of_2(height))
+    target_width = min(max_res, agent._next_power_of_2(width))
+    target_height = min(max_res, agent._next_power_of_2(height))
 
     return f"{target_width}x{target_height}"
 

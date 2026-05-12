@@ -9,7 +9,7 @@ import json
 import logging
 import zipfile
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 # Optional audio import (removed in Python 3.14)
 try:
@@ -25,6 +25,7 @@ except ImportError:
 # PIL Image for texture processing
 try:
     from PIL import Image as _PILImage
+
     Image = _PILImage
 except ImportError:
     Image = None
@@ -98,7 +99,20 @@ class ToolFunction:
         # Handle the case where a single keyword arg wraps the data
         if len(kwargs) == 1:
             key = list(kwargs.keys())[0]
-            if key in ("asset_data", "texture_data", "model_data", "audio_data", "jar_path", "atlas_path", "model_data", "audio_list", "jar_data", "path_data", "texture_data"):
+            if key in (
+                "asset_data",
+                "texture_data",
+                "model_data",
+                "audio_data",
+                "jar_path",
+                "atlas_path",
+                "model_data",
+                "audio_list",
+                "jar_data",
+                "path_data",
+                "texture_data",
+                "validation_data",
+            ):
                 return self._func(kwargs[key])
         return self._func(**kwargs)
 
@@ -110,7 +124,7 @@ class ToolFunction:
 
 def analyze_assets_tool_func(asset_data: str) -> str:
     """Analyze assets for conversion."""
-    agent = AssetConverterAgent.get_instance()
+    AssetConverterAgent.get_instance()
 
     try:
         data = json.loads(asset_data) if isinstance(asset_data, str) else asset_data
@@ -124,10 +138,19 @@ def analyze_assets_tool_func(asset_data: str) -> str:
     except (json.JSONDecodeError, TypeError):
         return json.dumps({"success": False, "error": "Invalid input format"})
 
-    analysis_results = {"textures": {"count": 0, "needs_conversion": 0}, "models": {"count": 0}, "audio": {"count": 0}, "other": {"count": 0}}
+    analysis_results = {
+        "textures": {"count": 0, "needs_conversion": 0},
+        "models": {"count": 0},
+        "audio": {"count": 0},
+        "other": {"count": 0},
+    }
 
     for asset in asset_list:
-        path = asset if isinstance(asset, str) else (asset.get("path", "") if isinstance(asset, dict) else "")
+        path = (
+            asset
+            if isinstance(asset, str)
+            else (asset.get("path", "") if isinstance(asset, dict) else "")
+        )
         metadata = asset.get("metadata", {}) if isinstance(asset, dict) else {}
 
         file_ext = Path(path).suffix.lower()
@@ -137,7 +160,9 @@ def analyze_assets_tool_func(asset_data: str) -> str:
             # Simple power-of-2 check
             width = metadata.get("width", 16)
             height = metadata.get("height", 16)
-            if not (width > 0 and (width & (width - 1)) == 0) or not (height > 0 and (height & (height - 1)) == 0):
+            if not (width > 0 and (width & (width - 1)) == 0) or not (
+                height > 0 and (height & (height - 1)) == 0
+            ):
                 analysis_results["textures"]["needs_conversion"] += 1
         elif file_ext in [".obj", ".fbx", ".json"]:
             analysis_results["models"]["count"] += 1
@@ -148,7 +173,9 @@ def analyze_assets_tool_func(asset_data: str) -> str:
 
     total_assets = sum(analysis_results[k]["count"] for k in analysis_results)
 
-    return json.dumps({"success": True, "total_assets": total_assets, "analysis_results": analysis_results})
+    return json.dumps(
+        {"success": True, "total_assets": total_assets, "analysis_results": analysis_results}
+    )
 
 
 def convert_textures_tool_func(texture_data: str) -> str:
@@ -157,8 +184,12 @@ def convert_textures_tool_func(texture_data: str) -> str:
 
     try:
         data = json.loads(texture_data) if isinstance(texture_data, str) else texture_data
-        texture_list = data if isinstance(data, list) else data.get("texture_list", [])
-        output_dir = data.get("output_path", "/tmp/texture_output") if isinstance(data, dict) else "/tmp/texture_output"
+        texture_list = data if isinstance(data, list) else data.get("textures", data.get("texture_list", []))
+        output_dir = (
+            data.get("output_path", "/tmp/texture_output")
+            if isinstance(data, dict)
+            else "/tmp/texture_output"
+        )
     except (json.JSONDecodeError, TypeError):
         return json.dumps({"success": False, "error": "Invalid input format"})
 
@@ -168,29 +199,41 @@ def convert_textures_tool_func(texture_data: str) -> str:
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
-    converted = []
+    conversion_results = []
     errors = []
 
     for texture_info in texture_list:
-        texture_path = texture_info if isinstance(texture_info, str) else texture_info.get("path", "")
+        texture_path = (
+            texture_info if isinstance(texture_info, str) else texture_info.get("path", "")
+        )
         if not texture_path:
             continue
 
         try:
             result = agent._convert_single_texture(texture_path, {}, "texture", output_path)
             if result.get("success"):
-                converted.append(texture_path)
+                conversion_results.append(result)
         except Exception as e:
             errors.append({"texture": texture_path, "error": str(e)})
 
-    return json.dumps({
-        "success": True,
-        "converted_textures": converted,
-        "total_textures": len(texture_list),
-        "successful_conversions": len(converted),
-        "failed_conversions": len(errors),
-        "errors": errors,
-    })
+    bedrock_pack_files = {}
+    if conversion_results:
+        pack_structure = agent._generate_texture_pack_structure(conversion_results)
+        bedrock_pack_files = pack_structure
+
+    return json.dumps(
+        {
+            "success": True,
+            "conversion_summary": {
+                "successfully_converted": len(conversion_results),
+            },
+            "bedrock_pack_files": bedrock_pack_files,
+            "converted_textures": [r.get("converted_path", "") for r in conversion_results],
+            "total_textures": len(texture_list),
+            "failed_conversions": len(errors),
+            "errors": errors,
+        }
+    )
 
 
 def convert_models_tool_func(model_data: str) -> str:
@@ -199,8 +242,12 @@ def convert_models_tool_func(model_data: str) -> str:
 
     try:
         data = json.loads(model_data) if isinstance(model_data, str) else model_data
-        model_list = data if isinstance(data, list) else data.get("model_list", [])
-        output_dir = data.get("output_path", "/tmp/model_output") if isinstance(data, dict) else "/tmp/model_output"
+        model_list = data if isinstance(data, list) else data.get("models", data.get("model_list", []))
+        output_dir = (
+            data.get("output_path", "/tmp/model_output")
+            if isinstance(data, dict)
+            else "/tmp/model_output"
+        )
     except (json.JSONDecodeError, TypeError):
         return json.dumps({"success": False, "error": "Invalid input format"})
 
@@ -210,7 +257,7 @@ def convert_models_tool_func(model_data: str) -> str:
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
-    converted = []
+    successful_results = []
     errors = []
 
     for model_info in model_list:
@@ -218,34 +265,63 @@ def convert_models_tool_func(model_data: str) -> str:
         if not model_path:
             continue
 
+        entity_type = "entity"
+        if isinstance(model_info, dict) and "entity_type" in model_info:
+            entity_type = model_info["entity_type"]
+        else:
+            try:
+                with open(model_path, "r") as f:
+                    model_data = json.load(f)
+                parent = model_data.get("parent", "")
+                if parent.startswith("block/"):
+                    entity_type = "block"
+                elif parent.startswith("item/"):
+                    entity_type = "item"
+            except Exception:
+                pass
+
         try:
-            result = agent._convert_single_model(model_path, {}, "entity")
+            result = agent._convert_single_model(model_path, {}, entity_type)
             if result.get("success"):
-                converted.append(model_path)
+                successful_results.append({
+                    "converted_path": result.get("converted_path", ""),
+                    "bedrock_identifier": result.get("bedrock_identifier", ""),
+                    "original_path": model_path,
+                })
         except Exception as e:
             errors.append({"model": model_path, "error": str(e)})
 
-    return json.dumps({
-        "success": True,
-        "converted_models": converted,
-        "total_models": len(model_list),
-        "successful_conversions": len(converted),
-        "failed_conversions": len(errors),
-        "errors": errors,
-    })
+    return json.dumps(
+        {
+            "success": True,
+            "conversion_summary": {
+                "total_requested": len(model_list),
+                "successfully_converted": len(successful_results),
+            },
+            "successful_results": successful_results,
+            "failed_conversions": len(errors),
+            "errors": errors,
+        }
+    )
 
 
 def convert_audio_tool_func(audio_data: str) -> str:
     """Convert audio to Bedrock format."""
     if not HAS_AUDIO_SUPPORT:
-        return json.dumps({"success": False, "error": "Audio support not available (pydub not installed)"})
+        return json.dumps(
+            {"success": False, "error": "Audio support not available (pydub not installed)"}
+        )
 
     agent = AssetConverterAgent.get_instance()
 
     try:
         data = json.loads(audio_data) if isinstance(audio_data, str) else audio_data
         audio_list = data if isinstance(data, list) else data.get("audio_list", [])
-        output_dir = data.get("output_path", "/tmp/audio_output") if isinstance(data, dict) else "/tmp/audio_output"
+        output_dir = (
+            data.get("output_path", "/tmp/audio_output")
+            if isinstance(data, dict)
+            else "/tmp/audio_output"
+        )
     except (json.JSONDecodeError, TypeError):
         return json.dumps({"success": False, "error": "Invalid input format"})
 
@@ -270,14 +346,18 @@ def convert_audio_tool_func(audio_data: str) -> str:
         except Exception as e:
             errors.append({"audio": audio_path, "error": str(e)})
 
-    return json.dumps({
-        "success": True,
-        "converted_audio": converted,
-        "total_audio": len(audio_list),
-        "successful_conversions": len(converted),
-        "failed_conversions": len(errors),
-        "errors": errors,
-    })
+    return json.dumps(
+        {
+            "success": True,
+            "conversion_summary": {
+                "total_requested": len(audio_list),
+                "successfully_converted": len(converted),
+            },
+            "converted_audio": converted,
+            "failed_conversions": len(errors),
+            "errors": errors,
+        }
+    )
 
 
 def validate_bedrock_assets_tool_func(assets_data: str) -> str:
@@ -291,22 +371,38 @@ def validate_bedrock_assets_tool_func(assets_data: str) -> str:
         return json.dumps({"success": False, "error": "Invalid input format"})
 
     results = []
+    warning_count = 0
+    optimization_count = 0
     for asset in assets:
         path = asset if isinstance(asset, str) else asset.get("path", "")
         asset_type = asset.get("type", "unknown") if isinstance(asset, dict) else "unknown"
+        metadata = asset.get("metadata", {}) if isinstance(asset, dict) else {}
 
-        validation = {"path": path, "valid": True, "issues": []}
+        validation = {"path": path, "valid": True, "issues": [], "warnings": []}
 
         file_ext = Path(path).suffix.lower()
         if asset_type == "texture" or file_ext in [".png", ".jpg", ".jpeg", ".tga", ".bmp"]:
-            result = agent.validate_texture(path)
+            result = agent.validate_texture(path, metadata if metadata else None)
             if not result.get("valid", False):
                 validation["valid"] = False
-                validation["issues"].extend(result.get("issues", []))
+                validation["issues"].extend(result.get("errors", []))
+            validation["warnings"] = result.get("warnings", [])
+            if validation["warnings"]:
+                warning_count += 1
+            if result.get("properties", {}).get("format") != "PNG":
+                optimization_count += 1
 
         results.append(validation)
 
-    return json.dumps({"success": True, "results": results})
+    return json.dumps({
+        "success": True,
+        "results": results,
+        "quality_metrics": {
+            "total_assets": len(assets),
+            "warning_count": warning_count,
+            "optimization_count": optimization_count,
+        }
+    })
 
 
 def extract_jar_textures_tool_func(jar_data: str) -> str:
@@ -316,7 +412,11 @@ def extract_jar_textures_tool_func(jar_data: str) -> str:
     try:
         data = json.loads(jar_data) if isinstance(jar_data, str) else jar_data
         jar_path = data.get("jar_path", "") if isinstance(data, dict) else ""
-        output_dir = data.get("output_dir", "/tmp/jar_textures") if isinstance(data, dict) else "/tmp/jar_textures"
+        output_dir = (
+            data.get("output_dir", "/tmp/jar_textures")
+            if isinstance(data, dict)
+            else "/tmp/jar_textures"
+        )
         namespace = data.get("namespace", None)
     except (json.JSONDecodeError, TypeError):
         return json.dumps({"success": False, "error": "Invalid input format"})
@@ -325,8 +425,9 @@ def extract_jar_textures_tool_func(jar_data: str) -> str:
         return json.dumps({"success": False, "error": "No JAR path provided"})
 
     try:
-        result = agent.extract_textures_from_jar(jar_path, output_dir, namespace)
-        return json.dumps({"success": True, "result": result})
+        result = agent.convert_jar_textures_to_bedrock(jar_path, output_dir, namespace)
+        result["converted_count"] = len(result.get("converted", []))
+        return json.dumps(result)
     except Exception as e:
         return json.dumps({"success": False, "error": str(e)})
 
@@ -605,8 +706,8 @@ class AssetConverterAgent:
     def convert_java_texture_path(self, java_path: str, bedrock_type: str = "blocks") -> str:
         return convert_java_texture_path(self, java_path, bedrock_type)
 
-    def validate_texture(self, texture_path: str) -> Dict:
-        return _validate_texture(self, texture_path)
+    def validate_texture(self, texture_path: str, metadata: Dict = None) -> Dict:
+        return _validate_texture(self, texture_path, metadata)
 
     def generate_fallback_for_jar(
         self, output_path: str, block_name: str, texture_type: str = "blocks"

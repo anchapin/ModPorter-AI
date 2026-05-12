@@ -7,10 +7,12 @@ import zipfile
 from pathlib import Path
 from typing import Dict, List
 
+from agents.texture_converter.path_mapper import _map_java_texture_to_bedrock
+
 logger = logging.getLogger(__name__)
 
 
-def extract_textures_from_jar(self, jar_path: str, output_dir: str, namespace: str = None) -> Dict:
+def extract_textures_from_jar(agent, jar_path: str, output_dir: str, namespace: str = None) -> Dict:
     """
     Extract all textures from a Java mod JAR file.
 
@@ -60,7 +62,7 @@ def extract_textures_from_jar(self, jar_path: str, output_dir: str, namespace: s
                 try:
                     texture_data = jar.read(texture_file)
 
-                    bedrock_path = self._map_java_texture_to_bedrock(texture_file)
+                    bedrock_path = _map_java_texture_to_bedrock(agent, texture_file)
 
                     full_output_dir = output_path / Path(bedrock_path).parent
                     full_output_dir.mkdir(parents=True, exist_ok=True)
@@ -125,7 +127,7 @@ def _get_mod_ids_from_jar(agent, jar: zipfile.ZipFile) -> List[str]:
 
 
 def _extract_textures_from_alt_locations(
-    self, jar: zipfile.ZipFile, output_path: Path
+    agent, jar: zipfile.ZipFile, output_path: Path
 ) -> List[Dict]:
     """Extract textures from alternative locations in JAR."""
     extracted = []
