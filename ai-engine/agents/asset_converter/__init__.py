@@ -381,6 +381,122 @@ def analyze_assets_tool(asset_data: str) -> str:
     return analyze_assets(asset_data)
 
 
+def validate_texture_tool_func(texture_path: str) -> str:
+    """Validate a texture for Bedrock compatibility."""
+    agent = AssetConverterAgent.get_instance()
+
+    if not texture_path:
+        return json.dumps({"success": False, "error": "No texture path provided"})
+
+    result = agent.validate_texture(texture_path)
+    return json.dumps({"success": True, "result": result})
+
+
+def validate_bedrock_assets_tool_func(validation_data: str = None, assets_data: str = None) -> str:
+    """Validate assets for Bedrock compatibility."""
+    agent = AssetConverterAgent.get_instance()
+
+    input_data = validation_data if validation_data is not None else assets_data
+    if input_data is None:
+        return json.dumps({"success": False, "error": "No validation data provided"})
+
+    try:
+        data = json.loads(input_data) if isinstance(input_data, str) else input_data
+        asset_list = data.get("assets", []) if isinstance(data, dict) else data
+    except (json.JSONDecodeError, TypeError):
+        return json.dumps({"success": False, "error": "Invalid input format"})
+
+    warning_count = 0
+    optimization_count = 0
+    results = []
+    errors = []
+
+    for asset in asset_list:
+        path = asset if isinstance(asset, str) else asset.get("path", "")
+        asset_type = asset.get("type", "unknown") if isinstance(asset, dict) else "unknown"
+        metadata = asset.get("metadata", {}) if isinstance(asset, dict) else {}
+
+        file_ext = Path(path).suffix.lower()
+        issues = []
+
+        if asset_type == "texture" or file_ext in [".png", ".jpg", ".jpeg", ".tga", ".bmp"]:
+            width = metadata.get("width", 16)
+            height = metadata.get("height", 16)
+            if width != height:
+                issues.append("Non-square texture may cause rendering issues")
+            if width > 64:
+                optimization_count += 1
+
+        results.append({"path": path, "type": asset_type, "valid": len(issues) == 0, "issues": issues})
+
+    return json.dumps({
+        "success": True,
+        "quality_metrics": {
+            "total_assets": len(results),
+            "warning_count": warning_count,
+            "optimization_count": optimization_count
+        },
+        "results": results,
+        "errors": errors
+    })
+
+
+def extract_jar_textures_tool_func(jar_data: str) -> str:
+    """Extract textures from a JAR file."""
+    agent = AssetConverterAgent.get_instance()
+
+    try:
+        data = json.loads(jar_data) if isinstance(jar_data, str) else jar_data
+        jar_path = data.get("jar_path", "") if isinstance(data, dict) else str(jar_data)
+        output_dir = data.get("output_dir", "") if isinstance(data, dict) else ""
+    except (json.JSONDecodeError, TypeError):
+        jar_path = jar_data
+        output_dir = ""
+
+    if not jar_path:
+        return json.dumps({"success": False, "error": "No JAR path provided"})
+
+    result = agent.extract_textures_from_jar(jar_path, output_dir)
+    return json.dumps({"success": True, "result": result})
+
+
+def convert_java_texture_path_tool_func(path_data: str) -> str:
+    """Convert a Java texture path to Bedrock format."""
+    agent = AssetConverterAgent.get_instance()
+
+    try:
+        data = json.loads(path_data) if isinstance(path_data, str) else path_data
+        java_path = data.get("java_path", "") if isinstance(data, dict) else str(path_data)
+        bedrock_type = data.get("bedrock_type", "blocks") if isinstance(data, dict) else "blocks"
+    except (json.JSONDecodeError, TypeError):
+        java_path = path_data
+        bedrock_type = "blocks"
+
+    if not java_path:
+        return json.dumps({"success": False, "error": "No Java path provided"})
+
+    result = agent.convert_java_texture_path(java_path, bedrock_type)
+    return json.dumps({"success": True, "result": result})
+
+
+def generate_fallback_texture_tool_func(texture_data: str) -> str:
+    """Generate a fallback texture."""
+    agent = AssetConverterAgent.get_instance()
+
+    try:
+        data = json.loads(texture_data) if isinstance(texture_data, str) else texture_data
+        usage = data.get("usage", "block") if isinstance(data, dict) else "block"
+        size_tuple = data.get("size", (16, 16))
+        if isinstance(size_tuple, list):
+            size_tuple = tuple(size_tuple)
+    except (json.JSONDecodeError, TypeError):
+        usage = "block"
+        size_tuple = (16, 16)
+
+    result = agent._generate_fallback_texture(usage, size_tuple)
+    return json.dumps({"success": True, "result": result})
+
+
 def analyze_assets(asset_data: str) -> str:
     """Analyze assets for conversion."""
     # Analyze assets using agent's analysis capabilities
