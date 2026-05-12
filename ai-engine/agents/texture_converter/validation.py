@@ -26,23 +26,50 @@ def validate_texture(agent, texture_path: str, metadata: Dict = None) -> Dict:
 
     try:
         path = Path(texture_path)
+        metadata = metadata or {}
+        width = None
+        height = None
 
         if not path.exists():
-            result["valid"] = False
-            result["errors"].append(f"Texture file not found: {texture_path}")
-            return result
+            if "width" in metadata and "height" in metadata:
+                width = metadata["width"]
+                height = metadata["height"]
+                inferred_format = metadata.get("format")
+                if not inferred_format:
+                    ext = path.suffix.lower()
+                    if ext in [".jpg", ".jpeg"]:
+                        inferred_format = "JPEG"
+                    elif ext in [".tga", ".bmp"]:
+                        inferred_format = ext.upper().replace(".", "")
+                    elif ext in [".png"]:
+                        inferred_format = None
+                    else:
+                        inferred_format = None
+                result["properties"] = {
+                    "width": width,
+                    "height": height,
+                    "format": inferred_format,
+                    "mode": metadata.get("mode", "RGBA"),
+                    "size_bytes": 0,
+                    "from_metadata": True,
+                }
+            else:
+                result["valid"] = False
+                result["errors"].append(f"Texture file not found: {texture_path}")
+                return result
+        else:
+            with Image.open(path) as img:
+                width, height = img.size
 
-        with Image.open(path) as img:
-            width, height = img.size
+                result["properties"] = {
+                    "width": width,
+                    "height": height,
+                    "format": img.format,
+                    "mode": img.mode,
+                    "size_bytes": path.stat().st_size,
+                }
 
-            result["properties"] = {
-                "width": width,
-                "height": height,
-                "format": img.format,
-                "mode": img.mode,
-                "size_bytes": path.stat().st_size,
-            }
-
+        if width is not None and height is not None:
             if width != height:
                 result["warnings"].append(f"Non-square texture: {width}x{height}")
 
@@ -65,15 +92,17 @@ def validate_texture(agent, texture_path: str, metadata: Dict = None) -> Dict:
                     f"Texture exceeds maximum resolution {max_res}: {width}x{height}"
                 )
 
-            if img.format != "PNG":
-                result["warnings"].append(f"Non-PNG format: {img.format}")
-                if agent.texture_constraints.get("must_be_png", False):
-                    result["valid"] = False
-                    result["errors"].append("Texture must be PNG format for Bedrock")
+        if path.exists():
+            with Image.open(path) as img:
+                if img.format != "PNG":
+                    result["warnings"].append(f"Non-PNG format: {img.format}")
+                    if agent.texture_constraints.get("must_be_png", False):
+                        result["valid"] = False
+                        result["errors"].append("Texture must be PNG format for Bedrock")
 
-            if img.mode not in ["RGB", "RGBA"]:
-                result["valid"] = False
-                result["errors"].append(f"Unsupported color mode: {img.mode}")
+                if img.mode not in ["RGB", "RGBA"]:
+                    result["valid"] = False
+                    result["errors"].append(f"Unsupported color mode: {img.mode}")
 
     except Exception as e:
         result["valid"] = False
@@ -99,7 +128,7 @@ def validate_textures_batch(agent, texture_paths: List[str], metadata: Dict = No
     warning_count = 0
 
     for texture_path in texture_paths:
-        validation = agent.validate_texture(texture_path, metadata)
+        validation = validate_texture(agent, texture_path, metadata)
         results.append({"path": texture_path, "validation": validation})
 
         if validation["valid"]:
