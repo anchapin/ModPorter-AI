@@ -329,6 +329,10 @@ def client():
     """Create a test client for the FastAPI app with clean database per test."""
     # Mock the init_db function to prevent re-initialization during TestClient startup
     with patch("db.init_db.init_db", new_callable=AsyncMock):
+        # Ensure DISABLE_REDIS is set before importing app to prevent Redis connection
+        # The reset_storage_env autouse fixture clears DISABLE_REDIS, so we need to
+        # restore it before importing app (which instantiates CacheService singleton)
+        os.environ["DISABLE_REDIS"] = "true"
         # Import dependencies from src.main (not the root main.py which lacks middleware)
         from src.main import app
         from db.base import get_db

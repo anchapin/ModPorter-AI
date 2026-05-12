@@ -95,9 +95,13 @@ class CeleryQueueMonitor:
         self.namespace = namespace
         self._redis_client = None
         self._metrics_key = f"{namespace}:metrics"
+        # Check if Redis is disabled for tests
+        self._redis_disabled = os.getenv("DISABLE_REDIS", "false").lower() == "true"
 
     def _get_redis(self):
-        """Get Redis client."""
+        """Get Redis client or None if Redis is disabled."""
+        if self._redis_disabled:
+            return None
         if self._redis_client is None:
             self._redis_client = redis.from_url(self.redis_url, decode_responses=True)
         return self._redis_client
@@ -105,15 +109,19 @@ class CeleryQueueMonitor:
     def get_queue_depth(self, queue_name: str) -> int:
         """Get the current depth of a queue."""
         r = self._get_redis()
+        if r is None:
+            return 0
         key = f"{self.namespace}:queue:{queue_name}"
         return r.zcard(key)
 
     def get_all_queue_depths(self) -> Dict[str, int]:
         """Get depths for all priority queues."""
+        r = self._get_redis()
+        if r is None:
+            return {priority.value: 0 for priority in QueuePriority}
         depths = {}
         for priority in QueuePriority:
             queue_key = f"{self.namespace}:queue:{priority.value}"
-            r = self._get_redis()
             depth = r.zcard(queue_key)
             depths[priority.value] = depth
         return depths
@@ -121,18 +129,33 @@ class CeleryQueueMonitor:
     def get_dead_letter_queue_depth(self) -> int:
         """Get the dead letter queue depth."""
         r = self._get_redis()
+        if r is None:
+            return 0
         key = f"{self.namespace}:dead_letter"
         return r.zcard(key)
 
     def get_processing_set_size(self) -> int:
         """Get number of tasks currently being processed."""
         r = self._get_redis()
+        if r is None:
+            return 0
         key = f"{self.namespace}:processing"
         return r.scard(key)
 
     def get_queue_stats(self) -> Dict[str, Any]:
         """Get comprehensive queue statistics."""
         r = self._get_redis()
+
+        if r is None:
+            # Redis disabled, return empty stats
+            return {
+                "queues": {priority.value: 0 for priority in QueuePriority},
+                "total_queued": 0,
+                "total_processing": 0,
+                "total_dead_letter": 0,
+                "retry_queue_size": 0,
+                "metrics": {},
+            }
 
         stats = {
             "queues": {},
@@ -266,7 +289,10 @@ class CeleryQueueMonitor:
         Returns:
             Failure rate as a percentage (0-100)
         """
-        metrics = self._get_redis().hgetall(self._metrics_key)
+        r = self._get_redis()
+        if r is None:
+            return 0.0
+        metrics = r.hgetall(self._metrics_key)
         if not metrics:
             return 0.0
 
