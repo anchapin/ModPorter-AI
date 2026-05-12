@@ -51,21 +51,45 @@ OUTPUT_DIR = SCRIPT_DIR / "grpo_output_phase3"
 
 # Bedrock API patterns that indicate correct platform knowledge
 BEDROCK_APIS = [
-    r'@minecraft/server', r'@minecraft/server-ui', r'@minecraft/server-net',
-    r'world\.afterEvents', r'world\.beforeEvents', r'system\.run',
-    r'BlockPermutation', r'BlockTypes', r'ItemTypes', r'EntityTypes',
-    r'Dimension', r'Player', r'Block', r'ItemStack', r'Container',
-    r'MinecraftItemTypes', r'MinecraftBlockTypes',
-    r'PropertyType', r'BlockStates',
+    r"@minecraft/server",
+    r"@minecraft/server-ui",
+    r"@minecraft/server-net",
+    r"world\.afterEvents",
+    r"world\.beforeEvents",
+    r"system\.run",
+    r"BlockPermutation",
+    r"BlockTypes",
+    r"ItemTypes",
+    r"EntityTypes",
+    r"Dimension",
+    r"Player",
+    r"Block",
+    r"ItemStack",
+    r"Container",
+    r"MinecraftItemTypes",
+    r"MinecraftBlockTypes",
+    r"PropertyType",
+    r"BlockStates",
 ]
 
 # Java/Forge patterns that should NOT appear in Bedrock output
 JAVA_ONLY_APIS = [
-    r'net\.forge', r'net\.minecraft\.(src|util|block|item|entity|world|server|client)',
-    r'ForgeEventBus', r'IEventBus', r'DeferredRegister', r'RegistryObject',
-    r'FMLCommonSetupEvent', r'FMLClientSetupEvent', r'@Mod\b', r'@SubscribeEvent',
-    r'GameRegistry', r'ItemStack\(.*Blocks\.', r'Minecraft\.getMinecraft\(\)',
-    r'@EventHandler', r'cpw\.mods', r'net\.minecraftforge\.fml',
+    r"net\.forge",
+    r"net\.minecraft\.(src|util|block|item|entity|world|server|client)",
+    r"ForgeEventBus",
+    r"IEventBus",
+    r"DeferredRegister",
+    r"RegistryObject",
+    r"FMLCommonSetupEvent",
+    r"FMLClientSetupEvent",
+    r"@Mod\b",
+    r"@SubscribeEvent",
+    r"GameRegistry",
+    r"ItemStack\(.*Blocks\.",
+    r"Minecraft\.getMinecraft\(\)",
+    r"@EventHandler",
+    r"cpw\.mods",
+    r"net\.minecraftforge\.fml",
 ]
 
 
@@ -95,7 +119,7 @@ def _score_manifest_structure(completion: str, reference: str) -> float:
     # Find the manifest block (contains format_version or header)
     def find_manifest(blocks):
         for b in blocks:
-            if 'format_version' in b or ('header' in b and ('name' in b or 'uuid' in b)):
+            if "format_version" in b or ("header" in b and ("name" in b or "uuid" in b)):
                 return b
         return None
 
@@ -111,7 +135,7 @@ def _score_manifest_structure(completion: str, reference: str) -> float:
     score = 0.0
 
     # Check format_version presence
-    if 'format_version' in comp_manifest:
+    if "format_version" in comp_manifest:
         score += 0.15
         # Check if version matches
         ref_ver = re.search(r'format_version["\s:]+([0-9.]+)', ref_manifest)
@@ -120,23 +144,25 @@ def _score_manifest_structure(completion: str, reference: str) -> float:
             score += 0.05
 
     # Check header section
-    if 'header' in comp_manifest:
+    if "header" in comp_manifest:
         score += 0.15
         # Header sub-fields
-        header_fields = ['name', 'description', 'uuid', 'version', 'min_engine_version']
-        ref_header = ref_manifest[ref_manifest.find('header'):ref_manifest.find('header') + 500]
-        comp_header = comp_manifest[comp_manifest.find('header'):comp_manifest.find('header') + 500]
+        header_fields = ["name", "description", "uuid", "version", "min_engine_version"]
+        ref_header = ref_manifest[ref_manifest.find("header") : ref_manifest.find("header") + 500]
+        comp_header = comp_manifest[
+            comp_manifest.find("header") : comp_manifest.find("header") + 500
+        ]
         matched = sum(1 for f in header_fields if f in comp_header and f in ref_header)
         total = sum(1 for f in header_fields if f in ref_header)
         if total > 0:
             score += 0.10 * (matched / total)
 
     # Check modules section
-    if 'modules' in comp_manifest:
+    if "modules" in comp_manifest:
         score += 0.10
 
     # Check dependencies
-    if 'dependencies' in comp_manifest:
+    if "dependencies" in comp_manifest:
         score += 0.05
 
     # JSON parseability of manifest
@@ -146,7 +172,7 @@ def _score_manifest_structure(completion: str, reference: str) -> float:
             score += 0.15  # Fully parseable and is object
     except json.JSONDecodeError:
         # Partial credit: count balanced braces
-        if comp_manifest.count('{') > 0 and comp_manifest.count('{') == comp_manifest.count('}'):
+        if comp_manifest.count("{") > 0 and comp_manifest.count("{") == comp_manifest.count("}"):
             score += 0.05  # At least balanced
 
     return min(score, 1.0)
@@ -169,8 +195,8 @@ def _score_js_quality(completion: str, reference: str) -> float:
     score = 0.0
 
     # Function name overlap
-    ref_funcs = set(re.findall(r'function\s+(\w+)', ref_js))
-    comp_funcs = set(re.findall(r'function\s+(\w+)', comp_js))
+    ref_funcs = set(re.findall(r"function\s+(\w+)", ref_js))
+    comp_funcs = set(re.findall(r"function\s+(\w+)", comp_js))
     if ref_funcs:
         func_overlap = len(ref_funcs & comp_funcs) / len(ref_funcs)
         score += 0.20 * func_overlap
@@ -183,15 +209,15 @@ def _score_js_quality(completion: str, reference: str) -> float:
         score += min(0.20, 0.05 * bedrock_apis_found)
 
     # Control structure complexity match
-    ref_controls = len(re.findall(r'\b(if|for|while|switch|try)\b', ref_js))
-    comp_controls = len(re.findall(r'\b(if|for|while|switch|try)\b', comp_js))
+    ref_controls = len(re.findall(r"\b(if|for|while|switch|try)\b", ref_js))
+    comp_controls = len(re.findall(r"\b(if|for|while|switch|try)\b", comp_js))
     if ref_controls > 0:
         ratio = min(comp_controls / ref_controls, 1.5) / 1.5
         score += 0.15 * ratio
 
     # Variable/event usage
-    ref_vars = set(re.findall(r'(?:let|const|var)\s+(\w+)', ref_js))
-    comp_vars = set(re.findall(r'(?:let|const|var)\s+(\w+)', comp_js))
+    ref_vars = set(re.findall(r"(?:let|const|var)\s+(\w+)", ref_js))
+    comp_vars = set(re.findall(r"(?:let|const|var)\s+(\w+)", comp_js))
     if ref_vars:
         var_overlap = len(ref_vars & comp_vars) / len(ref_vars)
         score += 0.10 * var_overlap
@@ -227,8 +253,8 @@ def _score_json_validity_v2(completion: str) -> float:
         except json.JSONDecodeError:
             # Partial credit for near-valid JSON
             # Check balanced braces
-            opens = block.count('{') + block.count('[')
-            closes = block.count('}') + block.count(']')
+            opens = block.count("{") + block.count("[")
+            closes = block.count("}") + block.count("]")
             if opens > 0 and abs(opens - closes) <= 1:
                 total_score += 0.5
             elif opens > 0:
@@ -296,12 +322,7 @@ def compute_reward_v2(completion: str, reference: str) -> float:
     halluc = _score_hallucination_penalty(comp)
 
     reward = (
-        0.20 * manifest +
-        0.25 * js +
-        0.15 * json_v +
-        0.10 * bedrock +
-        0.15 * length -
-        0.15 * halluc
+        0.20 * manifest + 0.25 * js + 0.15 * json_v + 0.10 * bedrock + 0.15 * length - 0.15 * halluc
     )
 
     return max(reward, 0.0)  # Floor at 0
@@ -311,6 +332,7 @@ def compute_reward_v2(completion: str, reference: str) -> float:
 # Dataset loading (same as Phase 1)
 # =============================================================================
 
+
 def load_dataset(max_samples=200):
     if not DATASET_PATH.exists():
         raise FileNotFoundError(f"Dataset not found at {DATASET_PATH}")
@@ -319,22 +341,30 @@ def load_dataset(max_samples=200):
         for line in f:
             if line.strip():
                 pairs.append(json.loads(line))
-    train_pairs = pairs[:int(len(pairs) * 0.9)]
+    train_pairs = pairs[: int(len(pairs) * 0.9)]
 
     def build_prompt(row: dict) -> str:
-        system = ("You are PortKit, an expert at converting Minecraft Java Edition mods (Forge) "
-                  "to Bedrock Edition Add-ons. Given a mod description and Java source code, "
-                  "first reason through the platform map, then produce the Bedrock Add-on implementation.")
-        user = (f"Mod Description: {row['instruction']}\n\nJava Source:\n{row['java_source']}\n\n"
-                "Convert this to a Bedrock Add-on. First explain your conversion approach, then provide the files.")
+        system = (
+            "You are PortKit, an expert at converting Minecraft Java Edition mods (Forge) "
+            "to Bedrock Edition Add-ons. Given a mod description and Java source code, "
+            "first reason through the platform map, then produce the Bedrock Add-on implementation."
+        )
+        user = (
+            f"Mod Description: {row['instruction']}\n\nJava Source:\n{row['java_source']}\n\n"
+            "Convert this to a Bedrock Add-on. First explain your conversion approach, then provide the files."
+        )
         return system + "\n\n" + user
 
-    return [{"prompt": build_prompt(p), "answer": p["bedrock_source"]} for p in train_pairs[:max_samples]]
+    return [
+        {"prompt": build_prompt(p), "answer": p["bedrock_source"]}
+        for p in train_pairs[:max_samples]
+    ]
 
 
 # =============================================================================
 # Main
 # =============================================================================
+
 
 def main():
     start_time = time.time()
@@ -362,13 +392,16 @@ def main():
     empty_rewards = [compute_reward_v2("", p["answer"]) for p in data_test[:50]]
     # Old reward for comparison
     from phase1_grpo_quickwins import compute_reward as compute_reward_v1
+
     old_perfect = [compute_reward_v1(p["answer"], p["answer"]) for p in data_test[:50]]
 
     print(f"  Perfect match (ref vs self):")
     print(f"    Old reward: mean={np.mean(old_perfect):.3f}, max={max(old_perfect):.3f}")
     print(f"    New reward: mean={np.mean(perfect_rewards):.3f}, max={max(perfect_rewards):.3f}")
     print(f"  Empty output: mean={np.mean(empty_rewards):.3f}")
-    print(f"  Dynamic range: {np.mean(perfect_rewards) - np.mean(empty_rewards):.3f} (higher = better signal)")
+    print(
+        f"  Dynamic range: {np.mean(perfect_rewards) - np.mean(empty_rewards):.3f} (higher = better signal)"
+    )
 
     # ------------------------------------------------------------------
     # [2] Load dataset
@@ -476,10 +509,12 @@ def main():
         prompts.append(d["prompt"])
         references.append(d["answer"])
 
-    train_dataset = Dataset.from_dict({
-        "prompt": prompts,
-        "reference": references,
-    })
+    train_dataset = Dataset.from_dict(
+        {
+            "prompt": prompts,
+            "reference": references,
+        }
+    )
     print(f"  Dataset: {len(train_dataset)} rows")
 
     # ------------------------------------------------------------------
@@ -492,7 +527,11 @@ def main():
         rewards = []
         for i, completion in enumerate(completions):
             if isinstance(completion, list) and len(completion) > 0:
-                comp_text = completion[0].get("content", "") if isinstance(completion[0], dict) else str(completion[0])
+                comp_text = (
+                    completion[0].get("content", "")
+                    if isinstance(completion[0], dict)
+                    else str(completion[0])
+                )
             else:
                 comp_text = str(completion)
 
@@ -554,16 +593,21 @@ def main():
     # ------------------------------------------------------------------
     print("\n[11] Quick evaluation...")
     model.eval()
-    eval_samples = [data[0], data[len(data)//2], data[-1]]
+    eval_samples = [data[0], data[len(data) // 2], data[-1]]
     eval_rewards_v2 = []
     eval_rewards_v1 = []
     for idx, sample in enumerate(eval_samples):
         msgs = [
-            {"role": "system", "content": "You are PortKit, an expert at converting Minecraft Java Edition mods to Bedrock Edition Add-ons."},
+            {
+                "role": "system",
+                "content": "You are PortKit, an expert at converting Minecraft Java Edition mods to Bedrock Edition Add-ons.",
+            },
             {"role": "user", "content": sample["prompt"][:800]},
         ]
         text = tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
-        inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=max_seq_length).to("cuda")
+        inputs = tokenizer(
+            text, return_tensors="pt", truncation=True, max_length=max_seq_length
+        ).to("cuda")
         with torch.no_grad():
             out = model.generate(
                 **inputs,
@@ -588,7 +632,7 @@ def main():
     print(f"  Model saved: {output_dir}/final/")
     print(f"  Eval rewards (v2): {eval_rewards_v2} (mean={np.mean(eval_rewards_v2):.3f})")
     print(f"  Eval rewards (v1): {eval_rewards_v1} (mean={np.mean(eval_rewards_v1):.3f})")
-    print(f"  Total time: {elapsed/60:.1f} min")
+    print(f"  Total time: {elapsed / 60:.1f} min")
     print(f"  Final VRAM: {torch.cuda.memory_allocated() / 1e9:.2f} GB")
 
 

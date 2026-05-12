@@ -44,6 +44,7 @@ DATASET_PATH = PROJECT_ROOT / "ai_engine/mmsd/data/processed/validated_pairs.jso
 
 # ── Reward Functions (from portkit_mod_convert.py) ────────────────────────────
 
+
 def _simple_tokenize(text: str) -> List[str]:
     text = re.sub(r"```[^`]*```", "", text)
     text = re.sub(r"[^\w\s]", " ", text)
@@ -82,9 +83,11 @@ def _extract_js(text: str):
     js_blocks = re.findall(r"```(?:javascript|js)\s*(.*?)\s*```", text, re.DOTALL)
     if js_blocks:
         return max(js_blocks, key=len).strip()
-    scripts = re.search(r"(?:scripts|behavior_pack|content).*?\.js", text, re.DOTALL | re.IGNORECASE)
+    scripts = re.search(
+        r"(?:scripts|behavior_pack|content).*?\.js", text, re.DOTALL | re.IGNORECASE
+    )
     if scripts:
-        return text[scripts.start():min(scripts.start() + 10000, len(text))]
+        return text[scripts.start() : min(scripts.start() + 10000, len(text))]
     return None
 
 
@@ -101,7 +104,9 @@ def extract_manifest_reward(completion_text: str) -> float:
 
 def extract_js_reward(completion_text: str) -> float:
     has_js_block = bool(re.search(r"```(?:javascript|js)\s*", completion_text, re.DOTALL))
-    has_keywords = bool(re.search(r"\bfunction\b|\bvar\b|\blet\b|\bconst\b|\bexport\b", completion_text))
+    has_keywords = bool(
+        re.search(r"\bfunction\b|\bvar\b|\blet\b|\bconst\b|\bexport\b", completion_text)
+    )
     score = 0.0
     if has_js_block:
         score += 0.5
@@ -156,10 +161,11 @@ def compute_reward(completion_text: str, reference: str) -> float:
     r3 = json_validity_reward(completion_text)
     r4 = js_syntax_reward(completion_text)
     r5 = bleu_reward_fn(completion_text, reference)
-    return w[0]*r1 + w[1]*r2 + w[2]*r3 + w[3]*r4 + w[4]*r5
+    return w[0] * r1 + w[1] * r2 + w[2] * r3 + w[3] * r4 + w[4] * r5
 
 
 # ── Dataset Loading ─────────────────────────────────────────────────────────────
+
 
 def load_dataset(max_samples=200):
     """Load training data from validated_pairs.jsonl."""
@@ -206,12 +212,14 @@ def load_dataset(max_samples=200):
 
 # ── Reward function for GRPO ───────────────────────────────────────────────────
 
+
 def reward_func(prompt: str, response: str, reference: str) -> float:
     """GRPO reward function: receives (prompt, response, ground_truth) -> scalar reward."""
     return compute_reward(response, reference)
 
 
 # ── Main training ────────────────────────────────────────────────────────────────
+
 
 def main():
     print("=" * 60)
@@ -249,8 +257,13 @@ def main():
         model,
         r=lora_rank,
         target_modules=[
-            "q_proj", "k_proj", "v_proj", "o_proj",
-            "gate_proj", "up_proj", "down_proj",
+            "q_proj",
+            "k_proj",
+            "v_proj",
+            "o_proj",
+            "gate_proj",
+            "up_proj",
+            "down_proj",
         ],
         lora_alpha=lora_rank,
         use_gradient_checkpointing="unsloth",
@@ -284,29 +297,24 @@ def main():
         warmup_ratio=0.1,
         lr_scheduler_type="cosine",
         optim="paged_adamw_8bit",
-
         # Generation
-        num_generations=4,           # Group size per prompt
+        num_generations=4,  # Group size per prompt
         max_prompt_length=256,
         max_completion_length=max_seq_length - 256,
-
         # Batch
         per_device_train_batch_size=1,
         gradient_accumulation_steps=4,
-        num_iterations=2,            # PPO epochs per batch
-
+        num_iterations=2,  # PPO epochs per batch
         # Steps
         max_steps=100,
         save_steps=50,
         eval_steps=50,
         logging_steps=1,
-
         # Output
         output_dir="./grpo_output",
         bf16=True,
         gradient_checkpointing=True,
         remove_unused_columns=False,
-
         # Misc
         report_to="none",
     )

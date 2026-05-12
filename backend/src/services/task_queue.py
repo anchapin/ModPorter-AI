@@ -150,9 +150,7 @@ class AsyncTaskQueue:
 
             if task_ids:
                 task_id = (
-                    task_ids[0][0].decode()
-                    if isinstance(task_ids[0][0], bytes)
-                    else task_ids[0][0]
+                    task_ids[0][0].decode() if isinstance(task_ids[0][0], bytes) else task_ids[0][0]
                 )
 
                 task_data = await redis.get(f"task:{task_id}")
