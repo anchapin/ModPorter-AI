@@ -133,12 +133,16 @@ class AsyncTaskQueue:
         redis = await self._get_redis()
 
         # Check queues in priority order if no specific priority given
-        priorities = [priority] if priority else [
-            TaskPriority.CRITICAL,
-            TaskPriority.HIGH,
-            TaskPriority.NORMAL,
-            TaskPriority.LOW,
-        ]
+        priorities = (
+            [priority]
+            if priority
+            else [
+                TaskPriority.CRITICAL,
+                TaskPriority.HIGH,
+                TaskPriority.NORMAL,
+                TaskPriority.LOW,
+            ]
+        )
 
         for p in priorities:
             queue_name = self._queue_names[p]
@@ -146,9 +150,7 @@ class AsyncTaskQueue:
 
             if task_ids:
                 task_id = (
-                    task_ids[0][0].decode()
-                    if isinstance(task_ids[0][0], bytes)
-                    else task_ids[0][0]
+                    task_ids[0][0].decode() if isinstance(task_ids[0][0], bytes) else task_ids[0][0]
                 )
 
                 task_data = await redis.get(f"task:{task_id}")

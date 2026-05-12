@@ -35,6 +35,7 @@ DATASET_PATH = PROJECT_ROOT / "ai_engine/mmsd/data/processed/validated_pairs.jso
 # Reward functions (5 rubric functions)
 # ==============================================================================
 
+
 def _simple_tokenize(text: str) -> List[str]:
     text = re.sub(r"```[^`]*```", "", text)
     text = re.sub(r"[^\w\s]", " ", text)
@@ -73,15 +74,18 @@ def _extract_js(text: str):
     js_blocks = re.findall(r"```(?:javascript|js)\s*(.*?)\s*```", text, re.DOTALL)
     if js_blocks:
         return max(js_blocks, key=len).strip()
-    scripts = re.search(r"(?:scripts|behavior_pack|content).*?\.js", text, re.DOTALL | re.IGNORECASE)
+    scripts = re.search(
+        r"(?:scripts|behavior_pack|content).*?\.js", text, re.DOTALL | re.IGNORECASE
+    )
     if scripts:
-        return text[scripts.start():min(scripts.start() + 10000, len(text))]
+        return text[scripts.start() : min(scripts.start() + 10000, len(text))]
     return None
 
 
 # ==============================================================================
 # IMPROVED REWARD FUNCTION (2026 Research: MicroCoder-GRPO, P-GRPO, F-GRPO)
 # ==============================================================================
+
 
 def _extract_json_blocks(text: str) -> list[str]:
     """Extract all JSON code blocks from completion."""
@@ -96,15 +100,15 @@ def _extract_js_blocks(text: str) -> list[str]:
 def _extract_all_sections(text: str) -> dict[str, list[str]]:
     """Extract all Bedrock add-on sections from completion text."""
     sections = {"manifest": [], "js": [], "other": []}
-    
+
     # Extract manifest JSON blocks
     for block in _extract_json_blocks(text):
         if "format_version" in block or "header" in block or "modules" in block:
             sections["manifest"].append(block)
-    
+
     # Extract JS blocks
     sections["js"] = _extract_js_blocks(text)
-    
+
     return sections
 
 
@@ -112,49 +116,55 @@ def _score_structural_alignment(completion: str, reference: str) -> float:
     """Score how well completion mirrors the reference structure."""
     ref_sections = _extract_all_sections(reference)
     comp_sections = _extract_all_sections(completion)
-    
+
     score = 0.0
     total_weight = 0.0
-    
+
     # Manifest structure matching (weight 0.4)
     if ref_sections["manifest"]:
         total_weight += 0.4
         ref_manifest = ref_sections["manifest"][0] if ref_sections["manifest"] else ""
         comp_manifest = comp_sections["manifest"][0] if comp_sections["manifest"] else ""
-        
+
         if comp_manifest:
             # Check required fields
             required_fields = ["format_version", "header", "modules", "dependencies"]
             ref_fields = set(re.findall(r'"(\w+)":', ref_manifest))
             comp_fields = set(re.findall(r'"(\w+)":', comp_manifest))
             field_match = len(ref_fields & comp_fields) / max(len(ref_fields | comp_fields), 1)
-            
+
             # Check version format similarity
             ref_ver = re.search(r'format_version["\s:]+([0-9.]+)', ref_manifest)
             comp_ver = re.search(r'format_version["\s:]+([0-9.]+)', comp_manifest)
-            ver_match = 1.0 if (ref_ver and comp_ver and ref_ver.group(1) == comp_ver.group(1)) else 0.5
-            
+            ver_match = (
+                1.0 if (ref_ver and comp_ver and ref_ver.group(1) == comp_ver.group(1)) else 0.5
+            )
+
             score += 0.4 * (0.7 * field_match + 0.3 * ver_match)
-    
+
     # JS code structure matching (weight 0.35)
     if ref_sections["js"]:
         total_weight += 0.35
         ref_js = " ".join(ref_sections["js"])
         comp_js = " ".join(comp_sections["js"]) if comp_sections["js"] else ""
-        
+
         if comp_js:
             # Check function definitions
-            ref_funcs = set(re.findall(r'function\s+(\w+)', ref_js))
-            comp_funcs = set(re.findall(r'function\s+(\w+)', comp_js))
-            func_match = len(ref_funcs & comp_funcs) / max(len(ref_funcs | comp_funcs), 1) if ref_funcs else 0
-            
+            ref_funcs = set(re.findall(r"function\s+(\w+)", ref_js))
+            comp_funcs = set(re.findall(r"function\s+(\w+)", comp_js))
+            func_match = (
+                len(ref_funcs & comp_funcs) / max(len(ref_funcs | comp_funcs), 1)
+                if ref_funcs
+                else 0
+            )
+
             # Check control structures
-            ref_controls = len(re.findall(r'\b(if|for|while|switch)\b', ref_js))
-            comp_controls = len(re.findall(r'\b(if|for|while|switch)\b', comp_js))
+            ref_controls = len(re.findall(r"\b(if|for|while|switch)\b", ref_js))
+            comp_controls = len(re.findall(r"\b(if|for|while|switch)\b", comp_js))
             control_ratio = min(comp_controls / max(ref_controls, 1), 1.0) if ref_controls else 0.5
-            
+
             score += 0.35 * (0.5 * func_match + 0.5 * control_ratio)
-    
+
     # Normalize by actual weight used
     return score / max(total_weight, 0.1)
 
@@ -164,7 +174,7 @@ def _score_length_ratio(completion: str, reference: str) -> float:
     ref_len = len(reference.split())
     comp_len = len(completion.split())
     ratio = min(comp_len / max(ref_len, 1), 1.0)
-    
+
     # Penalize very short or very long outputs
     if ratio < 0.3:
         return ratio * 0.5  # Severely under-length
@@ -176,10 +186,10 @@ def _score_length_ratio(completion: str, reference: str) -> float:
 def _score_json_validity(completion: str) -> float:
     """Check if extracted JSON is actually parseable."""
     json_blocks = _extract_json_blocks(completion)
-    
+
     if not json_blocks:
         return 0.0
-    
+
     valid_count = 0
     for block in json_blocks:
         try:
@@ -187,7 +197,7 @@ def _score_json_validity(completion: str) -> float:
             valid_count += 1
         except json.JSONDecodeError:
             pass
-    
+
     return valid_count / max(len(json_blocks), 1)
 
 
@@ -198,13 +208,13 @@ def _score_content_density(completion: str) -> float:
     cleaned = re.sub(r"```", "", cleaned)
     cleaned = re.sub(r"\b(format_version|header|modules|dependencies|function\s+)\b", "", cleaned)
     cleaned = re.sub(r"[^\w\s]", " ", cleaned)
-    
+
     words = [w for w in cleaned.split() if len(w) > 2]
     total_words = len(completion.split())
-    
+
     if total_words == 0:
         return 0.0
-    
+
     return len(words) / total_words
 
 
@@ -212,7 +222,7 @@ def compute_reward(completion_text: str, reference: str) -> float:
     """
     Improved reward: Structured field matching + validity + content density.
     Based on 2026 RLHF research (MicroCoder-GRPO, P-GRPO).
-    
+
     Components:
     - structural_alignment (0.35): Does completion have the right sections as reference?
     - length_ratio (0.20): Is output length reasonable vs reference?
@@ -223,7 +233,7 @@ def compute_reward(completion_text: str, reference: str) -> float:
     l = _score_length_ratio(completion_text, reference)
     v = _score_json_validity(completion_text)
     d = _score_content_density(completion_text)
-    
+
     return 0.35 * s + 0.20 * l + 0.25 * v + 0.20 * d
 
 
@@ -234,26 +244,26 @@ def reward_func(completions, reference, **kwargs):
     """
     ref = reference[0] if isinstance(reference, list) else reference
     rewards = np.array([compute_reward(c, ref) for c in completions], dtype=np.float32)
-    
+
     if len(rewards) > 1:
         mean = rewards.mean()
         std = rewards.std()
         if std > 1e-6:
             rewards = (rewards - mean) / std
-    
+
     return rewards
 
 
 def grpo_reward_func(completions, prompts, **kwargs):
     ref = kwargs.get("reference", [""])[0]
     rewards = np.array([compute_reward(c, ref) for c in completions], dtype=np.float32)
-    
+
     if len(rewards) > 1:
         mean = rewards.mean()
         std = rewards.std()
         if std > 1e-6:
             rewards = (rewards - mean) / std
-    
+
     return rewards
 
 
@@ -264,20 +274,20 @@ def compute_diversity_metrics(completions: List[str]) -> dict:
     """
     if len(completions) < 2:
         return {"unique_ratio": 0.0, "avg_length": 0.0, "length_std": 0.0}
-    
+
     lengths = [len(c) for c in completions]
     # Unique n-grams (bigrams) ratio
     all_bigrams = set()
     for c in completions:
         words = c.split()
-        bigrams = [tuple(words[i:i+2]) for i in range(len(words)-1)]
+        bigrams = [tuple(words[i : i + 2]) for i in range(len(words) - 1)]
         all_bigrams.update(bigrams)
-    
+
     total_bigrams = sum(len(c.split()) - 1 for c in completions)
     unique_ratio = len(all_bigrams) / max(total_bigrams, 1)
-    
+
     length_std = np.std(lengths) if len(lengths) > 1 else 0.0
-    
+
     return {
         "unique_ratio": unique_ratio,
         "avg_length": np.mean(lengths),
@@ -291,6 +301,7 @@ def compute_diversity_metrics(completions: List[str]) -> dict:
 # Dataset loading
 # ==============================================================================
 
+
 def load_dataset(max_samples=200):
     if not DATASET_PATH.exists():
         raise FileNotFoundError(f"Dataset not found at {DATASET_PATH}")
@@ -299,22 +310,30 @@ def load_dataset(max_samples=200):
         for line in f:
             if line.strip():
                 pairs.append(json.loads(line))
-    train_pairs = pairs[:int(len(pairs) * 0.9)]
+    train_pairs = pairs[: int(len(pairs) * 0.9)]
 
     def build_prompt(row: dict) -> str:
-        system = ("You are PortKit, an expert at converting Minecraft Java Edition mods (Forge) "
-                  "to Bedrock Edition Add-ons. Given a mod description and Java source code, "
-                  "first reason through the platform map, then produce the Bedrock Add-on implementation.")
-        user = (f"Mod Description: {row['instruction']}\n\nJava Source:\n{row['java_source']}\n\n"
-                "Convert this to a Bedrock Add-on. First explain your conversion approach, then provide the files.")
+        system = (
+            "You are PortKit, an expert at converting Minecraft Java Edition mods (Forge) "
+            "to Bedrock Edition Add-ons. Given a mod description and Java source code, "
+            "first reason through the platform map, then produce the Bedrock Add-on implementation."
+        )
+        user = (
+            f"Mod Description: {row['instruction']}\n\nJava Source:\n{row['java_source']}\n\n"
+            "Convert this to a Bedrock Add-on. First explain your conversion approach, then provide the files."
+        )
         return system + "\n\n" + user
 
-    return [{"prompt": build_prompt(p), "answer": p["bedrock_source"]} for p in train_pairs[:max_samples]]
+    return [
+        {"prompt": build_prompt(p), "answer": p["bedrock_source"]}
+        for p in train_pairs[:max_samples]
+    ]
 
 
 # ==============================================================================
 # Main
 # ==============================================================================
+
 
 def main():
     print("=" * 60)
@@ -434,7 +453,9 @@ def main():
         seed=42,
         report_to="none",
     )
-    print(f"  GRPOConfig: beta={training_args.beta}, num_generations={training_args.num_generations}")
+    print(
+        f"  GRPOConfig: beta={training_args.beta}, num_generations={training_args.num_generations}"
+    )
 
     # ------------------------------------------------------------------
     # [5] Create custom dataset for trl
@@ -456,12 +477,14 @@ def main():
     # ------------------------------------------------------------------
     print("  [6a] Defining reward function...", flush=True)
     try:
+
         def make_reward_func(references):
             def reward_fn(completions, prompts, **kwargs):
                 rewards = []
                 for c, ref in zip(completions, references):
                     rewards.append(compute_reward(c, ref))
                 return np.array(rewards, dtype=np.float32)
+
             reward_fn.__name__ = "reward_fn"
             return reward_fn
 
@@ -471,6 +494,7 @@ def main():
         print(f"  [6c] reward_fn created, name={reward_fn.__name__}", flush=True)
     except Exception as e:
         import traceback
+
         print(f"  [6x] ERROR creating reward_fn: {e}", flush=True)
         traceback.print_exc()
         raise
@@ -495,7 +519,9 @@ def main():
     # ------------------------------------------------------------------
     print("\n[5] Starting GRPO training...", flush=True)
     print(f"  Samples: {num_samples}, Steps: {max_steps}, Gens/step: {num_generations}", flush=True)
-    print(f"  Estimated time: {(num_samples / 1 * max_steps * 20) / 60:.0f} min (approx)", flush=True)
+    print(
+        f"  Estimated time: {(num_samples / 1 * max_steps * 20) / 60:.0f} min (approx)", flush=True
+    )
     print("  [8a] Calling trainer.train()...", flush=True)
     print("  --- TRAINING START ---", flush=True)
     trainer.train()
@@ -514,13 +540,21 @@ def main():
     # ------------------------------------------------------------------
     print("\n[7] Quick eval...")
     sample = data[0]
-    msg = [{"role": "system", "content": "You are PortKit."},
-           {"role": "user", "content": sample["prompt"]}]
+    msg = [
+        {"role": "system", "content": "You are PortKit."},
+        {"role": "user", "content": sample["prompt"]},
+    ]
     text = tokenizer.apply_chat_template(msg, tokenize=False, add_generation_prompt=True)
     inputs = tokenizer(text, return_tensors="pt").to("cuda")
     with torch.no_grad():
-        out = model.generate(**inputs, max_new_tokens=200, temperature=0.8, top_p=0.95,
-                             do_sample=True, pad_token_id=tokenizer.eos_token_id)
+        out = model.generate(
+            **inputs,
+            max_new_tokens=200,
+            temperature=0.8,
+            top_p=0.95,
+            do_sample=True,
+            pad_token_id=tokenizer.eos_token_id,
+        )
     resp = tokenizer.decode(out[0], skip_special_tokens=True).split("assistant")[-1]
     reward = compute_reward(resp, sample["answer"])
     print(f"  Sample reward: {reward:.3f}")
