@@ -25,6 +25,7 @@ excluded_paths = [
     "__pycache__/",
     "*.egg-info/",
     ".pytest_cache/",
+    "../tests/",  # Exclude repo-root tests (conflicts with mutmut's pytest.ini)
 ]
 
 # Global annotations that disable mutation
