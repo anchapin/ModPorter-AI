@@ -93,9 +93,9 @@ class AsyncTaskQueue:
         """Close the queue connection."""
         pass
 
-    def disconnect(self):
-        """Disconnect from Redis (alias for close)."""
-        self.close()
+    async def disconnect(self):
+        """Disconnect from Redis (async for test compatibility)."""
+        self._redis = None
 
     async def connect(self):
         """Connect to Redis (no-op for celery backend)."""
