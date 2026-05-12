@@ -60,7 +60,7 @@ def extract_textures_from_jar(self, jar_path: str, output_dir: str, namespace: s
                 try:
                     texture_data = jar.read(texture_file)
 
-                    bedrock_path = agent._map_java_texture_to_bedrock(texture_file)
+                    bedrock_path = self._map_java_texture_to_bedrock(texture_file)
 
                     full_output_dir = output_path / Path(bedrock_path).parent
                     full_output_dir.mkdir(parents=True, exist_ok=True)

@@ -46,19 +46,19 @@ def validate_texture(agent, texture_path: str, metadata: Dict = None) -> Dict:
             if width != height:
                 result["warnings"].append(f"Non-square texture: {width}x{height}")
 
-            if not agent._is_power_of_2(width):
+            if not self._is_power_of_2(width):
                 result["warnings"].append(f"Width {width} is not a power of 2")
-                if agent.texture_constraints.get("must_be_power_of_2", True):
+                if self.texture_constraints.get("must_be_power_of_2", True):
                     result["valid"] = False
                     result["errors"].append("Width must be power of 2 for Bedrock")
 
-            if not agent._is_power_of_2(height):
+            if not self._is_power_of_2(height):
                 result["warnings"].append(f"Height {height} is not a power of 2")
-                if agent.texture_constraints.get("must_be_power_of_2", True):
+                if self.texture_constraints.get("must_be_power_of_2", True):
                     result["valid"] = False
                     result["errors"].append("Height must be power of 2 for Bedrock")
 
-            max_res = agent.texture_constraints.get("max_resolution", 1024)
+            max_res = self.texture_constraints.get("max_resolution", 1024)
             if width > max_res or height > max_res:
                 result["valid"] = False
                 result["errors"].append(
@@ -67,7 +67,7 @@ def validate_texture(agent, texture_path: str, metadata: Dict = None) -> Dict:
 
             if img.format != "PNG":
                 result["warnings"].append(f"Non-PNG format: {img.format}")
-                if agent.texture_constraints.get("must_be_png", False):
+                if self.texture_constraints.get("must_be_png", False):
                     result["valid"] = False
                     result["errors"].append("Texture must be PNG format for Bedrock")
 
@@ -99,7 +99,7 @@ def validate_textures_batch(agent, texture_paths: List[str], metadata: Dict = No
     warning_count = 0
 
     for texture_path in texture_paths:
-        validation = agent.validate_texture(texture_path, metadata)
+        validation = self.validate_texture(texture_path, metadata)
         results.append({"path": texture_path, "validation": validation})
 
         if validation["valid"]:

@@ -220,12 +220,12 @@ def convert_atlas_to_bedrock(
         Dict with conversion results
     """
     try:
-        detection = agent.detect_texture_atlas(atlas_path)
+        detection = self.detect_texture_atlas(atlas_path)
 
         if not detection["is_atlas"]:
-            return agent._convert_single_texture(atlas_path, {}, "block", Path(output_dir))
+            return self._convert_single_texture(atlas_path, {}, "block", Path(output_dir))
 
-        extraction = agent.extract_texture_atlas(
+        extraction = self.extract_texture_atlas(
             atlas_path, output_dir, tile_size=detection["tile_size"]
         )
 
@@ -239,7 +239,7 @@ def convert_atlas_to_bedrock(
             else:
                 name = tile["name"]
 
-            result = agent._convert_single_texture(tile["path"], {}, "block", Path(output_dir))
+            result = self._convert_single_texture(tile["path"], {}, "block", Path(output_dir))
 
             if result["success"]:
                 result["texture_name"] = name
@@ -316,7 +316,7 @@ def extract_texture_atlas_from_jar(self, jar_path: str, atlas_type: str, output_
 
         jar.close()
 
-        result = agent.extract_texture_atlas(temp_atlas_path, output_dir)
+        result = self.extract_texture_atlas(temp_atlas_path, output_dir)
 
         Path(temp_atlas_path).unlink(missing_ok=True)
 

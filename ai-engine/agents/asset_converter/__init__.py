@@ -623,9 +623,9 @@ class AssetConverterAgent:
         return _assess_conversion_complexity(self, analysis)
 
     def extract_textures_from_jar(
-        self, jar_path: str, output_dir: str, texture_types: Optional[List[str]] = None, namespace: str = None
+        self, jar_path: str, output_dir: str, namespace: str = None
     ) -> Dict:
-        return _extract_textures_from_jar(self, jar_path, output_dir, texture_types, namespace)
+        return _extract_textures_from_jar(self, jar_path, output_dir, namespace)
 
     def _map_java_texture_to_bedrock(self, java_path: str) -> str:
         return _map_java_texture_to_bedrock(self, java_path)
