@@ -1,6 +1,6 @@
 # Core FastAPI for AI Engine API - align with backend version
-fastapi==0.136.0
-uvicorn[standard]==0.44.0
+fastapi==0.136.1
+uvicorn[standard]==0.46.0
 python-multipart==0.0.27
 
 # AI Framework - add upper bounds to avoid dependency conflicts
@@ -54,7 +54,7 @@ async-timeout>=5.0.1
 
 # Configuration Management - align with backend version
 pydantic~=2.13.3
-pydantic-settings~=2.11.0
+pydantic-settings~=2.14.0
 
 # Monitoring - align with backend version
 prometheus_client>=0.25.0
