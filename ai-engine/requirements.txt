@@ -8,14 +8,14 @@ python-multipart==0.0.27
 # If running locally, use Python 3.12 virtual environment.
 # Let crewai manage langchain package versions to avoid conflicts
 crewai>=0.11.0,<1.0.0
-openai>=1.0.0,<3.0.0
+openai>=2.36.0,<3.0.0
 langgraph>=1.1.0
 sentence-transformers>=5.1.2,<6.0.0
 langchain-openai>=0.3.35  # Required by crewai for OpenAI integration
 
 # Vector Database (pin version for embedchain compatibility)
 # Note: chromadb may require Python <3.13
-chromadb==1.5.8
+chromadb==1.5.9
 
 # Data Processing - align with backend version
 numpy
@@ -53,8 +53,8 @@ redis>=7.1.0
 async-timeout>=5.0.1
 
 # Configuration Management - align with backend version
-pydantic~=2.13.3
-pydantic-settings~=2.14.0
+pydantic~=2.13.4
+pydantic-settings~=2.11.0
 
 # Monitoring - align with backend version
 prometheus_client>=0.25.0
