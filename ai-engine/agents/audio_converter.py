@@ -8,6 +8,14 @@ import logging
 from pathlib import Path
 from typing import Dict, List
 
+# Handle pydub import failure gracefully
+try:
+    from pydub import AudioSegment
+    from pydub.exceptions import CouldntDecodeError
+except ImportError:
+    AudioSegment = None
+    CouldntDecodeError = Exception
+
 # Import utilities
 try:
     from . import converter_utils

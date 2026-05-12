@@ -61,7 +61,7 @@ def generate_fallback_for_jar(
         output_path_obj = Path(output_path)
         output_path_obj.parent.mkdir(parents=True, exist_ok=True)
 
-        img = agent._generate_fallback_texture(texture_type)
+        img = self._generate_fallback_texture(texture_type)
 
         if texture_type == "blocks":
             img = img.resize((16, 16), Image.LANCZOS)
