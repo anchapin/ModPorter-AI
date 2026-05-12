@@ -90,7 +90,12 @@ class AsyncTaskQueue:
         }
 
     def close(self):
+        """Close the queue connection."""
         pass
+
+    def disconnect(self):
+        """Disconnect from Redis (alias for close)."""
+        self.close()
 
     async def connect(self):
         """Connect to Redis (no-op for celery backend)."""
@@ -116,6 +121,10 @@ class AsyncTaskQueue:
 
     def get_redis(self):
         """Get the Redis client (stub for tests)."""
+        return self._redis
+
+    def _get_redis(self):
+        """Internal: get Redis client (for test mocking compatibility)."""
         return self._redis
 
 
