@@ -212,7 +212,7 @@ jobs:
     # When dependencies haven't changed, use the default python image
     container:
       image: ${{ needs.prepare-base-images.outputs.python-image || 'python:3.11-slim' }}
-      options: --name test-container-${{ matrix.test-suite }} --user root
+      options: --user root
 
     services:
       redis:

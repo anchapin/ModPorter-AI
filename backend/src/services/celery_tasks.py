@@ -86,11 +86,18 @@ class RetryPolicy:
     initial_delay_seconds: float = 1.0
     max_delay_seconds: float = 300.0
     backoff_multiplier: float = 2.0
+    retryable_errors: List[str] = field(default_factory=list)  # Added for backward compat
 
     def calculate_delay(self, retry_count: int) -> float:
         """Calculate delay for exponential backoff."""
         delay = self.initial_delay_seconds * (self.backoff_multiplier**retry_count)
         return min(delay, self.max_delay_seconds)
+
+    def should_retry(self, error_type: str, retry_count: int) -> bool:
+        """Determine if a task should be retried based on error and retry count."""
+        if retry_count >= self.max_retries:
+            return False
+        return not (self.retryable_errors and error_type not in self.retryable_errors)
 
 
 DEFAULT_RETRY_POLICY = RetryPolicy()

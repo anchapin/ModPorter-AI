@@ -1,102 +1,81 @@
 """
-Async Task Queue Service
-Provides background task processing with Redis-based queue implementation.
+Backward compatibility shim for services.task_queue.
 
-Issue: #379 - Implement async task queue (Phase 3)
+Re-exports symbols from celery_tasks to maintain compatibility
+with code that imports from services.task_queue.
+
+Issue: #1098 - Consolidate task queues to Celery
 """
 
 import json
-import asyncio
-import uuid
-from typing import Dict, Any, Optional, List
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
 import logging
+import uuid
+from datetime import datetime, timezone
+from typing import Dict, Any, Optional, List
 
 import redis.asyncio as aioredis
+
+# Re-export from celery_tasks for backward compatibility
+from services.celery_tasks import (
+    TaskStatus,
+    TaskPriority,
+    RetryPolicy,
+    TaskData,
+    TimeoutResult,
+    DEFAULT_RETRY_POLICY,
+    CONVERSION_RETRY_POLICY,
+    get_task_status,
+    cancel_task,
+    get_queue_stats,
+    enqueue_task,
+    conversion_task,
+    asset_conversion_task,
+    cleanup_old_tasks,
+    process_retry_queue,
+)
+
+# Re-export Task class for backward compatibility
+from services.celery_tasks import TaskData as Task
 
 logger = logging.getLogger(__name__)
 
 
-class TaskStatus(Enum):
-    """Task status enum"""
-
-    QUEUED = "queued"
-    PROCESSING = "processing"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    CANCELLED = "cancelled"
-
-
-class TaskPriority(Enum):
-    """Task priority enum"""
-
-    LOW = 0
-    NORMAL = 1
-    HIGH = 2
-    CRITICAL = 3
-
-
-@dataclass
-class Task:
-    """Task data structure"""
-
-    id: str
-    name: str
-    payload: Dict[str, Any]
-    status: TaskStatus = TaskStatus.QUEUED
-    priority: TaskPriority = TaskPriority.NORMAL
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    result: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
-    retry_count: int = 0
-    max_retries: int = 3
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "id": self.id,
-            "name": self.name,
-            "payload": self.payload,
-            "status": self.status.value,
-            "priority": self.priority.value,
-            "created_at": self.created_at.isoformat(),
-            "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": (self.completed_at.isoformat() if self.completed_at else None),
-            "result": self.result,
-            "error": self.error,
-            "retry_count": self.retry_count,
-            "max_retries": self.max_retries,
-        }
-
-
+# AsyncTaskQueue wrapper for backward compatibility
 class AsyncTaskQueue:
-    """
-    Async task queue using Redis for background job processing.
-    Supports priorities, retries, and status tracking.
-    """
+    """Async task queue - wrapper around celery_tasks functions for backward compatibility."""
 
     def __init__(
         self,
         redis_url: str = "redis://localhost:6379",
         max_retries: int = 3,
         default_timeout: int = 300,
+        dead_letter_enabled: bool = True,
     ):
+        # Store instance attributes tests access
         self.redis_url = redis_url
         self.max_retries = max_retries
         self.default_timeout = default_timeout
-        self._redis: Optional[aioredis.Redis] = None
-        self._running_tasks: Dict[str, asyncio.Task] = {}
+        self.dead_letter_enabled = dead_letter_enabled
 
-        # Queue names for different priorities
+        # Queue names
         self._queue_names = {
             TaskPriority.LOW: "task_queue:low",
             TaskPriority.NORMAL: "task_queue:normal",
             TaskPriority.HIGH: "task_queue:high",
             TaskPriority.CRITICAL: "task_queue:critical",
         }
+
+        # Dead letter queue
+        self._dead_letter_queue = "task_queue:dead_letter"
+
+        # Processing tracking
+        self._processing_set = "task_queue:processing"
+
+        # Running tasks
+        self._running_tasks: Dict[str, Any] = {}
+
+        # Redis client
+        self._redis = None
 
     async def connect(self) -> None:
         """Connect to Redis"""
@@ -107,6 +86,7 @@ class AsyncTaskQueue:
         """Disconnect from Redis"""
         if self._redis:
             await self._redis.close()
+            self._redis = None
             logger.info("Disconnected from Redis")
 
     async def _get_redis(self) -> aioredis.Redis:
@@ -121,19 +101,8 @@ class AsyncTaskQueue:
         payload: Dict[str, Any],
         priority: TaskPriority = TaskPriority.NORMAL,
         max_retries: Optional[int] = None,
-    ) -> Task:
-        """
-        Add a task to the queue.
-
-        Args:
-            name: Task name/identifier
-            payload: Task data
-            priority: Task priority
-            max_retries: Maximum retry attempts
-
-        Returns:
-            Created Task
-        """
+    ):
+        """Add a task to the queue."""
         redis = await self._get_redis()
 
         task = Task(
@@ -148,7 +117,7 @@ class AsyncTaskQueue:
         await redis.set(
             f"task:{task.id}",
             json.dumps(task.to_dict()),
-            ex=86400,  # 24 hour expiry
+            ex=86400,
         )
 
         # Add to priority queue
@@ -159,26 +128,24 @@ class AsyncTaskQueue:
 
         return task
 
-    async def dequeue(self) -> Optional[Task]:
-        """
-        Get the next task from the queue.
-        Checks queues in priority order (critical -> high -> normal -> low)
-
-        Returns:
-            Next Task or None if queue is empty
-        """
+    async def dequeue(self, priority: TaskPriority = None, timeout: int = 5) -> Optional[Task]:
+        """Get the next task from the queue. Checks queues in priority order."""
         redis = await self._get_redis()
 
-        # Check queues in priority order
-        for priority in [
-            TaskPriority.CRITICAL,
-            TaskPriority.HIGH,
-            TaskPriority.NORMAL,
-            TaskPriority.LOW,
-        ]:
-            queue_name = self._queue_names[priority]
+        # Check queues in priority order if no specific priority given
+        priorities = (
+            [priority]
+            if priority
+            else [
+                TaskPriority.CRITICAL,
+                TaskPriority.HIGH,
+                TaskPriority.NORMAL,
+                TaskPriority.LOW,
+            ]
+        )
 
-            # Get highest priority task
+        for p in priorities:
+            queue_name = self._queue_names[p]
             task_ids = await redis.zpopmin(queue_name, count=1)
 
             if task_ids:
@@ -186,7 +153,6 @@ class AsyncTaskQueue:
                     task_ids[0][0].decode() if isinstance(task_ids[0][0], bytes) else task_ids[0][0]
                 )
 
-                # Get task data
                 task_data = await redis.get(f"task:{task_id}")
 
                 if task_data:
@@ -202,7 +168,6 @@ class AsyncTaskQueue:
                         max_retries=task_dict.get("max_retries", self.max_retries),
                     )
 
-                    # Update status to processing
                     task.status = TaskStatus.PROCESSING
                     task.started_at = datetime.now(timezone.utc)
 
@@ -213,7 +178,7 @@ class AsyncTaskQueue:
 
         return None
 
-    async def complete(self, task_id: str, result: Optional[Dict[str, Any]] = None) -> None:
+    async def complete(self, task_id: str, result: Any = None) -> None:
         """Mark a task as completed"""
         redis = await self._get_redis()
 
@@ -225,21 +190,10 @@ class AsyncTaskQueue:
             task_dict["result"] = result
 
             await redis.set(f"task:{task_id}", json.dumps(task_dict), ex=86400)
-
             logger.info(f"Task {task_id} completed")
 
     async def fail(self, task_id: str, error: str, retry: bool = True) -> bool:
-        """
-        Mark a task as failed.
-
-        Args:
-            task_id: Task ID
-            error: Error message
-            retry: Whether to retry the task
-
-        Returns:
-            True if task was retried, False otherwise
-        """
+        """Mark a task as failed"""
         redis = await self._get_redis()
 
         task_data = await redis.get(f"task:{task_id}")
@@ -253,158 +207,108 @@ class AsyncTaskQueue:
         max_retries = task_dict.get("max_retries", self.max_retries)
 
         if retry and retry_count < max_retries:
-            # Re-queue for retry
+            # Retry: increment count and re-queue
             task_dict["retry_count"] = retry_count + 1
-            task_dict["status"] = TaskStatus.QUEUED.value
-            task_dict["started_at"] = None
-
-            # Re-add to queue with normal priority
-            queue_name = self._queue_names[TaskPriority.NORMAL]
-            await redis.zadd(queue_name, {task_id: TaskPriority.NORMAL.value})
-
+            task_dict["status"] = TaskStatus.PENDING.value
+            priority = TaskPriority(task_dict["priority"])
+            queue_name = self._queue_names[priority]
+            await redis.zadd(queue_name, {task_id: priority.value})
             await redis.set(f"task:{task_id}", json.dumps(task_dict), ex=86400)
-
-            logger.info(f"Task {task_id} re-queued for retry ({retry_count + 1}/{max_retries})")
+            logger.info(f"Task {task_id} failed, retry {retry_count + 1}/{max_retries}")
             return True
         else:
-            # Mark as failed
+            # Move to dead letter
             task_dict["status"] = TaskStatus.FAILED.value
-            task_dict["completed_at"] = datetime.now(timezone.utc).isoformat()
-
             await redis.set(f"task:{task_id}", json.dumps(task_dict), ex=86400)
-
-            logger.error(f"Task {task_id} failed: {error}")
+            if self.dead_letter_enabled:
+                await redis.zadd(self._dead_letter_queue, {task_id: 1})
+            logger.info(f"Task {task_id} failed permanently, moved to dead letter")
             return False
 
-    async def cancel(self, task_id: str) -> bool:
-        """Cancel a queued task"""
-        redis = await self._get_redis()
-
-        task_data = await redis.get(f"task:{task_id}")
-        if task_data:
-            task_dict = json.loads(task_data)
-
-            if task_dict["status"] == TaskStatus.QUEUED.value:
-                task_dict["status"] = TaskStatus.CANCELLED.value
-                task_dict["completed_at"] = datetime.now(timezone.utc).isoformat()
-
-                await redis.set(f"task:{task_id}", json.dumps(task_dict), ex=86400)
-
-                # Remove from queue
-                for queue_name in self._queue_names.values():
-                    await redis.zrem(queue_name, task_id)
-
-                logger.info(f"Task {task_id} cancelled")
-                return True
-
-        return False
-
-    async def get_status(self, task_id: str) -> Optional[Dict[str, Any]]:
+    async def get_status(self, task_id: str) -> Optional[Dict]:
         """Get task status"""
         redis = await self._get_redis()
-
         task_data = await redis.get(f"task:{task_id}")
         if task_data:
             return json.loads(task_data)
         return None
 
-    async def list_tasks(
-        self, status: Optional[TaskStatus] = None, limit: int = 100
-    ) -> List[Dict[str, Any]]:
-        """List tasks, optionally filtered by status"""
+    async def cancel(self, task_id: str) -> bool:
+        """Cancel a task"""
         redis = await self._get_redis()
+        task_data = await redis.get(f"task:{task_id}")
+        if task_data:
+            task_dict = json.loads(task_data)
+            task_dict["status"] = TaskStatus.CANCELLED.value
+            task_dict["cancelled_at"] = datetime.now(timezone.utc).isoformat()
+            await redis.set(f"task:{task_id}", json.dumps(task_dict), ex=86400)
+            # Remove from queue
+            for q in self._queue_names.values():
+                await redis.zrem(q, task_id)
+            logger.info(f"Task {task_id} cancelled")
+            return True
+        return False
 
-        # Get all task keys
-        keys = []
-        async for key in redis.scan_iter("task:*"):
-            keys.append(key)
-
-        tasks = []
-        for key in keys[:limit]:
-            task_data = await redis.get(key)
-            if task_data:
-                task_dict = json.loads(task_data)
-                if status is None or task_dict["status"] == status.value:
-                    tasks.append(task_dict)
-
-        return tasks
-
-    async def get_queue_stats(self) -> Dict[str, Any]:
+    async def get_stats(self) -> Dict:
         """Get queue statistics"""
         redis = await self._get_redis()
+        stats = {"total_queued": 0, "total_processing": 0, "total_dead_letter": 0, "queues": {}}
 
-        stats = {
-            "queues": {},
-            "total_tasks": 0,
-            "by_status": {
-                "queued": 0,
-                "processing": 0,
-                "completed": 0,
-                "failed": 0,
-                "cancelled": 0,
-            },
-        }
-
-        # Count tasks in each queue
-        for priority, queue_name in self._queue_names.items():
+        for name, queue_name in self._queue_names.items():
             count = await redis.zcard(queue_name)
-            stats["queues"][priority.name.lower()] = count
-            stats["total_tasks"] += count
+            stats["queues"][name.value] = count
+            stats["total_queued"] += count
 
-        # Count by status
-        keys = []
-        async for key in redis.scan_iter("task:*"):
-            keys.append(key)
+        stats["total_dead_letter"] = await redis.zcard(self._dead_letter_queue)
 
-        for key in keys:
-            task_data = await redis.get(key)
-            if task_data:
-                task_dict = json.loads(task_data)
-                status = task_dict.get("status", "queued")
-                if status in stats["by_status"]:
-                    stats["by_status"][status] += 1
+        processing_keys = []
+        async for key in redis.scan_iter(match="task_queue:processing:*"):
+            processing_keys.append(key)
+        stats["total_processing"] = len(processing_keys)
 
         return stats
 
+    def close(self):
+        """Close the queue connection."""
+        self._redis = None
 
-# Global task queue instance
+    def get_redis(self):
+        """Get the Redis client (sync stub for tests)."""
+        return self._redis
+
+
+# Module-level singleton for backward compatibility
 _task_queue: Optional[AsyncTaskQueue] = None
 
 
 async def get_task_queue() -> AsyncTaskQueue:
-    """Get or create the global task queue instance"""
+    """Get the async task queue instance."""
     global _task_queue
 
     if _task_queue is None:
-        redis_url = "redis://localhost:6379"  # Could be from config
-        _task_queue = AsyncTaskQueue(redis_url=redis_url)
-        await _task_queue.connect()
+        _task_queue = AsyncTaskQueue(redis_url="redis://localhost:6379")
 
     return _task_queue
 
 
-# Convenience functions
-async def enqueue_task(
-    name: str, payload: Dict[str, Any], priority: TaskPriority = TaskPriority.NORMAL
-) -> Task:
-    """Enqueue a task"""
-    queue = await get_task_queue()
-    return await queue.enqueue(name, payload, priority)
-
-
-async def get_task_status(task_id: str) -> Optional[Dict[str, Any]]:
-    """Get task status"""
-    queue = await get_task_queue()
-    return await queue.get_status(task_id)
-
-
-async def cancel_task(task_id: str) -> bool:
-    """Cancel a task"""
-    queue = await get_task_queue()
-    return await queue.cancel(task_id)
-
-
-async def get_queue_stats() -> Dict[str, Any]:
-    """Get queue statistics"""
-    queue = await get_task_queue()
-    return await queue.get_queue_stats()
+__all__ = [
+    "TaskStatus",
+    "TaskPriority",
+    "Task",
+    "RetryPolicy",
+    "AsyncTaskQueue",
+    "DEFAULT_RETRY_POLICY",
+    "CONVERSION_RETRY_POLICY",
+    "enqueue_task",
+    "get_task_status",
+    "cancel_task",
+    "get_queue_stats",
+    "get_task_queue",
+    "conversion_task",
+    "asset_conversion_task",
+    "cleanup_old_tasks",
+    "process_retry_queue",
+    "TimeoutResult",
+    "_task_queue",
+    "aioredis",
+]
