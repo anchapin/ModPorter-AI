@@ -1,7 +1,6 @@
 import json
 import re
-import math
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 
 import verifiers as vf
 from datasets import Dataset
@@ -129,14 +128,10 @@ def _extract_manifest(text: str) -> Optional[str]:
         if "format_version" in block or "header" in block:
             return block.strip()
 
-    bedrock_section = re.search(
-        r"## Bedrock Add-on Output(.*?)(?:##|$)", text, re.DOTALL
-    )
+    bedrock_section = re.search(r"## Bedrock Add-on Output(.*?)(?:##|$)", text, re.DOTALL)
     if bedrock_section:
         section = bedrock_section.group(1)
-        brace_match = re.search(
-            r'\{[^{}]*"format_version"[^{}]*\}', section, re.DOTALL
-        )
+        brace_match = re.search(r'\{[^{}]*"format_version"[^{}]*\}', section, re.DOTALL)
         if brace_match:
             return brace_match.group(0)
     return None
@@ -163,9 +158,7 @@ async def extract_manifest_reward(completion: List[dict], answer: str, info: dic
     text = completion[-1]["content"] if completion else ""
 
     has_json_block = bool(re.search(r"```json\s*\{", text, re.DOTALL))
-    has_manifest_keywords = bool(
-        re.search(r"format_version|header|modules|dependencies", text)
-    )
+    has_manifest_keywords = bool(re.search(r"format_version|header|modules|dependencies", text))
 
     score = 0.0
     if has_json_block:
@@ -181,9 +174,7 @@ async def extract_js_reward(completion: List[dict], answer: str, info: dict) -> 
     text = completion[-1]["content"] if completion else ""
 
     has_js_block = bool(re.search(r"```(?:javascript|js)\s*", text, re.DOTALL))
-    has_js_keywords = bool(
-        re.search(r"\bfunction\b|\bvar\b|\blet\b|\bconst\b|\bexport\b", text)
-    )
+    has_js_keywords = bool(re.search(r"\bfunction\b|\bvar\b|\blet\b|\bconst\b|\bexport\b", text))
 
     score = 0.0
     if has_js_block:

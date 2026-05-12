@@ -58,6 +58,7 @@ SYSTEM_PROMPT = (
 # Dataset preparation
 # =============================================================================
 
+
 def prepare_sft_dataset(tokenizer, max_length_tokens=2048, chars_per_token=3.5):
     """Load and format dataset for SFT with messages format.
 
@@ -86,10 +87,10 @@ def prepare_sft_dataset(tokenizer, max_length_tokens=2048, chars_per_token=3.5):
 
     def build_messages(pair):
         """Build chat messages for one sample, truncating java to fit."""
-        instruction = pair['instruction']
-        java_source = pair['java_source']
-        reasoning = pair['reasoning_trace']
-        bedrock = pair['bedrock_source']
+        instruction = pair["instruction"]
+        java_source = pair["java_source"]
+        reasoning = pair["reasoning_trace"]
+        bedrock = pair["bedrock_source"]
 
         # Assistant response = reasoning trace + bedrock source
         # Use reasoning trace as chain-of-thought prefix (G²RPO-A approach)
@@ -100,9 +101,9 @@ def prepare_sft_dataset(tokenizer, max_length_tokens=2048, chars_per_token=3.5):
         if reasoning and len(reasoning) > 100:
             reasoning_summary = reasoning[:500]
             # Try to end at a sentence boundary
-            last_period = reasoning_summary.rfind('.')
+            last_period = reasoning_summary.rfind(".")
             if last_period > 200:
-                reasoning_summary = reasoning_summary[:last_period + 1]
+                reasoning_summary = reasoning_summary[: last_period + 1]
             assistant_response = (
                 f"## Conversion Approach\n{reasoning_summary}\n\n"
                 f"## Bedrock Add-on Implementation\n{bedrock}"
@@ -111,16 +112,21 @@ def prepare_sft_dataset(tokenizer, max_length_tokens=2048, chars_per_token=3.5):
         # User message: instruction + java source
         user_prefix = f"Mod Description: {instruction}\n\n"
         user_java_header = "Java Source:\n"
-        user_suffix = ("\n\nConvert this to a Bedrock Add-on. "
-                       "First explain your conversion approach, "
-                       "then provide the manifest.json and JavaScript implementation.")
+        user_suffix = (
+            "\n\nConvert this to a Bedrock Add-on. "
+            "First explain your conversion approach, "
+            "then provide the manifest.json and JavaScript implementation."
+        )
 
         # Calculate fixed overhead
         # System + user_prefix + user_java_header + user_suffix + assistant_response + chat template tokens
         template_overhead = 80  # approximate tokens for chat template markers
         fixed_chars = (
-            len(SYSTEM_PROMPT) + len(user_prefix) + len(user_java_header)
-            + len(user_suffix) + len(assistant_response)
+            len(SYSTEM_PROMPT)
+            + len(user_prefix)
+            + len(user_java_header)
+            + len(user_suffix)
+            + len(assistant_response)
         )
         fixed_tokens = fixed_chars / chars_per_token + template_overhead
 
@@ -133,7 +139,7 @@ def prepare_sft_dataset(tokenizer, max_length_tokens=2048, chars_per_token=3.5):
         if len(java_source) > max_java_chars:
             # Truncate java source, try to end at a line boundary
             truncated = java_source[:max_java_chars]
-            last_newline = truncated.rfind('\n')
+            last_newline = truncated.rfind("\n")
             if last_newline > max_java_chars // 2:
                 truncated = truncated[:last_newline] + "\n// ... (truncated)"
             java_source = truncated
@@ -177,6 +183,7 @@ def prepare_sft_dataset(tokenizer, max_length_tokens=2048, chars_per_token=3.5):
 # =============================================================================
 # Main
 # =============================================================================
+
 
 def main():
     start_time = time.time()
@@ -275,7 +282,7 @@ def main():
         per_device_train_batch_size=2,
         gradient_accumulation_steps=4,
         num_train_epochs=2,
-        learning_rate=2e-5,          # SFT default, good for LoRA
+        learning_rate=2e-5,  # SFT default, good for LoRA
         lr_scheduler_type="cosine",
         warmup_ratio=0.1,
         optim="adamw_torch",
@@ -286,7 +293,7 @@ def main():
         bf16=False,
         # Loss
         loss_type="nll",
-        completion_only_loss=None,     # Auto: full sequence for messages format
+        completion_only_loss=None,  # Auto: full sequence for messages format
         # Packing: enabled with BFD strategy (best-fit decreasing)
         # Required by Unsloth's padding_free=True; also more efficient
         packing=True,
@@ -330,7 +337,10 @@ def main():
     print("  SFTTrainer initialized")
 
     # Count total steps
-    total_steps = (len(train_dataset) // (training_args.per_device_train_batch_size * training_args.gradient_accumulation_steps)) * training_args.num_train_epochs
+    total_steps = (
+        len(train_dataset)
+        // (training_args.per_device_train_batch_size * training_args.gradient_accumulation_steps)
+    ) * training_args.num_train_epochs
     print(f"  Estimated total steps: ~{total_steps}")
 
     # ------------------------------------------------------------------
@@ -348,6 +358,7 @@ def main():
         if "out of memory" in str(e).lower():
             print(f"\n  OOM: {e}")
             import gc
+
             torch.cuda.empty_cache()
             gc.collect()
             raise
@@ -373,15 +384,19 @@ def main():
     # Extract just the system + user parts (before assistant)
     # The text is pre-formatted with chat template, find the assistant cutoff
     if "<|im_start|>assistant" in sample_text:
-        prompt_text = sample_text[:sample_text.index("<|im_start|>assistant")]
-        expected_text = sample_text[sample_text.index("<|im_start|>assistant"):]
+        prompt_text = sample_text[: sample_text.index("<|im_start|>assistant")]
+        expected_text = sample_text[sample_text.index("<|im_start|>assistant") :]
         # Clean expected text
-        expected_text = expected_text.replace("<|im_start|>assistant\n", "").replace("<|im_end|>", "").strip()
+        expected_text = (
+            expected_text.replace("<|im_start|>assistant\n", "").replace("<|im_end|>", "").strip()
+        )
     else:
         prompt_text = sample_text[:500]
         expected_text = ""
 
-    inputs = tokenizer(prompt_text, return_tensors="pt", truncation=True, max_length=max_length).to("cuda")
+    inputs = tokenizer(prompt_text, return_tensors="pt", truncation=True, max_length=max_length).to(
+        "cuda"
+    )
 
     print(f"  Generating from test prompt...")
     with torch.no_grad():
@@ -405,6 +420,7 @@ def main():
     # Compute reward using the same reward function as GRPO
     sys.path.insert(0, str(SCRIPT_DIR))
     from phase1_grpo_quickwins import compute_reward
+
     reward = compute_reward(response, expected_text)
     print(f"  Reward vs expected: {reward:.3f}")
 
@@ -414,7 +430,7 @@ def main():
     elapsed = time.time() - start_time
     print(f"\n✓ Phase 2 SFT warmup complete!")
     print(f"  Model saved: {output_dir}/final/")
-    print(f"  Total time: {elapsed/60:.1f} min")
+    print(f"  Total time: {elapsed / 60:.1f} min")
     print(f"  Final VRAM: {torch.cuda.memory_allocated() / 1e9:.2f} GB")
     print(f"\n  Next step: Use this SFT model as the starting point for Phase 1 GRPO")
     print(f"  → Load from {output_dir}/final/ instead of the base model")

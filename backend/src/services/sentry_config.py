@@ -10,11 +10,11 @@ This module provides centralized Sentry initialization for:
 """
 
 import os
+import re
 import logging
 from typing import Optional, Any
 
 import sentry_sdk
-from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
@@ -34,6 +34,14 @@ def _is_enabled() -> bool:
     return bool(SENTRY_DSN)
 
 
+def _is_valid_dsn(dsn: Optional[str]) -> bool:
+    """Validate DSN has proper format before initializing Sentry."""
+    if not dsn:
+        return False
+    pattern = r"^https://[a-f0-9]+@[a-z0-9.-]+/\d+$"
+    return bool(re.match(pattern, dsn))
+
+
 def init_sentry():
     """
     Initialize Sentry for the FastAPI application.
@@ -41,8 +49,8 @@ def init_sentry():
     Called during application startup to configure error tracking,
     performance monitoring, and pipeline alerting.
     """
-    if not _is_enabled():
-        logger.debug("Sentry DSN not configured, skipping initialization")
+    if not _is_enabled() or not _is_valid_dsn(SENTRY_DSN):
+        logger.debug("Sentry DSN not configured or invalid, skipping initialization")
         return
 
     if not SENTRY_ENABLE_DEV and SENTRY_ENVIRONMENT == "development":
@@ -75,8 +83,8 @@ def init_celery_sentry():
     Uses slightly different configuration optimized for background job
     processing and pipeline error tracking.
     """
-    if not _is_enabled():
-        logger.debug("Sentry DSN not configured, skipping Celery initialization")
+    if not _is_enabled() or not _is_valid_dsn(SENTRY_DSN):
+        logger.debug("Sentry DSN not configured or invalid, skipping Celery initialization")
         return
 
     sentry_sdk.init(

@@ -38,6 +38,7 @@ CHECKPOINT_PATH = SCRIPT_DIR / "grpo_output" / "checkpoint-10"
 # Reward functions (same as original training)
 # =============================================================================
 
+
 def _extract_json_blocks(text: str) -> list[str]:
     return re.findall(r"```json\s*(\{[^}]*(?:\{[^}]*\}[^}]*)*\})", text, re.DOTALL)
 
@@ -71,7 +72,9 @@ def _score_structural_alignment(completion: str, reference: str) -> float:
             field_match = len(ref_fields & comp_fields) / max(len(ref_fields | comp_fields), 1)
             ref_ver = re.search(r'format_version["\s:]+([0-9.]+)', ref_manifest)
             comp_ver = re.search(r'format_version["\s:]+([0-9.]+)', comp_manifest)
-            ver_match = 1.0 if (ref_ver and comp_ver and ref_ver.group(1) == comp_ver.group(1)) else 0.5
+            ver_match = (
+                1.0 if (ref_ver and comp_ver and ref_ver.group(1) == comp_ver.group(1)) else 0.5
+            )
             score += 0.4 * (0.7 * field_match + 0.3 * ver_match)
 
     if ref_sections["js"]:
@@ -79,11 +82,15 @@ def _score_structural_alignment(completion: str, reference: str) -> float:
         ref_js = " ".join(ref_sections["js"])
         comp_js = " ".join(comp_sections["js"]) if comp_sections["js"] else ""
         if comp_js:
-            ref_funcs = set(re.findall(r'function\s+(\w+)', ref_js))
-            comp_funcs = set(re.findall(r'function\s+(\w+)', comp_js))
-            func_match = len(ref_funcs & comp_funcs) / max(len(ref_funcs | comp_funcs), 1) if ref_funcs else 0
-            ref_controls = len(re.findall(r'\b(if|for|while|switch)\b', ref_js))
-            comp_controls = len(re.findall(r'\b(if|for|while|switch)\b', comp_js))
+            ref_funcs = set(re.findall(r"function\s+(\w+)", ref_js))
+            comp_funcs = set(re.findall(r"function\s+(\w+)", comp_js))
+            func_match = (
+                len(ref_funcs & comp_funcs) / max(len(ref_funcs | comp_funcs), 1)
+                if ref_funcs
+                else 0
+            )
+            ref_controls = len(re.findall(r"\b(if|for|while|switch)\b", ref_js))
+            comp_controls = len(re.findall(r"\b(if|for|while|switch)\b", comp_js))
             control_ratio = min(comp_controls / max(ref_controls, 1), 1.0) if ref_controls else 0.5
             score += 0.35 * (0.5 * func_match + 0.5 * control_ratio)
 
@@ -131,6 +138,7 @@ def compute_reward(completion: str, reference: str) -> float:
 # Dataset loading (same as original)
 # =============================================================================
 
+
 def load_dataset(max_samples=200):
     if not DATASET_PATH.exists():
         raise FileNotFoundError(f"Dataset not found at {DATASET_PATH}")
@@ -139,22 +147,30 @@ def load_dataset(max_samples=200):
         for line in f:
             if line.strip():
                 pairs.append(json.loads(line))
-    train_pairs = pairs[:int(len(pairs) * 0.9)]
+    train_pairs = pairs[: int(len(pairs) * 0.9)]
 
     def build_prompt(row: dict) -> str:
-        system = ("You are PortKit, an expert at converting Minecraft Java Edition mods (Forge) "
-                  "to Bedrock Edition Add-ons. Given a mod description and Java source code, "
-                  "first reason through the platform map, then produce the Bedrock Add-on implementation.")
-        user = (f"Mod Description: {row['instruction']}\n\nJava Source:\n{row['java_source']}\n\n"
-                "Convert this to a Bedrock Add-on. First explain your conversion approach, then provide the files.")
+        system = (
+            "You are PortKit, an expert at converting Minecraft Java Edition mods (Forge) "
+            "to Bedrock Edition Add-ons. Given a mod description and Java source code, "
+            "first reason through the platform map, then produce the Bedrock Add-on implementation."
+        )
+        user = (
+            f"Mod Description: {row['instruction']}\n\nJava Source:\n{row['java_source']}\n\n"
+            "Convert this to a Bedrock Add-on. First explain your conversion approach, then provide the files."
+        )
         return system + "\n\n" + user
 
-    return [{"prompt": build_prompt(p), "answer": p["bedrock_source"]} for p in train_pairs[:max_samples]]
+    return [
+        {"prompt": build_prompt(p), "answer": p["bedrock_source"]}
+        for p in train_pairs[:max_samples]
+    ]
 
 
 # =============================================================================
 # Main
 # =============================================================================
+
 
 def main():
     print("=" * 60)
@@ -282,10 +298,12 @@ def main():
         prompts.append(d["prompt"])
         references.append(d["answer"])
 
-    train_dataset = Dataset.from_dict({
-        "prompt": prompts,
-        "reference": references,
-    })
+    train_dataset = Dataset.from_dict(
+        {
+            "prompt": prompts,
+            "reference": references,
+        }
+    )
     print(f"  Dataset: {len(train_dataset)} rows")
 
     # ------------------------------------------------------------------
@@ -298,7 +316,11 @@ def main():
         rewards = []
         for i, completion in enumerate(completions):
             if isinstance(completion, list) and len(completion) > 0:
-                comp_text = completion[0].get("content", "") if isinstance(completion[0], dict) else str(completion[0])
+                comp_text = (
+                    completion[0].get("content", "")
+                    if isinstance(completion[0], dict)
+                    else str(completion[0])
+                )
             else:
                 comp_text = str(completion)
 
@@ -361,11 +383,16 @@ def main():
     model.eval()
     sample = data[0]
     msgs = [
-        {"role": "system", "content": "You are PortKit, an expert at converting Minecraft Java Edition mods to Bedrock Edition Add-ons."},
+        {
+            "role": "system",
+            "content": "You are PortKit, an expert at converting Minecraft Java Edition mods to Bedrock Edition Add-ons.",
+        },
         {"role": "user", "content": sample["prompt"][:500]},
     ]
     text = tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=max_seq_length).to("cuda")
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=max_seq_length).to(
+        "cuda"
+    )
     with torch.no_grad():
         out = model.generate(
             **inputs,

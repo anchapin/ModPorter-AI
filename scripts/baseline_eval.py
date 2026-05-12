@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Baseline eval: base model (no LoRA) on same sample as post-training eval."""
 
-import json, re, sys, os
+import json
+import re
+import sys
+import os
 from pathlib import Path
 import torch
 
@@ -12,10 +15,12 @@ SCRIPT_DIR = Path(__file__).parent.resolve()
 PROJECT_ROOT = SCRIPT_DIR.parent
 DATASET_PATH = PROJECT_ROOT / "ai_engine/mmsd/data/processed/validated_pairs.jsonl"
 
+
 def _simple_tokenize(text):
     text = re.sub(r"```[^`]*```", "", text)
     text = re.sub(r"[^\w\s]", " ", text)
     return [t.lower() for t in text.split() if t.strip()]
+
 
 def _bleu_like(reference, hypothesis):
     ref_tokens = _simple_tokenize(reference)
@@ -31,6 +36,7 @@ def _bleu_like(reference, hypothesis):
         return 0.0
     return 2 * precision * recall / (precision + recall)
 
+
 def _extract_manifest(text):
     json_blocks = re.findall(r"```json\s*(.*?)\s*```", text, re.DOTALL)
     for block in json_blocks:
@@ -42,6 +48,7 @@ def _extract_manifest(text):
         if m:
             return m.group(0)
     return None
+
 
 def compute_reward(completion, reference):
     w = [0.30, 0.25, 0.20, 0.15, 0.10]
@@ -55,15 +62,21 @@ def compute_reward(completion, reference):
     r4 = sum(1 for term in key_terms if term in completion_lower) / len(key_terms)
     code_blocks = re.findall(r"```[\s\S]*?```", completion)
     r5 = min(1.0, len(code_blocks) / 3)
-    return w[0]*r1 + w[1]*r2 + w[2]*r3 + w[3]*r4 + w[4]*r5
+    return w[0] * r1 + w[1] * r2 + w[2] * r3 + w[3] * r4 + w[4] * r5
+
 
 def build_prompt(row):
-    system = ("You are PortKit, an expert at converting Minecraft Java Edition mods (Forge) "
-              "to Bedrock Edition Add-ons. Given a mod description and Java source code, "
-              "first reason through the platform map, then produce the Bedrock Add-on implementation.")
-    user = (f"Mod Description: {row['instruction']}\n\nJava Source:\n{row['java_source']}\n\n"
-            "Convert this to a Bedrock Add-on. First explain your conversion approach, then provide the files.")
+    system = (
+        "You are PortKit, an expert at converting Minecraft Java Edition mods (Forge) "
+        "to Bedrock Edition Add-ons. Given a mod description and Java source code, "
+        "first reason through the platform map, then produce the Bedrock Add-on implementation."
+    )
+    user = (
+        f"Mod Description: {row['instruction']}\n\nJava Source:\n{row['java_source']}\n\n"
+        "Convert this to a Bedrock Add-on. First explain your conversion approach, then provide the files."
+    )
     return system + "\n\n" + user
+
 
 def main():
     print("=" * 60)
@@ -81,6 +94,7 @@ def main():
     print(f"Reference (first 100 chars): {reference[:100]}...")
 
     from unsloth import FastLanguageModel
+
     model_name = "unsloth/Qwen2.5-Coder-0.5B-Instruct"
 
     print(f"\nLoading base model: {model_name}")
@@ -95,8 +109,10 @@ def main():
     print("  Base model loaded (no LoRA)")
 
     print("\nGenerating completion...")
-    msg = [{"role": "system", "content": "You are PortKit."},
-           {"role": "user", "content": prompt_text}]
+    msg = [
+        {"role": "system", "content": "You are PortKit."},
+        {"role": "user", "content": prompt_text},
+    ]
     text = tokenizer.apply_chat_template(msg, tokenize=False, add_generation_prompt=True)
     inputs = tokenizer(text, return_tensors="pt").to("cuda")
 
@@ -108,7 +124,7 @@ def main():
             top_p=0.95,
             do_sample=True,
             pad_token_id=tokenizer.eos_token_id,
-            use_cache=False
+            use_cache=False,
         )
 
     resp = tokenizer.decode(out[0], skip_special_tokens=True).split("assistant")[-1]
@@ -116,10 +132,10 @@ def main():
     print(f"\nCompletion length: {len(resp)} chars, {len(resp.split())} words")
 
     reward = compute_reward(resp, reference)
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"BASELINE REWARD:       {reward:.4f}")
     print(f"POST-TRAINING REWARD:  0.039")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     diff = 0.039 - reward
     if diff > 0:
@@ -128,6 +144,7 @@ def main():
         print(f"\n→ Training decreased reward by {-diff:.4f}")
     else:
         print(f"\n→ No change in reward")
+
 
 if __name__ == "__main__":
     main()

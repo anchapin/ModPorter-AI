@@ -47,9 +47,12 @@ if AI_ENGINE_PATH.exists() and str(AI_ENGINE_PATH) not in sys.path:
 
 # ── Device ────────────────────────────────────────────────────────────────────
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"[RL] Device: {DEVICE}, ROCm: {torch.version.hip if hasattr(torch.version, 'hip') else 'N/A'}")
+print(
+    f"[RL] Device: {DEVICE}, ROCm: {torch.version.hip if hasattr(torch.version, 'hip') else 'N/A'}"
+)
 
 # ── Reward Function Helpers (from portkit_mod_convert.py) ──────────────────────
+
 
 def _extract_manifest(text: str) -> Optional[str]:
     """Extract manifest.json content from completion text."""
@@ -58,14 +61,10 @@ def _extract_manifest(text: str) -> Optional[str]:
         if "format_version" in block or "header" in block:
             return block.strip()
 
-    bedrock_section = re.search(
-        r"## Bedrock Add-on Output(.*?)(?:##|$)", text, re.DOTALL
-    )
+    bedrock_section = re.search(r"## Bedrock Add-on Output(.*?)(?:##|$)", text, re.DOTALL)
     if bedrock_section:
         section = bedrock_section.group(1)
-        brace_match = re.search(
-            r'\{[^{}]*"format_version"[^{}]*\}', section, re.DOTALL
-        )
+        brace_match = re.search(r'\{[^{}]*"format_version"[^{}]*\}', section, re.DOTALL)
         if brace_match:
             return brace_match.group(0)
     return None
@@ -114,6 +113,7 @@ def _bleu_score(reference: str, hypothesis: str) -> float:
 
 # ── Contract Validators (from ai-engine/rl/minecraft_contracts.py) ────────────
 
+
 class ViolationSeverity:
     CRITICAL = "critical"
     ERROR = "error"
@@ -135,10 +135,10 @@ def validate_minecraft_contracts(code: str) -> Tuple[float, List[str]]:
 
     # Coordinate semantics: block coords must be integers
     coord_pattern = re.compile(r'"(-?\d+(?:\.\d+)?)"')
-    for line_num, line in enumerate(code.split('\n'), 1):
+    for line_num, line in enumerate(code.split("\n"), 1):
         stripped = line.strip()
         if stripped.startswith('"x"') or stripped.startswith('"y"') or stripped.startswith('"z"'):
-            coord_matches = re.findall(r':\s*(-?\d+\.\d+)', line)
+            coord_matches = re.findall(r":\s*(-?\d+\.\d+)", line)
             for match in coord_matches:
                 violations.append(f"float-coordinate:{match}")
                 score -= 0.1
@@ -180,12 +180,11 @@ def validate_minecraft_contracts(code: str) -> Tuple[float, List[str]]:
 
 # ── Reward Functions ──────────────────────────────────────────────────────────
 
+
 def extract_manifest_reward(text: str) -> float:
     """Check if model produces JSON block with manifest keywords."""
     has_json_block = bool(re.search(r"```json\s*\{", text, re.DOTALL))
-    has_manifest_keywords = bool(
-        re.search(r"format_version|header|modules|dependencies", text)
-    )
+    has_manifest_keywords = bool(re.search(r"format_version|header|modules|dependencies", text))
     score = 0.0
     if has_json_block:
         score += 0.5
@@ -197,9 +196,7 @@ def extract_manifest_reward(text: str) -> float:
 def extract_js_reward(text: str) -> float:
     """Check if model produces JavaScript code blocks."""
     has_js_block = bool(re.search(r"```(?:javascript|js)\s*", text, re.DOTALL))
-    has_js_keywords = bool(
-        re.search(r"\bfunction\b|\bvar\b|\blet\b|\bconst\b|\bexport\b", text)
-    )
+    has_js_keywords = bool(re.search(r"\bfunction\b|\bvar\b|\blet\b|\bconst\b|\bexport\b", text))
     score = 0.0
     if has_js_block:
         score += 0.5
@@ -290,7 +287,9 @@ def load_pairs(
 ) -> Tuple[List[Dict], List[Dict]]:
     """Load validated pairs from MMSD dataset."""
     if data_path is None:
-        data_path = Path(__file__).parent.parent / "ai_engine/mmsd/data/processed/validated_pairs.jsonl"
+        data_path = (
+            Path(__file__).parent.parent / "ai_engine/mmsd/data/processed/validated_pairs.jsonl"
+        )
 
     pairs = []
     with open(data_path) as f:
@@ -322,19 +321,20 @@ def build_prompt(row: dict) -> str:
 
 # ── GRPO Training ─────────────────────────────────────────────────────────────
 
+
 @dataclass
 class GRPOConfig:
-    num_samples: int = 4          # Responses per prompt per update
-    ppo_epochs: int = 2           # PPO update epochs per batch
-    max_length: int = 1024        # Max tokens per response
-    max_new_tokens: int = 512     # Max new tokens to generate
-    temperature: float = 0.8       # Sampling temperature
-    top_p: float = 0.9            # Nucleus sampling
-    lr: float = 1e-5              # Learning rate
-    clip_eps: float = 0.2         # PPO clip epsilon
-    gamma: float = 1.0             # Discount factor
-    lambda_: float = 0.95          # GAE lambda
-    max_grad_norm: float = 1.0     # Gradient clipping
+    num_samples: int = 4  # Responses per prompt per update
+    ppo_epochs: int = 2  # PPO update epochs per batch
+    max_length: int = 1024  # Max tokens per response
+    max_new_tokens: int = 512  # Max new tokens to generate
+    temperature: float = 0.8  # Sampling temperature
+    top_p: float = 0.9  # Nucleus sampling
+    lr: float = 1e-5  # Learning rate
+    clip_eps: float = 0.2  # PPO clip epsilon
+    gamma: float = 1.0  # Discount factor
+    lambda_: float = 0.95  # GAE lambda
+    max_grad_norm: float = 1.0  # Gradient clipping
     weight_decay: float = 0.01
     warmup_steps: int = 10
     logging_steps: int = 5
@@ -425,7 +425,7 @@ class GRPOTrainer:
         """
         advantages = []
         for i in range(0, len(rewards), self.config.num_samples):
-            group = rewards[i:i + self.config.num_samples]
+            group = rewards[i : i + self.config.num_samples]
             group_t = torch.tensor(group, dtype=torch.float32, device=self.device)
             baseline = group_t.mean()
             group_adv = group_t - baseline
@@ -467,8 +467,7 @@ class GRPOTrainer:
         ).to(self.device)
 
         prompt_lens = [
-            self.tokenizer(p, return_tensors="pt")["input_ids"].shape[1]
-            for p in prompts
+            self.tokenizer(p, return_tensors="pt")["input_ids"].shape[1] for p in prompts
         ] * self.config.num_samples
 
         response_enc = self.tokenizer(
@@ -592,6 +591,7 @@ class GRPOTrainer:
 
 # ── Main Training Loop ────────────────────────────────────────────────────────
 
+
 def train(
     model_id: str = "Qwen/Qwen2.5-Coder-7B-Instruct",
     num_samples: int = 4,
@@ -609,9 +609,9 @@ def train(
     save_dir: str = "/tmp/portkit-rl-checkpoints",
 ):
     """Main training function."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"PortKit GRPO Training on AMD ROCm")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"Model: {model_id}")
     print(f"Num samples per prompt: {num_samples}")
     print(f"PPO epochs per step: {ppo_epochs}")
@@ -620,7 +620,7 @@ def train(
     print(f"Learning rate: {lr}")
     print(f"Temperature: {temperature}")
     print(f"LoRA r={lora_r}, alpha={lora_alpha}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     # Set seeds
     random.seed(seed)
@@ -652,7 +652,15 @@ def train(
     lora_config = LoraConfig(
         r=lora_r,
         lora_alpha=lora_alpha,
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+        target_modules=[
+            "q_proj",
+            "k_proj",
+            "v_proj",
+            "o_proj",
+            "gate_proj",
+            "up_proj",
+            "down_proj",
+        ],
         lora_dropout=0.05,
         bias="none",
         task_type=TaskType.CAUSAL_LM,
@@ -672,7 +680,7 @@ def train(
     )
 
     # Trainer
-    trainer =GRPOTrainer(
+    trainer = GRPOTrainer(
         model=model,
         tokenizer=tokenizer,
         config=config,
@@ -733,7 +741,9 @@ def train(
     with torch.no_grad():
         for pair in tqdm(eval_pairs, desc="Evaluating"):
             prompt = build_prompt(pair)
-            enc = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=max_length).to(DEVICE)
+            enc = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=max_length).to(
+                DEVICE
+            )
             prompt_len = enc["input_ids"].shape[1]
             output_ids = model.generate(
                 **enc,
@@ -768,8 +778,9 @@ if __name__ == "__main__":
     parser.add_argument("--max_length", type=int, default=1024)
     parser.add_argument("--max_new_tokens", type=int, default=512)
     parser.add_argument("--batch_size", type=int, default=1)
-    parser.add_argument("--max_examples", type=int, default=50,
-                        help="Max training examples to use (-1 for all)")
+    parser.add_argument(
+        "--max_examples", type=int, default=50, help="Max training examples to use (-1 for all)"
+    )
     parser.add_argument("--total_steps", type=int, default=100)
     parser.add_argument("--lr", type=float, default=1e-5)
     parser.add_argument("--temperature", type=float, default=0.8)
@@ -802,5 +813,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\nError: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
