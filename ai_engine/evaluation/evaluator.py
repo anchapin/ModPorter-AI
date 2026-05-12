@@ -7,7 +7,6 @@ using verifiable rubric criteria with partial-credit scoring.
 
 import json
 import re
-from dataclasses import dataclass
 from typing import Optional
 
 from ai_engine.evaluation.models import (
