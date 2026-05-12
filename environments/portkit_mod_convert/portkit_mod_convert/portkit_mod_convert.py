@@ -1,7 +1,6 @@
 import json
 import re
-import math
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 
 import verifiers as vf
 from datasets import Dataset
