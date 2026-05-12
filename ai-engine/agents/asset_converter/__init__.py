@@ -434,16 +434,17 @@ class AssetConverterAgent:
 
     _instance = None
 
-    # Class-level tool references (for backward compat - tests access agent.X)
-    analyze_assets_tool = analyze_assets_tool
-    convert_textures_tool = convert_textures_tool
-    convert_models_tool = convert_models_tool
-    convert_audio_tool = convert_audio_tool
-    validate_bedrock_assets_tool = validate_bedrock_assets_tool
-    extract_jar_textures_tool = extract_jar_textures_tool
-    convert_java_texture_path_tool = convert_java_texture_path_tool
-    validate_texture_tool = validate_texture_tool
-    generate_fallback_texture_tool = generate_fallback_texture_tool
+    # Inherit tool references from module-level ToolFunction wrappers
+    # This enables both: agent.analyze_assets_tool.run() AND analyze_assets_tool.run()
+    analyze_assets_tool = globals().get("analyze_assets_tool")
+    convert_textures_tool = globals().get("convert_textures_tool")
+    convert_models_tool = globals().get("convert_models_tool")
+    convert_audio_tool = globals().get("convert_audio_tool")
+    validate_bedrock_assets_tool = globals().get("validate_bedrock_assets_tool")
+    extract_jar_textures_tool = globals().get("extract_jar_textures_tool")
+    convert_java_texture_path_tool = globals().get("convert_java_texture_path_tool")
+    validate_texture_tool = globals().get("validate_texture_tool")
+    generate_fallback_texture_tool = globals().get("generate_fallback_texture_tool")
 
     def __init__(self):
         from models.smart_assumptions import SmartAssumptionEngine
