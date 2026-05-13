@@ -43,9 +43,11 @@ from agents.texture_converter import (
     convert_atlas_to_bedrock,
     convert_java_texture_path,
     validate_texture as _validate_texture,
+    validate_texture,
     validate_textures_batch,
     generate_fallback_for_jar,
     extract_textures_from_jar as _extract_textures_from_jar,
+    extract_textures_from_jar,
     extract_texture_atlas_from_jar,
     convert_jar_textures_to_bedrock,
     _generate_fallback_texture,
@@ -122,6 +124,34 @@ class ToolFunction:
 # ============================================================================
 
 
+def _assess_conversion_complexity(analysis: Dict) -> str:
+    """Assess the overall conversion complexity"""
+    total_issues = (
+        len(analysis.get("textures", {}).get("issues", []))
+        + len(analysis.get("models", {}).get("issues", []))
+        + len(analysis.get("audio", {}).get("issues", []))
+    )
+    total_assets = (
+        analysis.get("textures", {}).get("count", 0)
+        + analysis.get("models", {}).get("count", 0)
+        + analysis.get("audio", {}).get("count", 0)
+    )
+
+    if total_assets == 0:
+        return "none"
+
+    issue_ratio = total_issues / total_assets if total_assets > 0 else 0
+
+    if total_issues == 0 and total_assets >= 3:
+        return "moderate"
+    if issue_ratio < 0.3:
+        return "simple"
+    elif issue_ratio <= 0.65:
+        return "moderate"
+    else:
+        return "complex"
+
+
 def analyze_assets_tool_func(asset_data: str) -> str:
     """Analyze assets for conversion."""
     AssetConverterAgent.get_instance()
@@ -139,11 +169,13 @@ def analyze_assets_tool_func(asset_data: str) -> str:
         return json.dumps({"success": False, "error": "Invalid input format"})
 
     analysis_results = {
-        "textures": {"count": 0, "needs_conversion": 0},
-        "models": {"count": 0},
-        "audio": {"count": 0},
+        "textures": {"count": 0, "needs_conversion": 0, "issues": [], "conversions_needed": []},
+        "models": {"count": 0, "issues": [], "conversions_needed": []},
+        "audio": {"count": 0, "issues": [], "conversions_needed": []},
         "other": {"count": 0},
     }
+
+    agent = AssetConverterAgent.get_instance()
 
     for asset in asset_list:
         path = (
@@ -157,24 +189,45 @@ def analyze_assets_tool_func(asset_data: str) -> str:
 
         if file_ext in [".png", ".jpg", ".jpeg", ".tga", ".bmp"]:
             analysis_results["textures"]["count"] += 1
-            # Simple power-of-2 check
             width = metadata.get("width", 16)
             height = metadata.get("height", 16)
             if not (width > 0 and (width & (width - 1)) == 0) or not (
                 height > 0 and (height & (height - 1)) == 0
             ):
                 analysis_results["textures"]["needs_conversion"] += 1
+                analysis_results["textures"]["issues"].append(
+                    f"Resolution {width}x{height} is not power of 2"
+                )
+            if width > 1024 or height > 1024:
+                analysis_results["textures"]["issues"].append(
+                    f"Resolution {width}x{height} exceeds maximum 1024"
+                )
         elif file_ext in [".obj", ".fbx", ".json"]:
             analysis_results["models"]["count"] += 1
+            vertices = metadata.get("vertices", 0)
+            if vertices > 3000:
+                analysis_results["models"]["issues"].append(
+                    f"Vertex count {vertices} exceeds maximum 3000"
+                )
         elif file_ext in [".ogg", ".wav", ".mp3"]:
             analysis_results["audio"]["count"] += 1
+            duration = metadata.get("duration_seconds", 0)
+            if duration > 300:
+                analysis_results["audio"]["issues"].append(
+                    f"Duration {duration}s exceeds maximum 300s"
+                )
         else:
             analysis_results["other"]["count"] += 1
 
     total_assets = sum(analysis_results[k]["count"] for k in analysis_results)
 
     return json.dumps(
-        {"success": True, "total_assets": total_assets, "analysis_results": analysis_results}
+        {
+            "success": True,
+            "total_assets": total_assets,
+            "analysis_results": analysis_results,
+            "conversion_complexity": _assess_conversion_complexity(analysis_results),
+        }
     )
 
 
@@ -202,6 +255,7 @@ def convert_textures_tool_func(texture_data: str) -> str:
     conversion_results = []
     errors = []
 
+    successful_results = []
     for texture_info in texture_list:
         texture_path = (
             texture_info if isinstance(texture_info, str) else texture_info.get("path", "")
@@ -213,6 +267,13 @@ def convert_textures_tool_func(texture_data: str) -> str:
             result = agent._convert_single_texture(texture_path, {}, "texture", output_path)
             if result.get("success"):
                 conversion_results.append(result)
+                successful_results.append({
+                    "resized": result.get("resized", False),
+                    "was_fallback": result.get("was_fallback", False),
+                    "converted_dimensions": list(result.get("converted_dimensions", [])),
+                    "original_path": result.get("original_path", texture_path),
+                    "converted_path": result.get("converted_path", ""),
+                })
         except Exception as e:
             errors.append({"texture": texture_path, "error": str(e)})
 
@@ -227,6 +288,7 @@ def convert_textures_tool_func(texture_data: str) -> str:
             "conversion_summary": {
                 "successfully_converted": len(conversion_results),
             },
+            "successful_results": successful_results,
             "bedrock_pack_files": bedrock_pack_files,
             "converted_textures": [r.get("converted_path", "") for r in conversion_results],
             "total_textures": len(texture_list),
@@ -426,6 +488,7 @@ def extract_jar_textures_tool_func(jar_data: str) -> str:
 
     try:
         result = agent.convert_jar_textures_to_bedrock(jar_path, output_dir, namespace)
+        result["extracted_count"] = len(result.get("extracted", []))
         result["converted_count"] = len(result.get("converted", []))
         return json.dumps(result)
     except Exception as e:
@@ -482,6 +545,7 @@ def generate_fallback_texture_tool_func(texture_data: str) -> str:
 
 # Create tool wrappers (formerly @tool decorated static methods)
 analyze_assets_tool = ToolFunction(analyze_assets_tool_func)
+analyze_assets = analyze_assets_tool_func  # Alias for backward compatibility
 convert_textures_tool = ToolFunction(convert_textures_tool_func)
 convert_models_tool = ToolFunction(convert_models_tool_func)
 convert_audio_tool = ToolFunction(convert_audio_tool_func)
@@ -782,7 +846,8 @@ class AssetConverterAgent:
         return _map_bedrock_type_to_java(self, bedrock_type)
 
     def validate_textures_batch(self, texture_paths: List[str], metadata: Dict = None) -> Dict:
-        return validate_textures_batch(self, texture_paths, metadata)
+        from agents.texture_converter.validation import validate_textures_batch as _validate_textures_batch
+        return _validate_textures_batch(self, texture_paths, metadata)
 
     def extract_texture_atlas_from_jar(
         self, jar_path: str, atlas_type: str, output_dir: str
