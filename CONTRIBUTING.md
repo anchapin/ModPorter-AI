@@ -168,6 +168,25 @@ This project uses automated linting tools to enforce code quality:
 6. Push to the branch
 7. Open a Pull Request
 
+## Pre-commit Hooks
+
+This project uses pre-commit hooks to catch issues before commit:
+
+```bash
+# Install pre-commit
+pip install pre-commit
+
+# Install hooks
+pre-commit install
+
+# Run manually
+pre-commit run --all-files
+```
+
+The hooks include:
+- **Bandit**: Security linting for Python
+- **Gitleaks**: Secret detection in code and git history
+
 ## Questions?
 
 If you have any questions, please feel free to open an issue or reach out to the maintainers.
