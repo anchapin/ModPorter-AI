@@ -311,7 +311,7 @@ class ReasoningPatternDiscovery:
     def __init__(
         self,
         db_path: str = "training_data/reasoning_patterns.db",
-        min_sample_size: int = 3,
+        min_sample_size: int = 0,
         exploration_rate: float = 0.2,
     ):
         self.db_path = db_path
@@ -325,6 +325,8 @@ class ReasoningPatternDiscovery:
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
 
         with sqlite3.connect(self.db_path) as conn:
+            conn.execute("PRAGMA foreign_keys=ON")
+
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS reasoning_patterns (
                     pattern_id TEXT PRIMARY KEY,
@@ -515,6 +517,7 @@ class ReasoningPatternDiscovery:
                         evaluation.timestamp,
                     ),
                 )
+                conn.commit()
 
                 self._update_pattern_stats(evaluation.pattern_id)
 
@@ -774,6 +777,7 @@ class ReasoningPatternSelector:
 
     def record_outcome(self, pattern: ReasoningPattern, evaluation: PatternEvaluation) -> None:
         """Record the outcome of applying a pattern."""
+        self.discovery.store_pattern(pattern)
         self.discovery.record_evaluation(evaluation)
 
 
