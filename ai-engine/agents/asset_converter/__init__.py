@@ -545,6 +545,7 @@ def generate_fallback_texture_tool_func(texture_data: str) -> str:
 
 # Create tool wrappers (formerly @tool decorated static methods)
 analyze_assets_tool = ToolFunction(analyze_assets_tool_func)
+analyze_assets = analyze_assets_tool_func  # Alias for backward compatibility
 convert_textures_tool = ToolFunction(convert_textures_tool_func)
 convert_models_tool = ToolFunction(convert_models_tool_func)
 convert_audio_tool = ToolFunction(convert_audio_tool_func)
