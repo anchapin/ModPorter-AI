@@ -22,7 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.base import get_db
 from db.models import User
-from security.auth import get_current_user
+from api._authz import get_current_user  # issue #1417
 from security.byok_vault import (
     LLMProvider,
     byok_vault,
