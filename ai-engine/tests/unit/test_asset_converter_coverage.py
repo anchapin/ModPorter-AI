@@ -41,24 +41,23 @@ class TestAssetConverterAgent:
         assert agent._map_texture_type("item") == "items"
         assert agent._map_texture_type("unknown") == "misc"
 
-    @patch("agents.asset_converter.Image")
+    @patch("agents.texture_converter.validation.Image")
     def test_validate_texture(self, mock_image, agent):
-        # Mock Path.exists
         with patch("agents.asset_converter.Path.exists", return_value=True), \
              patch("agents.asset_converter.Path.stat") as mock_stat:
-            
+
             mock_stat.return_value.st_size = 1024
             mock_img_obj = MagicMock()
             mock_img_obj.size = (16, 16)
             mock_img_obj.format = "PNG"
             mock_img_obj.mode = "RGBA"
             mock_image.open.return_value.__enter__.return_value = mock_img_obj
-            
+
             result = agent.validate_texture("test.png")
             assert result["valid"] is True
             assert result["properties"]["width"] == 16
 
-    @patch("agents.asset_converter.Image")
+    @patch("agents.texture_converter.validation.Image")
     def test_validate_texture_invalid(self, mock_image, agent):
         with patch("agents.asset_converter.Path.exists", return_value=True), \
              patch("agents.asset_converter.Path.stat") as mock_stat:
@@ -67,7 +66,7 @@ class TestAssetConverterAgent:
             mock_img_obj = MagicMock()
             mock_img_obj.size = (17, 17) # Not power of 2
             mock_img_obj.format = "JPG"
-            mock_img_obj.mode = "CMYK" # Unsupported
+            mock_img_obj.mode = "CMYK"
             mock_image.open.return_value.__enter__.return_value = mock_img_obj
             
             result = agent.validate_texture("test.png")
@@ -154,7 +153,7 @@ class TestAssetConverterAgent:
         assert result["generated"] is True
 
     def test_validate_textures_batch(self, agent):
-        with patch.object(agent, "validate_texture") as mock_validate:
+        with patch("agents.texture_converter.validation.validate_texture") as mock_validate:
             mock_validate.return_value = {"valid": True, "warnings": []}
             result = agent.validate_textures_batch(["t1.png", "t2.png"])
             assert result["total"] == 2
