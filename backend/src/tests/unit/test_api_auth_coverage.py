@@ -1,5 +1,4 @@
-"""
-Tests for auth.py uncovered paths - API key management, refresh edge cases,
+"""Tests for auth.py uncovered paths - API key management, refresh edge cases,
 password validator, and feature flag checks.
 """
 
@@ -617,3 +616,153 @@ class TestUpdateProfileEmailInUse:
 
         assert resp.status_code == 400
         app.dependency_overrides.clear()
+
+
+class TestOAuthCallbackStoresRefreshToken:
+    """Assert that every OAuth callback code path persists the issued refresh
+    token to the Redis blocklist via ``CacheService.add_refresh_token``.
+
+    Covers all three branches in :func:`api.auth.oauth_callback`:
+      1. existing OAuth account (returning user)
+      2. existing user matched by email (account-link flow)
+      3. brand-new user created on the fly
+    """
+
+    @staticmethod
+    def _patch_cache():
+        """Return a context manager that patches ``api.auth.CacheService``
+        and exposes the underlying ``AsyncMock`` for ``add_refresh_token``.
+        """
+        from contextlib import contextmanager
+
+        @contextmanager
+        def _ctx():
+            mock_instance = MagicMock()
+            mock_instance.add_refresh_token = AsyncMock()
+            with patch("api.auth.CacheService") as mock_cls:
+                mock_cls.return_value = mock_instance
+                yield mock_instance
+
+        return _ctx()
+
+    def _assert_called_once_with_ttl(self, mock_instance, expected_user_id: str):
+        """Assert ``add_refresh_token`` was called exactly once with the
+        configured TTL and the freshly issued refresh token.
+        """
+        from api.auth import REFRESH_TOKEN_TTL_SECONDS
+
+        mock_instance.add_refresh_token.assert_called_once_with(
+            expected_user_id, "refresh_tok", REFRESH_TOKEN_TTL_SECONDS
+        )
+
+    # ---- path 1: existing OAuth account --------------------------------
+
+    def test_oauth_callback_existing_oauth_user_persists_refresh_token(self, client, mock_db):
+        mock_user = _mock_user()
+        mock_oauth = MagicMock()
+        mock_oauth.user_id = mock_user.id
+
+        mock_oauth_result = MagicMock()
+        mock_oauth_result.scalar_one_or_none = MagicMock(return_value=mock_oauth)
+        mock_user_result = MagicMock()
+        mock_user_result.scalar_one_or_none = MagicMock(return_value=mock_user)
+
+        mock_db.execute = AsyncMock(side_effect=[mock_oauth_result, mock_user_result])
+
+        with self._patch_cache() as mock_cache:
+            with patch("api.auth.oauth_service") as mock_svc:
+                mock_provider = MagicMock()
+                mock_oauth_info = MagicMock()
+                mock_oauth_info.provider_user_id = "gh_existing"
+                mock_provider.exchange_code = AsyncMock(return_value=mock_oauth_info)
+                mock_svc.get_provider.return_value = mock_provider
+                with patch("api.auth.create_access_token", return_value="access_tok"):
+                    with patch("api.auth.create_refresh_token", return_value="refresh_tok"):
+                        resp = client.get("/api/v1/auth/oauth/github/callback?code=abc_code")
+
+        assert resp.status_code == 200
+        assert resp.json()["is_new_user"] is False
+        self._assert_called_once_with_ttl(mock_cache, str(mock_user.id))
+
+    # ---- path 2: existing user matched by email (link flow) ------------
+
+    def test_oauth_callback_email_match_existing_user_persists_refresh_token(self, client, mock_db):
+        mock_oauth_result = MagicMock()
+        mock_oauth_result.scalar_one_or_none = MagicMock(return_value=None)
+
+        mock_existing_user = _mock_user(email="link@test.com")
+        mock_user_result = MagicMock()
+        mock_user_result.scalar_one_or_none = MagicMock(return_value=mock_existing_user)
+
+        mock_db.execute = AsyncMock(side_effect=[mock_oauth_result, mock_user_result])
+        mock_db.add = MagicMock()
+        mock_db.commit = AsyncMock()
+
+        with self._patch_cache() as mock_cache:
+            with patch("api.auth.oauth_service") as mock_svc:
+                mock_provider = MagicMock()
+                mock_oauth_info = MagicMock()
+                mock_oauth_info.provider_user_id = "gh_link"
+                mock_oauth_info.email = "link@test.com"
+                mock_oauth_info.access_token = "oa_tok"
+                mock_oauth_info.refresh_token = "or_tok"
+                mock_oauth_info.expires_at = None
+                mock_oauth_info.username = "linker"
+                mock_provider.exchange_code = AsyncMock(return_value=mock_oauth_info)
+                mock_svc.get_provider.return_value = mock_provider
+                with patch("api.auth.create_access_token", return_value="access_tok"):
+                    with patch("api.auth.create_refresh_token", return_value="refresh_tok"):
+                        resp = client.get("/api/v1/auth/oauth/github/callback?code=link_code")
+
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["is_new_user"] is False
+        assert "linked" in body["message"].lower()
+        self._assert_called_once_with_ttl(mock_cache, str(mock_existing_user.id))
+
+    # ---- path 3: brand-new user ----------------------------------------
+
+    def test_oauth_callback_new_user_persists_refresh_token(self, client, mock_db):
+        mock_oauth_result = MagicMock()
+        mock_oauth_result.scalar_one_or_none = MagicMock(return_value=None)
+
+        mock_user_result = MagicMock()
+        mock_user_result.scalar_one_or_none = MagicMock(return_value=None)
+
+        mock_db.execute = AsyncMock(side_effect=[mock_oauth_result, mock_user_result])
+        mock_db.add = MagicMock()
+
+        new_user_id = "12345678-1234-1234-1234-123456789012"
+
+        async def mock_refresh(obj):
+            obj.id = new_user_id
+
+        mock_db.refresh = AsyncMock(side_effect=mock_refresh)
+        mock_db.commit = AsyncMock()
+
+        with self._patch_cache() as mock_cache:
+            with patch("api.auth.oauth_service") as mock_svc:
+                mock_provider = MagicMock()
+                mock_oauth_info = MagicMock()
+                mock_oauth_info.provider_user_id = "gh_new"
+                mock_oauth_info.email = "new@test.com"
+                mock_oauth_info.access_token = "oa_tok"
+                mock_oauth_info.refresh_token = None
+                mock_oauth_info.expires_at = None
+                mock_oauth_info.username = "newcomer"
+                mock_provider.exchange_code = AsyncMock(return_value=mock_oauth_info)
+                mock_svc.get_provider.return_value = mock_provider
+                with patch("api.auth.hash_password", return_value="hashed"):
+                    with patch("api.auth.generate_verification_token", return_value="vtok"):
+                        with patch("api.auth.create_access_token", return_value="access_tok"):
+                            with patch(
+                                "api.auth.create_refresh_token",
+                                return_value="refresh_tok",
+                            ):
+                                resp = client.get(
+                                    "/api/v1/auth/oauth/github/callback?code=new_code"
+                                )
+
+        assert resp.status_code == 200
+        assert resp.json()["is_new_user"] is True
+        self._assert_called_once_with_ttl(mock_cache, new_user_id)

@@ -6,7 +6,7 @@ agentic reasoning pattern discovery based on LLMs Improving LLMs.
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from reasoning_patterns.pattern_discovery import (
     PatternDiscoveryEngine,
     PatternCandidate,
@@ -208,8 +208,23 @@ class TestPatternDiscoveryEngine:
             candidates = engine.patterns.get(pattern.feature_type, [])
             assert any(c.pattern.id == pattern.id for c in candidates)
 
-    def test_mutate_pattern_reorder(self):
-        """Test pattern mutation via reordering."""
+    @patch(
+        "reasoning_patterns.pattern_discovery.random.choice",
+        return_value="reorder",
+    )
+    def test_mutate_pattern_reorder(self, _mock_choice):
+        """Test pattern mutation via reordering.
+
+        ``_mutate_pattern`` picks one of four mutation types via
+        ``random.choice(["reorder", "modify", "add", "remove"])`` at
+        ``pattern_discovery.py:242``. Only ``reorder`` and ``modify`` preserve
+        the step count; ``add`` adds one and ``remove`` drops one. The
+        assertion ``len(mutated.steps) == 3`` therefore failed ~50%% of CI
+        runs (observed: ``assert 4 == 3`` and ``assert 2 == 3`` on consecutive
+        re-runs of the same commit). Patching ``random.choice`` to
+        deterministically return ``"reorder"`` makes the test exercise the
+        path its name promises.
+        """
         config = DiscoveryConfig(mutation_probability=1.0)
         engine = PatternDiscoveryEngine(config=config)
         pattern = ReasoningPattern(
@@ -227,6 +242,9 @@ class TestPatternDiscoveryEngine:
         assert mutated is not None
         assert mutated.id != pattern.id
         assert len(mutated.steps) == 3
+        # Sanity: confirm the mutation_type recorded in metadata reflects the
+        # branch we forced -- otherwise the patch is silently being bypassed.
+        assert mutated.metadata.get("mutation_type") == "reorder"
 
     def test_generate_random_pattern(self):
         """Test random pattern generation."""
