@@ -18,6 +18,7 @@ OAuth Endpoints (Issue #980):
 """
 
 import logging
+import os
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -42,6 +43,10 @@ from security.auth import (
     hash_api_key,
 )
 from services.feature_flags import is_feature_enabled, FeatureFlagNotEnabledError
+from services.cache import CacheService
+
+REFRESH_TOKEN_TTL_SECONDS = int(os.getenv("REFRESH_TOKEN_TTL_SECONDS", "604800"))  # 7 days
+
 from services.email_service import send_verification_email, send_password_reset_email
 from services.oauth_service import oauth_service, generate_oauth_state
 from config import settings
