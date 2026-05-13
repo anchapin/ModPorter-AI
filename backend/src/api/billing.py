@@ -748,6 +748,7 @@ class TierUsageBreakdown(BaseModel):
 @router.get("/admin/usage-metrics", response_model=AdminUsageMetrics)
 async def get_admin_usage_metrics(
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),  # issue #1417: at minimum require auth
 ):
     """Get aggregate usage metrics for admin dashboard (Issue #977)
 
@@ -817,6 +818,7 @@ async def get_admin_usage_metrics(
 @router.get("/admin/usage-by-tier", response_model=list[TierUsageBreakdown])
 async def get_usage_by_tier(
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),  # issue #1417: at minimum require auth
 ):
     """Get usage breakdown by subscription tier (Issue #977)
 

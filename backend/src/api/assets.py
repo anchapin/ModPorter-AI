@@ -12,6 +12,8 @@ from pydantic import BaseModel, ConfigDict
 
 from db.base import get_db
 from db import crud
+from db.models import User
+from api._authz import get_current_user  # issue #1417
 from services.asset_conversion_service import asset_conversion_service
 
 # Configure logger for this module
@@ -60,6 +62,29 @@ class AssetStatusUpdate(BaseModel):
     error_message: Optional[str] = None
 
 
+async def _ensure_conversion_owned(db, conversion_id: str, current_user: User) -> None:
+    """Issue #1417: 404 if conversion missing OR not owned by ``current_user``.
+
+    Returns None on success; raises HTTPException(404) on miss/foreign owner so
+    the API does not leak the existence of other users' conversions.
+    """
+    job = await crud.get_job(db, conversion_id)
+    if job is None or str(getattr(job, "user_id", "") or "") != str(current_user.id):
+        raise HTTPException(status_code=404, detail="Conversion not found")
+
+
+async def _ensure_asset_owned(db, asset_id: str, current_user: User):
+    """Issue #1417: load asset and confirm the parent conversion is owned.
+
+    Returns the asset on success; raises HTTPException(404) otherwise.
+    """
+    asset = await crud.get_asset(db, asset_id)
+    if asset is None:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    await _ensure_conversion_owned(db, str(asset.conversion_id), current_user)
+    return asset
+
+
 def _asset_to_response(asset) -> AssetResponse:
     """Convert database Asset model to API response."""
     return AssetResponse(
@@ -89,6 +114,7 @@ async def list_conversion_assets(
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     List all assets for a given conversion job.
@@ -106,6 +132,8 @@ async def list_conversion_assets(
             status_code=400,
             detail=f"Invalid conversion_id format: '{conversion_id}'. Must be a UUID.",
         )
+    # Issue #1417: 404 if conversion missing or not owned by current user
+    await _ensure_conversion_owned(db, conversion_id, current_user)
     try:
         assets = await crud.list_assets_for_conversion(
             db,
@@ -127,6 +155,7 @@ async def upload_asset(
     asset_type: str = Form(..., description="Type of asset (e.g., 'texture', 'model', 'sound')"),
     file: UploadFile = File(..., description="Asset file to upload"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Upload a new asset for a conversion job.
@@ -142,6 +171,9 @@ async def upload_asset(
             status_code=400,
             detail=f"Invalid conversion_id format: '{conversion_id}'. Must be a UUID.",
         )
+
+    # Issue #1417: 404 if conversion missing or not owned by current user
+    await _ensure_conversion_owned(db, conversion_id, current_user)
 
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
@@ -211,16 +243,16 @@ async def upload_asset(
 
 @router.get("/assets/{asset_id}", response_model=AssetResponse, tags=["assets"])
 async def get_asset(
-    asset_id: str = Path(..., description="ID of the asset"), db: AsyncSession = Depends(get_db)
+    asset_id: str = Path(..., description="ID of the asset"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get details of a specific asset.
 
     - **asset_id**: ID of the asset to retrieve
     """
-    asset = await crud.get_asset(db, asset_id)
-    if not asset:
-        raise HTTPException(status_code=404, detail="Asset not found")
+    asset = await _ensure_asset_owned(db, asset_id, current_user)
 
     return _asset_to_response(asset)
 
@@ -230,6 +262,7 @@ async def update_asset_status(
     status_update: AssetStatusUpdate,
     asset_id: str = Path(..., description="ID of the asset"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Update the conversion status of an asset.
@@ -239,6 +272,9 @@ async def update_asset_status(
     - **converted_path**: Path to converted file (if status is 'converted')
     - **error_message**: Error message (if status is 'failed')
     """
+    # Issue #1417: 404 if asset not owned by current user
+    await _ensure_asset_owned(db, asset_id, current_user)
+
     asset = await crud.update_asset_status(
         db,
         asset_id=asset_id,
@@ -258,6 +294,7 @@ async def update_asset_metadata(
     metadata: Dict[str, Any],
     asset_id: str = Path(..., description="ID of the asset"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Update the metadata of an asset.
@@ -265,6 +302,9 @@ async def update_asset_metadata(
     - **asset_id**: ID of the asset to update
     - **metadata**: New metadata dictionary
     """
+    # Issue #1417: 404 if asset not owned by current user
+    await _ensure_asset_owned(db, asset_id, current_user)
+
     asset = await crud.update_asset_metadata(db, asset_id=asset_id, metadata=metadata)
 
     if not asset:
@@ -275,17 +315,17 @@ async def update_asset_metadata(
 
 @router.delete("/assets/{asset_id}", tags=["assets"])
 async def delete_asset(
-    asset_id: str = Path(..., description="ID of the asset"), db: AsyncSession = Depends(get_db)
+    asset_id: str = Path(..., description="ID of the asset"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Delete an asset and its associated file.
 
     - **asset_id**: ID of the asset to delete
     """
-    # Get asset info before deletion
-    asset = await crud.get_asset(db, asset_id)
-    if not asset:
-        raise HTTPException(status_code=404, detail="Asset not found")
+    # Get asset info before deletion (issue #1417: enforce ownership)
+    asset = await _ensure_asset_owned(db, asset_id, current_user)
 
     # Delete the database record
     deleted_info = await crud.delete_asset(db, asset_id)
@@ -315,6 +355,7 @@ async def delete_asset(
 async def trigger_asset_conversion(
     asset_id: str = Path(..., description="ID of the asset to convert"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Trigger conversion for a specific asset.
@@ -324,10 +365,8 @@ async def trigger_asset_conversion(
 
     - **asset_id**: ID of the asset to convert
     """
-    # Verify asset exists
-    asset = await crud.get_asset(db, asset_id)
-    if not asset:
-        raise HTTPException(status_code=404, detail="Asset not found")
+    # Verify asset exists and is owned by current user (issue #1417)
+    asset = await _ensure_asset_owned(db, asset_id, current_user)
 
     if asset.status == "converted":
         # Return already converted asset
@@ -358,6 +397,7 @@ async def trigger_asset_conversion(
 async def convert_all_conversion_assets(
     conversion_id: str = Path(..., description="ID of the conversion job"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Trigger conversion for all pending assets in a conversion job.
@@ -374,6 +414,9 @@ async def convert_all_conversion_assets(
             status_code=400,
             detail=f"Invalid conversion_id format: '{conversion_id}'. Must be a UUID.",
         )
+
+    # Issue #1417: 404 if conversion missing or not owned by current user
+    await _ensure_conversion_owned(db, conversion_id, current_user)
 
     try:
         result = await asset_conversion_service.convert_assets_for_conversion(conversion_id)

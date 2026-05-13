@@ -49,7 +49,26 @@ class MockValidationAgent:
 @pytest.fixture
 def client():
     """Test client fixture"""
-    return TestClient(app)
+    # Issue #1417: bypass auth and the cross-conversion ownership check.
+    from api._authz import get_current_user
+    from api import validation as _val_mod
+    from unittest.mock import MagicMock, AsyncMock
+
+    _TEST_USER_ID = "11111111-1111-4111-a111-111111111111"  # noqa: N806
+
+    user = MagicMock()
+    user.id = _TEST_USER_ID
+
+    owned_job = MagicMock()
+    owned_job.user_id = _TEST_USER_ID
+
+    app.dependency_overrides[get_current_user] = lambda: user
+    _val_mod.crud.get_job = AsyncMock(return_value=owned_job)
+    # Stamp the user_id on every freshly created ValidationJob so subsequent
+    # GETs from the same in-memory store can be retrieved by the same user.
+    _val_mod._TEST_USER_ID = _TEST_USER_ID
+    yield TestClient(app)
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture

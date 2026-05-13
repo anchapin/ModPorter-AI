@@ -4,6 +4,8 @@ from typing import List, Dict
 from pydantic import BaseModel, Field
 from db.base import get_db
 from db import crud
+from db.models import User
+from api._authz import get_current_user  # issue #1417
 from services import addon_exporter
 from services.cache import CacheService
 from fastapi.responses import StreamingResponse
@@ -16,6 +18,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+async def _ensure_conversion_owned(db, conversion_id: str, current_user: User):
+    """Issue #1417: 404 unless ``conversion_id`` exists AND is owned by ``current_user``."""
+    conversion = await crud.get_job(db, conversion_id)
+    if conversion is None or str(getattr(conversion, "user_id", "") or "") != str(current_user.id):
+        raise HTTPException(status_code=404, detail="Conversion not found")
+    return conversion
 
 
 class ExportRequest(BaseModel):
@@ -42,7 +52,9 @@ class ExportResponse(BaseModel):
 
 @router.post("/export/behavior-pack", response_model=ExportResponse, summary="Export behavior pack")
 async def export_behavior_pack(
-    request: ExportRequest, db: AsyncSession = Depends(get_db)
+    request: ExportRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ExportResponse:
     """
     Export behavior files as a Minecraft behavior pack.
@@ -57,10 +69,8 @@ async def export_behavior_pack(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid conversion ID format")
 
-    # Check if conversion exists
-    conversion = await crud.get_job(db, request.conversion_id)
-    if not conversion:
-        raise HTTPException(status_code=404, detail="Conversion not found")
+    # Issue #1417: 404 if conversion missing or not owned by current user
+    conversion = await _ensure_conversion_owned(db, request.conversion_id, current_user)
 
     # Get behavior files
     behavior_files = await crud.get_behavior_files_by_conversion(db, request.conversion_id)
@@ -242,6 +252,7 @@ async def download_exported_pack(
     conversion_id: str = Path(..., description="Conversion job ID"),
     format: str = Query(default="mcaddon", description="Export format"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Download previously exported behavior pack.
@@ -251,10 +262,8 @@ async def download_exported_pack(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid conversion ID format")
 
-    # Check if conversion exists
-    conversion = await crud.get_job(db, conversion_id)
-    if not conversion:
-        raise HTTPException(status_code=404, detail="Conversion not found")
+    # Issue #1417: 404 if conversion missing or not owned by current user
+    await _ensure_conversion_owned(db, conversion_id, current_user)
 
     # Get export data from cache
     cache = CacheService()
@@ -281,7 +290,7 @@ async def download_exported_pack(
 @router.get(
     "/export/formats", response_model=List[Dict[str, str]], summary="Get available export formats"
 )
-async def get_export_formats():
+async def get_export_formats(current_user: User = Depends(get_current_user)):
     """
     Get available export formats and their descriptions.
     """
@@ -311,6 +320,7 @@ async def get_export_formats():
 async def preview_export(
     conversion_id: str = Path(..., description="Conversion job ID"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Preview what would be included in an export without creating files.
@@ -320,10 +330,8 @@ async def preview_export(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid conversion ID format")
 
-    # Check if conversion exists
-    conversion = await crud.get_job(db, conversion_id)
-    if not conversion:
-        raise HTTPException(status_code=404, detail="Conversion not found")
+    # Issue #1417: 404 if conversion missing or not owned by current user
+    conversion = await _ensure_conversion_owned(db, conversion_id, current_user)
 
     # Get behavior files
     behavior_files = await crud.get_behavior_files_by_conversion(db, conversion_id)

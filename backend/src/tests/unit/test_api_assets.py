@@ -8,10 +8,57 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from api.assets import router, MAX_ASSET_SIZE
+from api._authz import get_current_user
+from db.base import get_db
+from api import assets as _assets_mod
+
+# Issue #1417: these tests bypass auth + ownership checks because they target
+# pre-auth code paths. Each request appears to come from a single test user
+# that owns every conversion the tests touch.
+_TEST_USER_ID = "11111111-1111-4111-a111-111111111111"
+
+class _TestUser:
+    id = _TEST_USER_ID
+
+class _TestJob:
+    user_id = _TEST_USER_ID
+
+async def _stub_get_job(_db, _conversion_id):
+    return _TestJob()
+
+class _OwnedAsset:
+    """Default asset owned by the test user; tests that need a missing asset
+    or a custom one still patch ``db.crud.get_asset`` directly via @patch.
+    """
+    id = uuid.uuid4()
+
+    class _Conv:
+        user_id = _TEST_USER_ID
+
+    conversion_id = _Conv
+
+async def _stub_get_asset(_db, asset_id):
+    asset = _OwnedAsset()
+    return asset
 
 app = FastAPI()
 app.include_router(router)
+app.dependency_overrides[get_current_user] = lambda: _TestUser()
+app.dependency_overrides[get_db] = lambda: MagicMock()
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def _ownership_stubs(monkeypatch):
+    """Issue #1417: temporarily stub get_job/get_asset for the assets router.
+
+    Uses monkeypatch so the originals are restored after each test, avoiding
+    pollution into ``test_conversion_assets_crud.py`` (which runs against the
+    real ``db.crud`` functions).
+    """
+    monkeypatch.setattr(_assets_mod.crud, "get_job", _stub_get_job, raising=True)
+    monkeypatch.setattr(_assets_mod.crud, "get_asset", _stub_get_asset, raising=True)
+    yield
 
 
 @pytest.fixture

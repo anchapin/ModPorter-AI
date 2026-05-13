@@ -159,26 +159,25 @@ class TestProcessBatchConversion:
 
 class TestStartBatchConversionEndpoint:
     @pytest.mark.asyncio
-    async def test_start_batch_user_not_found(self):
+    async def test_start_batch_user_not_found_replaced_by_auth(self):
+        """Issue #1417: ``user_id`` is no longer a query parameter, so the
+        handler's previous "user-not-found" branch is unreachable; auth (or
+        its absence) is now enforced earlier by ``Depends(get_current_user)``.
+        This test pins the new behaviour: passing the now-removed ``user_id``
+        kwarg raises a TypeError before touching the DB.
+        """
         from api.batch_conversion import start_batch_conversion, BatchConversionRequest
-
-        mock_db = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = None
-        mock_db.execute = AsyncMock(return_value=mock_result)
 
         request = BatchConversionRequest(
             files=[{"name": "a.jar"}, {"name": "b.jar"}],
         )
-
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(TypeError):
             await start_batch_conversion(
                 request=request,
                 user_id=str(uuid.uuid4()),
                 background_tasks=MagicMock(),
-                db=mock_db,
+                db=AsyncMock(),
             )
-        assert exc_info.value.status_code == 404
 
     @pytest.mark.asyncio
     async def test_start_batch_success(self):
@@ -200,9 +199,9 @@ class TestStartBatchConversionEndpoint:
 
         resp = await start_batch_conversion(
             request=request,
-            user_id=str(mock_user.id),
             background_tasks=mock_bg,
             db=mock_db,
+            current_user=mock_user,
         )
 
         assert resp.total_files == 2

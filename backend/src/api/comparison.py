@@ -93,8 +93,10 @@ from db.models import (
     ComparisonResultDb,
     FeatureMappingDb,
     ConversionJob,
+    User,
 )  # ConversionJob for FK check
 from db.base import get_db
+from api._authz import get_current_user  # issue #1417
 
 router = APIRouter()
 
@@ -112,7 +114,9 @@ class ComparisonResponse(BaseModel):
 
 @router.post("/", status_code=201, response_model=ComparisonResponse)
 async def create_comparison(
-    request: CreateComparisonRequest, session: AsyncSession = Depends(get_db)
+    request: CreateComparisonRequest,
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ComparisonResponse:
 
     engine = ComparisonEngine()
@@ -127,7 +131,10 @@ async def create_comparison(
             )
 
         conversion_job = await session.get(ConversionJob, conversion_uuid)
-        if not conversion_job:
+        # Issue #1417: 404 unless conversion exists AND is owned by current user
+        if not conversion_job or str(getattr(conversion_job, "user_id", "") or "") != str(
+            current_user.id
+        ):
             raise HTTPException(
                 status_code=404,
                 detail=f"ConversionJob with id {request.conversion_id} not found.",
@@ -227,7 +234,9 @@ class ComparisonResultResponse(BaseModel):
 
 @router.get("/{comparison_id_str}", response_model=ComparisonResultResponse)
 async def get_comparison_result(
-    comparison_id_str: str, session: AsyncSession = Depends(get_db)
+    comparison_id_str: str,
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ComparisonResultResponse:
     try:
         comparison_uuid = uuid.UUID(comparison_id_str)
@@ -243,6 +252,11 @@ async def get_comparison_result(
     db_comparison = result.scalar_one_or_none()
 
     if db_comparison is None:
+        raise HTTPException(status_code=404, detail="Comparison not found")
+
+    # Issue #1417: 404 if the parent conversion is not owned by the caller
+    parent_job = await session.get(ConversionJob, db_comparison.conversion_id)
+    if parent_job is None or str(getattr(parent_job, "user_id", "") or "") != str(current_user.id):
         raise HTTPException(status_code=404, detail="Comparison not found")
 
     feature_mappings_list = []

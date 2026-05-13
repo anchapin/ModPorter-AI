@@ -21,7 +21,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.base import get_db
 from db.models import User
-from security.auth import get_current_user, verify_api_key
+from security.auth import verify_api_key
+from api._authz import get_current_user  # issue #1417
 from services.feature_flags import is_feature_enabled, FeatureFlagNotEnabledError
 
 logger = logging.getLogger(__name__)
@@ -102,7 +103,7 @@ def require_feature_flag(flag_name: str):
 @router.post("/convert", response_model=PremiumConvertResponse)
 async def premium_convert(
     request: PremiumConvertRequest,
-    current_user: Optional[User] = Depends(get_optional_user),
+    current_user: User = Depends(get_current_user),  # issue #1417: auth required
     _: bool = Depends(require_feature_flag("premium_features")),
 ):
     r"""
@@ -173,7 +174,7 @@ async def premium_convert(
 
 @router.get("/models", response_model=PremiumModelsResponse)
 async def list_premium_models(
-    current_user: Optional[User] = Depends(get_optional_user),
+    current_user: User = Depends(get_current_user),  # issue #1417: auth required
     _: bool = Depends(require_feature_flag("premium_features")),
 ):
     """
@@ -199,7 +200,7 @@ async def list_premium_models(
 @router.post("/estimate", response_model=PremiumEstimateResponse)
 async def estimate_premium_cost(
     request: PremiumConvertRequest,
-    current_user: Optional[User] = Depends(get_optional_user),
+    current_user: User = Depends(get_current_user),  # issue #1417: auth required
     _: bool = Depends(require_feature_flag("premium_features")),
 ):
     """

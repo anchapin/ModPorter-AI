@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from db.base import get_db
 from db.models import User, ConversionJob
+from api._authz import get_current_user  # issue #1417
 
 logger = logging.getLogger(__name__)
 
@@ -62,9 +63,9 @@ class BatchResultResponse(BaseModel):
 @router.post("/convert", response_model=BatchConversionResponse)
 async def start_batch_conversion(
     request: BatchConversionRequest,
-    user_id: str,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Start batch conversion of multiple mods.
@@ -73,16 +74,13 @@ async def start_batch_conversion(
     - Convert simultaneously
     - Track progress centrally
     - Download all results as ZIP
-    """
-    # Check user quota
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
 
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        )
+    Issue #1417: previously accepted ``user_id`` as a query string, which let
+    anyone impersonate any other user. The owner is now derived from the
+    authenticated identity and cannot be supplied by the client.
+    """
+    user = current_user
+    user_id = str(user.id)
 
     # Check if user has batch conversion access (Pro feature)
     # For beta, allow all users
@@ -154,9 +152,10 @@ async def process_batch_conversion(
 @router.get("/{batch_id}/status", response_model=BatchStatusResponse)
 async def get_batch_status(
     batch_id: str,
-    user_id: str,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    user_id = str(current_user.id)  # issue #1417: derive from auth, not query
     """
     Get batch conversion status.
 
@@ -207,9 +206,10 @@ async def get_batch_status(
 @router.get("/{batch_id}/results", response_model=BatchResultResponse)
 async def get_batch_results(
     batch_id: str,
-    user_id: str,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    user_id = str(current_user.id)  # issue #1417: derive from auth, not query
     """
     Get batch conversion results.
 
@@ -280,17 +280,29 @@ async def get_batch_results(
 @router.get("/{batch_id}/download-all")
 async def download_all_batch(
     batch_id: str,
-    user_id: str,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Download all successful conversions as ZIP.
 
     Creates ZIP archive of all .mcaddon files.
     """
+    user_id = str(current_user.id)  # issue #1417: derive from auth, not query
+
+    # Verify the batch belongs to this user before responding (404 on miss to
+    # avoid leaking the existence of other users' batches).
+    result = await db.execute(
+        select(ConversionJob).where(
+            ConversionJob.batch_id == batch_id,
+            ConversionJob.user_id == user_id,
+        )
+    )
+    if not result.scalars().first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found")
+
     # Would generate ZIP file with all conversions
     # For now, return placeholder
-
     return {
         "batch_id": batch_id,
         "message": "ZIP download would start here",
@@ -301,9 +313,10 @@ async def download_all_batch(
 @router.delete("/{batch_id}")
 async def cancel_batch(
     batch_id: str,
-    user_id: str,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    user_id = str(current_user.id)  # issue #1417: derive from auth, not query
     """
     Cancel batch conversion.
 

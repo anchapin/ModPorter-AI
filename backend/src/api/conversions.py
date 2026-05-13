@@ -64,6 +64,7 @@ from security.file_security import (
     SecurityScanResult,
 )
 from security.auth import verify_token, verify_api_key
+from api._authz import get_current_user, assert_owner  # issue #1417
 
 logger = logging.getLogger(__name__)
 
@@ -596,6 +597,16 @@ async def websocket_conversion_progress(websocket: WebSocket, conversion_id: str
         manager.disconnect(websocket, conversion_id)
 
 
+def _user_owns_job(job, current_user) -> bool:
+    """Return True iff ``job`` is owned by ``current_user`` (issue #1417)."""
+    if job is None:
+        return False
+    job_user_id = getattr(job, "user_id", None)
+    if job_user_id is None:
+        return False
+    return str(job_user_id) == str(current_user.id)
+
+
 # REST Endpoints
 @router.post(
     "/api/v1/conversions",
@@ -609,7 +620,7 @@ async def create_conversion(
     background_tasks: BackgroundTasks = None,
     db: AsyncSession = Depends(get_db),
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    user: Optional[User] = Depends(get_api_key_user),
+    user: User = Depends(get_current_user),
 ):
     """
     Start a new mod conversion job.
@@ -926,6 +937,7 @@ async def create_conversion(
 async def get_conversion(
     conversion_id: str,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get the status of a specific conversion job.
@@ -952,18 +964,19 @@ async def get_conversion(
     }
     ```
     """
-    # Try cache first for speed
-    cached = await cache.get_job_status(conversion_id)
-    if cached:
-        return ConversionStatusResponse(**cached)
-
-    # Fallback to database
+    # Issue #1417: always load job from DB so we can verify ownership
+    # before honouring the cache (cached payload omits user_id).
     job = await crud.get_job(db, conversion_id)
-    if not job:
+    if not _user_owns_job(job, current_user):
+        # 404 (not 403) so we do not leak the existence of other users' jobs
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Conversion {conversion_id} not found",
         )
+
+    cached = await cache.get_job_status(conversion_id)
+    if cached:
+        return ConversionStatusResponse(**cached)
 
     # Build response
     progress = job.progress.progress if job.progress else 0
@@ -1017,7 +1030,7 @@ async def list_conversions(
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     status: Optional[str] = Query(None, description="Filter by status"),
     db: AsyncSession = Depends(get_db),
-    user: Optional[User] = Depends(get_optional_user),
+    user: User = Depends(get_current_user),
 ):
     """
     List conversion jobs with pagination.
@@ -1095,6 +1108,7 @@ async def list_conversions(
 async def delete_conversion(
     conversion_id: str,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Cancel or delete a conversion job.
@@ -1106,7 +1120,8 @@ async def delete_conversion(
     **Response:** 204 No Content (success)
     """
     job = await crud.get_job(db, conversion_id)
-    if not job:
+    if not _user_owns_job(job, current_user):
+        # Issue #1417: 404 to avoid leaking job existence to non-owners
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Conversion {conversion_id} not found",
@@ -1136,7 +1151,11 @@ async def delete_conversion(
     "/api/v1/conversions/{conversion_id}/download",
     tags=["conversions"],
 )
-async def download_conversion(conversion_id: str, db: AsyncSession = Depends(get_db)):
+async def download_conversion(
+    conversion_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
     Download the converted .mcaddon file.
 
@@ -1152,7 +1171,8 @@ async def download_conversion(conversion_id: str, db: AsyncSession = Depends(get
     - 400: Conversion not completed
     """
     job = await crud.get_job(db, conversion_id)
-    if not job:
+    if not _user_owns_job(job, current_user):
+        # Issue #1417: 404 to avoid leaking job existence to non-owners
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Conversion {conversion_id} not found",
@@ -1204,6 +1224,7 @@ async def download_conversion_report(
     conversion_id: str,
     format: str = Query("json", description="Report format: json, html, csv"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Download conversion report in specified format.
@@ -1226,7 +1247,8 @@ async def download_conversion_report(
     - 400: Invalid format specified
     """
     job = await crud.get_job(db, conversion_id)
-    if not job:
+    if not _user_owns_job(job, current_user):
+        # Issue #1417: 404 to avoid leaking job existence to non-owners
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Conversion {conversion_id} not found",
@@ -1260,6 +1282,7 @@ async def get_report_file(
     conversion_id: str,
     format: str = Query("json", description="Report format: json, html, csv"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get the actual report file for download.
@@ -1272,7 +1295,8 @@ async def get_report_file(
     **Response:** Binary file download with appropriate Content-Type
     """
     job = await crud.get_job(db, conversion_id)
-    if not job:
+    if not _user_owns_job(job, current_user):
+        # Issue #1417: 404 to avoid leaking job existence to non-owners
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Conversion {conversion_id} not found",
@@ -1347,6 +1371,7 @@ async def get_report_file(
 async def init_chunked_upload(
     filename: str = Form(..., description="Original filename"),
     total_size: int = Form(..., description="Total file size in bytes"),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Initialize a resumable/chunked upload session.
@@ -1428,6 +1453,7 @@ async def upload_chunk(
     chunk_number: int = Form(..., description="Chunk number (1-indexed)"),
     total_chunks: int = Form(..., description="Total number of chunks"),
     chunk: UploadFile = File(..., description="Chunk data"),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Upload a single chunk of a resumable upload.
@@ -1518,7 +1544,10 @@ async def upload_chunk(
     response_model=UploadProgressResponse,
     tags=["uploads"],
 )
-async def get_upload_progress(upload_id: UUID):
+async def get_upload_progress(
+    upload_id: UUID,
+    current_user: User = Depends(get_current_user),
+):
     """
     Get the progress of a resumable upload.
 
@@ -1536,7 +1565,8 @@ async def get_upload_progress(upload_id: UUID):
     upload_id_str = str(upload_id)
     upload_metadata = await cache.get_job_status(f"upload:{upload_id_str}")
 
-    if not upload_metadata:
+    # Issue #1417: 404 (not 403) on missing OR foreign-owned session
+    if not upload_metadata or upload_metadata.get("user_id") != str(current_user.id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Upload session not found"
         )
@@ -1570,6 +1600,7 @@ async def get_upload_progress(upload_id: UUID):
 async def complete_chunked_upload(
     upload_id: UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Complete a resumable upload by combining all chunks.
@@ -1581,7 +1612,8 @@ async def complete_chunked_upload(
     # Get upload metadata
     upload_metadata = await cache.get_job_status(f"upload:{upload_id_str}")
 
-    if not upload_metadata:
+    # Issue #1417: 404 (not 403) on missing OR foreign-owned session
+    if not upload_metadata or upload_metadata.get("user_id") != str(current_user.id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Upload session not found"
         )
@@ -1642,13 +1674,14 @@ async def complete_chunked_upload(
         upload_metadata["status"] = "completed"
         await cache.set_job_status(f"upload:{upload_id_str}", upload_metadata)
 
-        # Create conversion job
+        # Create conversion job (record owner so subsequent reads pass ownership checks)
         job = await crud.create_job(
             session=db,
             file_id=file_id,
             original_filename=safe_filename,
             target_version="1.20.0",
             options={},
+            user_id=str(current_user.id),
             commit=True,
         )
 
@@ -1693,7 +1726,10 @@ async def complete_chunked_upload(
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["uploads"],
 )
-async def cancel_upload(upload_id: UUID):
+async def cancel_upload(
+    upload_id: UUID,
+    current_user: User = Depends(get_current_user),
+):
     """
     Cancel a resumable upload session.
 
@@ -1702,7 +1738,8 @@ async def cancel_upload(upload_id: UUID):
     upload_id_str = str(upload_id)
     upload_metadata = await cache.get_job_status(f"upload:{upload_id_str}")
 
-    if not upload_metadata:
+    # Issue #1417: 404 (not 403) on missing OR foreign-owned session
+    if not upload_metadata or upload_metadata.get("user_id") != str(current_user.id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Upload session not found"
         )

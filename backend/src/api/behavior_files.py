@@ -6,6 +6,8 @@ from typing import List, Dict, Any
 from pydantic import BaseModel, Field
 from db.base import get_db
 from db import crud
+from db.models import User
+from api._authz import get_current_user  # issue #1417
 import uuid
 
 logger = logging.getLogger(__name__)
@@ -59,6 +61,23 @@ class BehaviorFileTreeNode(BaseModel):
 BehaviorFileTreeNode.model_rebuild()
 
 
+async def _ensure_conversion_owned(db, conversion_id: str, current_user: User):
+    """Issue #1417: 404 unless ``conversion_id`` exists AND is owned by ``current_user``."""
+    conversion = await crud.get_job(db, conversion_id)
+    if conversion is None or str(getattr(conversion, "user_id", "") or "") != str(current_user.id):
+        raise HTTPException(status_code=404, detail="Conversion not found")
+    return conversion
+
+
+async def _ensure_behavior_file_owned(db, file_id: str, current_user: User):
+    """Issue #1417: 404 unless behavior file exists AND parent conversion is owned."""
+    behavior_file = await crud.get_behavior_file(db, file_id)
+    if behavior_file is None:
+        raise HTTPException(status_code=404, detail="Behavior file not found")
+    await _ensure_conversion_owned(db, str(behavior_file.conversion_id), current_user)
+    return behavior_file
+
+
 @router.get(
     "/conversions/{conversion_id}/behaviors",
     response_model=List[BehaviorFileTreeNode],
@@ -67,6 +86,7 @@ BehaviorFileTreeNode.model_rebuild()
 async def get_conversion_behavior_files(
     conversion_id: str = Path(..., description="Conversion job ID"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> List[BehaviorFileTreeNode]:
     """
     Get all editable behavior files for a conversion as a file tree structure.
@@ -79,10 +99,8 @@ async def get_conversion_behavior_files(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid conversion ID format")
 
-    # Check if conversion exists
-    conversion = await crud.get_job(db, conversion_id)
-    if not conversion:
-        raise HTTPException(status_code=404, detail="Conversion not found")
+    # Issue #1417: 404 if conversion missing or not owned by current user
+    await _ensure_conversion_owned(db, conversion_id, current_user)
 
     # Get all behavior files for this conversion
     behavior_files = await crud.get_behavior_files_by_conversion(db, conversion_id)
@@ -143,7 +161,9 @@ def dict_to_tree_nodes(node_dict: Dict[str, Any]) -> List[BehaviorFileTreeNode]:
     "/behaviors/{file_id}", response_model=BehaviorFileResponse, summary="Get behavior file content"
 )
 async def get_behavior_file(
-    file_id: str = Path(..., description="Behavior file ID"), db: AsyncSession = Depends(get_db)
+    file_id: str = Path(..., description="Behavior file ID"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> BehaviorFileResponse:
     """
     Retrieve the current content of a specific behavior file.
@@ -153,9 +173,8 @@ async def get_behavior_file(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid file ID format")
 
-    behavior_file = await crud.get_behavior_file(db, file_id)
-    if not behavior_file:
-        raise HTTPException(status_code=404, detail="Behavior file not found")
+    # Issue #1417: 404 unless file exists AND parent conversion is owned
+    behavior_file = await _ensure_behavior_file_owned(db, file_id, current_user)
 
     return BehaviorFileResponse(
         id=str(behavior_file.id),
@@ -177,6 +196,7 @@ async def update_behavior_file(
     file_id: str = Path(..., description="Behavior file ID"),
     request: BehaviorFileUpdate = ...,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> BehaviorFileResponse:
     """
     Update the content of a specific behavior file.
@@ -188,10 +208,8 @@ async def update_behavior_file(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid file ID format")
 
-    # Check if file exists
-    existing_file = await crud.get_behavior_file(db, file_id)
-    if not existing_file:
-        raise HTTPException(status_code=404, detail="Behavior file not found")
+    # Issue #1417: 404 unless file exists AND parent conversion is owned
+    await _ensure_behavior_file_owned(db, file_id, current_user)
 
     # Update the file content
     updated_file = await crud.update_behavior_file_content(db, file_id, request.content)
@@ -219,6 +237,7 @@ async def create_behavior_file(
     conversion_id: str = Path(..., description="Conversion job ID"),
     request: BehaviorFileCreate = ...,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> BehaviorFileResponse:
     """
     Create a new behavior file for a conversion.
@@ -230,10 +249,8 @@ async def create_behavior_file(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid conversion ID format")
 
-    # Check if conversion exists
-    conversion = await crud.get_job(db, conversion_id)
-    if not conversion:
-        raise HTTPException(status_code=404, detail="Conversion not found")
+    # Issue #1417: 404 if conversion missing or not owned by current user
+    await _ensure_conversion_owned(db, conversion_id, current_user)
 
     # Create the behavior file
     try:
@@ -268,7 +285,9 @@ async def create_behavior_file(
 
 @router.delete("/behaviors/{file_id}", status_code=204, summary="Delete behavior file")
 async def delete_behavior_file(
-    file_id: str = Path(..., description="Behavior file ID"), db: AsyncSession = Depends(get_db)
+    file_id: str = Path(..., description="Behavior file ID"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Delete a behavior file.
@@ -279,6 +298,9 @@ async def delete_behavior_file(
         uuid.UUID(file_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid file ID format")
+
+    # Issue #1417: 404 unless file exists AND parent conversion is owned
+    await _ensure_behavior_file_owned(db, file_id, current_user)
 
     # Delete the file
     success = await crud.delete_behavior_file(db, file_id)
@@ -298,6 +320,7 @@ async def get_behavior_files_by_type(
     conversion_id: str = Path(..., description="Conversion job ID"),
     file_type: str = Path(..., description="Behavior file type to filter by"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> List[BehaviorFileResponse]:
     """
     Get all behavior files of a specific type for a conversion.
@@ -309,10 +332,8 @@ async def get_behavior_files_by_type(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid conversion ID format")
 
-    # Check if conversion exists
-    conversion = await crud.get_job(db, conversion_id)
-    if not conversion:
-        raise HTTPException(status_code=404, detail="Conversion not found")
+    # Issue #1417: 404 if conversion missing or not owned by current user
+    await _ensure_conversion_owned(db, conversion_id, current_user)
 
     # Get behavior files by type
     behavior_files = await crud.get_behavior_files_by_type(db, conversion_id, file_type)

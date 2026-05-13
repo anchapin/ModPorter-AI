@@ -34,6 +34,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.base import get_db
 from db import crud
+from db.models import User
+from api._authz import get_current_user  # issue #1417
 from services.cache import CacheService
 
 logger = logging.getLogger(__name__)
@@ -41,6 +43,18 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 cache = CacheService()
+
+
+async def _ensure_owned_job(db, job_id: str, current_user: User):
+    """Issue #1417: 404 unless ``job_id`` exists AND is owned by ``current_user``."""
+    job = await crud.get_job(db, job_id)
+    if job is None or str(getattr(job, "user_id", "") or "") != str(current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Conversion job '{job_id}' not found",
+        )
+    return job
+
 
 TEMP_UPLOADS_DIR = os.getenv("TEMP_UPLOADS_DIR", "temp_uploads")
 CONVERSION_OUTPUTS_DIR = os.getenv("CONVERSION_OUTPUTS_DIR", "conversion_outputs")
@@ -154,6 +168,7 @@ async def start_plugin_conversion(
     request: PluginConversionRequest,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Start a new conversion job from an IDE plugin.
@@ -181,6 +196,7 @@ async def start_plugin_conversion(
         original_filename=original_filename,
         target_version=request.target_version,
         options=request.options or {},
+        user_id=str(current_user.id),  # issue #1417: record owner for later checks
         commit=False,
     )
     job = await crud.update_job_status(db, str(job.id), "queued", commit=False)
@@ -230,10 +246,14 @@ async def get_plugin_conversion_status(
         description="Unique conversion job ID",
     ),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get the status of a conversion job started from an IDE plugin.
     """
+    # Issue #1417: ownership check via DB even when serving from cache
+    await _ensure_owned_job(db, job_id, current_user)
+
     cached = await cache.get_job_status(job_id)
     if cached:
         status_val = cached.get("status", "unknown")
@@ -267,6 +287,7 @@ async def get_plugin_conversion_status(
 
     job = await crud.get_job(db, job_id)
     if not job:
+        # Should be unreachable: _ensure_owned_job above already verified existence.
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Conversion job '{job_id}' not found",
@@ -306,10 +327,14 @@ async def download_plugin_conversion(
         description="Unique conversion job ID",
     ),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Download the converted addon from a plugin-initiated conversion.
     """
+    # Issue #1417: enforce ownership before serving any cached/db data
+    await _ensure_owned_job(db, job_id, current_user)
+
     cached = await cache.get_job_status(job_id)
     if not cached:
         job = await crud.get_job(db, job_id)

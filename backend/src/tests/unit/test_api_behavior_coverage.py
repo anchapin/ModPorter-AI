@@ -11,6 +11,43 @@ from unittest.mock import MagicMock, AsyncMock, patch
 from fastapi.testclient import TestClient
 from fastapi import HTTPException
 
+# Issue #1417: tests now need a mock authenticated user that owns whatever job
+# the handler tries to load.
+_TEST_USER_ID = "11111111-1111-4111-a111-111111111111"
+
+
+def _mock_user():
+    user = MagicMock()
+    user.id = _TEST_USER_ID
+    return user
+
+
+def _owned_job():
+    job = MagicMock()
+    job.user_id = _TEST_USER_ID
+    return job
+
+
+# Stub the ownership-check fetches in the modules under test so existing tests
+# (which don't know about issue #1417) keep working without local mocks.
+async def _stub_owned_get_job(_db, _conversion_id):
+    return _owned_job()
+
+
+from api import behavior_files as _bf_mod, behavior_export as _be_mod  # noqa: E402
+
+
+import pytest as _pytest_for_stub
+
+@_pytest_for_stub.fixture(autouse=True)
+def _ownership_stub_for_behavior(monkeypatch):
+    """Issue #1417: stub get_job per-test to avoid polluting other modules."""
+    monkeypatch.setattr(_bf_mod.crud, "get_job", _stub_owned_get_job, raising=True)
+    monkeypatch.setattr(_be_mod.crud, "get_job", _stub_owned_get_job, raising=True)
+    yield
+
+
+
 
 class TestBehaviorFileModels:
     """Tests for Pydantic models."""
@@ -99,7 +136,7 @@ class TestBehaviorFilesCrud:
             )
         )
 
-        result = await get_conversion_behavior_files(str(uuid.uuid4()), mock_db)
+        result = await get_conversion_behavior_files(str(uuid.uuid4()), mock_db, _mock_user())
 
         assert result == []
 
@@ -160,6 +197,7 @@ class TestExportBehaviorPack:
         mock_db = AsyncMock()
 
         mock_job = MagicMock()
+        mock_job.user_id = _TEST_USER_ID  # issue #1417: pass ownership check
         mock_job.status = "completed"
 
         mock_file = MagicMock()
@@ -182,7 +220,7 @@ class TestExportBehaviorPack:
 
                     request = ExportRequest(conversion_id=str(uuid.uuid4()), export_format="json")
 
-                    result = await export_behavior_pack(request, mock_db)
+                    result = await export_behavior_pack(request, mock_db, _mock_user())
 
                     assert result.export_format == "json"
 
@@ -198,7 +236,7 @@ class TestExportBehaviorPack:
         request = ExportRequest(conversion_id="invalid-uuid", export_format="json")
 
         with pytest.raises(HTTPException) as exc_info:
-            await export_behavior_pack(request, mock_db)
+            await export_behavior_pack(request, mock_db, _mock_user())
 
         assert exc_info.value.status_code == 400
 
@@ -217,7 +255,7 @@ class TestExportBehaviorPack:
             request = ExportRequest(conversion_id=str(uuid.uuid4()), export_format="json")
 
             with pytest.raises(HTTPException) as exc_info:
-                await export_behavior_pack(request, mock_db)
+                await export_behavior_pack(request, mock_db, _mock_user())
 
             assert exc_info.value.status_code == 404
 
@@ -231,6 +269,7 @@ class TestExportBehaviorPack:
         mock_db = AsyncMock()
 
         mock_job = MagicMock()
+        mock_job.user_id = _TEST_USER_ID  # issue #1417: pass ownership check
         mock_job.status = "completed"
 
         with patch("api.behavior_export.crud.get_job", new_callable=AsyncMock) as mock_get_job:
@@ -243,7 +282,7 @@ class TestExportBehaviorPack:
                 request = ExportRequest(conversion_id=str(uuid.uuid4()), export_format="json")
 
                 with pytest.raises(HTTPException) as exc_info:
-                    await export_behavior_pack(request, mock_db)
+                    await export_behavior_pack(request, mock_db, _mock_user())
 
                 assert exc_info.value.status_code == 400
 
@@ -261,6 +300,7 @@ class TestExportPreview:
         mock_db = AsyncMock()
 
         mock_job = MagicMock()
+        mock_job.user_id = _TEST_USER_ID  # issue #1417: pass ownership check
         mock_job.status = "completed"
 
         mock_file = MagicMock()
@@ -276,7 +316,7 @@ class TestExportPreview:
                 mock_get_job.return_value = mock_job
                 mock_get_files.return_value = [mock_file]
 
-                result = await preview_export(str(uuid.uuid4()), mock_db)
+                result = await preview_export(str(uuid.uuid4()), mock_db, _mock_user())
 
                 assert "conversion_id" in result
                 assert "analysis" in result
@@ -291,7 +331,7 @@ class TestExportPreview:
         mock_db = AsyncMock()
 
         with pytest.raises(HTTPException) as exc_info:
-            await preview_export("invalid-id", mock_db)
+            await preview_export("invalid-id", mock_db, _mock_user())
 
         assert exc_info.value.status_code == 400
 
@@ -309,6 +349,7 @@ class TestExportDownload:
         mock_db = AsyncMock()
 
         mock_job = MagicMock()
+        mock_job.user_id = _TEST_USER_ID  # issue #1417: pass ownership check
         mock_job.status = "completed"
 
         with patch("api.behavior_export.crud.get_job", new_callable=AsyncMock) as mock_get_job:
@@ -320,7 +361,7 @@ class TestExportDownload:
                 mock_get_job.return_value = mock_job
 
                 with pytest.raises(HTTPException) as exc_info:
-                    await download_exported_pack(str(uuid.uuid4()), mock_db)
+                    await download_exported_pack(str(uuid.uuid4()), db=mock_db, current_user=_mock_user())
 
                 assert exc_info.value.status_code == 404
 
@@ -338,6 +379,7 @@ class TestExportZipFormat:
         mock_db = AsyncMock()
 
         mock_job = MagicMock()
+        mock_job.user_id = _TEST_USER_ID  # issue #1417: pass ownership check
         mock_job.status = "completed"
 
         mock_file = MagicMock()
@@ -367,7 +409,7 @@ class TestExportZipFormat:
                             conversion_id=str(uuid.uuid4()), export_format="zip"
                         )
 
-                        result = await export_behavior_pack(request, mock_db)
+                        result = await export_behavior_pack(request, mock_db, _mock_user())
 
                         assert result.export_format == "zip"
 
@@ -386,6 +428,7 @@ class TestExportMcaddonFormat:
         mock_db = AsyncMock()
 
         mock_job = MagicMock()
+        mock_job.user_id = _TEST_USER_ID  # issue #1417: pass ownership check
         mock_job.status = "completed"
 
         mock_file = MagicMock()
@@ -429,7 +472,7 @@ class TestExportMcaddonFormat:
                                 conversion_id=str(uuid.uuid4()), export_format="mcaddon"
                             )
 
-                            result = await export_behavior_pack(request, mock_db)
+                            result = await export_behavior_pack(request, mock_db, _mock_user())
 
                             assert result.export_format == "mcaddon"
 
@@ -447,6 +490,7 @@ class TestExportWithTemplateInfo:
         mock_db = AsyncMock()
 
         mock_job = MagicMock()
+        mock_job.user_id = _TEST_USER_ID  # issue #1417: pass ownership check
         mock_job.status = "completed"
 
         template_content = {
@@ -478,7 +522,7 @@ class TestExportWithTemplateInfo:
                         export_format="json",
                     )
 
-                    result = await export_behavior_pack(request, mock_db)
+                    result = await export_behavior_pack(request, mock_db, _mock_user())
 
                     assert result.template_count >= 0
 
@@ -496,6 +540,7 @@ class TestExportWithFileTypeFilter:
         mock_db = AsyncMock()
 
         mock_job = MagicMock()
+        mock_job.user_id = _TEST_USER_ID  # issue #1417: pass ownership check
         mock_job.status = "completed"
 
         entity_file = MagicMock()
@@ -529,7 +574,7 @@ class TestExportWithFileTypeFilter:
                         export_format="json",
                     )
 
-                    result = await export_behavior_pack(request, mock_db)
+                    result = await export_behavior_pack(request, mock_db, _mock_user())
 
                     assert result.file_count >= 0
 
@@ -547,6 +592,7 @@ class TestPreviewAnalysis:
         mock_db = AsyncMock()
 
         mock_job = MagicMock()
+        mock_job.user_id = _TEST_USER_ID  # issue #1417: pass ownership check
         mock_job.status = "completed"
 
         mock_file1 = MagicMock()
@@ -568,7 +614,7 @@ class TestPreviewAnalysis:
                 mock_get_job.return_value = mock_job
                 mock_get_files.return_value = [mock_file1, mock_file2]
 
-                result = await preview_export(str(uuid.uuid4()), mock_db)
+                result = await preview_export(str(uuid.uuid4()), mock_db, _mock_user())
 
                 assert "entity_behavior" in result["analysis"]["file_types"]
                 assert "block_behavior" in result["analysis"]["file_types"]

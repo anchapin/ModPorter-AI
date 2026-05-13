@@ -3,11 +3,39 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 from db.base import get_db
+from db.models import User
 from db import behavior_templates_crud
+from api._authz import get_current_user  # issue #1417
+import logging
 import uuid
 from datetime import datetime, timezone
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+
+async def _load_owned_template(db, template_id: str, current_user: User):
+    """Issue #1417: load a template the caller is allowed to mutate.
+
+    Treats "missing", "not yours" and "no created_by recorded" identically with
+    a 404 so we do not leak the existence of other users' private templates.
+    """
+    template = await behavior_templates_crud.get_behavior_template(db, template_id)
+    if template is None:
+        raise HTTPException(status_code=404, detail="Template not found")
+    created_by = getattr(template, "created_by", None)
+    if created_by is None or str(created_by) != str(current_user.id):
+        raise HTTPException(status_code=404, detail="Template not found")
+    return template
+
+
+def _can_view_template(template, current_user: User) -> bool:
+    """Public templates are visible to everyone authed; private only to creator."""
+    if getattr(template, "is_public", False):
+        return True
+    created_by = getattr(template, "created_by", None)
+    return created_by is not None and str(created_by) == str(current_user.id)
 
 
 # Pydantic models for behavior templates
@@ -117,7 +145,7 @@ TEMPLATE_CATEGORIES = [
     response_model=List[BehaviorTemplateCategory],
     summary="Get all template categories",
 )
-async def get_template_categories():
+async def get_template_categories(current_user: User = Depends(get_current_user)):
     """
     Get all available behavior template categories.
 
@@ -140,6 +168,7 @@ async def get_behavior_templates(
     skip: int = Query(0, ge=0, description="Number of results to skip"),
     limit: int = Query(50, ge=1, le=100, description="Maximum number of results"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> List[BehaviorTemplateResponse]:
     """
     Get behavior templates with filtering and search options.
@@ -163,6 +192,9 @@ async def get_behavior_templates(
         skip=skip,
         limit=limit,
     )
+
+    # Issue #1417: filter out other users' private templates
+    templates = [t for t in templates if _can_view_template(t, current_user)]
 
     return [
         BehaviorTemplateResponse(
@@ -191,6 +223,7 @@ async def get_behavior_templates(
 async def get_behavior_template(
     template_id: str = Path(..., description="Template ID"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> BehaviorTemplateResponse:
     """
     Get a specific behavior template by ID.
@@ -201,7 +234,8 @@ async def get_behavior_template(
         raise HTTPException(status_code=400, detail="Invalid template ID format")
 
     template = await behavior_templates_crud.get_behavior_template(db, template_id)
-    if not template:
+    # Issue #1417: 404 (not 403) when the template is not visible to the caller
+    if not template or not _can_view_template(template, current_user):
         raise HTTPException(status_code=404, detail="Template not found")
 
     return BehaviorTemplateResponse(
@@ -228,9 +262,11 @@ async def get_behavior_template(
 )
 async def create_behavior_template(
     request: BehaviorTemplateCreate = ...,
-    user_id: Optional[str] = None,  # Would come from authentication
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> BehaviorTemplateResponse:
+    # Issue #1417: derive owner from authenticated identity, not query string
+    user_id = str(current_user.id)
     """
     Create a new behavior template.
 
@@ -290,6 +326,7 @@ async def update_behavior_template(
     template_id: str = Path(..., description="Template ID"),
     request: BehaviorTemplateUpdate = ...,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> BehaviorTemplateResponse:
     """
     Update an existing behavior template.
@@ -299,10 +336,8 @@ async def update_behavior_template(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid template ID format")
 
-    # Check if template exists
-    existing_template = await behavior_templates_crud.get_behavior_template(db, template_id)
-    if not existing_template:
-        raise HTTPException(status_code=404, detail="Template not found")
+    # Issue #1417: 404 if template missing OR not owned by current user
+    await _load_owned_template(db, template_id, current_user)
 
     # Validate category if provided
     if request.category:
@@ -345,6 +380,7 @@ async def update_behavior_template(
 async def delete_behavior_template(
     template_id: str = Path(..., description="Template ID"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Delete a behavior template.
@@ -353,6 +389,9 @@ async def delete_behavior_template(
         uuid.UUID(template_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid template ID format")
+
+    # Issue #1417: 404 if template missing OR not owned by current user
+    await _load_owned_template(db, template_id, current_user)
 
     # Delete template
     success = await behavior_templates_crud.delete_behavior_template(db, template_id)
@@ -373,6 +412,7 @@ async def apply_behavior_template(
     conversion_id: str = Query(..., description="Conversion ID to apply template to"),
     file_path: Optional[str] = Query(None, description="Specific file path to apply template to"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """
     Apply a behavior template to generate behavior file content.
@@ -384,16 +424,16 @@ async def apply_behavior_template(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid template ID format")
 
-    # Get template
+    # Issue #1417: 404 unless template is visible to user
     template = await behavior_templates_crud.get_behavior_template(db, template_id)
-    if not template:
+    if not template or not _can_view_template(template, current_user):
         raise HTTPException(status_code=404, detail="Template not found")
 
-    # Check if conversion exists
+    # Issue #1417: 404 unless conversion exists AND is owned by current user
     from db import crud
 
     conversion = await crud.get_job(db, conversion_id)
-    if not conversion:
+    if not conversion or str(getattr(conversion, "user_id", "") or "") != str(current_user.id):
         raise HTTPException(status_code=404, detail="Conversion not found")
 
     # Apply template logic (would implement in a service)
@@ -423,7 +463,7 @@ async def apply_behavior_template(
     response_model=List[BehaviorTemplateResponse],
     summary="Get predefined templates",
 )
-async def get_predefined_templates():
+async def get_predefined_templates(current_user: User = Depends(get_current_user)):
     """
     Get predefined behavior templates included with the system.
 
