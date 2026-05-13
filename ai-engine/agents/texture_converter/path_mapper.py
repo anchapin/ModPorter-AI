@@ -67,7 +67,7 @@ def _map_java_texture_to_bedrock(agent, java_path: str) -> str:
         texture_type = parts[3]
         texture_name = parts[4]
 
-        bedrock_type = agent._map_texture_type(texture_type)
+        bedrock_type = _map_texture_type(agent, texture_type)
 
         return f"textures/{bedrock_type}/{texture_name}"
 
@@ -120,7 +120,7 @@ def _map_bedrock_texture_to_java(agent, bedrock_path: str, namespace: str) -> st
         bedrock_type = parts[1]
         texture_name = parts[2]
 
-        java_type = agent._map_bedrock_type_to_java(bedrock_type)
+        java_type = _map_bedrock_type_to_java(agent, bedrock_type)
 
         return f"assets/{namespace}/textures/{java_type}/{texture_name}"
 

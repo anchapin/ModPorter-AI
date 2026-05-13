@@ -74,29 +74,28 @@ class TestAssetConverterAgentComprehensive:
             assert result["conversion_summary"]["successfully_converted"] == 1
             assert "terrain_texture.json" in result["bedrock_pack_files"]
 
-    @patch("agents.asset_converter.Image")
+    @patch("agents.texture_converter.conversion.Image")
     def test_convert_textures_tool_resize(self, mock_image, agent, tmp_path):
         texture_data = json.dumps({
             "textures": [
                 {"path": "test_non_pot.png", "usage": "item"}
             ]
         })
-        
+
         mock_img_obj = MagicMock()
         mock_img_obj.size = (17, 17)
         mock_img_obj.format = "PNG"
         mock_img_obj.convert.return_value = mock_img_obj
         mock_image.open.return_value = mock_img_obj
-        
-        # Mock resize
+
         mock_resized_img = MagicMock()
         mock_resized_img.size = (32, 32)
         mock_img_obj.resize.return_value = mock_resized_img
-        
+
         with patch("agents.asset_converter.Path.exists", return_value=True):
             result_json = agent.convert_textures_tool.func(texture_data)
             result = json.loads(result_json)
-            
+
             assert result["success"] is True
             assert result["successful_results"][0]["resized"] is True
             assert result["successful_results"][0]["converted_dimensions"] == [32, 32]

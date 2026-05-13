@@ -33,6 +33,7 @@ DATASET_PATH = PROJECT_ROOT / "ai_engine/mmsd/data/processed/validated_pairs.jso
 # Reward functions (same as GRPO version)
 # ==============================================================================
 
+
 def _simple_tokenize(text: str) -> List[str]:
     text = re.sub(r"```[^`]*```", "", text)
     text = re.sub(r"[^\w\s]", " ", text)
@@ -71,9 +72,11 @@ def _extract_js(text: str):
     js_blocks = re.findall(r"```(?:javascript|js)\s*(.*?)\s*```", text, re.DOTALL)
     if js_blocks:
         return max(js_blocks, key=len).strip()
-    scripts = re.search(r"(?:scripts|behavior_pack|content).*?\.js", text, re.DOTALL | re.IGNORECASE)
+    scripts = re.search(
+        r"(?:scripts|behavior_pack|content).*?\.js", text, re.DOTALL | re.IGNORECASE
+    )
     if scripts:
-        return text[scripts.start():min(scripts.start() + 10000, len(text))]
+        return text[scripts.start() : min(scripts.start() + 10000, len(text))]
     return None
 
 
@@ -113,7 +116,9 @@ def _score_structural_alignment(completion: str, reference: str) -> float:
 
             ref_ver = re.search(r'format_version["\s:]+([0-9.]+)', ref_manifest)
             comp_ver = re.search(r'format_version["\s:]+([0-9.]+)', comp_manifest)
-            ver_match = 1.0 if (ref_ver and comp_ver and ref_ver.group(1) == comp_ver.group(1)) else 0.5
+            ver_match = (
+                1.0 if (ref_ver and comp_ver and ref_ver.group(1) == comp_ver.group(1)) else 0.5
+            )
 
             score += 0.4 * (0.7 * field_match + 0.3 * ver_match)
 
@@ -123,12 +128,16 @@ def _score_structural_alignment(completion: str, reference: str) -> float:
         comp_js = " ".join(comp_sections["js"]) if comp_sections["js"] else ""
 
         if comp_js:
-            ref_funcs = set(re.findall(r'function\s+(\w+)', ref_js))
-            comp_funcs = set(re.findall(r'function\s+(\w+)', comp_js))
-            func_match = len(ref_funcs & comp_funcs) / max(len(ref_funcs | comp_funcs), 1) if ref_funcs else 0
+            ref_funcs = set(re.findall(r"function\s+(\w+)", ref_js))
+            comp_funcs = set(re.findall(r"function\s+(\w+)", comp_js))
+            func_match = (
+                len(ref_funcs & comp_funcs) / max(len(ref_funcs | comp_funcs), 1)
+                if ref_funcs
+                else 0
+            )
 
-            ref_controls = len(re.findall(r'\b(if|for|while|switch)\b', ref_js))
-            comp_controls = len(re.findall(r'\b(if|for|while|switch)\b', comp_js))
+            ref_controls = len(re.findall(r"\b(if|for|while|switch)\b", ref_js))
+            comp_controls = len(re.findall(r"\b(if|for|while|switch)\b", comp_js))
             control_ratio = min(comp_controls / max(ref_controls, 1), 1.0) if ref_controls else 0.5
 
             score += 0.35 * (0.5 * func_match + 0.5 * control_ratio)
@@ -183,7 +192,7 @@ def compute_diversity_metrics(completions: List[str]) -> dict:
     all_bigrams = set()
     for c in completions:
         words = c.split()
-        bigrams = [tuple(words[i:i+2]) for i in range(len(words)-1)]
+        bigrams = [tuple(words[i : i + 2]) for i in range(len(words) - 1)]
         all_bigrams.update(bigrams)
 
     total_bigrams = sum(len(c.split()) - 1 for c in completions)
@@ -202,6 +211,7 @@ def compute_diversity_metrics(completions: List[str]) -> dict:
 # Dataset loading
 # ==============================================================================
 
+
 def load_dataset(max_samples=200):
     if not DATASET_PATH.exists():
         raise FileNotFoundError(f"Dataset not found at {DATASET_PATH}")
@@ -210,22 +220,30 @@ def load_dataset(max_samples=200):
         for line in f:
             if line.strip():
                 pairs.append(json.loads(line))
-    train_pairs = pairs[:int(len(pairs) * 0.9)]
+    train_pairs = pairs[: int(len(pairs) * 0.9)]
 
     def build_prompt(row: dict) -> str:
-        system = ("You are PortKit, an expert at converting Minecraft Java Edition mods (Forge) "
-                  "to Bedrock Edition Add-ons. Given a mod description and Java source code, "
-                  "first reason through the platform map, then produce the Bedrock Add-on implementation.")
-        user = (f"Mod Description: {row['instruction']}\n\nJava Source:\n{row['java_source']}\n\n"
-                "Convert this to a Bedrock Add-on. First explain your conversion approach, then provide the files.")
+        system = (
+            "You are PortKit, an expert at converting Minecraft Java Edition mods (Forge) "
+            "to Bedrock Edition Add-ons. Given a mod description and Java source code, "
+            "first reason through the platform map, then produce the Bedrock Add-on implementation."
+        )
+        user = (
+            f"Mod Description: {row['instruction']}\n\nJava Source:\n{row['java_source']}\n\n"
+            "Convert this to a Bedrock Add-on. First explain your conversion approach, then provide the files."
+        )
         return system + "\n\n" + user
 
-    return [{"prompt": build_prompt(p), "answer": p["bedrock_source"]} for p in train_pairs[:max_samples]]
+    return [
+        {"prompt": build_prompt(p), "answer": p["bedrock_source"]}
+        for p in train_pairs[:max_samples]
+    ]
 
 
 # ==============================================================================
 # Main
 # ==============================================================================
+
 
 def main():
     print("=" * 60)
@@ -342,8 +360,10 @@ def main():
     rejected_texts = []
     for i in tqdm(range(num_samples), desc="Generating rejected"):
         prompt = prompts_text[i]
-        msgs = [{"role": "system", "content": "You are PortKit."},
-                {"role": "user", "content": prompt}]
+        msgs = [
+            {"role": "system", "content": "You are PortKit."},
+            {"role": "user", "content": prompt},
+        ]
         text = tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
         with torch.no_grad():
             out = pipe(text, pad_token_id=tokenizer.eos_token_id)
@@ -351,9 +371,12 @@ def main():
         rejected_texts.append(resp)
 
     rejected_rewards = [compute_reward(r, references_text[i]) for i, r in enumerate(rejected_texts)]
-    best_indices = np.argsort(rejected_rewards)[num_samples // 2:]
+    best_indices = np.argsort(rejected_rewards)[num_samples // 2 :]
     for i in best_indices:
-        dataset_dict["chosen"][i], dataset_dict["rejected"][i] = dataset_dict["rejected"][i], dataset_dict["chosen"][i]
+        dataset_dict["chosen"][i], dataset_dict["rejected"][i] = (
+            dataset_dict["rejected"][i],
+            dataset_dict["chosen"][i],
+        )
 
     train_dataset = Dataset.from_dict(dataset_dict)
     print(f"  Dataset: {len(train_dataset)} rows")
@@ -376,13 +399,21 @@ def main():
 
     print("\n[9] Quick eval...")
     sample = data[0]
-    msgs = [{"role": "system", "content": "You are PortKit."},
-            {"role": "user", "content": sample["prompt"]}]
+    msgs = [
+        {"role": "system", "content": "You are PortKit."},
+        {"role": "user", "content": sample["prompt"]},
+    ]
     text = tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
     inputs = tokenizer(text, return_tensors="pt").to("cuda")
     with torch.no_grad():
-        out = model.generate(**inputs, max_new_tokens=512, temperature=0.8, top_p=0.95,
-                             do_sample=True, pad_token_id=tokenizer.eos_token_id)
+        out = model.generate(
+            **inputs,
+            max_new_tokens=512,
+            temperature=0.8,
+            top_p=0.95,
+            do_sample=True,
+            pad_token_id=tokenizer.eos_token_id,
+        )
     resp = tokenizer.decode(out[0], skip_special_tokens=True).split("assistant")[-1]
     reward = compute_reward(resp, sample["answer"])
     print(f"  Sample reward: {reward:.3f}")

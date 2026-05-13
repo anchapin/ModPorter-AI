@@ -8,6 +8,14 @@ import logging
 from pathlib import Path
 from typing import Dict, List
 
+# Handle pydub import failure gracefully
+try:
+    from pydub import AudioSegment
+    from pydub.exceptions import CouldntDecodeError
+except ImportError:
+    AudioSegment = None
+    CouldntDecodeError = Exception
+
 # Import utilities
 try:
     from . import converter_utils
@@ -27,6 +35,10 @@ __all__ = ["convert_single_audio", "analyze_audio", "generate_sound_structure"]
 def _convert_single_audio(agent, audio_path: str, metadata: Dict, audio_type: str) -> Dict:
     """Convert a single audio file to Bedrock-compatible format"""
     try:
+        # Import AudioSegment from asset_converter to support mocking in tests
+        # This allows tests to patch agents.asset_converter.AudioSegment
+        from agents.asset_converter import AudioSegment, CouldntDecodeError
+
         audio_path_obj = Path(audio_path)
 
         # Check if file exists

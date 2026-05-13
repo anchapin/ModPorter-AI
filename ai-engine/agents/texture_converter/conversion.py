@@ -9,11 +9,14 @@ from typing import Dict, List
 
 from PIL import Image
 
+from agents.texture_converter.fallback import _generate_fallback_texture
+from agents.texture_converter.validation import validate_texture
+
 logger = logging.getLogger(__name__)
 
 
 def _convert_single_texture(
-    self, texture_path: str, metadata: Dict, usage: str, output_dir: Path = None
+    agent, texture_path: str, metadata: Dict, usage: str, output_dir: Path = None
 ) -> Dict:
     """
     Convert a single texture file to Bedrock format with enhanced validation and optimization.
@@ -28,7 +31,7 @@ def _convert_single_texture(
     try:
         if not Path(texture_path).exists():
             logger.warning(f"Texture file not found: {texture_path}. Generating fallback texture.")
-            img = agent._generate_fallback_texture(usage)
+            img = _generate_fallback_texture(agent, usage)
             original_dimensions = img.size
             is_valid_png = False
             optimizations_applied = ["Generated fallback texture"]
@@ -45,7 +48,7 @@ def _convert_single_texture(
                 logger.warning(
                     f"Failed to open texture {texture_path}: {open_error}. Generating fallback texture."
                 )
-                img = agent._generate_fallback_texture(usage)
+                img = _generate_fallback_texture(agent, usage)
                 original_dimensions = img.size
                 is_valid_png = False
                 optimizations_applied = ["Generated fallback texture due to open error"]
@@ -357,8 +360,8 @@ def convert_textures(agent, texture_list: str, output_path: str) -> str:
                     usage = texture_data.get("usage", "block")
                     metadata = texture_data.get("metadata", {})
 
-                conversion_result = agent._convert_single_texture(
-                    texture_path, metadata, usage, output_path
+                conversion_result = _convert_single_texture(
+                    agent, texture_path, metadata, usage, output_path
                 )
 
                 if conversion_result.get("success"):
@@ -401,7 +404,7 @@ def convert_textures(agent, texture_list: str, output_path: str) -> str:
 
 
 def convert_jar_textures_to_bedrock(
-    self, jar_path: str, output_dir: str, namespace: str = None
+    agent, jar_path: str, output_dir: str, namespace: str = None
 ) -> Dict:
     """
     Complete pipeline to extract textures from JAR and convert to Bedrock format.
@@ -438,14 +441,15 @@ def convert_jar_textures_to_bedrock(
             texture_path = texture_info["output_path"]
 
             try:
-                validation = agent.validate_texture(texture_path)
+                validation = validate_texture(agent, texture_path)
 
                 if not validation["valid"]:
                     results["failed"].append({"path": texture_path, "errors": validation["errors"]})
                     results["warnings"].extend(validation["warnings"])
                     continue
 
-                conversion_result = agent._convert_single_texture(
+                conversion_result = _convert_single_texture(
+                    agent,
                     texture_path,
                     {},
                     "block",
@@ -461,7 +465,7 @@ def convert_jar_textures_to_bedrock(
                         }
                     )
                 else:
-                    fallback = agent._generate_fallback_texture("block")
+                    fallback = _generate_fallback_texture(agent, "block")
                     fallback_path = Path(texture_path)
                     fallback.save(fallback_path, "PNG")
 
