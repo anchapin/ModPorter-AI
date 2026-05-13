@@ -48,17 +48,6 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-asyncio pytest-timeout pytest-cov pytest-xdist
 
-      - name: Debug conversion.py content
-        run: |
-          echo "===== DEBUG: Git SHA of checked out commit ====="
-          git rev-parse HEAD
-          echo "===== DEBUG: Git SHA of conversion.py file ====="
-          git hash-object ai-engine/agents/texture_converter/conversion.py
-          echo "===== DEBUG: conversion.py content at line 27 ====="
-          sed -n '25,30p' ai-engine/agents/texture_converter/conversion.py
-          echo "===== DEBUG: Git log last 3 commits ====="
-          git log --oneline -3
-
       - name: Run tests without coverage (baseline)
         run: |
           cd ai-engine
