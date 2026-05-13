@@ -10,6 +10,9 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 os.environ["DISABLE_REDIS"] = "true"
+# Enable user_accounts feature flag so /login (gated by require_feature_flag) works
+# in unit tests; we still patch is_feature_enabled in tests that exercise login.
+os.environ["FEATURE_USER_ACCOUNTS"] = "true"
 
 from api.auth import router, get_db
 
@@ -25,7 +28,7 @@ class TestRefreshTokenRevocation:
         mock_cache_instance = MagicMock()
         mock_cache_instance.is_refresh_token_valid = AsyncMock(return_value=False)
 
-        with patch("services.cache.CacheService") as mock_cache_cls:
+        with patch("api.auth.CacheService") as mock_cache_cls:
             mock_cache_cls.return_value = mock_cache_instance
             with patch("api.auth.verify_token", return_value="12345678-1234-1234-1234-123456789012"):
                 mock_user = MagicMock()
@@ -53,7 +56,7 @@ class TestRefreshTokenRevocation:
         mock_cache_instance = MagicMock()
         mock_cache_instance.is_refresh_token_valid = AsyncMock(return_value=True)
 
-        with patch("services.cache.CacheService") as mock_cache_cls:
+        with patch("api.auth.CacheService") as mock_cache_cls:
             mock_cache_cls.return_value = mock_cache_instance
             with patch("api.auth.verify_token", return_value="12345678-1234-1234-1234-123456789012"):
                 mock_user = MagicMock()
@@ -84,7 +87,7 @@ class TestLogoutRevokesRefreshToken:
         mock_cache_instance = MagicMock()
         mock_cache_instance.revoke_refresh_token = AsyncMock()
 
-        with patch("services.cache.CacheService") as mock_cache_cls:
+        with patch("api.auth.CacheService") as mock_cache_cls:
             mock_cache_cls.return_value = mock_cache_instance
             with patch("api.auth.verify_token", return_value="test_user_id"):
                 client = TestClient(app)
@@ -103,7 +106,7 @@ class TestLogoutRevokesRefreshToken:
         """Test that logout without refresh_token still succeeds."""
         mock_cache_instance = MagicMock()
 
-        with patch("services.cache.CacheService") as mock_cache_cls:
+        with patch("api.auth.CacheService") as mock_cache_cls:
             mock_cache_cls.return_value = mock_cache_instance
             with patch("api.auth.verify_token", return_value="test_user_id"):
                 client = TestClient(app)
@@ -123,7 +126,7 @@ class TestLogoutAllDevices:
         mock_cache_instance = MagicMock()
         mock_cache_instance.revoke_all_user_refresh_tokens = AsyncMock()
 
-        with patch("services.cache.CacheService") as mock_cache_cls:
+        with patch("api.auth.CacheService") as mock_cache_cls:
             mock_cache_cls.return_value = mock_cache_instance
             with patch("api.auth.verify_token", return_value="test_user_id"):
                 client = TestClient(app)
@@ -158,7 +161,7 @@ class TestPasswordChangeRevokesTokens:
         mock_db.execute = AsyncMock(return_value=mock_result)
         mock_db.commit = AsyncMock()
 
-        with patch("services.cache.CacheService") as mock_cache_cls:
+        with patch("api.auth.CacheService") as mock_cache_cls:
             mock_cache_cls.return_value = mock_cache_instance
             with patch("api.auth.hash_password", return_value="new_hash"):
                 app.dependency_overrides[get_db] = lambda: mock_db
@@ -194,11 +197,12 @@ class TestLoginStoresRefreshToken:
         mock_db = AsyncMock()
         mock_db.execute = AsyncMock(return_value=mock_result)
 
-        with patch("services.cache.CacheService") as mock_cache_cls:
+        with patch("api.auth.CacheService") as mock_cache_cls:
             mock_cache_cls.return_value = mock_cache_instance
             with patch("api.auth.verify_password", return_value=True):
                 with patch("api.auth.create_access_token", return_value="access_token"):
-                    with patch("api.auth.create_refresh_token", return_value="refresh_token"):
+                    with patch("api.auth.create_refresh_token", return_value="refresh_token"), \
+                            patch("api.auth.is_feature_enabled", return_value=True):
                         app.dependency_overrides[get_db] = lambda: mock_db
 
                         client = TestClient(app)
