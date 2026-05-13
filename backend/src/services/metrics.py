@@ -282,6 +282,23 @@ rate_limit_active_clients = Gauge(
 
 
 # ============================================
+# Authentication / Migration Metrics (Issue #1428)
+# ============================================
+
+# Counts API-key rows transparently rehashed from legacy SHA-256 / scrypt
+# storage to bcrypt on first use after the #1414 / #1425 migration.
+# Used to monitor migration drain — when this counter flatlines for several
+# weeks, the legacy fallback in security.auth / core.auth can be removed
+# (sunset target: 2026-08-13, see #1428).
+legacy_api_key_rehashed_total = Counter(
+    "portkit_legacy_api_key_rehashed_total",
+    "API keys upgraded from legacy SHA-256/scrypt storage to bcrypt on use",
+    ["old_format"],
+    registry=registry,
+)
+
+
+# ============================================
 # Internal Tracking (thread-safe)
 # ============================================
 
@@ -557,6 +574,18 @@ def update_active_rate_limit_clients(count: int):
         count: Number of unique clients currently tracked
     """
     rate_limit_active_clients.set(count)
+
+
+def record_legacy_api_key_rehashed(old_format: str) -> None:
+    """
+    Record a legacy API-key hash being upgraded to bcrypt (issue #1428).
+
+    Args:
+        old_format: The pre-migration hash format that matched — one of
+            ``"sha256"`` or ``"scrypt"``. Used as the metric label so ops
+            dashboards can split the migration drain by source format.
+    """
+    legacy_api_key_rehashed_total.labels(old_format=old_format).inc()
 
 
 def get_metrics() -> bytes:

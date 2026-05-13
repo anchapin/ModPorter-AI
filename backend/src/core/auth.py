@@ -6,8 +6,12 @@ Provides high-level authentication functionality including:
 - Password hashing with bcrypt
 - Token generation and validation
 - AuthManager class for easy integration
+- Rehash-on-next-use migration path for legacy SHA-256/scrypt API keys (#1428)
 """
 
+import hashlib
+import hmac
+import logging
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -17,6 +21,8 @@ import jwt
 
 from core.secrets import get_secret
 
+logger = logging.getLogger(__name__)
+
 # JWT settings
 SECRET_KEY = get_secret("SECRET_KEY")
 if not SECRET_KEY:
@@ -24,6 +30,91 @@ if not SECRET_KEY:
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
 REFRESH_TOKEN_EXPIRE_DAYS = 7
+
+# ---------------------------------------------------------------------------
+# Legacy API-key migration support (issue #1428)
+# ---------------------------------------------------------------------------
+# bcrypt's modular-crypt format always begins with one of these tags. Anything
+# else stored in ``api_keys.key_hash`` is assumed to be a pre-#1414 hash
+# (SHA-256 hex from this module or scrypt hex from ``security.auth``) and is
+# eligible for rehash-on-next-use via :meth:`AuthManager.verify_api_key_with_rehash`.
+BCRYPT_HASH_PREFIXES = ("$2a$", "$2b$", "$2y$")
+
+# Pre-#1414 scrypt parameters used by ``security.auth.hash_api_key``. Kept
+# here too so the verification primitive in this module can fall back to
+# scrypt when an API key was issued via the security path. See PR #1425
+# parent commit for the original constants.
+_LEGACY_SCRYPT_N = 16384
+_LEGACY_SCRYPT_R = 8
+_LEGACY_SCRYPT_P = 1
+_LEGACY_SCRYPT_DKLEN = 32
+
+# SHA-256 / scrypt-with-dklen=32 hex digest length. Used as the dummy
+# placeholder so constant-time comparisons against malformed stored hashes
+# touch the same number of bytes as the real path.
+_LEGACY_HEX_LEN = 64
+
+
+def _is_bcrypt_hash(stored_hash: object) -> bool:
+    """Return True if ``stored_hash`` looks like a bcrypt modular-crypt string."""
+    return isinstance(stored_hash, str) and stored_hash.startswith(BCRYPT_HASH_PREFIXES)
+
+
+# TODO(security): remove legacy SHA-256/scrypt fallback after 2026-08-13
+# (90 days post-deploy of #1428). Tracked in #1428 follow-up. After removal,
+# any remaining legacy keys force re-issue (PR #1425 behaviour).
+def _matches_legacy_sha256(plain_key: str, stored: object) -> bool:
+    """Constant-time SHA-256 hex comparison against a pre-#1414 hash.
+
+    Pre-#1414 ``core.auth.hash_api_key`` was
+    ``hashlib.sha256(api_key.encode()).hexdigest()``. This helper always
+    computes the digest and always invokes :func:`hmac.compare_digest`, so a
+    timing attacker cannot distinguish "stored hash had wrong length" from
+    "stored hash had right length but different value".
+    """
+    try:
+        computed = hashlib.sha256(plain_key.encode("utf-8")).hexdigest()
+    except (AttributeError, UnicodeError, TypeError):
+        computed = "0" * _LEGACY_HEX_LEN
+
+    if not isinstance(stored, str):
+        hmac.compare_digest(computed, "0" * _LEGACY_HEX_LEN)
+        return False
+
+    return hmac.compare_digest(computed, stored)
+
+
+# TODO(security): remove legacy SHA-256/scrypt fallback after 2026-08-13
+# (90 days post-deploy of #1428). Tracked in #1428 follow-up.
+def _matches_legacy_scrypt(plain_key: str, stored: object) -> bool:
+    """Constant-time scrypt hex comparison against a pre-#1414 hash.
+
+    Pre-#1414 ``security.auth.hash_api_key`` was::
+
+        hashlib.scrypt(api_key.encode(), salt=SECRET_KEY.encode(),
+                       n=16384, r=8, p=1, dklen=32).hex()
+
+    The static-SECRET_KEY salt was one of the reasons we migrated away from
+    this scheme. We replicate the parameters here only to drain remaining
+    legacy keys.
+    """
+    try:
+        computed = hashlib.scrypt(
+            plain_key.encode("utf-8"),
+            salt=SECRET_KEY.encode("utf-8"),
+            n=_LEGACY_SCRYPT_N,
+            r=_LEGACY_SCRYPT_R,
+            p=_LEGACY_SCRYPT_P,
+            dklen=_LEGACY_SCRYPT_DKLEN,
+        ).hex()
+    except (AttributeError, UnicodeError, TypeError, ValueError):
+        computed = "0" * _LEGACY_HEX_LEN
+
+    if not isinstance(stored, str):
+        hmac.compare_digest(computed, "0" * _LEGACY_HEX_LEN)
+        return False
+
+    return hmac.compare_digest(computed, stored)
 
 
 class AuthManager:
@@ -261,6 +352,11 @@ class AuthManager:
         callers can use this as a constant-time comparison primitive without
         leaking information about the hash format via exceptions.
 
+        This method is bcrypt-only and remains byte-identical to the
+        behaviour introduced by PR #1425. Use
+        :meth:`verify_api_key_with_rehash` if you need to also accept legacy
+        SHA-256/scrypt hashes (issue #1428).
+
         Args:
             plain_key: Plain text API key submitted by the caller.
             hashed_key: Bcrypt hash previously produced by ``hash_api_key``.
@@ -277,6 +373,57 @@ class AuthManager:
             # — treat as a failed verification without leaking why.
             return False
 
+    def needs_rehash(self, stored_hash: object) -> bool:
+        """Return True if ``stored_hash`` is in a deprecated legacy format.
+
+        Callers can use this as a cheap pre-check before invoking
+        :meth:`verify_api_key_with_rehash`. Returns False for bcrypt hashes
+        and True for everything else (including malformed strings — those
+        also need replacement).
+        """
+        return not _is_bcrypt_hash(stored_hash)
+
+    def verify_api_key_with_rehash(
+        self, plain_key: str, hashed_key: str
+    ) -> tuple[bool, Optional[str]]:
+        """Verify an API key, accepting legacy SHA-256/scrypt hashes (#1428).
+
+        This is the legacy-tolerant sibling of :meth:`verify_api_key`. It
+        does NOT touch the database; the caller is responsible for
+        persisting ``new_hash`` when it is non-None.
+
+        Args:
+            plain_key: Plain text API key submitted by the caller.
+            hashed_key: Stored hash — may be bcrypt (modern) or legacy
+                SHA-256/scrypt hex (pre-#1414).
+
+        Returns:
+            ``(matched, new_hash)`` where:
+
+            - ``(True, None)`` — bcrypt hash matched; no rehash needed.
+              Byte-identical to :meth:`verify_api_key` returning True.
+            - ``(True, "<bcrypt hash>")`` — legacy hash matched; the caller
+              MUST persist ``new_hash`` to ``api_keys.key_hash`` and SHOULD
+              emit the ``legacy_api_key_rehashed`` log/metric.
+            - ``(False, None)`` — no match. Do **not** persist anything.
+        """
+        if plain_key is None or hashed_key is None:
+            return (False, None)
+
+        if _is_bcrypt_hash(hashed_key):
+            # Modern path — byte-identical to verify_api_key().
+            return (self.verify_api_key(plain_key, hashed_key), None)
+
+        # Legacy path: try SHA-256, then scrypt. Both helpers are
+        # constant-time even on malformed input.
+        if _matches_legacy_sha256(plain_key, hashed_key) or _matches_legacy_scrypt(
+            plain_key, hashed_key
+        ):
+            new_hash = self.hash_api_key(plain_key)
+            return (True, new_hash)
+
+        return (False, None)
+
 
 # Default instance for easy import
 default_auth = AuthManager()
@@ -292,3 +439,5 @@ generate_reset_token = default_auth.generate_reset_token
 generate_api_key = default_auth.generate_api_key
 hash_api_key = default_auth.hash_api_key
 verify_api_key = default_auth.verify_api_key
+verify_api_key_with_rehash = default_auth.verify_api_key_with_rehash
+needs_rehash = default_auth.needs_rehash
