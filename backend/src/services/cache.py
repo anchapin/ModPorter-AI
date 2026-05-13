@@ -16,6 +16,7 @@ class CacheService:
     CACHE_MOD_ANALYSIS_PREFIX = "cache:mod_analysis:"
     CACHE_CONVERSION_RESULT_PREFIX = "cache:conversion_result:"
     CACHE_ASSET_CONVERSION_PREFIX = "cache:asset_conversion:"
+    REFRESH_TOKEN_PREFIX = "rt:"
 
     # Default TTL configurations (in seconds)
     DEFAULT_TTL_MOD_ANALYSIS = int(os.getenv("CACHE_TTL_MOD_ANALYSIS", "3600"))  # 1 hour
@@ -427,3 +428,87 @@ class CacheService:
         except Exception as e:
             logger.warning(f"Failed to subscribe to AI Engine progress: {e}")
             return None
+
+    async def add_refresh_token(self, user_id: str, token: str, ttl_seconds: int) -> None:
+        """
+        Add a refresh token to the Redis blocklist.
+
+        Args:
+            user_id: The user ID
+            token: The refresh token string
+            ttl_seconds: TTL in seconds (should match refresh token expiry)
+        """
+        if not self._redis_available or self._redis_disabled:
+            return
+        import hashlib
+
+        try:
+            token_hash = hashlib.sha256(token.encode()).hexdigest()
+            key = f"{self.REFRESH_TOKEN_PREFIX}{user_id}:{token_hash}"
+            await self._client.set(key, "1", ex=ttl_seconds)
+        except Exception as e:
+            logger.warning(f"Redis operation failed for add_refresh_token: {e}")
+            self._redis_available = False
+
+    async def is_refresh_token_valid(self, user_id: str, token: str) -> bool:
+        """
+        Check if a refresh token exists in the blocklist.
+
+        Args:
+            user_id: The user ID
+            token: The refresh token string
+
+        Returns:
+            True if token is valid (exists in Redis), False if revoked or not found
+        """
+        if not self._redis_available or self._redis_disabled:
+            return True
+        import hashlib
+
+        try:
+            token_hash = hashlib.sha256(token.encode()).hexdigest()
+            key = f"{self.REFRESH_TOKEN_PREFIX}{user_id}:{token_hash}"
+            return await self._client.exists(key) > 0
+        except Exception as e:
+            logger.warning(f"Redis operation failed for is_refresh_token_valid: {e}")
+            self._redis_available = False
+            return True
+
+    async def revoke_refresh_token(self, user_id: str, token: str) -> None:
+        """
+        Revoke a specific refresh token.
+
+        Args:
+            user_id: The user ID
+            token: The refresh token string
+        """
+        if not self._redis_available or self._redis_disabled:
+            return
+        import hashlib
+
+        try:
+            token_hash = hashlib.sha256(token.encode()).hexdigest()
+            key = f"{self.REFRESH_TOKEN_PREFIX}{user_id}:{token_hash}"
+            await self._client.delete(key)
+        except Exception as e:
+            logger.warning(f"Redis operation failed for revoke_refresh_token: {e}")
+            self._redis_available = False
+
+    async def revoke_all_user_refresh_tokens(self, user_id: str) -> None:
+        """
+        Revoke all refresh tokens for a user (logout from all devices).
+
+        Args:
+            user_id: The user ID
+        """
+        if not self._redis_available or self._redis_disabled:
+            return
+
+        try:
+            pattern = f"{self.REFRESH_TOKEN_PREFIX}{user_id}:*"
+            keys = await self._client.keys(pattern)
+            if keys:
+                await self._client.delete(*keys)
+        except Exception as e:
+            logger.warning(f"Redis operation failed for revoke_all_user_refresh_tokens: {e}")
+            self._redis_available = False

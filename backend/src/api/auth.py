@@ -18,6 +18,7 @@ OAuth Endpoints (Issue #980):
 """
 
 import logging
+import os
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -42,6 +43,10 @@ from security.auth import (
     hash_api_key,
 )
 from services.feature_flags import is_feature_enabled, FeatureFlagNotEnabledError
+from services.cache import CacheService
+
+REFRESH_TOKEN_TTL_SECONDS = int(os.getenv("REFRESH_TOKEN_TTL_SECONDS", "604800"))  # 7 days
+
 from services.email_service import send_verification_email, send_password_reset_email
 from services.oauth_service import oauth_service, generate_oauth_state
 from config import settings
@@ -157,6 +162,12 @@ class MessageResponse(BaseModel):
     """Generic message response"""
 
     message: str
+
+
+class LogoutRequest(BaseModel):
+    """Logout request body (optional refresh_token to revoke from Redis blocklist)."""
+
+    refresh_token: Optional[str] = None
 
 
 # ============================================
@@ -302,6 +313,11 @@ async def login(
     access_token = create_access_token(str(user.id))
     refresh_token = create_refresh_token(str(user.id))
 
+    # Issue #1418: register the refresh token in the Redis blocklist so it can be
+    # validated and revoked later (e.g. on logout / logout-all / password reset).
+    cache_service = CacheService()
+    await cache_service.add_refresh_token(str(user.id), refresh_token, REFRESH_TOKEN_TTL_SECONDS)
+
     return LoginResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -310,12 +326,45 @@ async def login(
 
 @router.post("/logout", response_model=MessageResponse)
 async def logout(
+    request_data: Optional[LogoutRequest] = None,
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ):
     """
     Logout by invalidating the current token.
+
+    Optionally accepts a JSON body with a ``refresh_token`` to revoke that
+    specific token from the Redis blocklist (issue #1418).
     """
+    if request_data and request_data.refresh_token:
+        user_id = verify_token(request_data.refresh_token, "refresh")
+        if user_id:
+            cache_service = CacheService()
+            await cache_service.revoke_refresh_token(user_id, request_data.refresh_token)
+
     return MessageResponse(message="Successfully logged out")
+
+
+@router.post("/logout-all", response_model=MessageResponse)
+async def logout_all_devices(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """
+    Revoke ALL refresh tokens for the current user (logout from all devices).
+
+    Issue #1418: bulk-revokes every refresh token blocklist entry under the
+    user's namespace. The user_id is derived from the bearer access token.
+    """
+    user_id = verify_token(credentials.credentials, "access")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired access token",
+        )
+
+    cache_service = CacheService()
+    await cache_service.revoke_all_user_refresh_tokens(user_id)
+
+    return MessageResponse(message="Successfully logged out from all devices")
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -325,6 +374,9 @@ async def refresh_token_endpoint(
 ):
     """
     Refresh access token using refresh token.
+
+    Issue #1418: rejects revoked tokens by checking the Redis blocklist via
+    ``CacheService.is_refresh_token_valid``.
     """
     user_id = verify_token(request_data.refresh_token, "refresh")
 
@@ -332,6 +384,16 @@ async def refresh_token_endpoint(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired refresh token",
+        )
+
+    # Issue #1418: reject refresh tokens that have been revoked (e.g. via logout
+    # or password reset). When Redis is unavailable the cache returns True so
+    # behaviour is unchanged in degraded mode.
+    cache_service = CacheService()
+    if not await cache_service.is_refresh_token_valid(user_id, request_data.refresh_token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token has been revoked or expired",
         )
 
     result = await db.execute(select(User).where(User.id == user_id))
@@ -439,6 +501,11 @@ async def reset_password(
     user.reset_token_expires = None
 
     await db.commit()
+
+    # Issue #1418: revoke every existing refresh token after password reset so a
+    # leaked token cannot be used to mint new access tokens with the new password.
+    cache_service = CacheService()
+    await cache_service.revoke_all_user_refresh_tokens(str(user.id))
 
     return MessageResponse(message="Password reset successfully")
 

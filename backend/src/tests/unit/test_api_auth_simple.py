@@ -215,8 +215,15 @@ class TestRefreshEndpoint:
     """Tests for POST /refresh endpoint."""
 
     def test_refresh_success(self, client, mock_db):
-        """Test successful token refresh."""
-        from db.models import User
+        """Test successful token refresh.
+
+        After PR #1423 / issue #1418 the refresh endpoint validates the token
+        against the Redis blocklist via CacheService.is_refresh_token_valid;
+        we therefore mock CacheService at the import-site to return True so
+        the test still represents a happy-path refresh in CI where Redis is
+        a real service and would otherwise miss the synthetic test token.
+        """
+        from db.models import User  # noqa: F401  - kept for fixture discoverability
 
         mock_user = MagicMock()
         mock_user.id = "test_id"
@@ -225,7 +232,14 @@ class TestRefreshEndpoint:
         mock_result.scalar_one_or_none = MagicMock(return_value=mock_user)
         mock_db.execute = AsyncMock(return_value=mock_result)
 
-        response = client.post("/api/v1/auth/refresh", json={"refresh_token": "test_refresh_token"})
+        mock_cache_instance = MagicMock()
+        mock_cache_instance.is_refresh_token_valid = AsyncMock(return_value=True)
+
+        with patch("api.auth.CacheService") as mock_cache_cls:
+            mock_cache_cls.return_value = mock_cache_instance
+            response = client.post(
+                "/api/v1/auth/refresh", json={"refresh_token": "test_refresh_token"}
+            )
 
         assert response.status_code == 200
         data = response.json()
