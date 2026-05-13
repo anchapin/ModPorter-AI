@@ -11,9 +11,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     - Strict-Transport-Security (HSTS)
     - X-Content-Type-Options
     - X-Frame-Options
-    - X-XSS-Protection
     - Referrer-Policy
+    - Permissions-Policy
     - Content-Security-Policy (for download endpoints)
+
+    Note: The legacy X-XSS-Protection header was intentionally removed (PR #1421 /
+    issue #1419) because it is deprecated and can introduce XSS vulnerabilities in
+    older browsers. Modern browsers ignore it; CSP is used instead.
 
     Issue: #973 - File upload security: sandboxing, validation, and virus scanning
     """
@@ -43,8 +47,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         )
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = (
+            "camera=(), microphone=(), geolocation=(), "
+            "payment=(), usb=(), accelerometer=(), gyroscope=()"
+        )
 
         # Add Content-Security-Policy for download endpoints
         # This prevents XSS attacks when serving user-uploaded content

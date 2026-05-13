@@ -72,15 +72,48 @@ class TestSecurityHeadersMiddleware:
         assert response.headers["x-frame-options"] == "DENY"
 
     @pytest.mark.asyncio
-    async def test_dispatch_method_adds_x_xss_protection(self, middleware, mock_request):
-        """Test that X-XSS-Protection header is added with value '1; mode=block'."""
+    async def test_dispatch_method_adds_permissions_policy(self, middleware, mock_request):
+        """Test that Permissions-Policy header is added with restrictive defaults.
+
+        Replaces the legacy X-XSS-Protection header (deprecated by modern browsers and
+        removed in PR #1421 / issue #1419) with the actively recommended
+        Permissions-Policy header.
+        """
         response = Response(content=b"", status_code=200)
         mock_call_next = AsyncMock(return_value=response)
 
         await middleware.dispatch(mock_request, mock_call_next)
 
-        assert "x-xss-protection" in response.headers
-        assert response.headers["x-xss-protection"] == "1; mode=block"
+        assert "permissions-policy" in response.headers
+        # Verify all sensitive features are denied
+        permissions_value = response.headers["permissions-policy"]
+        for feature in (
+            "camera=()",
+            "microphone=()",
+            "geolocation=()",
+            "payment=()",
+            "usb=()",
+            "accelerometer=()",
+            "gyroscope=()",
+        ):
+            assert feature in permissions_value, f"Missing {feature} in {permissions_value}"
+
+    @pytest.mark.asyncio
+    async def test_dispatch_method_does_not_add_deprecated_x_xss_protection(
+        self, middleware, mock_request
+    ):
+        """Regression test: deprecated X-XSS-Protection header must NOT be added.
+
+        See PR #1421 / issue #1419: X-XSS-Protection is deprecated and can introduce
+        XSS vulnerabilities in older browsers; modern browsers ignore it. We now rely
+        on a strong Content-Security-Policy on download endpoints instead.
+        """
+        response = Response(content=b"", status_code=200)
+        mock_call_next = AsyncMock(return_value=response)
+
+        await middleware.dispatch(mock_request, mock_call_next)
+
+        assert "x-xss-protection" not in response.headers
 
     @pytest.mark.asyncio
     async def test_dispatch_method_adds_referrer_policy(self, middleware, mock_request):
@@ -94,18 +127,25 @@ class TestSecurityHeadersMiddleware:
         assert response.headers["referrer-policy"] == "strict-origin-when-cross-origin"
 
     @pytest.mark.asyncio
-    async def test_all_four_security_headers_added(self, middleware, mock_request):
-        """Test that all four security headers are added in a single request."""
+    async def test_all_security_headers_added(self, middleware, mock_request):
+        """Test that all expected security headers are added in a single request.
+
+        After PR #1421 / issue #1419, the deprecated X-XSS-Protection header was
+        replaced by Permissions-Policy.
+        """
         response = Response(content=b"OK", status_code=200)
         mock_call_next = AsyncMock(return_value=response)
 
         await middleware.dispatch(mock_request, mock_call_next)
 
-        # Verify all 4 security headers are present
+        # Verify all expected security headers are present
+        assert "strict-transport-security" in response.headers
         assert "x-content-type-options" in response.headers
         assert "x-frame-options" in response.headers
-        assert "x-xss-protection" in response.headers
         assert "referrer-policy" in response.headers
+        assert "permissions-policy" in response.headers
+        # Deprecated header must NOT be present
+        assert "x-xss-protection" not in response.headers
 
     @pytest.mark.asyncio
     async def test_dispatch_returns_response(self, middleware, mock_request):
@@ -347,8 +387,12 @@ class TestSecurityHeadersValues:
         assert response.headers["x-frame-options"] == "DENY"
 
     @pytest.mark.asyncio
-    async def test_x_xss_protection_value(self, middleware):
-        """Verify X-XSS-Protection is set to '1; mode=block'."""
+    async def test_permissions_policy_value(self, middleware):
+        """Verify Permissions-Policy denies all sensitive browser features.
+
+        Replaces the deprecated X-XSS-Protection header value test (PR #1421 /
+        issue #1419).
+        """
         mock_request = MagicMock(spec=Request)
         mock_request.scope = {"type": "http", "method": "GET", "path": "/", "headers": []}
 
@@ -357,7 +401,11 @@ class TestSecurityHeadersValues:
 
         await middleware.dispatch(mock_request, mock_call_next)
 
-        assert response.headers["x-xss-protection"] == "1; mode=block"
+        expected = (
+            "camera=(), microphone=(), geolocation=(), "
+            "payment=(), usb=(), accelerometer=(), gyroscope=()"
+        )
+        assert response.headers["permissions-policy"] == expected
 
     @pytest.mark.asyncio
     async def test_referrer_policy_value(self, middleware):
