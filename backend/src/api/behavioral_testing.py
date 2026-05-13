@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 
 from db.models import User
 from api._authz import get_current_user  # issue #1417
+from security.path_sanitization import sanitize_for_log  # issue #1429
 
 # Import behavioral testing framework components
 try:
@@ -134,8 +135,11 @@ async def create_behavioral_test(
             test_request.test_config,
         )
 
+        # Issue #1429: sanitize identifiers before logging.
         logger.info(
-            f"Created behavioral test {test_id} for conversion {test_request.conversion_id}"
+            "Created behavioral test %s for conversion %s",
+            sanitize_for_log(test_id),
+            sanitize_for_log(test_request.conversion_id),
         )
 
         return BehavioralTestResponse(
@@ -150,8 +154,9 @@ async def create_behavioral_test(
         )
 
     except Exception as e:
-        logger.error(f"Error creating behavioral test: {e}")
-        logger.error(f"Failed to create test: {str(e)}", exc_info=True)
+        # Issue #1429: exception messages can contain user input; sanitize.
+        logger.error("Error creating behavioral test: %s", sanitize_for_log(e))
+        logger.error("Failed to create test: %s", sanitize_for_log(e), exc_info=True)
 
         raise HTTPException(status_code=500, detail="Failed to create test: Please try again.")
 
@@ -186,7 +191,11 @@ async def get_behavioral_test(
         )
 
     except Exception as e:
-        logger.error(f"Error retrieving test {test_id}: {e}")
+        logger.error(
+            "Error retrieving test %s: %s",
+            sanitize_for_log(test_id),
+            sanitize_for_log(e),
+        )
         raise HTTPException(status_code=404, detail=f"Test {test_id} not found")
 
 
@@ -228,8 +237,12 @@ async def get_test_scenarios(
         ]
 
     except Exception as e:
-        logger.error(f"Error retrieving scenarios for test {test_id}: {e}")
-        logger.error(f"Failed to retrieve scenarios: {str(e)}", exc_info=True)
+        logger.error(
+            "Error retrieving scenarios for test %s: %s",
+            sanitize_for_log(test_id),
+            sanitize_for_log(e),
+        )
+        logger.error("Failed to retrieve scenarios: %s", sanitize_for_log(e), exc_info=True)
 
         raise HTTPException(
             status_code=500, detail="Failed to retrieve scenarios: Please try again."
@@ -272,8 +285,12 @@ async def get_test_report(
         return mock_report
 
     except Exception as e:
-        logger.error(f"Error generating report for test {test_id}: {e}")
-        logger.error(f"Failed to generate report: {str(e)}", exc_info=True)
+        logger.error(
+            "Error generating report for test %s: %s",
+            sanitize_for_log(test_id),
+            sanitize_for_log(e),
+        )
+        logger.error("Failed to generate report: %s", sanitize_for_log(e), exc_info=True)
 
         raise HTTPException(status_code=500, detail="Failed to generate report: Please try again.")
 
@@ -295,12 +312,16 @@ async def delete_behavioral_test(
     """
     try:
         # In a real implementation, this would delete from database
-        logger.info(f"Deleted behavioral test {test_id}")
+        logger.info("Deleted behavioral test %s", sanitize_for_log(test_id))
         return {"message": f"Test {test_id} deleted successfully"}
 
     except Exception as e:
-        logger.error(f"Error deleting test {test_id}: {e}")
-        logger.error(f"Failed to delete test: {str(e)}", exc_info=True)
+        logger.error(
+            "Error deleting test %s: %s",
+            sanitize_for_log(test_id),
+            sanitize_for_log(e),
+        )
+        logger.error("Failed to delete test: %s", sanitize_for_log(e), exc_info=True)
 
         raise HTTPException(status_code=500, detail="Failed to delete test: Please try again.")
 
@@ -319,7 +340,7 @@ async def execute_behavioral_test_async(
     and stores results in the database.
     """
     try:
-        logger.info(f"Starting async execution of behavioral test {test_id}")
+        logger.info("Starting async execution of behavioral test %s", sanitize_for_log(test_id))
 
         # Initialize testing framework
         framework = BehavioralTestingFramework(test_config)
@@ -328,8 +349,17 @@ async def execute_behavioral_test_async(
         results = framework.run_behavioral_test(scenarios, expected_behaviors)
 
         # Store results in database (implementation needed)
-        logger.info(f"Behavioral test {test_id} completed with status: {results.get('status')}")
+        logger.info(
+            "Behavioral test %s completed with status: %s",
+            sanitize_for_log(test_id),
+            sanitize_for_log(results.get("status")),
+        )
 
     except Exception as e:
-        logger.error(f"Error in async behavioral test execution {test_id}: {e}", exc_info=True)
+        logger.error(
+            "Error in async behavioral test execution %s: %s",
+            sanitize_for_log(test_id),
+            sanitize_for_log(e),
+            exc_info=True,
+        )
         # Store error status in database (implementation needed)
