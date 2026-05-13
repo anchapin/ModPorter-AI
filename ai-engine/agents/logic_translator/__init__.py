@@ -33,6 +33,16 @@ from agents.logic_translator.translator import (
     LLM_CODE_TEMPERATURE,
     LogicTranslatorAgent,
 )
+from agents.logic_translator.steering_tools import (
+    SteeringTools,
+    configure_steering_tool,
+    apply_steering_tool,
+    get_steering_stats_tool,
+    enable_steering_tool,
+    disable_steering_tool,
+    evaluate_conversion_quality_tool,
+    register_steering_tools,
+)
 
 LogicTranslator = LogicTranslatorAgent
 
@@ -40,6 +50,7 @@ __all__ = [
     "LogicTranslatorAgent",
     "LogicTranslator",
     "LogicTranslatorTools",
+    "SteeringTools",
     "BEDROCK_BLOCK_TEMPLATES",
     "BEDROCK_ITEM_TEMPLATES",
     "BEDROCK_ENTITY_TEMPLATES",
@@ -54,4 +65,12 @@ __all__ = [
     "TREE_SITTER_AVAILABLE",
     "LLM_CODE_TEMPERATURE",
     "BlockStateMapper",
+    # Steering tools
+    "configure_steering_tool",
+    "apply_steering_tool",
+    "get_steering_stats_tool",
+    "enable_steering_tool",
+    "disable_steering_tool",
+    "evaluate_conversion_quality_tool",
+    "register_steering_tools",
 ]
