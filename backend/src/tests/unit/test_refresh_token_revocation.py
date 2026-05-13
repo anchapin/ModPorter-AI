@@ -30,7 +30,9 @@ class TestRefreshTokenRevocation:
 
         with patch("api.auth.CacheService") as mock_cache_cls:
             mock_cache_cls.return_value = mock_cache_instance
-            with patch("api.auth.verify_token", return_value="12345678-1234-1234-1234-123456789012"):
+            with patch(
+                "api.auth.verify_token", return_value="12345678-1234-1234-1234-123456789012"
+            ):
                 mock_user = MagicMock()
                 mock_user.id = "12345678-1234-1234-1234-123456789012"
 
@@ -43,7 +45,9 @@ class TestRefreshTokenRevocation:
 
                 with patch("api.auth.create_access_token", return_value="new_access_token"):
                     client = TestClient(app)
-                    resp = client.post("/api/v1/auth/refresh", json={"refresh_token": "revoked_token"})
+                    resp = client.post(
+                        "/api/v1/auth/refresh", json={"refresh_token": "revoked_token"}
+                    )
 
                 assert resp.status_code == 401
                 detail = resp.json()["detail"].lower()
@@ -58,7 +62,9 @@ class TestRefreshTokenRevocation:
 
         with patch("api.auth.CacheService") as mock_cache_cls:
             mock_cache_cls.return_value = mock_cache_instance
-            with patch("api.auth.verify_token", return_value="12345678-1234-1234-1234-123456789012"):
+            with patch(
+                "api.auth.verify_token", return_value="12345678-1234-1234-1234-123456789012"
+            ):
                 mock_user = MagicMock()
                 mock_user.id = "12345678-1234-1234-1234-123456789012"
 
@@ -71,7 +77,9 @@ class TestRefreshTokenRevocation:
 
                 with patch("api.auth.create_access_token", return_value="new_access_token"):
                     client = TestClient(app)
-                    resp = client.post("/api/v1/auth/refresh", json={"refresh_token": "valid_token"})
+                    resp = client.post(
+                        "/api/v1/auth/refresh", json={"refresh_token": "valid_token"}
+                    )
 
                 assert resp.status_code == 200
                 assert resp.json()["access_token"] == "new_access_token"
@@ -201,8 +209,10 @@ class TestLoginStoresRefreshToken:
             mock_cache_cls.return_value = mock_cache_instance
             with patch("api.auth.verify_password", return_value=True):
                 with patch("api.auth.create_access_token", return_value="access_token"):
-                    with patch("api.auth.create_refresh_token", return_value="refresh_token"), \
-                            patch("api.auth.is_feature_enabled", return_value=True):
+                    with (
+                        patch("api.auth.create_refresh_token", return_value="refresh_token"),
+                        patch("api.auth.is_feature_enabled", return_value=True),
+                    ):
                         app.dependency_overrides[get_db] = lambda: mock_db
 
                         client = TestClient(app)
