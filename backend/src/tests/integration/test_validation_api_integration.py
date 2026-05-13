@@ -22,9 +22,34 @@ from api.validation_constants import ValidationJobStatus, ValidationMessages
 
 @pytest.fixture
 def client():
-    """Test client fixture (issue #1417: bypass new auth + ownership requirements)."""
+    """Test client fixture (issue #1417: bypass new auth + ownership requirements).
+
+    Issue #1431: previously this fixture replaced ``_val_mod.crud.get_job``
+    with an ``AsyncMock`` and never restored the original. Because
+    ``_val_mod.crud`` *is* the ``db.crud`` module object, the rebinding
+    leaked across the rest of the integration suite — every later test that
+    hit a code path calling ``crud.get_job`` (e.g.
+    ``GET /api/v1/convert/<id>/status`` or
+    ``POST /api/v1/feedback``) received a bare ``MagicMock`` instead of
+    ``None`` for unknown job ids, then exploded while building the
+    ``ConversionJob`` / ``FeedbackResponse`` Pydantic response models
+    (``4 validation errors for ConversionJob``,
+    ``AttributeError: 'ConversionFeedback' object has no attribute
+    'quality_rating'``).
+
+    The fix has two parts:
+
+    1.  Snapshot the original ``crud.get_job`` and restore it on teardown
+        so the patch is fully scoped to the validation tests.
+    2.  Shape ``owned_job`` as a ``MagicMock(spec=ConversionJob)`` with
+        Pydantic-compatible attribute values so that, even if a future
+        regression re-introduces the leak, downstream serializers in
+        ``src/main.py`` won't crash with cryptic validation errors.
+    """
     from api._authz import get_current_user
     from api import validation as _val_mod
+    from db import models as _db_models
+    from datetime import datetime, timezone
     from unittest.mock import MagicMock, AsyncMock
 
     _TEST_USER_ID = "11111111-1111-4111-a111-111111111111"  # noqa: N806
@@ -32,13 +57,30 @@ def client():
     user = MagicMock()
     user.id = _TEST_USER_ID
 
-    owned_job = MagicMock()
+    # Pydantic-compatible mock — every attribute pulled by main.py's
+    # ConversionJob mirror has a real, JSON-serialisable value.
+    owned_job = MagicMock(spec=_db_models.ConversionJob)
+    owned_job.id = uuid.uuid4()
     owned_job.user_id = _TEST_USER_ID
+    owned_job.status = "queued"
+    owned_job.input_data = {
+        "file_id": str(uuid.uuid4()),
+        "original_filename": "validation_test.jar",
+        "target_version": "1.20.0",
+        "options": {},
+    }
+    owned_job.progress = None
+    owned_job.created_at = datetime.now(timezone.utc)
+    owned_job.updated_at = datetime.now(timezone.utc)
 
-    app.dependency_overrides[get_current_user] = lambda: user
+    original_get_job = _val_mod.crud.get_job
     _val_mod.crud.get_job = AsyncMock(return_value=owned_job)
-    yield TestClient(app)
-    app.dependency_overrides.clear()
+    app.dependency_overrides[get_current_user] = lambda: user
+    try:
+        yield TestClient(app)
+    finally:
+        _val_mod.crud.get_job = original_get_job
+        app.dependency_overrides.clear()
 
 
 @pytest.fixture
