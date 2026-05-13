@@ -140,6 +140,8 @@ class TestSecurityAuth:
 
     def test_api_key_generation(self):
         """Test API key generation and hashing."""
+        import bcrypt
+
         full_key, prefix = generate_api_key()
 
         assert full_key.startswith("mpk_")
@@ -147,5 +149,15 @@ class TestSecurityAuth:
         assert len(full_key) > 20
 
         hashed = hash_api_key(full_key)
-        assert len(hashed) == 64  # SHA-256 hex
-        assert hashed == hash_api_key(full_key)  # Deterministic
+        # bcrypt hashes are always 60 chars and start with $2 (modular crypt format)
+        assert isinstance(hashed, str)
+        assert len(hashed) == 60
+        assert hashed.startswith("$2")
+        # bcrypt is non-deterministic — each call uses a fresh salt — but the
+        # produced hash must still verify against the original plaintext.
+        second_hash = hash_api_key(full_key)
+        assert second_hash != hashed
+        assert bcrypt.checkpw(full_key.encode("utf-8"), hashed.encode("utf-8"))
+        assert bcrypt.checkpw(full_key.encode("utf-8"), second_hash.encode("utf-8"))
+        # A wrong key must not verify.
+        assert not bcrypt.checkpw(b"mpk_wrong-key-payload", hashed.encode("utf-8"))
