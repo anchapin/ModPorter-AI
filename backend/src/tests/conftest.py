@@ -363,9 +363,13 @@ def client():
         # remove this override.
         try:
             from api._authz import get_current_user as _authz_get_current_user
+            import uuid as _uuid
 
+            # Issue #1417: id must be a UUID instance (not str) so the SQLAlchemy
+            # UUID column processor's ``.hex`` access works in code paths that
+            # query by user_id (e.g. metering_service).
             _test_user = MagicMock()
-            _test_user.id = "11111111-1111-4111-a111-111111111111"
+            _test_user.id = _uuid.UUID("11111111-1111-4111-a111-111111111111")
             _test_user.email = "test@example.com"
             _test_user.subscription_tier = "free"
             app.dependency_overrides[_authz_get_current_user] = lambda: _test_user
