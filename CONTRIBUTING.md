@@ -171,3 +171,63 @@ This project uses automated linting tools to enforce code quality:
 ## Questions?
 
 If you have any questions, please feel free to open an issue or reach out to the maintainers.
+
+## Large artifacts (Git LFS / .gitignore)
+
+This repo distinguishes between three classes of binary/large files:
+
+1. **Source assets that must be versioned** (test fixtures, sample images, model
+   files used by the app at runtime) → tracked via **Git LFS**. Patterns are
+   declared in `.gitattributes` (e.g. `*.png`, `*.pdf`, `*.safetensors` *when*
+   they live outside `scripts/*_output*/`, `tests/fixtures/simple_copper_block.jar`).
+2. **Generated training/inference outputs** (HF checkpoints, adapter weights,
+   tokenizer copies, optimizer state, completion parquets under
+   `scripts/phase*_output*/`, `scripts/grpo_output*/`, `scripts/sft_output*/`)
+   → **`.gitignore`d**. Re-derive them by re-running the relevant
+   `scripts/phase*_*.sh` or training pipelines. **Never `git add` files in
+   `scripts/*_output*/`.**
+3. **Backups, archives, and other ad-hoc bulk** → store outside the repo, or
+   use a release asset.
+
+### First-time setup for Git LFS
+
+The repo requires Git LFS for several patterns declared in `.gitattributes`.
+After cloning, run **once** per machine:
+
+```bash
+git lfs install          # registers the LFS smudge/clean filters in ~/.gitconfig
+git lfs pull             # fetches the actual content for any LFS pointers in HEAD
+```
+
+If you skip these, LFS-tracked files will appear in your worktree as 3-line
+text pointers (`version https://git-lfs.github.com/spec/v1` …) instead of the
+real content, and `git status` may show them as modified.
+
+### "Why is `git status` dirty in a fresh clone?"
+
+If `git status` shows `tokenizer.json` (or any other file) as modified the
+moment you clone, it almost always means one of:
+
+- **Git LFS is not installed locally.** Run `git lfs install && git lfs pull`
+  and re-check.
+- **A file was committed as raw bytes *before* a matching `filter=lfs` rule
+  was added to `.gitattributes`.** The clean filter now rewrites the worktree
+  content into an LFS pointer when computing the index, which diverges from
+  the raw-bytes HEAD blob. The fix is either to migrate the file's history
+  (`git lfs migrate import …`, requires force-push) or — for files that
+  shouldn't be in git at all — to `.gitignore` them and `git rm --cached`.
+- **A generated artifact slipped in.** Confirm the path is covered by
+  `.gitignore` (training outputs under `scripts/*_output*/` are ignored), then
+  `git rm --cached <path>` and commit.
+
+### Adding a new LFS pattern
+
+Edit `.gitattributes`, e.g.:
+
+```
+*.npz filter=lfs diff=lfs merge=lfs -text
+```
+
+Then `git add .gitattributes`, `git add path/to/new.npz`, and commit. The
+clean filter will replace the file content with an LFS pointer at staging
+time; the actual bytes are uploaded on `git push`.
