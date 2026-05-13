@@ -17,19 +17,24 @@ from api import assets as _assets_mod
 # that owns every conversion the tests touch.
 _TEST_USER_ID = "11111111-1111-4111-a111-111111111111"
 
+
 class _TestUser:
     id = _TEST_USER_ID
+
 
 class _TestJob:
     user_id = _TEST_USER_ID
 
+
 async def _stub_get_job(_db, _conversion_id):
     return _TestJob()
+
 
 class _OwnedAsset:
     """Default asset owned by the test user; tests that need a missing asset
     or a custom one still patch ``db.crud.get_asset`` directly via @patch.
     """
+
     id = uuid.uuid4()
 
     class _Conv:
@@ -37,9 +42,11 @@ class _OwnedAsset:
 
     conversion_id = _Conv
 
+
 async def _stub_get_asset(_db, asset_id):
     asset = _OwnedAsset()
     return asset
+
 
 app = FastAPI()
 app.include_router(router)

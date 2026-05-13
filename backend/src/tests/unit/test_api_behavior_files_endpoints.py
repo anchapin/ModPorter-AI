@@ -17,14 +17,18 @@ from api import behavior_files as _bf_mod
 # Issue #1417: bypass auth + ownership for these endpoint-level tests.
 _TEST_USER_ID = "11111111-1111-4111-a111-111111111111"
 
+
 class _TestUser:
     id = _TEST_USER_ID
+
 
 class _TestJob:
     user_id = _TEST_USER_ID
 
+
 async def _stub_get_job(_db, _conversion_id):
     return _TestJob()
+
 
 app = FastAPI()
 app.include_router(router)
@@ -34,6 +38,7 @@ client = TestClient(app)
 
 
 import pytest as _pytest
+
 
 @_pytest.fixture(autouse=True)
 def _bf_ownership_stub(monkeypatch):

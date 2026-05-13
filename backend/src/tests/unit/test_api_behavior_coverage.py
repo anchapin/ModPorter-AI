@@ -39,14 +39,13 @@ from api import behavior_files as _bf_mod, behavior_export as _be_mod  # noqa: E
 
 import pytest as _pytest_for_stub
 
+
 @_pytest_for_stub.fixture(autouse=True)
 def _ownership_stub_for_behavior(monkeypatch):
     """Issue #1417: stub get_job per-test to avoid polluting other modules."""
     monkeypatch.setattr(_bf_mod.crud, "get_job", _stub_owned_get_job, raising=True)
     monkeypatch.setattr(_be_mod.crud, "get_job", _stub_owned_get_job, raising=True)
     yield
-
-
 
 
 class TestBehaviorFileModels:
@@ -361,7 +360,9 @@ class TestExportDownload:
                 mock_get_job.return_value = mock_job
 
                 with pytest.raises(HTTPException) as exc_info:
-                    await download_exported_pack(str(uuid.uuid4()), db=mock_db, current_user=_mock_user())
+                    await download_exported_pack(
+                        str(uuid.uuid4()), db=mock_db, current_user=_mock_user()
+                    )
 
                 assert exc_info.value.status_code == 404
 
