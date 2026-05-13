@@ -1,12 +1,17 @@
 # backend/src/api/validation.py
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 import asyncio
 from typing import Dict, Any, List, Optional
 import time
 import threading
 from .validation_constants import ValidationJobStatus, ValidationMessages
+from db.base import get_db
+from db.models import User
+from db import crud
+from api._authz import get_current_user  # issue #1417
 
 
 class ValidationReportModel(BaseModel):
@@ -356,6 +361,10 @@ class ValidationJob(BaseModel):
     )
     message: Optional[str] = None
     conversion_id: str
+    user_id: Optional[str] = Field(
+        default=None,
+        description="Owner of the validation job (issue #1417). Required for ownership checks.",
+    )
 
 
 class ValidationReportResponse(ValidationReportModel):
@@ -417,17 +426,25 @@ async def start_validation_job(
     request: ValidationRequest,
     background_tasks: BackgroundTasks,
     agent: ValidationAgent = Depends(get_validation_agent),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     job_id = str(uuid.uuid4())
     conversion_id = request.conversion_id
     if not conversion_id:
         raise HTTPException(status_code=400, detail=ValidationMessages.CONVERSION_ID_REQUIRED)
 
+    # Issue #1417: 404 unless conversion exists AND is owned by current user
+    parent_job = await crud.get_job(db, conversion_id)
+    if parent_job is None or str(getattr(parent_job, "user_id", "") or "") != str(current_user.id):
+        raise HTTPException(status_code=404, detail="Conversion not found")
+
     job = ValidationJob(
         job_id=job_id,
         conversion_id=conversion_id,
         status=ValidationJobStatus.QUEUED,
         message=ValidationMessages.JOB_QUEUED,
+        user_id=str(current_user.id),
     )
 
     with _validation_jobs_lock:
@@ -447,19 +464,27 @@ async def start_validation_job(
 
 
 @router.get("/{job_id}/status", response_model=ValidationJob)
-async def get_validation_job_status(job_id: str):
+async def get_validation_job_status(
+    job_id: str,
+    current_user: User = Depends(get_current_user),
+):
     with _validation_jobs_lock:
         job = validation_jobs.get(job_id)
-        if not job:
+        # Issue #1417: collapse "missing" and "not yours" into a single 404
+        if not job or job.user_id != str(current_user.id):
             raise HTTPException(status_code=404, detail=ValidationMessages.JOB_NOT_FOUND)
         return job
 
 
 @router.get("/{job_id}/report", response_model=ValidationReportResponse)
-async def get_validation_report(job_id: str):
+async def get_validation_report(
+    job_id: str,
+    current_user: User = Depends(get_current_user),
+):
     with _validation_jobs_lock:
         job = validation_jobs.get(job_id)
-        if not job:
+        # Issue #1417: collapse "missing" and "not yours" into a single 404
+        if not job or job.user_id != str(current_user.id):
             raise HTTPException(status_code=404, detail=ValidationMessages.JOB_NOT_FOUND)
         if job.status != ValidationJobStatus.COMPLETED:
             raise HTTPException(

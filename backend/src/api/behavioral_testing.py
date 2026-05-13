@@ -5,12 +5,16 @@ This module provides REST API endpoints for managing behavioral tests,
 executing test scenarios, and retrieving test results and reports.
 """
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 from uuid import UUID, uuid4
 import logging
 from datetime import datetime, timezone
+
+from db.models import User
+from api._authz import get_current_user  # issue #1417
+from security.path_sanitization import sanitize_for_log  # issue #1429
 
 # Import behavioral testing framework components
 try:
@@ -95,7 +99,9 @@ class TestScenarioResult(BaseModel):
 
 @router.post("/tests", response_model=BehavioralTestResponse)
 async def create_behavioral_test(
-    test_request: BehavioralTestRequest, background_tasks: BackgroundTasks
+    test_request: BehavioralTestRequest,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
 ):
     """
     Create and start a new behavioral test.
@@ -103,6 +109,7 @@ async def create_behavioral_test(
     Args:
         test_request: Test configuration and scenarios
         background_tasks: FastAPI background tasks for async execution
+        current_user: Authenticated user (issue #1417)
 
     Returns:
         Test ID and initial status
@@ -128,8 +135,11 @@ async def create_behavioral_test(
             test_request.test_config,
         )
 
+        # Issue #1429: sanitize identifiers before logging.
         logger.info(
-            f"Created behavioral test {test_id} for conversion {test_request.conversion_id}"
+            "Created behavioral test %s for conversion %s",
+            sanitize_for_log(test_id),
+            sanitize_for_log(test_request.conversion_id),
         )
 
         return BehavioralTestResponse(
@@ -144,19 +154,24 @@ async def create_behavioral_test(
         )
 
     except Exception as e:
-        logger.error(f"Error creating behavioral test: {e}")
-        logger.error(f"Failed to create test: {str(e)}", exc_info=True)
+        # Issue #1429: exception messages can contain user input; sanitize.
+        logger.error("Error creating behavioral test: %s", sanitize_for_log(e))
+        logger.error("Failed to create test: %s", sanitize_for_log(e), exc_info=True)
 
         raise HTTPException(status_code=500, detail="Failed to create test: Please try again.")
 
 
 @router.get("/tests/{test_id}", response_model=BehavioralTestResponse)
-async def get_behavioral_test(test_id: UUID):
+async def get_behavioral_test(
+    test_id: UUID,
+    current_user: User = Depends(get_current_user),
+):
     """
     Get behavioral test results by ID.
 
     Args:
         test_id: Test identifier
+        current_user: Authenticated user (issue #1417)
 
     Returns:
         Test results and status
@@ -176,17 +191,25 @@ async def get_behavioral_test(test_id: UUID):
         )
 
     except Exception as e:
-        logger.error(f"Error retrieving test {test_id}: {e}")
+        logger.error(
+            "Error retrieving test %s: %s",
+            sanitize_for_log(test_id),
+            sanitize_for_log(e),
+        )
         raise HTTPException(status_code=404, detail=f"Test {test_id} not found")
 
 
 @router.get("/tests/{test_id}/scenarios", response_model=List[TestScenarioResult])
-async def get_test_scenarios(test_id: UUID):
+async def get_test_scenarios(
+    test_id: UUID,
+    current_user: User = Depends(get_current_user),
+):
     """
     Get detailed scenario results for a test.
 
     Args:
         test_id: Test identifier
+        current_user: Authenticated user (issue #1417)
 
     Returns:
         List of scenario execution results
@@ -214,8 +237,12 @@ async def get_test_scenarios(test_id: UUID):
         ]
 
     except Exception as e:
-        logger.error(f"Error retrieving scenarios for test {test_id}: {e}")
-        logger.error(f"Failed to retrieve scenarios: {str(e)}", exc_info=True)
+        logger.error(
+            "Error retrieving scenarios for test %s: %s",
+            sanitize_for_log(test_id),
+            sanitize_for_log(e),
+        )
+        logger.error("Failed to retrieve scenarios: %s", sanitize_for_log(e), exc_info=True)
 
         raise HTTPException(
             status_code=500, detail="Failed to retrieve scenarios: Please try again."
@@ -223,13 +250,18 @@ async def get_test_scenarios(test_id: UUID):
 
 
 @router.get("/tests/{test_id}/report")
-async def get_test_report(test_id: UUID, format: str = "json"):
+async def get_test_report(
+    test_id: UUID,
+    format: str = "json",
+    current_user: User = Depends(get_current_user),
+):
     """
     Get behavioral test report in specified format.
 
     Args:
         test_id: Test identifier
         format: Report format (json, text, html)
+        current_user: Authenticated user (issue #1417)
 
     Returns:
         Test report in requested format
@@ -253,31 +285,43 @@ async def get_test_report(test_id: UUID, format: str = "json"):
         return mock_report
 
     except Exception as e:
-        logger.error(f"Error generating report for test {test_id}: {e}")
-        logger.error(f"Failed to generate report: {str(e)}", exc_info=True)
+        logger.error(
+            "Error generating report for test %s: %s",
+            sanitize_for_log(test_id),
+            sanitize_for_log(e),
+        )
+        logger.error("Failed to generate report: %s", sanitize_for_log(e), exc_info=True)
 
         raise HTTPException(status_code=500, detail="Failed to generate report: Please try again.")
 
 
 @router.delete("/tests/{test_id}")
-async def delete_behavioral_test(test_id: UUID):
+async def delete_behavioral_test(
+    test_id: UUID,
+    current_user: User = Depends(get_current_user),
+):
     """
     Delete a behavioral test and its results.
 
     Args:
         test_id: Test identifier
+        current_user: Authenticated user (issue #1417)
 
     Returns:
         Deletion confirmation
     """
     try:
         # In a real implementation, this would delete from database
-        logger.info(f"Deleted behavioral test {test_id}")
+        logger.info("Deleted behavioral test %s", sanitize_for_log(test_id))
         return {"message": f"Test {test_id} deleted successfully"}
 
     except Exception as e:
-        logger.error(f"Error deleting test {test_id}: {e}")
-        logger.error(f"Failed to delete test: {str(e)}", exc_info=True)
+        logger.error(
+            "Error deleting test %s: %s",
+            sanitize_for_log(test_id),
+            sanitize_for_log(e),
+        )
+        logger.error("Failed to delete test: %s", sanitize_for_log(e), exc_info=True)
 
         raise HTTPException(status_code=500, detail="Failed to delete test: Please try again.")
 
@@ -296,7 +340,7 @@ async def execute_behavioral_test_async(
     and stores results in the database.
     """
     try:
-        logger.info(f"Starting async execution of behavioral test {test_id}")
+        logger.info("Starting async execution of behavioral test %s", sanitize_for_log(test_id))
 
         # Initialize testing framework
         framework = BehavioralTestingFramework(test_config)
@@ -305,8 +349,17 @@ async def execute_behavioral_test_async(
         results = framework.run_behavioral_test(scenarios, expected_behaviors)
 
         # Store results in database (implementation needed)
-        logger.info(f"Behavioral test {test_id} completed with status: {results.get('status')}")
+        logger.info(
+            "Behavioral test %s completed with status: %s",
+            sanitize_for_log(test_id),
+            sanitize_for_log(results.get("status")),
+        )
 
     except Exception as e:
-        logger.error(f"Error in async behavioral test execution {test_id}: {e}", exc_info=True)
+        logger.error(
+            "Error in async behavioral test execution %s: %s",
+            sanitize_for_log(test_id),
+            sanitize_for_log(e),
+            exc_info=True,
+        )
         # Store error status in database (implementation needed)

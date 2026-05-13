@@ -19,6 +19,28 @@ def app():
 
 @pytest.fixture
 def client(app):
+    # Issue #1417: bypass auth + ownership for plugins endpoints.
+    from api._authz import get_current_user
+    from db.base import get_db
+    from api import plugins as _pl_mod
+
+    _TEST_USER_ID = "11111111-1111-4111-a111-111111111111"  # noqa: N806
+
+    user = MagicMock()
+    user.id = _TEST_USER_ID
+
+    owned_job = MagicMock()
+    owned_job.user_id = _TEST_USER_ID
+    owned_job.status = "completed"
+    owned_job.input_data = {"original_filename": "mod.jar"}
+    owned_job.created_at = datetime.now(timezone.utc)
+    owned_job.updated_at = datetime.now(timezone.utc)
+    owned_job.progress = MagicMock()
+    owned_job.progress.progress = 100
+
+    app.dependency_overrides[get_current_user] = lambda: user
+    app.dependency_overrides[get_db] = lambda: MagicMock()
+    _pl_mod.crud.get_job = AsyncMock(return_value=owned_job)
     return TestClient(app)
 
 
@@ -166,6 +188,10 @@ class TestPluginConversionEndpoints:
     @patch("api.plugins.crud")
     @patch("api.plugins.cache")
     def test_get_conversion_status_from_cache(self, mock_cache, mock_crud, client):
+        # Issue #1417: ownership check now loads the job from db before honoring cache
+        owned_job = MagicMock()
+        owned_job.user_id = "11111111-1111-4111-a111-111111111111"
+        mock_crud.get_job = AsyncMock(return_value=owned_job)
         job_id = str(uuid.uuid4())
         mock_cache.get_job_status = AsyncMock(
             return_value={

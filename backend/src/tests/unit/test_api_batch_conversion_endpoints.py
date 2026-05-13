@@ -11,9 +11,17 @@ BATCH_ID = "batch_1700000000.0"
 USER_ID = str(uuid.uuid4())
 
 
+def _mock_user():
+    """Test user whose id matches the conversions returned by the mock DB."""
+    user = MagicMock()
+    user.id = USER_ID
+    return user
+
+
 def _make_conversion(status="completed"):
     c = MagicMock()
     c.id = uuid.uuid4()
+    c.user_id = USER_ID  # issue #1417: ensure batch ownership check passes
     c.status = status
     c.input_data = {"filename": "mod.jar"}
     c.progress = MagicMock()
@@ -82,7 +90,7 @@ class TestGetBatchStatus:
         mock_db.execute = AsyncMock(return_value=mock_result)
 
         with pytest.raises(Exception):
-            await get_batch_status(BATCH_ID, USER_ID, mock_db)
+            await get_batch_status(BATCH_ID, mock_db, _mock_user())
 
     @pytest.mark.asyncio
     async def test_batch_status_with_conversions(self):
@@ -94,7 +102,7 @@ class TestGetBatchStatus:
         mock_result.scalars.return_value.all.return_value = conversions
         mock_db.execute = AsyncMock(return_value=mock_result)
 
-        resp = await get_batch_status(BATCH_ID, USER_ID, mock_db)
+        resp = await get_batch_status(BATCH_ID, mock_db, _mock_user())
 
         assert resp.total == 2
         assert resp.completed == 1
@@ -113,7 +121,7 @@ class TestGetBatchResults:
         mock_db.execute = AsyncMock(return_value=mock_result)
 
         with pytest.raises(Exception):
-            await get_batch_results(BATCH_ID, USER_ID, mock_db)
+            await get_batch_results(BATCH_ID, mock_db, _mock_user())
 
     @pytest.mark.asyncio
     async def test_batch_results_mixed(self):
@@ -125,7 +133,7 @@ class TestGetBatchResults:
         mock_result.scalars.return_value.all.return_value = conversions
         mock_db.execute = AsyncMock(return_value=mock_result)
 
-        resp = await get_batch_results(BATCH_ID, USER_ID, mock_db)
+        resp = await get_batch_results(BATCH_ID, mock_db, _mock_user())
 
         assert resp.summary["successful"] == 1
         assert resp.summary["failed"] == 1
@@ -141,7 +149,7 @@ class TestGetBatchResults:
         mock_result.scalars.return_value.all.return_value = conversions
         mock_db.execute = AsyncMock(return_value=mock_result)
 
-        resp = await get_batch_results(BATCH_ID, USER_ID, mock_db)
+        resp = await get_batch_results(BATCH_ID, mock_db, _mock_user())
 
         assert resp.download_all_url is None
         assert resp.summary["successful"] == 0
@@ -153,7 +161,12 @@ class TestDownloadAllBatch:
         from api.batch_conversion import download_all_batch
 
         mock_db = AsyncMock()
-        result = await download_all_batch(BATCH_ID, USER_ID, mock_db)
+        # Issue #1417: ownership check now requires at least one job match
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.first.return_value = _make_conversion()
+        mock_db.execute = AsyncMock(return_value=mock_result)
+
+        result = await download_all_batch(BATCH_ID, mock_db, _mock_user())
 
         assert result["batch_id"] == BATCH_ID
         assert "filename" in result
@@ -170,7 +183,7 @@ class TestCancelBatch:
         mock_db.execute = AsyncMock(return_value=mock_result)
 
         with pytest.raises(Exception):
-            await cancel_batch(BATCH_ID, USER_ID, mock_db)
+            await cancel_batch(BATCH_ID, mock_db, _mock_user())
 
     @pytest.mark.asyncio
     async def test_cancel_batch_with_pending(self):
@@ -184,7 +197,7 @@ class TestCancelBatch:
         mock_db.execute = AsyncMock(return_value=mock_result)
         mock_db.commit = AsyncMock()
 
-        resp = await cancel_batch(BATCH_ID, USER_ID, mock_db)
+        resp = await cancel_batch(BATCH_ID, mock_db, _mock_user())
 
         assert resp["cancelled_count"] == 1
         mock_db.commit.assert_called_once()
@@ -200,7 +213,7 @@ class TestCancelBatch:
         mock_db.execute = AsyncMock(return_value=mock_result)
         mock_db.commit = AsyncMock()
 
-        resp = await cancel_batch(BATCH_ID, USER_ID, mock_db)
+        resp = await cancel_batch(BATCH_ID, mock_db, _mock_user())
 
         assert resp["cancelled_count"] == 0
 

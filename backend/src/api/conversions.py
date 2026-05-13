@@ -64,6 +64,12 @@ from security.file_security import (
     SecurityScanResult,
 )
 from security.auth import verify_token, verify_api_key
+from security.path_sanitization import (  # issue #1429
+    PathSanitizationError,
+    safe_join,
+    sanitize_for_log,
+)
+from api._authz import get_current_user, assert_owner  # issue #1417
 
 logger = logging.getLogger(__name__)
 
@@ -407,6 +413,32 @@ def validate_path_safe(path: str, base_dir: Path) -> bool:
         return False
 
 
+def _chunks_dir_for_upload(upload_id_str: str) -> Path:
+    """
+    Issue #1429: return ``<TEMP_UPLOADS_DIR>/chunks/<upload_id_str>`` after
+    routing the join through :func:`security.path_sanitization.safe_join`.
+
+    Centralises path construction for every chunked-upload endpoint so each
+    sink (``os.makedirs``, ``open``, ``shutil.rmtree``, ``os.listdir``, ...)
+    sees a path that has been allow-list validated and proven contained
+    in ``TEMP_UPLOADS_DIR``. Recognised by CodeQL as a sanitizer because
+    ``safe_join`` rejects any segment that does not match
+    ``[A-Za-z0-9._-]+`` and verifies containment via ``Path.resolve()``
+    + ``relative_to``.
+
+    Raises:
+        HTTPException(400): if ``upload_id_str`` is malformed.
+    """
+    try:
+        # Path is created on demand by callers that need it.
+        return safe_join(Path(TEMP_UPLOADS_DIR).resolve(), "chunks", upload_id_str)
+    except PathSanitizationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid upload session",
+        ) from exc
+
+
 def validate_file_type(filename: str) -> tuple[bool, str]:
     """
     Validate file type is allowed.
@@ -585,15 +617,40 @@ async def websocket_conversion_progress(websocket: WebSocket, conversion_id: str
                         continue
                 except (json.JSONDecodeError, AttributeError):
                     pass
-                logger.debug(f"Received WebSocket message for {conversion_id}: {data}")
+                # Issue #1429: conversion_id (URL str) and data (WS frame)
+                # are both untrusted; sanitize before logging to prevent
+                # CWE-117 log forgery (CodeQL py/log-injection).
+                _safe_conv_id = sanitize_for_log(conversion_id)
+                logger.debug(
+                    "Received WebSocket message for %s: %s",
+                    _safe_conv_id,
+                    sanitize_for_log(data),
+                )
             except WebSocketDisconnect:
-                logger.info(f"WebSocket disconnected for conversion {conversion_id}")
+                logger.info(
+                    "WebSocket disconnected for conversion %s",
+                    sanitize_for_log(conversion_id),
+                )
                 break
 
     except Exception as e:
-        logger.error(f"WebSocket error for conversion {conversion_id}: {e}")
+        logger.error(
+            "WebSocket error for conversion %s: %s",
+            sanitize_for_log(conversion_id),
+            sanitize_for_log(e),
+        )
     finally:
         manager.disconnect(websocket, conversion_id)
+
+
+def _user_owns_job(job, current_user) -> bool:
+    """Return True iff ``job`` is owned by ``current_user`` (issue #1417)."""
+    if job is None:
+        return False
+    job_user_id = getattr(job, "user_id", None)
+    if job_user_id is None:
+        return False
+    return str(job_user_id) == str(current_user.id)
 
 
 # REST Endpoints
@@ -609,7 +666,7 @@ async def create_conversion(
     background_tasks: BackgroundTasks = None,
     db: AsyncSession = Depends(get_db),
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    user: Optional[User] = Depends(get_api_key_user),
+    user: User = Depends(get_current_user),
 ):
     """
     Start a new mod conversion job.
@@ -792,35 +849,42 @@ async def create_conversion(
     file_id = str(uuid.uuid4())
     file_ext = os.path.splitext(safe_filename)[1]
     saved_filename = f"{file_id}{file_ext}"
-    file_path = os.path.join(TEMP_UPLOADS_DIR, saved_filename)
-
-    # Ensure upload directory exists
-    os.makedirs(TEMP_UPLOADS_DIR, exist_ok=True)
+    uploads_root = Path(TEMP_UPLOADS_DIR).resolve()
+    uploads_root.mkdir(parents=True, exist_ok=True)
+    try:
+        file_path = safe_join(uploads_root, saved_filename)
+    except PathSanitizationError as exc:  # pragma: no cover - defensive
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid upload filename",
+        ) from exc
 
     # Save uploaded file
     try:
         with open(file_path, "wb") as buffer:
             for chunk in file.file:
                 buffer.write(chunk)
-        logger.info(f"File saved: {file_path}")
+        logger.info("File saved: %s", sanitize_for_log(file_path))
 
         # SECURITY: Scan the uploaded file for ZIP bombs, path traversal, etc.
         try:
-            security_result = await scan_uploaded_file(Path(file_path))
+            security_result = await scan_uploaded_file(file_path)
             logger.info(
-                f"Security scan completed for {file_path}: "
-                f"safe={security_result.is_safe}, threats={len(security_result.threats)}"
+                "Security scan completed for %s: safe=%s, threats=%d",
+                sanitize_for_log(file_path),
+                security_result.is_safe,
+                len(security_result.threats),
             )
         except HTTPException:
             # Re-raise HTTP exceptions from security scan (file rejected)
-            if os.path.exists(file_path):
-                os.remove(file_path)
+            if file_path.exists():
+                file_path.unlink()
             raise
         except Exception as e:
             # Log but don't fail on security scan errors
-            logger.error(f"Security scan error (continuing): {e}")
+            logger.error("Security scan error (continuing): %s", sanitize_for_log(e))
     except Exception as e:
-        logger.error(f"Failed to save file: {e}")
+        logger.error("Failed to save file: %s", sanitize_for_log(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to save uploaded file",
@@ -926,6 +990,7 @@ async def create_conversion(
 async def get_conversion(
     conversion_id: str,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get the status of a specific conversion job.
@@ -952,18 +1017,19 @@ async def get_conversion(
     }
     ```
     """
-    # Try cache first for speed
-    cached = await cache.get_job_status(conversion_id)
-    if cached:
-        return ConversionStatusResponse(**cached)
-
-    # Fallback to database
+    # Issue #1417: always load job from DB so we can verify ownership
+    # before honouring the cache (cached payload omits user_id).
     job = await crud.get_job(db, conversion_id)
-    if not job:
+    if not _user_owns_job(job, current_user):
+        # 404 (not 403) so we do not leak the existence of other users' jobs
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Conversion {conversion_id} not found",
         )
+
+    cached = await cache.get_job_status(conversion_id)
+    if cached:
+        return ConversionStatusResponse(**cached)
 
     # Build response
     progress = job.progress.progress if job.progress else 0
@@ -1017,7 +1083,7 @@ async def list_conversions(
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     status: Optional[str] = Query(None, description="Filter by status"),
     db: AsyncSession = Depends(get_db),
-    user: Optional[User] = Depends(get_optional_user),
+    user: User = Depends(get_current_user),
 ):
     """
     List conversion jobs with pagination.
@@ -1095,6 +1161,7 @@ async def list_conversions(
 async def delete_conversion(
     conversion_id: str,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Cancel or delete a conversion job.
@@ -1106,7 +1173,8 @@ async def delete_conversion(
     **Response:** 204 No Content (success)
     """
     job = await crud.get_job(db, conversion_id)
-    if not job:
+    if not _user_owns_job(job, current_user):
+        # Issue #1417: 404 to avoid leaking job existence to non-owners
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Conversion {conversion_id} not found",
@@ -1136,7 +1204,11 @@ async def delete_conversion(
     "/api/v1/conversions/{conversion_id}/download",
     tags=["conversions"],
 )
-async def download_conversion(conversion_id: str, db: AsyncSession = Depends(get_db)):
+async def download_conversion(
+    conversion_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
     Download the converted .mcaddon file.
 
@@ -1152,7 +1224,8 @@ async def download_conversion(conversion_id: str, db: AsyncSession = Depends(get
     - 400: Conversion not completed
     """
     job = await crud.get_job(db, conversion_id)
-    if not job:
+    if not _user_owns_job(job, current_user):
+        # Issue #1417: 404 to avoid leaking job existence to non-owners
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Conversion {conversion_id} not found",
@@ -1164,32 +1237,49 @@ async def download_conversion(conversion_id: str, db: AsyncSession = Depends(get
             detail=f"Conversion is not completed. Current status: {job.status}",
         )
 
-    # Determine file path
-    # Check for both .mcaddon and .zip extensions
-    base_path = os.path.join(CONVERSION_OUTPUTS_DIR, f"{conversion_id}_converted")
+    # Issue #1429: derive on-disk filenames from the *server-side*
+    # job.id (a uuid.UUID, not the raw URL string) and route every join
+    # through safe_join so the resolved path is provably contained in
+    # CONVERSION_OUTPUTS_DIR. Defends against path-injection
+    # (CWE-22/-23/-36/-73/-99).
+    job_uuid_str = str(job.id)
+    outputs_root = Path(CONVERSION_OUTPUTS_DIR).resolve()
+    outputs_root.mkdir(parents=True, exist_ok=True)
+    try:
+        mcaddon_path = safe_join(outputs_root, f"{job_uuid_str}_converted.mcaddon")
+        zip_path = safe_join(outputs_root, f"{job_uuid_str}_converted.zip")
+    except PathSanitizationError as exc:
+        logger.error(
+            "Refusing to serve conversion artifact for job %s: %s",
+            sanitize_for_log(job_uuid_str),
+            sanitize_for_log(exc),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Result file not found on server",
+        ) from exc
 
-    mcaddon_path = base_path + ".mcaddon"
-    zip_path = base_path + ".zip"
-
-    file_path = None
-    if os.path.exists(mcaddon_path):
+    file_path: Optional[Path] = None
+    if mcaddon_path.exists():
         file_path = mcaddon_path
-    elif os.path.exists(zip_path):
+    elif zip_path.exists():
         file_path = zip_path
 
-    if not file_path or not os.path.exists(file_path):
+    if file_path is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Result file not found on server",
         )
 
-    # Generate download filename
+    # Generate download filename - sanitize against path components from
+    # the user-supplied original_filename stored in input_data.
     original_filename = job.input_data.get("original_filename", "mod")
-    base_name = os.path.splitext(original_filename)[0]
+    base_name = os.path.splitext(os.path.basename(original_filename))[0]
+    base_name = sanitize_filename(base_name) or "mod"
     download_filename = f"{base_name}_converted.mcaddon"
 
     return FileResponse(
-        path=file_path,
+        path=str(file_path),  # safe: file_path is guaranteed inside outputs_root via safe_join
         media_type="application/zip",
         filename=download_filename,
     )
@@ -1204,6 +1294,7 @@ async def download_conversion_report(
     conversion_id: str,
     format: str = Query("json", description="Report format: json, html, csv"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Download conversion report in specified format.
@@ -1226,7 +1317,8 @@ async def download_conversion_report(
     - 400: Invalid format specified
     """
     job = await crud.get_job(db, conversion_id)
-    if not job:
+    if not _user_owns_job(job, current_user):
+        # Issue #1417: 404 to avoid leaking job existence to non-owners
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Conversion {conversion_id} not found",
@@ -1260,6 +1352,7 @@ async def get_report_file(
     conversion_id: str,
     format: str = Query("json", description="Report format: json, html, csv"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get the actual report file for download.
@@ -1272,7 +1365,8 @@ async def get_report_file(
     **Response:** Binary file download with appropriate Content-Type
     """
     job = await crud.get_job(db, conversion_id)
-    if not job:
+    if not _user_owns_job(job, current_user):
+        # Issue #1417: 404 to avoid leaking job existence to non-owners
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Conversion {conversion_id} not found",
@@ -1347,6 +1441,7 @@ async def get_report_file(
 async def init_chunked_upload(
     filename: str = Form(..., description="Original filename"),
     total_size: int = Form(..., description="Total file size in bytes"),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Initialize a resumable/chunked upload session.
@@ -1405,9 +1500,11 @@ async def init_chunked_upload(
 
     await cache.set_job_status(f"upload:{upload_id}", upload_metadata)
 
-    # Create temporary directory for chunks
-    chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id)
-    os.makedirs(chunks_dir, exist_ok=True)
+    # Create temporary directory for chunks. upload_id is a server-generated
+    # uuid4 string; routing through _chunks_dir_for_upload keeps every chunk
+    # path under TEMP_UPLOADS_DIR and silences CodeQL py/path-injection.
+    chunks_dir = _chunks_dir_for_upload(upload_id)
+    chunks_dir.mkdir(parents=True, exist_ok=True)
 
     return ChunkUploadInitResponse(
         upload_id=upload_id,
@@ -1428,6 +1525,7 @@ async def upload_chunk(
     chunk_number: int = Form(..., description="Chunk number (1-indexed)"),
     total_chunks: int = Form(..., description="Total number of chunks"),
     chunk: UploadFile = File(..., description="Chunk data"),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Upload a single chunk of a resumable upload.
@@ -1476,22 +1574,23 @@ async def upload_chunk(
     if chunk_number < 1 or chunk_number > 10000:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid chunk number")
 
-    # Save chunk to disk - use safe path construction to prevent path traversal
-    chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id_str)
-
-    # SECURITY: Validate the chunks_dir is within allowed directory
-    base_dir = Path(TEMP_UPLOADS_DIR).resolve()
-    if not validate_path_safe(os.path.join("chunks", upload_id_str), base_dir):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid upload session"
-        )
+    # Issue #1429: build chunks_dir + chunk_path via safe_join. The helper
+    # rejects any segment that isn't ``[A-Za-z0-9._-]+`` and verifies the
+    # final resolved path is contained in TEMP_UPLOADS_DIR, neutralising
+    # CWE-22/-23/-36/-73/-99 (CodeQL py/path-injection).
+    chunks_dir = _chunks_dir_for_upload(upload_id_str)
 
     # Ensure chunks directory exists
-    os.makedirs(chunks_dir, exist_ok=True)
+    chunks_dir.mkdir(parents=True, exist_ok=True)
 
     # SECURITY: Construct chunk filename safely - only allow numeric extension
     safe_chunk_name = f"chunk_{chunk_number:04d}"
-    chunk_path = os.path.join(chunks_dir, safe_chunk_name)
+    try:
+        chunk_path = safe_join(chunks_dir, safe_chunk_name)
+    except PathSanitizationError as exc:  # pragma: no cover - defensive
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid chunk name"
+        ) from exc
 
     with open(chunk_path, "wb") as f:
         f.write(chunk_data)
@@ -1518,7 +1617,10 @@ async def upload_chunk(
     response_model=UploadProgressResponse,
     tags=["uploads"],
 )
-async def get_upload_progress(upload_id: UUID):
+async def get_upload_progress(
+    upload_id: UUID,
+    current_user: User = Depends(get_current_user),
+):
     """
     Get the progress of a resumable upload.
 
@@ -1536,19 +1638,28 @@ async def get_upload_progress(upload_id: UUID):
     upload_id_str = str(upload_id)
     upload_metadata = await cache.get_job_status(f"upload:{upload_id_str}")
 
-    if not upload_metadata:
+    # Issue #1417: 404 (not 403) on missing OR foreign-owned session
+    if not upload_metadata or upload_metadata.get("user_id") != str(current_user.id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Upload session not found"
         )
 
-    chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id_str)
+    # Issue #1429: chunks_dir is built via safe_join; chunk files were
+    # written by the server with names matching ``chunk_NNNN``, so each
+    # listdir result is allow-list re-validated to keep the sink inside
+    # CONVERSION_OUTPUTS_DIR.
+    chunks_dir = _chunks_dir_for_upload(upload_id_str)
     received_bytes = 0
 
-    if os.path.exists(chunks_dir):
+    if chunks_dir.exists():
         for chunk_file in os.listdir(chunks_dir):
-            chunk_path = os.path.join(chunks_dir, chunk_file)
-            if os.path.isfile(chunk_path):
-                received_bytes += os.path.getsize(chunk_path)
+            try:
+                chunk_path = safe_join(chunks_dir, chunk_file)
+            except PathSanitizationError:
+                # Skip stray/oddly-named files we did not create.
+                continue
+            if chunk_path.is_file():
+                received_bytes += chunk_path.stat().st_size
 
     total_bytes = upload_metadata.get("total_size", 0)
     progress = (received_bytes / total_bytes * 100) if total_bytes > 0 else 0
@@ -1570,6 +1681,7 @@ async def get_upload_progress(upload_id: UUID):
 async def complete_chunked_upload(
     upload_id: UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Complete a resumable upload by combining all chunks.
@@ -1581,7 +1693,8 @@ async def complete_chunked_upload(
     # Get upload metadata
     upload_metadata = await cache.get_job_status(f"upload:{upload_id_str}")
 
-    if not upload_metadata:
+    # Issue #1417: 404 (not 403) on missing OR foreign-owned session
+    if not upload_metadata or upload_metadata.get("user_id") != str(current_user.id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Upload session not found"
         )
@@ -1592,30 +1705,50 @@ async def complete_chunked_upload(
             detail=f"Upload session is {upload_metadata.get('status')}",
         )
 
-    chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id_str)
+    # Issue #1429: build chunks_dir + final file_path through safe_join.
+    chunks_dir = _chunks_dir_for_upload(upload_id_str)
     safe_filename = upload_metadata["filename"]
     total_size = upload_metadata["total_size"]
 
     # Combine chunks
     file_id = str(uuid.uuid4())
     file_ext = os.path.splitext(safe_filename)[1]
-    saved_filename = f"{file_id}{file_ext}"
-    file_path = os.path.join(TEMP_UPLOADS_DIR, saved_filename)
+    # Re-sanitize the extension defensively: ``filename`` originally came
+    # from the user and ``sanitize_filename`` was applied at init, but the
+    # extension is reconstructed here from cached metadata, so we strip
+    # anything other than safe characters.
+    file_ext_safe = "".join(c for c in file_ext if c.isalnum() or c == ".")
+    saved_filename = f"{file_id}{file_ext_safe}"
+    uploads_root = Path(TEMP_UPLOADS_DIR).resolve()
+    uploads_root.mkdir(parents=True, exist_ok=True)
+    try:
+        file_path = safe_join(uploads_root, saved_filename)
+    except PathSanitizationError as exc:  # pragma: no cover - defensive
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid upload filename",
+        ) from exc
 
     try:
         with open(file_path, "wb") as outfile:
             # Read chunks in order
             chunk_number = 1
             while True:
-                chunk_path = os.path.join(chunks_dir, f"chunk_{chunk_number:04d}")
-                if not os.path.exists(chunk_path):
+                # safe_join validates the chunk segment against the
+                # ``[A-Za-z0-9._-]+`` allow-list, so an attacker cannot
+                # influence this path even if they could mutate metadata.
+                try:
+                    chunk_path = safe_join(chunks_dir, f"chunk_{chunk_number:04d}")
+                except PathSanitizationError:  # pragma: no cover - defensive
+                    break
+                if not chunk_path.exists():
                     break
                 with open(chunk_path, "rb") as infile:
                     outfile.write(infile.read())
                 chunk_number += 1
 
         # Verify file size
-        actual_size = os.path.getsize(file_path)
+        actual_size = file_path.stat().st_size
         if actual_size != total_size:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -1624,31 +1757,34 @@ async def complete_chunked_upload(
 
         # SECURITY: Scan the uploaded file for ZIP bombs, path traversal, etc.
         try:
-            security_result = await scan_uploaded_file(Path(file_path))
+            security_result = await scan_uploaded_file(file_path)
             logger.info(
-                f"Security scan completed for {file_path}: "
-                f"safe={security_result.is_safe}, threats={len(security_result.threats)}"
+                "Security scan completed for %s: safe=%s, threats=%d",
+                sanitize_for_log(file_path),
+                security_result.is_safe,
+                len(security_result.threats),
             )
         except HTTPException:
             # Re-raise HTTP exceptions from security scan (file rejected)
-            if os.path.exists(file_path):
-                os.remove(file_path)
+            if file_path.exists():
+                file_path.unlink()
             raise
         except Exception as e:
             # Log but don't fail on security scan errors
-            logger.error(f"Security scan error (continuing): {e}")
+            logger.error("Security scan error (continuing): %s", sanitize_for_log(e))
 
         # Update upload status
         upload_metadata["status"] = "completed"
         await cache.set_job_status(f"upload:{upload_id_str}", upload_metadata)
 
-        # Create conversion job
+        # Create conversion job (record owner so subsequent reads pass ownership checks)
         job = await crud.create_job(
             session=db,
             file_id=file_id,
             original_filename=safe_filename,
             target_version="1.20.0",
             options={},
+            user_id=str(current_user.id),
             commit=True,
         )
 
@@ -1677,10 +1813,13 @@ async def complete_chunked_upload(
         )
 
     except Exception as e:
-        logger.error(f"Failed to complete chunked upload: {e}")
-        # Clean up on failure
-        if os.path.exists(file_path):
-            os.remove(file_path)
+        logger.error("Failed to complete chunked upload: %s", sanitize_for_log(e))
+        # Clean up on failure - file_path/chunks_dir are safe_join outputs
+        try:
+            if file_path.exists():
+                file_path.unlink()
+        except OSError:  # pragma: no cover - best-effort cleanup
+            pass
         shutil.rmtree(chunks_dir, ignore_errors=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -1693,7 +1832,10 @@ async def complete_chunked_upload(
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["uploads"],
 )
-async def cancel_upload(upload_id: UUID):
+async def cancel_upload(
+    upload_id: UUID,
+    current_user: User = Depends(get_current_user),
+):
     """
     Cancel a resumable upload session.
 
@@ -1702,7 +1844,8 @@ async def cancel_upload(upload_id: UUID):
     upload_id_str = str(upload_id)
     upload_metadata = await cache.get_job_status(f"upload:{upload_id_str}")
 
-    if not upload_metadata:
+    # Issue #1417: 404 (not 403) on missing OR foreign-owned session
+    if not upload_metadata or upload_metadata.get("user_id") != str(current_user.id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Upload session not found"
         )
@@ -1711,8 +1854,9 @@ async def cancel_upload(upload_id: UUID):
     upload_metadata["status"] = "cancelled"
     await cache.set_job_status(f"upload:{upload_id_str}", upload_metadata)
 
-    # Clean up chunks
-    chunks_dir = os.path.join(TEMP_UPLOADS_DIR, "chunks", upload_id_str)
+    # Issue #1429: chunks_dir resolved via safe_join → guaranteed inside
+    # TEMP_UPLOADS_DIR.
+    chunks_dir = _chunks_dir_for_upload(upload_id_str)
     shutil.rmtree(chunks_dir, ignore_errors=True)
 
     return None

@@ -10,10 +10,41 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from api.behavior_files import router
+from api._authz import get_current_user
+from db.base import get_db
+from api import behavior_files as _bf_mod
+
+# Issue #1417: bypass auth + ownership for these endpoint-level tests.
+_TEST_USER_ID = "11111111-1111-4111-a111-111111111111"
+
+
+class _TestUser:
+    id = _TEST_USER_ID
+
+
+class _TestJob:
+    user_id = _TEST_USER_ID
+
+
+async def _stub_get_job(_db, _conversion_id):
+    return _TestJob()
+
 
 app = FastAPI()
 app.include_router(router)
+app.dependency_overrides[get_current_user] = lambda: _TestUser()
+app.dependency_overrides[get_db] = lambda: MagicMock()
 client = TestClient(app)
+
+
+import pytest as _pytest
+
+
+@_pytest.fixture(autouse=True)
+def _bf_ownership_stub(monkeypatch):
+    """Issue #1417: stub get_job per-test to avoid polluting other modules."""
+    monkeypatch.setattr(_bf_mod.crud, "get_job", _stub_get_job, raising=True)
+    yield
 
 
 def _make_behavior_file(**overrides):
@@ -36,7 +67,7 @@ class TestGetConversionBehaviorFiles:
     @patch("api.behavior_files.crud.get_behavior_files_by_conversion", new_callable=AsyncMock)
     @patch("api.behavior_files.crud.get_job", new_callable=AsyncMock)
     def test_get_behavior_files_with_tree(self, mock_get_job, mock_get_files):
-        mock_get_job.return_value = MagicMock()
+        mock_get_job.return_value = MagicMock(user_id=_TEST_USER_ID)
         bf = _make_behavior_file(file_path="entities/zombie.json")
         mock_get_files.return_value = [bf]
 
@@ -49,7 +80,7 @@ class TestGetConversionBehaviorFiles:
     @patch("api.behavior_files.crud.get_behavior_files_by_conversion", new_callable=AsyncMock)
     @patch("api.behavior_files.crud.get_job", new_callable=AsyncMock)
     def test_get_behavior_files_empty(self, mock_get_job, mock_get_files):
-        mock_get_job.return_value = MagicMock()
+        mock_get_job.return_value = MagicMock(user_id=_TEST_USER_ID)
         mock_get_files.return_value = []
 
         resp = client.get(f"/conversions/{VALID_CONV_ID}/behaviors")
@@ -74,7 +105,7 @@ class TestGetConversionBehaviorFiles:
     @patch("api.behavior_files.crud.get_behavior_files_by_conversion", new_callable=AsyncMock)
     @patch("api.behavior_files.crud.get_job", new_callable=AsyncMock)
     def test_get_behavior_files_nested_tree(self, mock_get_job, mock_get_files):
-        mock_get_job.return_value = MagicMock()
+        mock_get_job.return_value = MagicMock(user_id=_TEST_USER_ID)
         bf1 = _make_behavior_file(file_path="entities/hostile/zombie.json")
         bf2 = _make_behavior_file(file_path="entities/passive/cow.json")
         mock_get_files.return_value = [bf1, bf2]
@@ -155,7 +186,7 @@ class TestCreateBehaviorFile:
     @patch("api.behavior_files.crud.create_behavior_file", new_callable=AsyncMock)
     @patch("api.behavior_files.crud.get_job", new_callable=AsyncMock)
     def test_create_behavior_file_success(self, mock_get_job, mock_create):
-        mock_get_job.return_value = MagicMock()
+        mock_get_job.return_value = MagicMock(user_id=_TEST_USER_ID)
         bf = _make_behavior_file(file_path="entities/new.json")
         mock_create.return_value = bf
 
@@ -202,7 +233,7 @@ class TestCreateBehaviorFile:
     @patch("api.behavior_files.crud.create_behavior_file", new_callable=AsyncMock)
     @patch("api.behavior_files.crud.get_job", new_callable=AsyncMock)
     def test_create_behavior_file_value_error(self, mock_get_job, mock_create):
-        mock_get_job.return_value = MagicMock()
+        mock_get_job.return_value = MagicMock(user_id=_TEST_USER_ID)
         mock_create.side_effect = ValueError("bad input")
 
         resp = client.post(
@@ -219,7 +250,7 @@ class TestCreateBehaviorFile:
     @patch("api.behavior_files.crud.create_behavior_file", new_callable=AsyncMock)
     @patch("api.behavior_files.crud.get_job", new_callable=AsyncMock)
     def test_create_behavior_file_generic_error(self, mock_get_job, mock_create):
-        mock_get_job.return_value = MagicMock()
+        mock_get_job.return_value = MagicMock(user_id=_TEST_USER_ID)
         mock_create.side_effect = Exception("db error")
 
         resp = client.post(
@@ -235,16 +266,22 @@ class TestCreateBehaviorFile:
 
 
 class TestDeleteBehaviorFile:
+    @patch("api.behavior_files.crud.get_behavior_file", new_callable=AsyncMock)
     @patch("api.behavior_files.crud.delete_behavior_file", new_callable=AsyncMock)
-    def test_delete_behavior_file_success(self, mock_delete):
+    def test_delete_behavior_file_success(self, mock_delete, mock_get):
+        mock_get.return_value = _make_behavior_file()
         mock_delete.return_value = True
 
         resp = client.delete(f"/behaviors/{VALID_FILE_ID}")
 
         assert resp.status_code == 204
 
+    @patch("api.behavior_files.crud.get_behavior_file", new_callable=AsyncMock)
     @patch("api.behavior_files.crud.delete_behavior_file", new_callable=AsyncMock)
-    def test_delete_behavior_file_not_found(self, mock_delete):
+    def test_delete_behavior_file_not_found(self, mock_delete, mock_get):
+        # Per issue #1417 the ownership check returns 404 when the file does
+        # not exist, before delete_behavior_file is reached.
+        mock_get.return_value = None
         mock_delete.return_value = False
 
         resp = client.delete(f"/behaviors/{VALID_FILE_ID}")
@@ -261,7 +298,7 @@ class TestGetBehaviorFilesByType:
     @patch("api.behavior_files.crud.get_behavior_files_by_type", new_callable=AsyncMock)
     @patch("api.behavior_files.crud.get_job", new_callable=AsyncMock)
     def test_get_by_type_success(self, mock_get_job, mock_get_by_type):
-        mock_get_job.return_value = MagicMock()
+        mock_get_job.return_value = MagicMock(user_id=_TEST_USER_ID)
         bf = _make_behavior_file(file_type="entity_behavior")
         mock_get_by_type.return_value = [bf]
 
@@ -275,7 +312,7 @@ class TestGetBehaviorFilesByType:
     @patch("api.behavior_files.crud.get_behavior_files_by_type", new_callable=AsyncMock)
     @patch("api.behavior_files.crud.get_job", new_callable=AsyncMock)
     def test_get_by_type_empty(self, mock_get_job, mock_get_by_type):
-        mock_get_job.return_value = MagicMock()
+        mock_get_job.return_value = MagicMock(user_id=_TEST_USER_ID)
         mock_get_by_type.return_value = []
 
         resp = client.get(f"/conversions/{VALID_CONV_ID}/behaviors/types/block_behavior")

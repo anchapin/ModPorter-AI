@@ -136,7 +136,10 @@ class TestJobsAPI:
         assert response.status_code == 200
         assert "cancelled successfully" in response.json()["message"]
 
-    def test_cancel_job_forbidden(self, mock_manager, client):
+    def test_cancel_job_cross_user_returns_404(self, mock_manager, client):
+        """Issue #1417: cross-user cancel returns 404 (not 403) so we do
+        not leak the existence of jobs that belong to other users.
+        """
         job_id = str(uuid.uuid4())
         mock_job = MagicMock()
         mock_job.job_id = job_id
@@ -145,4 +148,4 @@ class TestJobsAPI:
 
         response = client.delete(f"/api/v1/jobs/{job_id}")
 
-        assert response.status_code == 403
+        assert response.status_code == 404

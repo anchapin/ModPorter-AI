@@ -13,12 +13,22 @@ os.environ["TESTING"] = "true"
 os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only-12345678901234567890"
 
 from api.conversions import router, ConversionOptions
+from api._authz import get_current_user
+
+_TEST_USER_ID = "11111111-1111-4111-a111-111111111111"
+
+
+def _mock_user():
+    user = MagicMock()
+    user.id = _TEST_USER_ID
+    return user
 
 
 class TestConversionsAPITargeted:
     def test_list_conversions(self):
         test_app = FastAPI()
         test_app.include_router(router)
+        test_app.dependency_overrides[get_current_user] = lambda: _mock_user()
 
         mock_get_db = MagicMock()
         mock_get_db.return_value = AsyncMock()
@@ -37,6 +47,7 @@ class TestConversionsAPITargeted:
             input_data={"original_filename": "test.jar"},
             error_message=None,
         )
+        mock_job.user_id = _TEST_USER_ID  # issue #1417: pass ownership check
         mock_crud.list_jobs = AsyncMock(return_value=([mock_job], 1))
         mock_crud.count_jobs = AsyncMock(return_value=1)
 
@@ -53,6 +64,7 @@ class TestConversionsAPITargeted:
     def test_get_conversion_success(self):
         test_app = FastAPI()
         test_app.include_router(router)
+        test_app.dependency_overrides[get_current_user] = lambda: _mock_user()
 
         mock_get_db = MagicMock()
         mock_get_db.return_value = AsyncMock()
@@ -72,6 +84,8 @@ class TestConversionsAPITargeted:
             error_message=None,
         )
 
+        mock_job.user_id = _TEST_USER_ID  # issue #1417: pass ownership check
+
         mock_crud = MagicMock()
         mock_crud.get_job = AsyncMock(return_value=mock_job)
 
@@ -87,6 +101,7 @@ class TestConversionsAPITargeted:
     def test_get_conversion_not_found(self):
         test_app = FastAPI()
         test_app.include_router(router)
+        test_app.dependency_overrides[get_current_user] = lambda: _mock_user()
 
         mock_get_db = MagicMock()
         mock_get_db.return_value = AsyncMock()

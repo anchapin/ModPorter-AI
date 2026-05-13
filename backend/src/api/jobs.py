@@ -259,15 +259,11 @@ async def get_job(
     """
     job = await job_manager.get_job(job_id)
 
-    if not job:
+    # Issue #1417: collapse "not found" and "not yours" into a single 404
+    # so the API does not leak the existence of foreign jobs.
+    if not job or job.user_id != user_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Job '{job_id}' not found"
-        )
-
-    # Check ownership
-    if job.user_id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to access this job"
         )
 
     return JobResponse(
@@ -305,15 +301,11 @@ async def cancel_job(
     """
     job = await job_manager.get_job(job_id)
 
-    if not job:
+    # Issue #1417: collapse "not found" and "not yours" into a single 404
+    # so the API does not leak the existence of foreign jobs.
+    if not job or job.user_id != user_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Job '{job_id}' not found"
-        )
-
-    # Check ownership
-    if job.user_id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to cancel this job"
         )
 
     # Check if job can be cancelled

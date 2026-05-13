@@ -357,6 +357,25 @@ def client():
 
         app.dependency_overrides[get_db] = override_get_db
 
+        # Issue #1417: most tests using the shared ``client`` fixture do not
+        # exercise authentication. We auto-bypass ``get_current_user`` so they
+        # keep working; tests that need to assert auth behaviour explicitly
+        # remove this override.
+        try:
+            from api._authz import get_current_user as _authz_get_current_user
+            import uuid as _uuid
+
+            # Issue #1417: id must be a UUID instance (not str) so the SQLAlchemy
+            # UUID column processor's ``.hex`` access works in code paths that
+            # query by user_id (e.g. metering_service).
+            _test_user = MagicMock()
+            _test_user.id = _uuid.UUID("11111111-1111-4111-a111-111111111111")
+            _test_user.email = "test@example.com"
+            _test_user.subscription_tier = "free"
+            app.dependency_overrides[_authz_get_current_user] = lambda: _test_user
+        except ImportError:  # pragma: no cover - defensive
+            pass
+
         # Create TestClient - init_db will be mocked since we already initialized it
         with TestClient(app) as test_client:
             yield test_client
