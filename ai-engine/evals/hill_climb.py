@@ -129,14 +129,20 @@ class HillClimbLoop:
             failure_mode = diagnosis.get("failure_mode", "unknown")
             context = diagnosis.get("context", {})
 
-            logger.info(f"Iteration {iteration + 1}: failure_mode={failure_mode}, score={current_score}")
+            logger.info(
+                f"Iteration {iteration + 1}: failure_mode={failure_mode}, score={current_score}"
+            )
 
             fix_applied = apply_fix_fn(failure_mode, case_id, context)
 
             new_score = convert_fn(case_id)
             improvement = new_score - current_score
 
-            status = HillClimbStatus.IMPROVED if improvement > self.improvement_threshold else HillClimbStatus.CONVERGED
+            status = (
+                HillClimbStatus.IMPROVED
+                if improvement > self.improvement_threshold
+                else HillClimbStatus.CONVERGED
+            )
 
             iteration_result = IterationResult(
                 iteration=iteration + 1,
@@ -171,7 +177,8 @@ class HillClimbLoop:
             total_iterations=len(iterations),
             final_score=current_score,
             initial_score=iterations[0].score_before if iterations else current_score,
-            improvement=current_score - (iterations[0].score_before if iterations else current_score),
+            improvement=current_score
+            - (iterations[0].score_before if iterations else current_score),
             status=final_status,
             iterations=iterations,
             regression_passed=regression_passed,
@@ -221,9 +228,7 @@ class SimpleHillClimbEngine:
             "context": {"score": score, "case_id": case_id},
         }
 
-    def apply_fix(
-        self, failure_mode: str, case_id: str, context: Dict[str, Any]
-    ) -> Optional[str]:
+    def apply_fix(self, failure_mode: str, case_id: str, context: Dict[str, Any]) -> Optional[str]:
         """Apply a fix based on failure mode."""
         fixes = self.failure_mapper.suggest_fixes(failure_mode, context)
         if fixes:
