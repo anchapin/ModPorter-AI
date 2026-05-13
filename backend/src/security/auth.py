@@ -5,17 +5,23 @@ Provides:
 - Password hashing and verification using bcrypt
 - JWT token creation and verification
 - Token type constants
+- Rehash-on-next-use migration path for legacy SHA-256/scrypt API keys (#1428)
 """
 
+import hashlib
+import hmac
+import logging
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Optional
 
-import jwt
 import bcrypt
+import jwt
 
 from core.secrets import get_secret
+
+logger = logging.getLogger(__name__)
 
 # bcrypt cost factor (12 = ~250ms per hash on modern hardware)
 BCRYPT_COST = 12
@@ -31,6 +37,31 @@ ALGORITHM = "HS256"
 # Development: 15 minutes access, 7 days refresh (more convenient)
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "5"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "1"))
+
+# ---------------------------------------------------------------------------
+# Legacy API-key migration support (issue #1428)
+# ---------------------------------------------------------------------------
+# bcrypt's modular-crypt format always begins with one of these tags. Anything
+# else stored in ``api_keys.key_hash`` is assumed to be a pre-#1414 hash
+# (SHA-256 hex from ``core.auth`` or scrypt hex from ``security.auth``) and is
+# eligible for rehash-on-next-use. The list mirrors what passlib accepts so we
+# don't accidentally treat a valid bcrypt variant as legacy.
+BCRYPT_HASH_PREFIXES = ("$2a$", "$2b$", "$2y$")
+
+# Pre-#1414 scrypt parameters used by ``security.auth.hash_api_key``.
+# Source of truth: parent commit of PR #1425 — ``hashlib.scrypt(api_key.encode(),
+# salt=SECRET_KEY.encode(), n=16384, r=8, p=1, dklen=32).hex()``. The static
+# SECRET_KEY salt is one of the reasons we migrated away from this scheme; we
+# only replicate it here so existing keys can still authenticate during drain.
+_LEGACY_SCRYPT_N = 16384
+_LEGACY_SCRYPT_R = 8
+_LEGACY_SCRYPT_P = 1
+_LEGACY_SCRYPT_DKLEN = 32
+
+# Length of a SHA-256 / scrypt-with-dklen=32 hex digest. Used as the dummy
+# placeholder so constant-time comparisons against malformed stored hashes
+# still touch the same number of bytes as the real path.
+_LEGACY_HEX_LEN = 64
 
 
 def hash_password(password: str) -> str:
@@ -227,13 +258,141 @@ def hash_api_key(api_key: str) -> str:
 
 
 def _check_api_key(plain_key: str, hashed_key: str) -> bool:
-    """Constant-time bcrypt comparison that swallows malformed-hash errors."""
+    """Constant-time bcrypt comparison that swallows malformed-hash errors.
+
+    NOTE: This helper remains bcrypt-only and byte-identical to the behaviour
+    introduced by PR #1425. The legacy SHA-256/scrypt fallback lives in
+    :func:`verify_api_key` because the rehash + DB write must happen alongside
+    the candidate row, not in a pure verification primitive.
+    """
     try:
         return bcrypt.checkpw(plain_key.encode("utf-8"), hashed_key.encode("utf-8"))
     except (ValueError, TypeError):
         # Invalid hash format (e.g. legacy SHA-256/scrypt hex) or bad encoding —
         # treat as a verification failure without leaking why.
         return False
+
+
+def _is_bcrypt_hash(stored_hash: object) -> bool:
+    """Return True if ``stored_hash`` looks like a bcrypt modular-crypt string.
+
+    Format-only (``$2a$`` / ``$2b$`` / ``$2y$`` prefix). We do *not* try to
+    parse the body — bcrypt itself will validate the structure during
+    :func:`bcrypt.checkpw`. Any non-string input is rejected so the legacy
+    fallback path can take over.
+    """
+    return isinstance(stored_hash, str) and stored_hash.startswith(BCRYPT_HASH_PREFIXES)
+
+
+# TODO(security): remove legacy SHA-256/scrypt fallback after 2026-08-13
+# (90 days post-deploy of #1428). Tracked in #1428 follow-up. After removal,
+# any remaining legacy keys force re-issue (the original PR #1425 behaviour).
+def _matches_legacy_sha256(plain_key: str, stored: object) -> bool:
+    """Constant-time SHA-256 hex comparison against a pre-#1414 hash.
+
+    Pre-#1414 ``core.auth.hash_api_key`` was::
+
+        hashlib.sha256(api_key.encode()).hexdigest()
+
+    The function is constant-time even when ``stored`` is malformed: we
+    always compute the SHA-256 digest of ``plain_key`` and always invoke
+    :func:`hmac.compare_digest`, so a timing attacker cannot distinguish
+    "stored hash had wrong length" from "stored hash had right length but
+    different value".
+    """
+    try:
+        computed = hashlib.sha256(plain_key.encode("utf-8")).hexdigest()
+    except (AttributeError, UnicodeError, TypeError):
+        # Plain key was not a usable string; still keep timing flat by
+        # comparing a placeholder of the expected length.
+        computed = "0" * _LEGACY_HEX_LEN
+
+    if not isinstance(stored, str):
+        # Always perform the dummy comparison so this branch costs the same
+        # number of bytes as the real path.
+        hmac.compare_digest(computed, "0" * _LEGACY_HEX_LEN)
+        return False
+
+    return hmac.compare_digest(computed, stored)
+
+
+# TODO(security): remove legacy SHA-256/scrypt fallback after 2026-08-13
+# (90 days post-deploy of #1428). Tracked in #1428 follow-up.
+def _matches_legacy_scrypt(plain_key: str, stored: object) -> bool:
+    """Constant-time scrypt hex comparison against a pre-#1414 hash.
+
+    Pre-#1414 ``security.auth.hash_api_key`` was::
+
+        hashlib.scrypt(
+            api_key.encode(),
+            salt=SECRET_KEY.encode(),
+            n=16384, r=8, p=1, dklen=32,
+        ).hex()
+
+    The static-SECRET_KEY salt was one of the reasons we migrated away from
+    this scheme (it allows precomputed rainbow tables once the secret leaks).
+    We replicate the parameters here only to drain remaining legacy keys.
+    Like :func:`_matches_legacy_sha256` this is constant-time even when
+    ``stored`` is malformed.
+    """
+    try:
+        computed = hashlib.scrypt(
+            plain_key.encode("utf-8"),
+            salt=SECRET_KEY.encode("utf-8"),
+            n=_LEGACY_SCRYPT_N,
+            r=_LEGACY_SCRYPT_R,
+            p=_LEGACY_SCRYPT_P,
+            dklen=_LEGACY_SCRYPT_DKLEN,
+        ).hex()
+    except (AttributeError, UnicodeError, TypeError, ValueError):
+        computed = "0" * _LEGACY_HEX_LEN
+
+    if not isinstance(stored, str):
+        hmac.compare_digest(computed, "0" * _LEGACY_HEX_LEN)
+        return False
+
+    return hmac.compare_digest(computed, stored)
+
+
+async def _rehash_legacy_key(db, record, plain_key: str, legacy_format: str) -> bool:
+    """Rehash a legacy API-key row to bcrypt and persist it.
+
+    Returns ``True`` on a successful commit, ``False`` if persistence failed
+    (in which case the session is rolled back). The caller authenticates the
+    user either way — a transient DB hiccup must not lock a valid key out;
+    the next call simply retries the upgrade.
+    """
+    new_hash = bcrypt.hashpw(plain_key.encode("utf-8"), bcrypt.gensalt(rounds=BCRYPT_COST)).decode(
+        "utf-8"
+    )
+
+    try:
+        record.key_hash = new_hash
+        await db.commit()
+    except Exception:
+        try:
+            await db.rollback()
+        except Exception:
+            # Rollback failures are themselves logged; don't mask the original.
+            pass
+        logger.exception(
+            "legacy_api_key_rehash_persist_failed",
+            extra={"user_id": str(record.user_id), "old_format": legacy_format},
+        )
+        return False
+
+    logger.info(
+        "legacy_api_key_rehashed",
+        extra={"user_id": str(record.user_id), "old_format": legacy_format},
+    )
+    # Best-effort metric — services.metrics is optional in some test contexts.
+    try:
+        from services.metrics import record_legacy_api_key_rehashed
+
+        record_legacy_api_key_rehashed(legacy_format)
+    except ImportError:
+        pass
+    return True
 
 
 async def verify_api_key(db, api_key: str) -> "Optional[User]":
@@ -253,6 +412,13 @@ async def verify_api_key(db, api_key: str) -> "Optional[User]":
     we would need to add an indexed lookup column (e.g. an HMAC
     fingerprint of the key) — out of scope for this change.
 
+    Legacy migration (#1428): if a candidate row stores a pre-#1414
+    SHA-256 or scrypt hash and the key matches under the legacy scheme,
+    the row is transparently rehashed with bcrypt and persisted before
+    the user is returned. The bcrypt fast-path is byte-identical to the
+    pre-rehash behaviour: bcrypt-format hashes never touch the legacy
+    helpers and never trigger a DB write.
+
     Args:
         db: Async database session
         api_key: Plain text API key submitted by the caller
@@ -261,6 +427,7 @@ async def verify_api_key(db, api_key: str) -> "Optional[User]":
         User if API key is valid and active, None otherwise.
     """
     from sqlalchemy import select
+
     from db.models import APIKey, User
 
     if not api_key or len(api_key) < 8:
@@ -276,8 +443,35 @@ async def verify_api_key(db, api_key: str) -> "Optional[User]":
     candidates = result.scalars().all()
 
     for record in candidates:
-        if _check_api_key(api_key, record.key_hash):
-            user_result = await db.execute(select(User).where(User.id == record.user_id))
-            return user_result.scalar_one_or_none()
+        stored_hash = record.key_hash
+
+        if _is_bcrypt_hash(stored_hash):
+            # Modern path — byte-identical to PR #1425 behaviour. No DB write,
+            # no metric, no log; this is the common case at steady state.
+            if _check_api_key(api_key, stored_hash):
+                user_result = await db.execute(select(User).where(User.id == record.user_id))
+                return user_result.scalar_one_or_none()
+            continue
+
+        # Legacy path (#1428): try SHA-256 first (cheaper), then scrypt.
+        # Both helpers are constant-time even on malformed stored hashes.
+        legacy_format: Optional[str] = None
+        if _matches_legacy_sha256(api_key, stored_hash):
+            legacy_format = "sha256"
+        elif _matches_legacy_scrypt(api_key, stored_hash):
+            legacy_format = "scrypt"
+
+        if legacy_format is None:
+            # Stored hash isn't bcrypt and isn't a legacy match — could be
+            # corruption or a hash from a future scheme; skip without
+            # writing anything and let the next candidate try.
+            continue
+
+        # Match — rehash with bcrypt, persist, and emit telemetry. Auth
+        # succeeds whether or not the rehash commit succeeds (see helper).
+        await _rehash_legacy_key(db, record, api_key, legacy_format)
+
+        user_result = await db.execute(select(User).where(User.id == record.user_id))
+        return user_result.scalar_one_or_none()
 
     return None
