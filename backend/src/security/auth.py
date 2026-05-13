@@ -208,46 +208,76 @@ def generate_api_key() -> tuple[str, str]:
 
 def hash_api_key(api_key: str) -> str:
     """
-    Hash an API key for storage.
+    Hash an API key using bcrypt for secure storage.
+
+    bcrypt uses a random per-call salt, so two calls with the same input
+    produce different output. This means callers cannot look the hash up
+    directly in the database — use :func:`verify_api_key` to authenticate
+    a submitted key against stored hashes.
 
     Args:
         api_key: Plain text API key
 
     Returns:
-        Hashed API key using scrypt (memory-hard KDF)
+        Bcrypt-hashed API key as a UTF-8 string suitable for varchar storage.
     """
-    import hashlib
+    return bcrypt.hashpw(api_key.encode("utf-8"), bcrypt.gensalt(rounds=BCRYPT_COST)).decode(
+        "utf-8"
+    )
 
-    return hashlib.scrypt(
-        api_key.encode(), salt=SECRET_KEY.encode(), n=16384, r=8, p=1, dklen=32
-    ).hex()
+
+def _check_api_key(plain_key: str, hashed_key: str) -> bool:
+    """Constant-time bcrypt comparison that swallows malformed-hash errors."""
+    try:
+        return bcrypt.checkpw(plain_key.encode("utf-8"), hashed_key.encode("utf-8"))
+    except (ValueError, TypeError):
+        # Invalid hash format (e.g. legacy SHA-256/scrypt hex) or bad encoding —
+        # treat as a verification failure without leaking why.
+        return False
 
 
 async def verify_api_key(db, api_key: str) -> "Optional[User]":
     """
     Verify an API key and return the associated user.
 
+    Because :func:`hash_api_key` uses bcrypt with a random per-call salt,
+    we cannot look the row up by hash directly. Instead we narrow the
+    candidate set using the public prefix (the first 8 characters of every
+    issued key, persisted on :class:`APIKey.prefix`) and then run
+    :func:`bcrypt.checkpw` against each candidate.
+
+    Tradeoff: we may run bcrypt up to N times, where N is the number of
+    active keys sharing the same 8-character prefix. The prefix
+    (``mpk_`` + 4 base64url chars) gives ~24 bits of entropy, so in
+    practice N is almost always 1. If many users ever shared a prefix
+    we would need to add an indexed lookup column (e.g. an HMAC
+    fingerprint of the key) — out of scope for this change.
+
     Args:
-        db: Database session
-        api_key: Plain text API key
+        db: Async database session
+        api_key: Plain text API key submitted by the caller
 
     Returns:
-        User if API key is valid, None otherwise
+        User if API key is valid and active, None otherwise.
     """
     from sqlalchemy import select
     from db.models import APIKey, User
 
-    key_hash = hash_api_key(api_key)
-    result = await db.execute(
-        select(APIKey).where(
-            APIKey.key_hash == key_hash,
-            APIKey.is_active == True,
-        )
-    )
-    api_key_record = result.scalar_one_or_none()
-
-    if not api_key_record:
+    if not api_key or len(api_key) < 8:
         return None
 
-    result = await db.execute(select(User).where(User.id == api_key_record.user_id))
-    return result.scalar_one_or_none()
+    prefix = api_key[:8]
+    result = await db.execute(
+        select(APIKey).where(
+            APIKey.prefix == prefix,
+            APIKey.is_active == True,  # noqa: E712 — SQLAlchemy needs `==` here
+        )
+    )
+    candidates = result.scalars().all()
+
+    for record in candidates:
+        if _check_api_key(api_key, record.key_hash):
+            user_result = await db.execute(select(User).where(User.id == record.user_id))
+            return user_result.scalar_one_or_none()
+
+    return None

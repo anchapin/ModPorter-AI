@@ -239,17 +239,43 @@ class AuthManager:
 
     def hash_api_key(self, api_key: str) -> str:
         """
-        Hash an API key for storage.
+        Hash an API key using bcrypt for secure storage.
+
+        bcrypt is intentionally slow (configurable cost factor) which makes
+        offline brute-force attacks against a leaked database significantly
+        more expensive than fast hashes such as SHA-256.
 
         Args:
             api_key: Plain text API key
 
         Returns:
-            Hashed API key using SHA-256
+            Bcrypt-hashed API key (UTF-8 string suitable for varchar storage).
         """
-        import hashlib
+        return bcrypt.hashpw(api_key.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
-        return hashlib.sha256(api_key.encode()).hexdigest()
+    def verify_api_key(self, plain_key: str, hashed_key: str) -> bool:
+        """
+        Verify an API key against its bcrypt hash.
+
+        Returns False (rather than raising) for malformed or missing input so
+        callers can use this as a constant-time comparison primitive without
+        leaking information about the hash format via exceptions.
+
+        Args:
+            plain_key: Plain text API key submitted by the caller.
+            hashed_key: Bcrypt hash previously produced by ``hash_api_key``.
+
+        Returns:
+            True if the plain key matches the stored hash, False otherwise.
+        """
+        if plain_key is None or hashed_key is None:
+            return False
+        try:
+            return bcrypt.checkpw(plain_key.encode("utf-8"), hashed_key.encode("utf-8"))
+        except (ValueError, TypeError):
+            # Invalid hash format (e.g. legacy SHA-256 hex) or encoding error
+            # — treat as a failed verification without leaking why.
+            return False
 
 
 # Default instance for easy import
@@ -265,3 +291,4 @@ generate_verification_token = default_auth.generate_verification_token
 generate_reset_token = default_auth.generate_reset_token
 generate_api_key = default_auth.generate_api_key
 hash_api_key = default_auth.hash_api_key
+verify_api_key = default_auth.verify_api_key
