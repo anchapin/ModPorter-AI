@@ -85,20 +85,24 @@ class TestEvalCaseLibrary:
     def test_get_cases_by_type(self):
         """Test filtering cases by type."""
         library = EvalCaseLibrary()
-        library.add_case(EvalCase(
-            case_id="golden_1",
-            name="Golden 1",
-            description="",
-            case_type=CaseType.GOLDEN_PATH,
-            java_input="",
-        ))
-        library.add_case(EvalCase(
-            case_id="edge_1",
-            name="Edge 1",
-            description="",
-            case_type=CaseType.EDGE_CASE,
-            java_input="",
-        ))
+        library.add_case(
+            EvalCase(
+                case_id="golden_1",
+                name="Golden 1",
+                description="",
+                case_type=CaseType.GOLDEN_PATH,
+                java_input="",
+            )
+        )
+        library.add_case(
+            EvalCase(
+                case_id="edge_1",
+                name="Edge 1",
+                description="",
+                case_type=CaseType.EDGE_CASE,
+                java_input="",
+            )
+        )
 
         golden_cases = library.get_cases_by_type(CaseType.GOLDEN_PATH)
         assert len(golden_cases) == 1
@@ -254,13 +258,15 @@ class TestEvalSuite:
     def test_suite_with_custom_library(self):
         """Test creating suite with custom case library."""
         library = EvalCaseLibrary()
-        library.add_case(EvalCase(
-            case_id="custom",
-            name="Custom",
-            description="",
-            case_type=CaseType.GOLDEN_PATH,
-            java_input="",
-        ))
+        library.add_case(
+            EvalCase(
+                case_id="custom",
+                name="Custom",
+                description="",
+                case_type=CaseType.GOLDEN_PATH,
+                java_input="",
+            )
+        )
         suite = EvalSuite(case_library=library)
         assert len(suite.case_library.list_all()) == 1
 
@@ -363,18 +369,15 @@ class TestIntegration:
         """Test evaluator with realistic Bedrock output."""
         evaluator = RubricEvaluator()
 
-        bedrock_output = json.dumps({
-            "format_version": "1.20.0",
-            "minecraft:block": {
-                "description": {
-                    "identifier": "modid:diamond_ore"
+        bedrock_output = json.dumps(
+            {
+                "format_version": "1.20.0",
+                "minecraft:block": {
+                    "description": {"identifier": "modid:diamond_ore"},
+                    "components": {"minecraft:light_emission": 0, "minecraft:destroy_time": 3},
                 },
-                "components": {
-                    "minecraft:light_emission": 0,
-                    "minecraft:destroy_time": 3
-                }
             }
-        })
+        )
 
         result = evaluator.evaluate(bedrock_output)
         assert result.passed_checks > 0

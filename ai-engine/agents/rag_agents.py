@@ -1,107 +1,73 @@
 """
-RAG Agents module for information retrieval and synthesis.
+RAG Agents module for retrieval-augmented generation tasks.
 
-This module provides RAG (Retrieval-Augmented Generation) agents for searching
-and retrieving information from the knowledge base.
+This module provides agents specialized in search and summarization tasks.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 logger = logging.getLogger(__name__)
 
 
-class RAGAgent:
-    """
-    Simple RAG agent for querying and retrieving information.
-    """
-
-    def __init__(self, *args, **kwargs):
-        """Initialize the RAG agent."""
-        pass
-
-    def query(self, query: str, *args, **kwargs) -> Any:
-        """
-        Query the RAG agent.
-
-        Args:
-            query: The query string
-
-        Returns:
-            Query result
-        """
-        return None
-
-    def retrieve(self, query: str, *args, **kwargs) -> Any:
-        """
-        Retrieve information from the RAG agent.
-
-        Args:
-            query: The query string
-
-        Returns:
-            Retrieved information
-        """
-        return None
-
-    def query_with_context(self, query: str, context: Dict[str, Any], *args, **kwargs) -> Any:
-        """
-        Query with additional context.
-
-        Args:
-            query: The query string
-            context: Additional context
-
-        Returns:
-            Query result
-        """
-        return None
-
-    def search(self, query: str, limit: int = 5, *args, **kwargs) -> Any:
-        """
-        Search for information.
-
-        Args:
-            query: The query string
-            limit: Maximum number of results
-
-        Returns:
-            Search results
-        """
-        return None
-
-
 class RAGAgents:
-    """
-    RAG Agents container for managing multiple RAG agents.
-    """
+    """RAG (Retrieval-Augmented Generation) agents for search and summarization."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize RAG Agents."""
         pass
 
-    def search_agent(self, llm: Any, tools: Optional[List[Any]] = None) -> Any:
-        """
-        Create a search agent.
+    def search_agent(
+        self,
+        llm: Any,
+        tools: Optional[List[Any]] = None,
+    ) -> Any:
+        """Create a search agent for research tasks.
 
         Args:
-            llm: Language model instance
-            tools: Optional list of tools
+            llm: The language model to use.
+            tools: List of CrewAI tool instances for search functionality.
 
         Returns:
-            Search agent instance
+            A configured search agent.
         """
-        return None
+        try:
+            from crewai import Agent
+
+            agent = Agent(
+                role="Research Specialist",
+                goal="Find and synthesize accurate information from available sources",
+                backstory="You are an expert researcher skilled at finding and organizing information.",
+                tools=tools or [],
+                llm=llm,
+                verbose=False,
+            )
+            return agent
+        except ImportError as e:
+            logger.warning(f"CrewAI not available: {e}")
+            raise
 
     def summarization_agent(self, llm: Any) -> Any:
-        """
-        Create a summarization agent.
+        """Create a summarization agent for content summarization.
 
         Args:
-            llm: Language model instance
+            llm: The language model to use.
 
         Returns:
-            Summarization agent instance
+            A configured summarization agent.
         """
-        agent = type("SummarizationAgent", (), {"role": "Content Summarizer"})()
-        return agent
+        try:
+            from crewai import Agent
+
+            agent = Agent(
+                role="Content Summarizer",
+                goal="Create clear and concise summaries of content",
+                backstory="You are an expert at distilling complex information into clear summaries.",
+                tools=[],
+                llm=llm,
+                verbose=False,
+            )
+            return agent
+        except ImportError as e:
+            logger.warning(f"CrewAI not available: {e}")
+            raise

@@ -149,9 +149,7 @@ class RubricEvaluator:
             category_scores[check.category].append(score * check.weight)
 
         passed = sum(1 for r in results if r.passed)
-        total_weighted = sum(
-            sum(scores) for scores in category_scores.values()
-        )
+        total_weighted = sum(sum(scores) for scores in category_scores.values())
         max_weighted = sum(c.weight for c in self.checks)
 
         weighted_score = (total_weighted / max_weighted * 100) if max_weighted > 0 else 0.0
@@ -208,8 +206,12 @@ class RubricEvaluator:
             known_terms = ["minecraft:", "format_version", "components", "events", "states"]
             found = any(term in output for term in known_terms)
             if found:
-                return RubricResult(check.check_id, check.name, True, 1.0, "No obvious hallucination")
-            return RubricResult(check.check_id, check.check_id, False, 0.0, "Possible hallucination detected")
+                return RubricResult(
+                    check.check_id, check.name, True, 1.0, "No obvious hallucination"
+                )
+            return RubricResult(
+                check.check_id, check.check_id, False, 0.0, "Possible hallucination detected"
+            )
 
         return RubricResult(check.check_id, check.name, True, 0.5, "Check completed (generic)")
 
