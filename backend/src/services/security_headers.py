@@ -43,8 +43,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         )
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = (
+            "camera=(), microphone=(), geolocation=(), "
+            "payment=(), usb=(), accelerometer=(), gyroscope=()"
+        )
 
         # Add Content-Security-Policy for download endpoints
         # This prevents XSS attacks when serving user-uploaded content
