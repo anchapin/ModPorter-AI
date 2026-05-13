@@ -23,7 +23,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlalchemy import select
@@ -49,6 +49,7 @@ REFRESH_TOKEN_TTL_SECONDS = int(os.getenv("REFRESH_TOKEN_TTL_SECONDS", "604800")
 
 from services.email_service import send_verification_email, send_password_reset_email
 from services.oauth_service import oauth_service, generate_oauth_state
+from services.rate_limiter import RateLimitConfig
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -226,13 +227,44 @@ async def get_current_user(
 
 @router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
 async def register(
+    request: Request,
     request_data: RegisterRequest,
     db: AsyncSession = Depends(get_db),
     _: bool = Depends(require_feature_flag("user_accounts")),
 ):
     """
     Register a new user account.
+
+    Strict rate limit: 10 registrations per IP per hour to prevent spam (issue #1417).
     """
+    # Skip rate limiting in test mode to avoid 429 errors during test runs (same
+    # pattern as the global RateLimitMiddleware registration in main.py).
+    if os.getenv("TESTING", "false").lower() != "true":
+        from services.rate_limiter import RateLimiter
+
+        register_rate_limit = RateLimitConfig(
+            requests_per_minute=10,
+            requests_per_hour=10,
+            burst_size=3,
+        )
+        rate_limiter = RateLimiter(config=register_rate_limit)
+        await rate_limiter.initialize()
+        is_allowed, metadata = await rate_limiter.check_rate_limit(
+            request, override_config=register_rate_limit
+        )
+        await rate_limiter.close()
+
+        if not is_allowed:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Too many registration attempts. Please try again later.",
+                headers={
+                    "X-RateLimit-Limit": str(metadata.get("limit_hour")),
+                    "X-RateLimit-Remaining": str(metadata.get("remaining_hour")),
+                    "X-RateLimit-Reset": str(metadata.get("reset_at_hour")),
+                },
+            )
+
     result = await db.execute(select(User).where(User.email == request_data.email))
     existing_user = result.scalar_one_or_none()
 
@@ -282,13 +314,45 @@ async def register(
 
 @router.post("/login", response_model=LoginResponse)
 async def login(
+    request: Request,
     request_data: LoginRequest,
     db: AsyncSession = Depends(get_db),
     _: bool = Depends(require_feature_flag("user_accounts")),
 ):
     """
     Login with email and password.
+
+    Strict rate limit: 5 attempts per IP per minute to prevent credential stuffing
+    (issue #1417).
     """
+    # Skip rate limiting in test mode to avoid 429 errors during test runs (same
+    # pattern as the global RateLimitMiddleware registration in main.py).
+    if os.getenv("TESTING", "false").lower() != "true":
+        from services.rate_limiter import RateLimiter
+
+        login_rate_limit = RateLimitConfig(
+            requests_per_minute=5,
+            requests_per_hour=20,
+            burst_size=2,
+        )
+        rate_limiter = RateLimiter(config=login_rate_limit)
+        await rate_limiter.initialize()
+        is_allowed, metadata = await rate_limiter.check_rate_limit(
+            request, override_config=login_rate_limit
+        )
+        await rate_limiter.close()
+
+        if not is_allowed:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Too many login attempts. Please wait and try again.",
+                headers={
+                    "X-RateLimit-Limit": str(metadata.get("limit_minute")),
+                    "X-RateLimit-Remaining": str(metadata.get("remaining_minute")),
+                    "X-RateLimit-Reset": str(metadata.get("reset_at_minute")),
+                },
+            )
+
     result = await db.execute(select(User).where(User.email == request_data.email))
     user = result.scalar_one_or_none()
 
@@ -810,6 +874,10 @@ async def oauth_callback(
         if user:
             access_token = create_access_token(str(user.id))
             refresh_token = create_refresh_token(str(user.id))
+            cache_service = CacheService()
+            await cache_service.add_refresh_token(
+                str(user.id), refresh_token, REFRESH_TOKEN_TTL_SECONDS
+            )
             return OAuthCallbackResponse(
                 access_token=access_token,
                 refresh_token=refresh_token,
@@ -837,6 +905,10 @@ async def oauth_callback(
 
             access_token = create_access_token(str(existing_user.id))
             refresh_token = create_refresh_token(str(existing_user.id))
+            cache_service = CacheService()
+            await cache_service.add_refresh_token(
+                str(existing_user.id), refresh_token, REFRESH_TOKEN_TTL_SECONDS
+            )
             return OAuthCallbackResponse(
                 access_token=access_token,
                 refresh_token=refresh_token,
@@ -875,6 +947,10 @@ async def oauth_callback(
 
     access_token = create_access_token(str(new_user.id))
     refresh_token = create_refresh_token(str(new_user.id))
+    cache_service = CacheService()
+    await cache_service.add_refresh_token(
+        str(new_user.id), refresh_token, REFRESH_TOKEN_TTL_SECONDS
+    )
     return OAuthCallbackResponse(
         access_token=access_token,
         refresh_token=refresh_token,
