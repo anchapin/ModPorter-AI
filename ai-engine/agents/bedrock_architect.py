@@ -10,7 +10,7 @@ import json
 import logging
 from typing import Any, Dict, List
 
-from crewai.tools import tool
+from langchain_core.tools import tool
 
 from models.smart_assumptions import (
     AssumptionResult,

@@ -12,7 +12,7 @@ import zipfile
 from pathlib import Path
 from typing import Any, Dict, List
 
-from crewai.tools import tool
+from langchain_core.tools import tool
 from jinja2 import Environment, FileSystemLoader
 from PIL import Image
 

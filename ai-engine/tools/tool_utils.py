@@ -11,7 +11,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from crewai.tools import BaseTool
+from langchain_core.tools import BaseTool
 
 logger = logging.getLogger(__name__)
 
@@ -98,16 +98,12 @@ class ToolRegistry:
             tool_functions = []
 
             for name, obj in inspect.getmembers(module):
-                # Check for CrewAI tool classes
+                # Check for LangChain tool classes
                 if inspect.isclass(obj) and issubclass(obj, BaseTool) and obj != BaseTool:
                     tool_classes.append({"name": name, "class": obj, "type": "class"})
 
-                # Check for decorated tool functions
-                elif (
-                    inspect.isfunction(obj)
-                    and hasattr(obj, "__name__")
-                    and hasattr(obj, "_is_crewai_tool")
-                ):
+                # Check for @tool-decorated entities (StructuredTool/BaseTool instances)
+                elif isinstance(obj, BaseTool):
                     tool_functions.append({"name": name, "function": obj, "type": "function"})
 
             # Extract tool metadata

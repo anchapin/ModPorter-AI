@@ -86,7 +86,7 @@ from agents.audio_converter import (
 
 
 class ToolFunction:
-    """Wrapper to make standalone functions compatible with CrewAI tool interface (.run())"""
+    """Wrapper to make standalone functions compatible with LangChain tool interface (.run())"""
 
     def __init__(self, func):
         self._func = func
@@ -98,6 +98,23 @@ class ToolFunction:
 
     def run(self, **kwargs):
         """Call the wrapped function with flattened kwargs."""
+        return self._invoke_with_kwargs(kwargs)
+
+    def invoke(self, input, config=None, **kwargs):  # noqa: A002 - LangChain signature
+        """LangChain BaseTool-compatible entry point.
+
+        Accepts either a dict of kwargs (the standard LangChain calling
+        convention) or a positional value forwarded to the wrapped function.
+        """
+        if isinstance(input, dict):
+            return self._invoke_with_kwargs(input)
+        return self._func(input)
+
+    async def ainvoke(self, input, config=None, **kwargs):  # noqa: A002
+        """Async LangChain entry point — delegates to the sync `invoke`."""
+        return self.invoke(input, config=config, **kwargs)
+
+    def _invoke_with_kwargs(self, kwargs):
         # Handle the case where a single keyword arg wraps the data
         if len(kwargs) == 1:
             key = list(kwargs.keys())[0]
@@ -586,7 +603,7 @@ __all__ = [
     # Helper exports
     "HAS_AUDIO_SUPPORT",
     "zipfile",
-    # Tool wrappers (for CrewAI compatibility with .run() interface)
+    # Tool wrappers (for LangChain compatibility with .run() interface)
     "analyze_assets_tool",
     "convert_textures_tool",
     "convert_models_tool",

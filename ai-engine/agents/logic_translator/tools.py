@@ -1,11 +1,11 @@
 """
-CrewAI tool wrappers for Logic Translator Agent.
+LangChain tool wrappers for Logic Translator Agent.
 """
 
 import json
 from typing import Any, Dict, List, Optional
 
-from crewai.tools import tool
+from langchain_core.tools import tool
 
 from agents.logic_translator.translator import LogicTranslatorAgent
 from utils.logging_config import get_agent_logger
@@ -14,7 +14,7 @@ logger = get_agent_logger("logic_translator.tools")
 
 
 class LogicTranslatorTools:
-    """Collection of CrewAI tools for Java to Bedrock logic translation."""
+    """Collection of LangChain tools for Java to Bedrock logic translation."""
 
     @tool
     @staticmethod

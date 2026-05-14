@@ -10,7 +10,7 @@ import json
 import logging
 from typing import Dict, List
 
-from crewai.tools import tool
+from langchain_core.tools import tool
 
 from agents.recipe import (
     FORGE_TAG_MAPPINGS,

@@ -1,5 +1,5 @@
 """
-CrewAI tool wrappers for Java Analyzer Agent
+LangChain tool wrappers for Java Analyzer Agent
 """
 
 import json
@@ -8,7 +8,7 @@ import zipfile
 from pathlib import Path
 from typing import Dict, List, Union
 
-from crewai.tools import tool
+from langchain_core.tools import tool
 
 from utils.logging_config import get_agent_logger
 
@@ -16,7 +16,7 @@ logger = get_agent_logger("java_analyzer.tools")
 
 
 class JavaAnalyzerTools:
-    """Collection of CrewAI tools for Java mod analysis"""
+    """Collection of LangChain tools for Java mod analysis"""
 
     def __init__(self, agent_instance=None):
         self.agent_instance = agent_instance

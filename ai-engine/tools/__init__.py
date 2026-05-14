@@ -1,6 +1,6 @@
 """
 Tools module for Portkit.
-Contains various tools used by CrewAI agents for specialized tasks.
+Contains various tools used by LangChain agent runnables for specialized tasks.
 """
 
 from .search_tool import SearchTool

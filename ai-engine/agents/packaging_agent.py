@@ -7,7 +7,7 @@ All implementation details have been moved to ai_engine/agents/packaging/.
 Per issue #1278: Split packaging_agent.py (42K) + packaging_validator.py (31K) into packaging/ subpackage
 """
 
-from crewai.tools import tool
+from langchain_core.tools import tool
 
 from agents.packaging import (
     Bundler,
