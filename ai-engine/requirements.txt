@@ -6,12 +6,16 @@ python-multipart==0.0.28
 # AI Framework - add upper bounds to avoid dependency conflicts
 # Note: crewai requires Python 3.10-3.13. Use Docker container for development (Python 3.12).
 # If running locally, use Python 3.12 virtual environment.
-# Let crewai manage langchain package versions to avoid conflicts
-crewai>=0.11.0,<1.0.0
+# crewai >=0.95 no longer depends on langchain-openai; it is pinned independently below
+# (used by ai-engine/crew/rag_crew.py and ai-engine/utils/rate_limiter.py).
+# Upper bound <0.201 keeps crewai compatible with the chromadb==1.5.8 pin below
+# (crewai 0.201+ pins chromadb~=1.1.0, which would conflict). See #1439.
+# Lower bound >=0.140 is required for Python 3.13 (used by the ai-engine-builder stage in Dockerfile).
+crewai>=0.140.0,<0.201.0
 openai>=1.0.0,<3.0.0
 langgraph>=1.1.0
 sentence-transformers>=5.1.2,<6.0.0
-langchain-openai>=0.3.35  # Required by crewai for OpenAI integration
+langchain-openai>=0.3.35,<2.0  # See #1439
 
 # Vector Database (pin version for embedchain compatibility)
 # Note: chromadb may require Python <3.13
