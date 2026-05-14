@@ -22,17 +22,28 @@ def reset_state():
 
 
 class TestEnsureAiEnginePath:
-    def test_returns_true_when_repo_layout_resolves(self):
-        """In a real checkout, the repo-root-relative candidate should resolve."""
-        # The repo root is reachable from this test file, so ai-engine/ exists.
+    def test_returns_true_when_a_candidate_directory_exists(self, tmp_path, monkeypatch):
+        """When the env-override candidate exists, the helper returns True and adds it to sys.path."""
+        # Use the env override so the test is independent of the host repo layout.
+        # CI runs the backend container in isolation where the real ai-engine/
+        # directory is not co-located with the backend tree.
+        override = tmp_path / "ai-engine-fixture"
+        override.mkdir()
+        monkeypatch.setenv("AI_ENGINE_PATH", str(override))
+        aep.reset_for_tests()
+
         ok = aep.ensure_ai_engine_on_path()
         assert ok is True
-        # The resolved dir should be on sys.path.
-        assert aep._RESOLVED is not None
-        assert str(aep._RESOLVED) in sys.path
+        assert override == aep._RESOLVED
+        assert str(override) in sys.path
 
-    def test_idempotent_subsequent_calls(self):
+    def test_idempotent_subsequent_calls(self, tmp_path, monkeypatch):
         """A second call is a memoized no-op and returns True."""
+        override = tmp_path / "ai-engine-fixture"
+        override.mkdir()
+        monkeypatch.setenv("AI_ENGINE_PATH", str(override))
+        aep.reset_for_tests()
+
         aep.ensure_ai_engine_on_path()
         snapshot = list(sys.path)
         result = aep.ensure_ai_engine_on_path()
