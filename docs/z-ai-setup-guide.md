@@ -95,7 +95,7 @@ python -m pytest tests/integration/test_z_ai_integration.py -v
 ### 2. Test with the AI engine:
 
 ```python
-from ai_engine.utils.rate_limiter import get_llm_backend
+from utils.rate_limiter import get_llm_backend
 
 # This will automatically use Z.AI if configured
 llm = get_llm_backend()
@@ -107,7 +107,7 @@ print(response.content)
 
 ```python
 from langchain_core import Agent, Task, Crew
-from ai_engine.utils.rate_limiter import get_llm_backend
+from utils.rate_limiter import get_llm_backend
 
 # Z.AI LLM will be automatically selected
 llm = get_llm_backend()
@@ -181,7 +181,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 # Test Z.AI directly
-from ai_engine.utils.rate_limiter import create_z_ai_llm
+from utils.rate_limiter import create_z_ai_llm
 llm = create_z_ai_llm()
 response = llm.invoke("Test message")
 ```

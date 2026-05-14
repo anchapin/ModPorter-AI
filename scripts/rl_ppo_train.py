@@ -288,7 +288,7 @@ def load_pairs(
     """Load validated pairs from MMSD dataset."""
     if data_path is None:
         data_path = (
-            Path(__file__).parent.parent / "ai_engine/mmsd/data/processed/validated_pairs.jsonl"
+            Path(__file__).parent.parent / "ai-engine/mmsd/data/processed/validated_pairs.jsonl"
         )
 
     pairs = []

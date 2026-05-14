@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-DATA_DIR="/home/alex/Projects/portkit/ai_engine/mmsd/data"
+DATA_DIR="/home/alex/Projects/portkit/ai-engine/mmsd/data"
 BACKUP_DIR="$DATA_DIR/backups"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 

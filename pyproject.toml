@@ -132,7 +132,7 @@ ignore = [
 "ai-engine/agents/validation_agent.py" = ["C901"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["app", "core", "src", "backend", "ai_engine"]
+known-first-party = ["app", "core", "src", "backend"]
 force-single-line = false
 
 [tool.ruff.lint.mccabe]

@@ -30,7 +30,7 @@ try:
     )
 except ImportError:
     try:
-        from ai_engine.mmsd.premium_client import (
+        from mmsd.premium_client import (
             FEW_SHOT_EXAMPLES,
             MODEL_CONFIGS,
             PortKitPremium,

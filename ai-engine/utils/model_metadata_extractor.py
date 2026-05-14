@@ -20,7 +20,7 @@ try:
     from schemas.multimodal_schema import ContentType, MultiModalDocument, ProcessingStatus
 except ImportError:
     try:
-        from ai_engine.schemas.multimodal_schema import (
+        from schemas.multimodal_schema import (
             ContentType,
             MultiModalDocument,
             ProcessingStatus,

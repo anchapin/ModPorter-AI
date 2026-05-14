@@ -24,7 +24,7 @@ except ImportError:
         logger.warning(
             "Direct import from testing.qa_framework failed. Attempting import from ai_engine.src.testing.qa_framework."
         )
-        from ai_engine.src.testing.qa_framework import TestFramework, TestScenarioGenerator
+        from testing.qa_framework import TestFramework, TestScenarioGenerator
 
 
 # --- Placeholder classes for engines not yet detailed ---

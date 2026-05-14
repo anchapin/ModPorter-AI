@@ -34,11 +34,11 @@ from peft import PeftModel
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
 PROJECT_ROOT = SCRIPT_DIR.parent
-AI_ENGINE_PATH = PROJECT_ROOT / "ai_engine"
+AI_ENGINE_PATH = PROJECT_ROOT / "ai-engine"
 if AI_ENGINE_PATH.exists() and str(AI_ENGINE_PATH) not in sys.path:
     sys.path.insert(0, str(AI_ENGINE_PATH))
 
-DATASET_PATH = PROJECT_ROOT / "ai_engine/mmsd/data/processed/validated_pairs.jsonl"
+DATASET_PATH = PROJECT_ROOT / "ai-engine/mmsd/data/processed/validated_pairs.jsonl"
 OUTPUT_DIR = SCRIPT_DIR / "phase4b_output_1.5b"
 SFT_ADAPTER_PATH = SCRIPT_DIR / "phase4_output_1.5b/sft/final"
 

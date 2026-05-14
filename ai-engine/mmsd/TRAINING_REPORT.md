@@ -10,11 +10,11 @@
 
 | Metric | Value |
 |--------|-------|
-| Source file | `ai_engine/mmsd/synthesis_pairs.jsonl` |
+| Source file | `ai-engine/mmsd/synthesis_pairs.jsonl` |
 | Total raw pairs | 1,400 |
 | Pairs passing validation | 1,400 (100%) |
 | Pairs with reasoning_trace < 100 chars | 0 |
-| Validated output | `ai_engine/mmsd/data/processed/validated_pairs.jsonl` |
+| Validated output | `ai-engine/mmsd/data/processed/validated_pairs.jsonl` |
 | Train split (first 90%) | 1,260 examples |
 | Eval split (last 10%) | 140 examples |
 
@@ -123,13 +123,13 @@ Convert this to a Bedrock Add-on. First explain your conversion approach, then p
 **Option B: Local GPU**
 ```bash
 cd /home/alex/Projects/portkit
-python3 ai_engine/mmsd/train_portkit_coder.py
+python3 ai-engine/mmsd/train_portkit_coder.py
 ```
 
 **Option C: Any GPU machine with Python**
 ```bash
 pip install transformers trl peft bitsandbytes torch datasets accelerate
-python3 ai_engine/mmsd/train_portkit_coder.py
+python3 ai-engine/mmsd/train_portkit_coder.py
 ```
 
 ### Expected Results
@@ -203,10 +203,10 @@ mixed = mixed.shuffle(seed=42)
 
 To evaluate the effect of the mix on general code tasks:
 ```bash
-python3 ai_engine/mmsd/evaluate.py \
+python3 ai-engine/mmsd/evaluate.py \
     --model alexchapin/portkit-coder-7b-merged \
     --baseline Qwen/Qwen2.5-Coder-7B-Instruct \
-    --eval-data ai_engine/mmsd/data/processed/validated_pairs.jsonl \
+    --eval-data ai-engine/mmsd/data/processed/validated_pairs.jsonl \
     --output evaluation_results.json
 ```
 
@@ -217,17 +217,17 @@ python3 ai_engine/mmsd/evaluate.py \
 ### Evaluation Script
 ```bash
 # Evaluate fine-tuned model
-python3 ai_engine/mmsd/evaluate.py \
+python3 ai-engine/mmsd/evaluate.py \
     --model alexchapin/portkit-coder-7b-merged \
     --baseline Qwen/Qwen2.5-Coder-7B-Instruct \
-    --eval-data ai_engine/mmsd/data/processed/validated_pairs.jsonl \
+    --eval-data ai-engine/mmsd/data/processed/validated_pairs.jsonl \
     --output evaluation_results.json
 
 # Or evaluate LoRA adapter directly
-python3 ai_engine/mmsd/evaluate.py \
+python3 ai-engine/mmsd/evaluate.py \
     --baseline Qwen/Qwen2.5-Coder-7B-Instruct \
     --lora-adapter ./portkit-lora/final \
-    --eval-data ai_engine/mmsd/data/processed/validated_pairs.jsonl
+    --eval-data ai-engine/mmsd/data/processed/validated_pairs.jsonl
 ```
 
 ### Metrics
@@ -272,11 +272,11 @@ Components verified:
 
 | File | Description |
 |------|-------------|
-| `ai_engine/mmsd/train_portkit_coder.py` | Complete training script (self-contained) |
-| `ai_engine/mmsd/evaluate.py` | Evaluation script (BLEU, JSON validity, JS syntax) |
-| `ai_engine/mmsd/data/processed/validated_pairs.jsonl` | Clean training data (1,400 pairs) |
-| `ai_engine/mmsd/data/processed/synthesis_pairs.jsonl` | Copy of raw synthesis pairs |
-| `ai_engine/mmsd/TRAINING_REPORT.md` | This report |
+| `ai-engine/mmsd/train_portkit_coder.py` | Complete training script (self-contained) |
+| `ai-engine/mmsd/evaluate.py` | Evaluation script (BLEU, JSON validity, JS syntax) |
+| `ai-engine/mmsd/data/processed/validated_pairs.jsonl` | Clean training data (1,400 pairs) |
+| `ai-engine/mmsd/data/processed/synthesis_pairs.jsonl` | Copy of raw synthesis pairs |
+| `ai-engine/mmsd/TRAINING_REPORT.md` | This report |
 
 ---
 

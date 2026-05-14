@@ -8,7 +8,7 @@ This environment uses the MMSD (Modding Multi-Step Dataset) to train models on c
 
 ### Dataset
 
-- **Source**: `ai_engine/mmsd/data/processed/validated_pairs.jsonl`
+- **Source**: `ai-engine/mmsd/data/processed/validated_pairs.jsonl`
 - **Size**: 1,400 training pairs (1,260 train / 140 eval)
 - **Split**: 90/10 train/eval
 

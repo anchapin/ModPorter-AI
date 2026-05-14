@@ -2,7 +2,7 @@
 Packaging Agent for assembling converted components into .mcaddon packages
 
 This module is now a thin wrapper that imports from the packaging/ subpackage.
-All implementation details have been moved to ai_engine/agents/packaging/.
+All implementation details have been moved to ai-engine/agents/packaging/.
 
 Per issue #1278: Split packaging_agent.py (42K) + packaging_validator.py (31K) into packaging/ subpackage
 """

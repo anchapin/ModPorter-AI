@@ -1,7 +1,7 @@
 import os
 import json
 import time
-from ai_engine.mmsd.pipeline.dual_teacher import DualTeacherPipeline
+from mmsd.pipeline.dual_teacher import DualTeacherPipeline
 
 
 def main():
@@ -9,8 +9,8 @@ def main():
     Runs the synthesis pipeline on the generated instructions.
     Continuous mode: waits for new instructions if the target hasn't been reached.
     """
-    input_path = "ai_engine/mmsd/data/raw/instructions.jsonl"
-    output_path = "ai_engine/mmsd/data/processed/synthesis_pairs.jsonl"
+    input_path = "ai-engine/mmsd/data/raw/instructions.jsonl"
+    output_path = "ai-engine/mmsd/data/processed/synthesis_pairs.jsonl"
     target_total = 1400
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)

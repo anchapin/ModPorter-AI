@@ -10,7 +10,7 @@ import logging
 # Add the ai-engine directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "ai-engine"))
 
-from ai_engine.utils.rate_limiter import create_z_ai_llm, get_llm_backend
+from utils.rate_limiter import create_z_ai_llm, get_llm_backend
 
 # Configure logging
 logging.basicConfig(

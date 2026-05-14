@@ -29,9 +29,9 @@ def find_pids():
 
 
 def main():
-    instr_path = "ai_engine/mmsd/data/raw/instructions.jsonl"
-    synth_path = "ai_engine/mmsd/data/processed/synthesis_pairs.jsonl"
-    log_path = "ai_engine/mmsd/data/health_check.log"
+    instr_path = "ai-engine/mmsd/data/raw/instructions.jsonl"
+    synth_path = "ai-engine/mmsd/data/processed/synthesis_pairs.jsonl"
+    log_path = "ai-engine/mmsd/data/health_check.log"
     target = 1400
 
     print(f"MMSD Health Check started. Logging to {log_path}")

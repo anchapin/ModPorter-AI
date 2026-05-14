@@ -38,7 +38,7 @@ from peft import PeftModel
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
 PROJECT_ROOT = SCRIPT_DIR.parent
-DATASET_PATH = PROJECT_ROOT / "ai_engine/mmsd/data/processed/validated_pairs.jsonl"
+DATASET_PATH = PROJECT_ROOT / "ai-engine/mmsd/data/processed/validated_pairs.jsonl"
 OUTPUT_DIR = SCRIPT_DIR / "phase5_output"
 
 SFT_ADAPTER_PATH = SCRIPT_DIR / "phase4_output_1.5b/sft/final"

@@ -668,7 +668,7 @@ async def upload_texture_asset(
 
         # Extract texture metadata
         try:
-            from ai_engine.utils.texture_metadata_extractor import TextureMetadataExtractor
+            from utils.texture_metadata_extractor import TextureMetadataExtractor
 
             extractor = TextureMetadataExtractor()
             metadata = extractor.extract(tmp_path)
@@ -751,7 +751,7 @@ async def upload_model_asset(
 
         # Extract model metadata
         try:
-            from ai_engine.utils.model_metadata_extractor import ModelMetadataExtractor
+            from utils.model_metadata_extractor import ModelMetadataExtractor
 
             extractor = ModelMetadataExtractor()
             metadata = extractor.extract(tmp_path)
@@ -815,7 +815,7 @@ async def search_multimodal(
     Applies modality-aware scoring to weight results appropriately.
     """
     try:
-        from ai_engine.search.multimodal_search_engine import MultiModalSearchEngine
+        from search.multimodal_search_engine import MultiModalSearchEngine
         from schemas.multimodal_schema import SearchQuery, ContentType
 
         # Convert content type strings to enums
@@ -887,7 +887,7 @@ async def get_related_across_modalities(
         limit: Maximum number of related items to return
     """
     try:
-        from ai_engine.search.cross_modal_retriever import CrossModalRetriever
+        from search.cross_modal_retriever import CrossModalRetriever
 
         # Parse target modalities
         modalities = None

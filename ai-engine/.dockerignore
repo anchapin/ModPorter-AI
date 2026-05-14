@@ -1,0 +1,52 @@
+# .dockerignore for ai-engine/ build context
+#
+# Each Dockerfile in this directory does `COPY . /app/` from the
+# ai-engine/ build context. Without this file, multi-MB development
+# artifacts and MMSD training backups would be baked into runtime
+# images. This file scopes the copied content to what the running
+# AI Engine actually needs.
+
+# ───── Local tooling and caches ──────────────────────────────────
+.venv/
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+__pycache__/
+*.pyc
+*.pyo
+
+# ───── Tests ─────────────────────────────────────────────────────
+# Tests are not needed at runtime. Each Dockerfile may override this
+# by un-ignoring tests/ in a build-args layer if a test image variant
+# is required.
+tests/
+
+# ───── MMSD training backups (offline-only, not runtime) ─────────
+# `mmsd/` was consolidated from the orphan `ai_engine/` directory in
+# the consolidation PR (see ARCHITECTURE.md / commit refactor(ai-engine):
+# consolidate ai_engine/ namespace). Its training data is consumed only
+# by offline scripts (train_portkit_coder.py, evaluate.py, dpo_training.py,
+# etc.), never by the running AI Engine service.
+mmsd/data/backups/
+mmsd/data/raw/
+mmsd/*.tar.gz
+mmsd/**/*.tar.gz
+mmsd/**/*.bak
+mmsd/**/*.bak.*
+mmsd/**/*.old
+mmsd/synthesis_pairs.jsonl
+mmsd/synthesis_pairs.jsonl.*
+mmsd/synthesis_pairs_recovered*.jsonl
+mmsd/instructions.jsonl
+mmsd/instructions.jsonl.*
+
+# ───── Notebooks and demo artifacts ──────────────────────────────
+notebooks/
+prototyping/
+demo_advanced_rag.py
+
+# ───── Data and outputs that shouldn't ship in images ────────────
+training_data/
+conversion_outputs/

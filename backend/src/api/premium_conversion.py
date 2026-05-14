@@ -2,7 +2,7 @@
 Premium Conversion API Endpoints
 
 Uses frontier AI models via OpenRouter for high-quality Java→Bedrock conversion.
-Integrates with ai_engine/mmsd/premium_client.py.
+Integrates with ai-engine/mmsd/premium_client.py.
 
 Endpoints:
 - POST /api/v1/premium/convert - Premium conversion using frontier models
@@ -134,7 +134,7 @@ async def premium_convert(
     }
     ```
     """
-    from ai_engine.mmsd.premium_client import PortKitPremium, ConversionResult
+    from mmsd.premium_client import PortKitPremium, ConversionResult
 
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
 
@@ -192,7 +192,7 @@ async def list_premium_models(
     }
     ```
     """
-    from ai_engine.mmsd.premium_client import MODEL_CONFIGS
+    from mmsd.premium_client import MODEL_CONFIGS
 
     return PremiumModelsResponse(models={k: v["model_id"] for k, v in MODEL_CONFIGS.items()})
 
@@ -225,7 +225,7 @@ async def estimate_premium_cost(
     }
     ```
     """
-    from ai_engine.mmsd.premium_client import PortKitPremium
+    from mmsd.premium_client import PortKitPremium
 
     api_key = os.environ.get("OPENROUTER_API_KEY", "dummy-key-for-estimate")
 

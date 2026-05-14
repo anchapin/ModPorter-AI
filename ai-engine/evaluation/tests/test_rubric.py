@@ -1,18 +1,18 @@
 """
 Tests for rubric-grounded evaluation framework.
 
-Run with: pytest ai_engine/evaluation/tests/test_rubric.py -v
+Run with: pytest ai-engine/evaluation/tests/test_rubric.py -v
 """
 
 import pytest
 
-from ai_engine.evaluation.models import (
+from evaluation.models import (
     RubricCategory,
     RubricScore,
     RubricResult,
     RewardSignal,
 )
-from ai_engine.evaluation.evaluator import RubricEvaluator, BedrockConstraintChecker, RUBRIC_DEFINITIONS
+from evaluation.evaluator import RubricEvaluator, BedrockConstraintChecker, RUBRIC_DEFINITIONS
 
 
 class TestRubricModels:

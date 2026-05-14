@@ -5,7 +5,7 @@ Uses frontier models (DeepSeek V4, Kimi K2, etc.) via OpenRouter for high-qualit
 Java→Bedrock mod conversion. No fine-tuning needed — just few-shot prompting.
 
 Usage:
-    from ai_engine.mmsd.premium_client import PortKitPremium
+    from mmsd.premium_client import PortKitPremium
 
     client = PortKitPremium()  # uses OPENROUTER_API_KEY env var
     result = client.convert(instruction="Custom swords mod", java_source=java_code)

@@ -46,13 +46,13 @@ def load_environment() -> vf.SingleTurnEnv:
     """
     dataset_path = (
         Path(__file__).parent.parent.parent.parent
-        / "ai_engine/mmsd/data/processed/validated_pairs.jsonl"
+        / "ai-engine/mmsd/data/processed/validated_pairs.jsonl"
     )
 
     if not dataset_path.exists():
         raise FileNotFoundError(
             f"Dataset not found at {dataset_path}. "
-            "Please ensure ai_engine/mmsd/data/processed/validated_pairs.jsonl exists."
+            "Please ensure ai-engine/mmsd/data/processed/validated_pairs.jsonl exists."
         )
 
     pairs = []
