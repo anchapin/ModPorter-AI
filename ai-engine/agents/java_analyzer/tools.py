@@ -6,9 +6,10 @@ import json
 import os
 import zipfile
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Any, ClassVar, Dict, List, Union
 
-from langchain_core.tools import tool
+from langchain_core.tools import BaseTool
+from pydantic import BaseModel, ConfigDict, Field
 
 from utils.logging_config import get_agent_logger
 
@@ -21,9 +22,8 @@ class JavaAnalyzerTools:
     def __init__(self, agent_instance=None):
         self.agent_instance = agent_instance
 
-    @tool
     @staticmethod
-    def analyze_mod_structure_tool(mod_data: Union[str, Dict]) -> str:
+    def _analyze_mod_structure(mod_data: Union[str, Dict]) -> str:
         """
         Analyze the overall structure of a Java mod.
 
@@ -345,9 +345,8 @@ class JavaAnalyzerTools:
             logger.error(f"Mod structure analysis error: {e}")
             return json.dumps(error_response)
 
-    @tool
     @staticmethod
-    def extract_mod_metadata_tool(mod_data: Union[str, Dict]) -> str:
+    def _extract_mod_metadata(mod_data: Union[str, Dict]) -> str:
         """
         Extract metadata from mod files.
 
@@ -452,9 +451,8 @@ class JavaAnalyzerTools:
             logger.error(f"Metadata extraction error: {e}")
             return json.dumps(error_response)
 
-    @tool
     @staticmethod
-    def identify_features_tool(mod_data: Union[str, Dict]) -> str:
+    def _identify_features(mod_data: Union[str, Dict]) -> str:
         """
         Identify features in the mod.
 
@@ -571,9 +569,8 @@ class JavaAnalyzerTools:
             logger.error(f"Feature identification error: {e}")
             return json.dumps(error_response)
 
-    @tool
     @staticmethod
-    def analyze_dependencies_tool(mod_data: Union[str, Dict]) -> str:
+    def _analyze_dependencies(mod_data: Union[str, Dict]) -> str:
         """
         Analyze mod dependencies.
 
@@ -633,9 +630,8 @@ class JavaAnalyzerTools:
             logger.error(f"Dependency analysis error: {e}")
             return json.dumps(error_response)
 
-    @tool
     @staticmethod
-    def extract_assets_tool(mod_data: Union[str, Dict]) -> str:
+    def _extract_assets(mod_data: Union[str, Dict]) -> str:
         """
         Extract assets from the mod.
 
@@ -772,9 +768,8 @@ class JavaAnalyzerTools:
             logger.error(f"Asset extraction error: {e}")
             return json.dumps(error_response)
 
-    @tool
     @staticmethod
-    def analyze_complexity_with_llm_tool(analysis_data: str) -> str:
+    def _analyze_complexity_with_llm(analysis_data: str) -> str:
         """
         Use LLM to analyze Java mod complexity and identify Bedrock-incompatible patterns.
 
@@ -837,3 +832,188 @@ class JavaAnalyzerTools:
             error_response = {"success": False, "error": f"LLM analysis failed: {str(e)}"}
             logger.error(f"LLM complexity analysis error: {e}")
             return json.dumps(error_response)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Typed args_schema models — one per LangChain tool wrapper
+#
+# Phase 8 A6 (refs #1201). Each schema preserves the legacy single-arg
+# ``mod_data: Union[str, Dict]`` (or ``analysis_data: str``) shape so chat
+# models and existing call sites continue to invoke
+# ``JavaAnalyzerAgent.<tool_name>.invoke({...})`` without changes. Five of
+# the six tools accept either a JSON string or a dict, mirroring the
+# legacy ``Union[str, Dict]`` typing on the static methods. The sixth
+# (``analyze_complexity_with_llm_tool``) requires a JSON string only.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class _AnalyzeModStructureInput(BaseModel):
+    """Args for :class:`_AnalyzeModStructureTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    mod_data: Any = Field(
+        description=(
+            "JSON string or dict containing ``mod_path`` and analysis options. "
+            "``Any`` preserves the legacy ``Union[str, Dict]`` calling shape."
+        ),
+    )
+
+
+class _ExtractModMetadataInput(BaseModel):
+    """Args for :class:`_ExtractModMetadataTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    mod_data: Any = Field(
+        description="JSON string or dict containing ``mod_path``.",
+    )
+
+
+class _IdentifyFeaturesInput(BaseModel):
+    """Args for :class:`_IdentifyFeaturesTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    mod_data: Any = Field(
+        description="JSON string or dict containing ``mod_path`` and feature options.",
+    )
+
+
+class _AnalyzeDependenciesInput(BaseModel):
+    """Args for :class:`_AnalyzeDependenciesTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    mod_data: Any = Field(
+        description=(
+            "JSON string or dict containing ``mod_path`` and an optional "
+            "``metadata.dependencies`` list."
+        ),
+    )
+
+
+class _ExtractAssetsInput(BaseModel):
+    """Args for :class:`_ExtractAssetsTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    mod_data: Any = Field(
+        description=(
+            "JSON string or dict containing ``mod_path``, ``output_dir``, and "
+            "optional ``asset_types`` filter."
+        ),
+    )
+
+
+class _AnalyzeComplexityWithLlmInput(BaseModel):
+    """Args for :class:`_AnalyzeComplexityWithLlmTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    analysis_data: str = Field(
+        min_length=1,
+        description=(
+            "JSON string with the prior analysis output to be reasoned about "
+            "by the LLM-augmented complexity analyzer."
+        ),
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Typed BaseTool subclasses — replace the previous @tool @staticmethod wrappers
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class _BaseJavaAnalyzerTool(BaseTool):
+    """Common scaffolding for Java Analyzer typed tool wrappers."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+class _AnalyzeModStructureTool(_BaseJavaAnalyzerTool):
+    name: str = "analyze_mod_structure_tool"
+    description: str = (
+        "Analyze the overall structure of a Java mod (mod type, framework, "
+        "file inventory, complexity assessment). "
+        "Args: mod_data (str or dict, required) — mod_path and options."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _AnalyzeModStructureInput
+
+    def _run(self, mod_data: Any) -> str:  # type: ignore[override]
+        return JavaAnalyzerTools._analyze_mod_structure(mod_data)
+
+
+class _ExtractModMetadataTool(_BaseJavaAnalyzerTool):
+    name: str = "extract_mod_metadata_tool"
+    description: str = (
+        "Extract metadata from a Java mod's manifest "
+        "(fabric.mod.json, mods.toml, mcmod.info). "
+        "Args: mod_data (str or dict, required) — mod_path."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _ExtractModMetadataInput
+
+    def _run(self, mod_data: Any) -> str:  # type: ignore[override]
+        return JavaAnalyzerTools._extract_mod_metadata(mod_data)
+
+
+class _IdentifyFeaturesTool(_BaseJavaAnalyzerTool):
+    name: str = "identify_features_tool"
+    description: str = (
+        "Identify mod features (blocks, items, entities, recipes, events) "
+        "from source/jar inspection. "
+        "Args: mod_data (str or dict, required) — mod_path and options."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _IdentifyFeaturesInput
+
+    def _run(self, mod_data: Any) -> str:  # type: ignore[override]
+        return JavaAnalyzerTools._identify_features(mod_data)
+
+
+class _AnalyzeDependenciesTool(_BaseJavaAnalyzerTool):
+    name: str = "analyze_dependencies_tool"
+    description: str = (
+        "Analyze a mod's declared and detected dependencies, including "
+        "Bedrock-portability assessment. "
+        "Args: mod_data (str or dict, required) — mod_path + optional metadata."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _AnalyzeDependenciesInput
+
+    def _run(self, mod_data: Any) -> str:  # type: ignore[override]
+        return JavaAnalyzerTools._analyze_dependencies(mod_data)
+
+
+class _ExtractAssetsTool(_BaseJavaAnalyzerTool):
+    name: str = "extract_assets_tool"
+    description: str = (
+        "Extract assets (textures, models, sounds) from a Java mod. "
+        "Args: mod_data (str or dict, required) — mod_path, output_dir, "
+        "optional asset_types filter."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _ExtractAssetsInput
+
+    def _run(self, mod_data: Any) -> str:  # type: ignore[override]
+        return JavaAnalyzerTools._extract_assets(mod_data)
+
+
+class _AnalyzeComplexityWithLlmTool(_BaseJavaAnalyzerTool):
+    name: str = "analyze_complexity_with_llm_tool"
+    description: str = (
+        "Use the LLM to reason about an analysis's complexity. "
+        "Args: analysis_data (str, required) — JSON of prior analysis."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _AnalyzeComplexityWithLlmInput
+
+    def _run(self, analysis_data: str) -> str:  # type: ignore[override]
+        return JavaAnalyzerTools._analyze_complexity_with_llm(analysis_data)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Module-level tool instances — preserved as class attributes on
+# JavaAnalyzerTools so the ``JavaAnalyzerAgent`` class-attribute aliases in
+# ``agents/java_analyzer/java_analyzer.py``
+# (``extract_mod_metadata_tool = JavaAnalyzerTools.extract_mod_metadata_tool``)
+# resolve to the new typed BaseTool instances at import time.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+JavaAnalyzerTools.analyze_mod_structure_tool = _AnalyzeModStructureTool()
+JavaAnalyzerTools.extract_mod_metadata_tool = _ExtractModMetadataTool()
+JavaAnalyzerTools.identify_features_tool = _IdentifyFeaturesTool()
+JavaAnalyzerTools.analyze_dependencies_tool = _AnalyzeDependenciesTool()
+JavaAnalyzerTools.extract_assets_tool = _ExtractAssetsTool()
+JavaAnalyzerTools.analyze_complexity_with_llm_tool = _AnalyzeComplexityWithLlmTool()
