@@ -36,7 +36,7 @@ def get_install_requires():
         # Embeddings - Using sentence-transformers for local embeddings
         # Note: This is a core dependency for RAG functionality
         "sentence-transformers>=2.2.0",
-        # Vector Database (pin version for embedchain compatibility)
+        # Vector Database — pin relaxed after legacy framework removal (#1439, unblocked by #1201)
         "chromadb>=1.5.8,<2.0",
         # Data Processing
         "numpy",
