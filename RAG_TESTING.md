@@ -10,8 +10,8 @@ The RAG system consists of several key components:
 
 ### Core Components
 
-1. **RAG Crew (`src/crew/rag_crew.py`)**
-   - Multi-agent system using CrewAI
+1. **RAG Crew (`src/services/rag_service.py`)**
+   - Multi-agent system using LangChain/LangGraph
    - Configurable agents with specialized roles
    - Dynamic tool assignment and agent communication
 
@@ -243,6 +243,6 @@ To contribute to the RAG testing suite:
 ## References
 
 - [RAG.md](../RAG.md) - Detailed RAG system documentation
-- [CrewAI Documentation](https://docs.crewai.com/) - Multi-agent framework
+- [LangChain/LangGraph Documentation](https://docs.langchain.com/) - Multi-agent framework
 - [LangChain Documentation](https://python.langchain.com/) - LLM framework
 - [pytest Documentation](https://docs.pytest.org/) - Testing framework

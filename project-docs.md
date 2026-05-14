@@ -32,7 +32,7 @@ pnpm run dev
 portkit/
 ├── frontend/          # React TypeScript frontend
 ├── backend/           # Python FastAPI backend  
-├── ai-engine/         # CrewAI conversion engine
+├── ai-engine/         # LangChain/LangGraph conversion engine
 ├── local-agent/       # Node.js local validation agent
 ├── docs/              # Documentation
 └── tests/             # Integration tests
@@ -81,7 +81,7 @@ All contributions must align with the Product Requirements Document:
 
 ### Core Features (Must Implement)
 - **Feature 1**: One-Click Modpack Ingestion
-- **Feature 2**: AI Conversion Engine (CrewAI multi-agent)
+- **Feature 2**: AI Conversion Engine (LangChain/LangGraph multi-agent)
 - **Feature 3**: Interactive Conversion Report
 - **Feature 4**: AI-Powered Validation & Comparison
 - **Feature 5**: Post-Conversion Editor (future)
@@ -120,7 +120,7 @@ pytest --cov=src tests/
 cd ai-engine
 pytest --cov=src tests/
 ```
-- CrewAI agent testing
+- LangChain agent runnable testing
 - Smart assumption logic verification
 - Conversion workflow testing
 - Mock LLM response testing
