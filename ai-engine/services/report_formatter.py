@@ -2,7 +2,7 @@
 
 Replaces ``crew.conversion_crew.PortkitConversionCrew._format_conversion_report``
 and ``_create_failure_response`` with framework-agnostic helpers that consume
-the LangGraph ``ConversionState`` instead of the legacy CrewAI ``CrewOutput``.
+the LangGraph ``ConversionState`` instead of the legacy ``CrewOutput``.
 
 The output shape preserves the PRD Feature 3 contract so the frontend and
 ``backend.AIEngineClient`` continue to deserialize results unchanged.

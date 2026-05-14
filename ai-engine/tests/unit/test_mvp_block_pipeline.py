@@ -1,6 +1,6 @@
 """Unit tests for ``services.mvp_block_pipeline`` (issue #1201).
 
-Replaces the legacy CrewAI ``convert_block_mvp`` /
+Replaces the legacy ``convert_block_mvp`` /
 ``convert_blocks_batch_mvp`` tests. Verifies that the LangGraph-era MVP
 pipeline:
 

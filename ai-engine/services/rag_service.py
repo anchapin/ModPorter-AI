@@ -1,4 +1,4 @@
-"""LangChain LCEL replacement for the legacy CrewAI RAGCrew (issue #1201).
+"""LangChain LCEL replacement for the legacy ``RAGCrew`` (issue #1201).
 
 Exposes a deterministic researcher → writer chain composed of:
 - ``SearchTool`` invoked with the user query (free-form input).

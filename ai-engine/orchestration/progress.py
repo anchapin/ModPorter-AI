@@ -2,7 +2,7 @@
 
 Used by the LangGraph pipeline to report progress through node entry/exit
 hooks. Replaces ``crew.conversion_crew.PortkitConversionCrew.PipelineStage``
-and ``PipelineProgress`` (which were nested classes coupled to CrewAI).
+and ``PipelineProgress`` (which were nested classes coupled to the legacy multi-agent framework).
 """
 
 from __future__ import annotations
