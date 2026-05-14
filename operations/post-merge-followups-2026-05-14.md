@@ -10,14 +10,28 @@ overwriting this one.
 | Issue | PR | Branch | Scope | Auto-closes issue? |
 | --- | --- | --- | --- | --- |
 | [#1437](https://github.com/anchapin/portkit/issues/1437) | [#1440](https://github.com/anchapin/portkit/pull/1440) | `fix/1437-trivy-sarif-permission` | `.github/workflows/ai-quality-gates.yml` (+3 / −0) | ✅ Closes #1437 |
-| [#1438](https://github.com/anchapin/portkit/issues/1438) | [#1441](https://github.com/anchapin/portkit/pull/1441) | `ops/1438-fly-token-rotation-runbook` | `docs/operations/fly-token-rotation.md` (+277 / −0) | ⚠️ Refs #1438 only — manual rotation still required to fully close |
+| [#1438](https://github.com/anchapin/portkit/issues/1438) | [#1441](https://github.com/anchapin/portkit/pull/1441) | `ops/1438-fly-token-rotation-runbook` | `docs/operations/fly-token-rotation.md` (+277 / −0) | ⚠️ Manual rotation still required; issue remains open until verified |
 | [#1439](https://github.com/anchapin/portkit/issues/1439) | [#1442](https://github.com/anchapin/portkit/pull/1442) | `fix/1439-crewai-langchain-openai-conflict` | `ai-engine/requirements.txt` (+7 / −3) | ✅ Closes #1439 |
 
 All three branches were forked from `main @ accf7329` and have disjoint write
 sets, so they could be merged in any order without conflicts. The order below
-is chosen for safety, not for technical dependency.
+was chosen for safety, not for technical dependency.
 
-## Recommended merge order (with rationale)
+## Actual merge outcome
+
+| Order | PR | Merge commit | Result |
+| --- | --- | --- | --- |
+| 1 | [#1440](https://github.com/anchapin/portkit/pull/1440) | `eabbe6b4` | Landed the Trivy SARIF permissions fix; [#1437](https://github.com/anchapin/portkit/issues/1437) is closed. |
+| 2 | [#1441](https://github.com/anchapin/portkit/pull/1441) | `6f1d5f4a` | Landed the Fly.io token rotation runbook; [#1438](https://github.com/anchapin/portkit/issues/1438) remains open because credential rotation is still manual. |
+| 3 | [#1442](https://github.com/anchapin/portkit/pull/1442) | `0519803b` | Landed the `crewai` / `langchain-openai` dependency fix after all CI gates passed; [#1439](https://github.com/anchapin/portkit/issues/1439) is closed. |
+| 4 | [#1443](https://github.com/anchapin/portkit/pull/1443) | `68fa6bbd` | Landed this dated follow-up checklist. |
+
+After #1441 merged, GitHub briefly marked #1438 closed because the PR body
+contained an auto-linking phrase that matched GitHub's issue-closing keyword
+parser. The issue was reopened with an explanatory comment and should remain
+open until the token rotation is performed and verified.
+
+## Merge order used (with rationale)
 
 1. **#1440 first** — fully green at submission; small (+3 / −0), additive,
    and reverses the only pre-existing failure on `ai-quality-gates.yml`. Lowest
@@ -27,13 +41,14 @@ is chosen for safety, not for technical dependency.
    ai-engine test image which is unaffected by a docs-only diff. Merging this
    second makes the runbook canonically available before the maintainer needs
    it to act on the items in this file.
-3. **#1442 last and only when all 9 originally-pending CI jobs report green**.
-   The critical gates are `build-python-base`, `ai-engine-test`,
+3. **#1442 last and only after all 9 originally-pending CI jobs reported green**.
+   The critical gates were `build-python-base`, `ai-engine-test`,
    `Tests + Coverage (70% min)`, `Integration Tests (ai-engine|backend|integration)`,
    `Mutation Testing - Python (ai-engine)`, `Mutation Testing - Frontend`, and
-   `Trivy Dependency Scan`. The `crewai 0.11.x → 0.193.x` jump crosses an API
-   boundary; `pip` resolver convergence (proven locally) does not prove
-   runtime compatibility. Do **not** admin-bypass these checks.
+   `Trivy Dependency Scan`. The `crewai 0.11.x → 0.193.x` jump crossed an API
+   boundary; `pip` resolver convergence (proven locally) was not treated as
+   enough proof of runtime compatibility. These checks passed before #1442 was
+   merged.
 
 ## Manual ops follow-ups still required after merges
 
@@ -78,10 +93,9 @@ write access** must:
    gh workflow run fly-deploy.yml --repo anchapin/portkit --ref main
    gh run watch --repo anchapin/portkit
    ```
-5. **Close [#1438](https://github.com/anchapin/portkit/issues/1438)** once the
-   first post-rotation run reaches the deploy step. PR #1441 uses
-   `Refs #1438`, not `Closes #1438`, so the issue stays open until step 5 is
-   done by hand.
+5. **Mark [#1438](https://github.com/anchapin/portkit/issues/1438) done** once the
+   first post-rotation run reaches the deploy step. The issue should stay open
+   until this verification step is done by hand.
 6. **Update the runbook's `Last rotated:` line** in a small follow-up PR. The
    current value in `docs/operations/fly-token-rotation.md` is
    `_never (initial runbook)_`.
@@ -89,9 +103,9 @@ write access** must:
 The full procedure is in `docs/operations/fly-token-rotation.md` (lands with
 PR #1441); this section is a check-the-box checklist.
 
-> Note: production deploys may still fail for a different reason
-> (`ai-engine` dependency resolution) until PR #1442 / issue #1439 also
-> merges. That is the expected interaction documented in both PRs.
+> Note: the separate `ai-engine` dependency-resolution failure from #1439 was
+> fixed by PR #1442. If deploys still fail before any build output appears, the
+> remaining blocker is the Fly.io token authentication issue tracked by #1438.
 
 ## Deferred follow-ups (separate future PRs)
 
@@ -149,15 +163,14 @@ and features in `crewai 1.x`:
 
 ### C. Update the `crewai` major-line — codebase audit
 
-PR #1442 jumps `crewai` from `0.11.x` to `0.193.2`. The Agent / Task / Crew
+PR #1442 jumped `crewai` from `0.11.x` to `0.193.2`. The Agent / Task / Crew
 constructor surface that `ai-engine/crew/conversion_crew.py` and
-`ai-engine/agents/rag_agents.py` rely on is structurally compatible based on
-the `crewai 0.193.2` wheel inspection that informed the version pick, but CI
-is the authoritative validation. If any of the pending CI jobs on PR #1442
-fail with an `Agent.__init__()`, `Task.__init__()`, `Crew.__init__()`, or
-`Process` import error, the fix likely belongs in a **follow-up PR** that
-adapts the call sites — do not amend PR #1442 with code changes that expand
-its scope beyond the requirements pin.
+`ai-engine/agents/rag_agents.py` rely on was structurally compatible based on
+the `crewai 0.193.2` wheel inspection that informed the version pick, and the
+critical CI gates passed before merge. If future runtime issues appear around
+`Agent.__init__()`, `Task.__init__()`, `Crew.__init__()`, or `Process`, handle
+them in a focused follow-up PR that adapts the call sites rather than mixing
+that work into credential-rotation follow-ups.
 
 ## Source
 
