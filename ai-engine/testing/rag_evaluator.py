@@ -74,7 +74,7 @@ class RagEvaluator:
             # Currently, SearchTool returns hardcoded results.
             # In a real scenario, this would involve actual search logic.
             # Using semantic_search method instead of private _run method
-            retrieved_docs_json = await self.search_tool.semantic_search.func(query)
+            retrieved_docs_json = await self.search_tool.semantic_search.ainvoke({"query": query})
             retrieved_docs_data = json.loads(retrieved_docs_json)
             retrieved_docs_text = " ".join(
                 [result.get("content", "") for result in retrieved_docs_data.get("results", [])]

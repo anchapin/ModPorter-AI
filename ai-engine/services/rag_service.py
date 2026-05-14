@@ -80,11 +80,19 @@ def _format_search_results(raw: Any) -> str:
 
 
 def _resolve_search_tool(search_tool: Optional[Any]) -> Any:
+    """Resolve to a search tool; default is the typed ``SemanticSearchTool``.
+
+    After the typed-args-schema migration (Phase 8 A, issue #1201), the default
+    semantic-search tool is itself a LangChain ``BaseTool``. Returning it
+    directly routes the RAG search step through the primary ``BaseTool``
+    branch in ``_make_search_step`` (Path 1) instead of the legacy descriptor
+    branch (Path 2).
+    """
     if search_tool is not None:
         return search_tool
     from tools.search_tool import SearchTool
 
-    return SearchTool.get_instance()
+    return SearchTool.get_instance().semantic_search
 
 
 def _resolve_llm(llm: Optional[Any]) -> Any:
@@ -140,11 +148,15 @@ def _make_search_step(search_tool: Optional[Any]) -> Runnable:
             type(tool), "semantic_search", None
         )
         if isinstance(semantic, _LCBaseTool):
-            try:
-                raw = await semantic.ainvoke({"query_data": query})
-                return _format_search_results(raw)
-            except Exception as e:  # pragma: no cover
-                logger.debug(f"semantic_search.ainvoke failed: {e}")
+            # The typed ``SemanticSearchTool`` accepts ``query``; older
+            # ``query_data``-shaped descriptors (if any remain) are tried as
+            # a final compatibility step.
+            for kwargs in ({"query": query}, {"query_data": query}):
+                try:
+                    raw = await semantic.ainvoke(kwargs)
+                    return _format_search_results(raw)
+                except Exception as e:  # pragma: no cover
+                    logger.debug(f"semantic_search.ainvoke({kwargs}) failed: {e}")
 
         # 3. Sync fallbacks for arbitrary search backends.
         for attr in ("search", "_run"):
