@@ -198,13 +198,6 @@ class TestBuildMessages:
 class TestParseOutput:
     """Tests for output parsing."""
 
-    @pytest.mark.xfail(
-        reason="Pre-existing parser bug in PortKitPremium._parse_output: "
-        "bedrock_script is populated with manifest JSON instead of script TS. "
-        "Test was uncollectable on main due to namespace mismatch (`from ai_engine.mmsd.*`); "
-        "consolidating the namespace surfaced the latent failure. Fix in a follow-up PR.",
-        strict=True,
-    )
     def test_parse_output_extracts_reasoning_and_manifest(self):
         from mmsd.premium_client import PortKitPremium
 
@@ -234,6 +227,59 @@ import { world } from "@minecraft/server";
         assert "Block Registration" in result.reasoning
         assert "format_version" in result.bedrock_manifest
         assert "minecraft/server" in result.bedrock_script
+        client.close()
+
+    def test_parse_output_does_not_confuse_json_block_for_js(self):
+        """Regression: ``r"```(?:javascript|js)..."`` without word boundary used
+        to match the start of a ``json`` fence, so the JSON manifest content
+        leaked into bedrock_script. Word boundary in the alternation prevents this.
+        """
+        from mmsd.premium_client import PortKitPremium
+
+        client = PortKitPremium(api_key="sk-test-key")
+        # Note: this output has a JSON block BEFORE any JS block — the order
+        # that triggered the original bug.
+        output = """## Conversion Plan
+
+step 1
+
+## Bedrock Add-on Output
+
+### manifest.json
+```json
+{"format_version": 2, "header": {"name": "X"}}
+```
+
+### scripts/main.js
+```javascript
+console.log("hello");
+```"""
+        result = client._parse_output(output, "deepseek-v4-pro", 1000)
+        assert result.bedrock_manifest.startswith("{"), result.bedrock_manifest
+        assert "format_version" in result.bedrock_manifest
+        assert result.bedrock_script == 'console.log("hello");', result.bedrock_script
+        # Critical regression assertions:
+        assert "format_version" not in result.bedrock_script
+        assert "{" not in result.bedrock_script
+        client.close()
+
+    def test_parse_output_handles_json_only_no_js(self):
+        """A JSON-only output should not produce a stray bedrock_script."""
+        from mmsd.premium_client import PortKitPremium
+
+        client = PortKitPremium(api_key="sk-test-key")
+        output = """## Conversion Plan
+
+plan
+
+## Bedrock Add-on Output
+
+```json
+{"format_version": 2, "header": {"name": "X"}}
+```"""
+        result = client._parse_output(output, "deepseek-v4-pro", 1000)
+        assert "format_version" in result.bedrock_manifest
+        assert result.bedrock_script == ""
         client.close()
 
     def test_parse_output_handles_missing_sections(self):

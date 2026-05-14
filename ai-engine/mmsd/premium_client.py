@@ -625,7 +625,7 @@ class PortKitPremium:
                 break
 
         # Extract JS blocks
-        js_blocks = re.findall(r"```(?:javascript|js)\s*(.*?)\s*```", output, re.DOTALL)
+        js_blocks = re.findall(r"```(?:javascript|js)\b\s*(.*?)\s*```", output, re.DOTALL)
         script = max(js_blocks, key=len).strip() if js_blocks else ""
 
         success = bool(reasoning and (manifest or script))
