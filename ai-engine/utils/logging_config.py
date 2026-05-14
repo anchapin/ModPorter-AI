@@ -306,7 +306,8 @@ def setup_logging(
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
-    logging.getLogger("crewai").setLevel(logging.INFO if debug_mode else logging.WARNING)
+    logging.getLogger("langchain").setLevel(logging.INFO if debug_mode else logging.WARNING)
+    logging.getLogger("langgraph").setLevel(logging.INFO if debug_mode else logging.WARNING)
 
     # Log the configuration
     logger = logging.getLogger(__name__)
@@ -382,8 +383,8 @@ def clear_correlation_id() -> None:
 
 
 def get_crew_logger() -> AgentLogger:
-    """Get a configured logger for crew operations"""
-    return AgentLogger("crew.conversion_crew")
+    """Get a configured logger for conversion-pipeline operations"""
+    return AgentLogger("orchestration.langgraph_pipeline")
 
 
 # Performance timing decorator
@@ -883,8 +884,8 @@ def get_agent_log_summary(agent_name: str = None) -> Dict[str, Any]:
 
 
 def get_crew_logger() -> AgentLogger:
-    """Get a configured logger for crew operations"""
-    return AgentLogger("crew.conversion_crew")
+    """Get a configured logger for conversion-pipeline operations"""
+    return AgentLogger("orchestration.langgraph_pipeline")
 
 
 # Performance timing decorator
