@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.base import get_db
+from utils.ai_engine_path import ensure_ai_engine_on_path
 from db import crud
 from db.models import PatternSubmission
 
@@ -113,12 +114,7 @@ class ConversionPatternResponse(BaseModel):
 
 def _get_community_manager():
     """Get CommunityPatternManager from AI engine."""
-    ai_engine_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-        "ai-engine",
-    )
-    if ai_engine_path not in sys.path:
-        sys.path.insert(0, ai_engine_path)
+    ensure_ai_engine_on_path()
 
     from knowledge.community import CommunityPatternManager
 
@@ -127,12 +123,7 @@ def _get_community_manager():
 
 def _get_pattern_library():
     """Get PatternLibrary from AI engine."""
-    ai_engine_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-        "ai-engine",
-    )
-    if ai_engine_path not in sys.path:
-        sys.path.insert(0, ai_engine_path)
+    ensure_ai_engine_on_path()
 
     from knowledge.patterns import PatternLibrary
 
@@ -405,12 +396,7 @@ class RelatedChunksResponse(BaseModel):
 
 def _get_cross_reference_detector():
     """Get CrossReferenceDetector from AI engine."""
-    ai_engine_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-        "ai-engine",
-    )
-    if ai_engine_path not in sys.path:
-        sys.path.insert(0, ai_engine_path)
+    ensure_ai_engine_on_path()
 
     from knowledge.cross_reference import CrossReferenceDetector
 

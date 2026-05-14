@@ -23,6 +23,7 @@ from db.base import get_db
 from db.models import User
 from security.auth import verify_api_key
 from api._authz import get_current_user  # issue #1417
+from utils.ai_engine_path import ensure_ai_engine_on_path
 from services.feature_flags import is_feature_enabled, FeatureFlagNotEnabledError
 
 logger = logging.getLogger(__name__)
@@ -134,6 +135,7 @@ async def premium_convert(
     }
     ```
     """
+    ensure_ai_engine_on_path()
     from mmsd.premium_client import PortKitPremium, ConversionResult
 
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
@@ -192,6 +194,7 @@ async def list_premium_models(
     }
     ```
     """
+    ensure_ai_engine_on_path()
     from mmsd.premium_client import MODEL_CONFIGS
 
     return PremiumModelsResponse(models={k: v["model_id"] for k, v in MODEL_CONFIGS.items()})
@@ -225,6 +228,7 @@ async def estimate_premium_cost(
     }
     ```
     """
+    ensure_ai_engine_on_path()
     from mmsd.premium_client import PortKitPremium
 
     api_key = os.environ.get("OPENROUTER_API_KEY", "dummy-key-for-estimate")
