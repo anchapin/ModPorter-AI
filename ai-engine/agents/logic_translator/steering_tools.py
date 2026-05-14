@@ -16,25 +16,19 @@ Usage:
 """
 
 import json
-import logging
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
-try:
-    from langchain_core.tools import tool
-except ImportError:
-    # Fallback if LangChain not available
-    def tool(func):
-        return func
+from typing import ClassVar
+
+from langchain_core.tools import BaseTool
+from pydantic import BaseModel, ConfigDict, Field
 
 from steering import (
-    SteeringPipeline,
     SteeringPipelineConfig,
-    SteeringMode,
     get_steering_pipeline,
     configure_steering_pipeline,
     SteeringEvaluator,
     evaluate_steering_effectiveness,
-    IdiomCategory,
 )
 
 from utils.logging_config import get_agent_logger
@@ -84,7 +78,8 @@ class SteeringTools:
                 sae_endpoint=sae_endpoint,
                 sae_api_key=sae_api_key,
                 steering_scale=steering_scale,
-                suppression_targets=suppression_targets or [
+                suppression_targets=suppression_targets
+                or [
                     "java_forge_suppress",
                     "java_class_suppress",
                 ],
@@ -95,23 +90,27 @@ class SteeringTools:
             pipeline = configure_steering_pipeline(config)
             pipeline.enable_steering()
 
-            return json.dumps({
-                "success": True,
-                "steering_enabled": True,
-                "config": {
-                    "steering_scale": steering_scale,
-                    "suppression_targets": config.suppression_targets,
-                    "inference_backend": inference_backend,
-                },
-            })
+            return json.dumps(
+                {
+                    "success": True,
+                    "steering_enabled": True,
+                    "config": {
+                        "steering_scale": steering_scale,
+                        "suppression_targets": config.suppression_targets,
+                        "inference_backend": inference_backend,
+                    },
+                }
+            )
 
         except Exception as e:
             logger.error(f"Failed to configure steering: {e}")
-            return json.dumps({
-                "success": False,
-                "error": str(e),
-                "steering_enabled": False,
-            })
+            return json.dumps(
+                {
+                    "success": False,
+                    "error": str(e),
+                    "steering_enabled": False,
+                }
+            )
 
     @staticmethod
     def apply_steering(
@@ -142,18 +141,22 @@ class SteeringTools:
                 steering_features=steering_features,
             )
 
-            return json.dumps({
-                "success": True,
-                "evaluation": result.to_dict(),
-                "steering_applied": pipeline._steering_enabled,
-            })
+            return json.dumps(
+                {
+                    "success": True,
+                    "evaluation": result.to_dict(),
+                    "steering_applied": pipeline._steering_enabled,
+                }
+            )
 
         except Exception as e:
             logger.error(f"Failed to apply steering evaluation: {e}")
-            return json.dumps({
-                "success": False,
-                "error": str(e),
-            })
+            return json.dumps(
+                {
+                    "success": False,
+                    "error": str(e),
+                }
+            )
 
     @staticmethod
     def get_steering_stats() -> str:
@@ -167,17 +170,21 @@ class SteeringTools:
             pipeline = get_steering_pipeline()
             stats = pipeline.get_stats()
 
-            return json.dumps({
-                "success": True,
-                "stats": stats,
-            })
+            return json.dumps(
+                {
+                    "success": True,
+                    "stats": stats,
+                }
+            )
 
         except Exception as e:
             logger.error(f"Failed to get steering stats: {e}")
-            return json.dumps({
-                "success": False,
-                "error": str(e),
-            })
+            return json.dumps(
+                {
+                    "success": False,
+                    "error": str(e),
+                }
+            )
 
     @staticmethod
     def enable_steering() -> str:
@@ -186,17 +193,21 @@ class SteeringTools:
             pipeline = get_steering_pipeline()
             pipeline.enable_steering()
 
-            return json.dumps({
-                "success": True,
-                "steering_enabled": True,
-            })
+            return json.dumps(
+                {
+                    "success": True,
+                    "steering_enabled": True,
+                }
+            )
 
         except Exception as e:
             logger.error(f"Failed to enable steering: {e}")
-            return json.dumps({
-                "success": False,
-                "error": str(e),
-            })
+            return json.dumps(
+                {
+                    "success": False,
+                    "error": str(e),
+                }
+            )
 
     @staticmethod
     def disable_steering() -> str:
@@ -205,130 +216,233 @@ class SteeringTools:
             pipeline = get_steering_pipeline()
             pipeline.disable_steering()
 
-            return json.dumps({
-                "success": True,
-                "steering_enabled": False,
-            })
+            return json.dumps(
+                {
+                    "success": True,
+                    "steering_enabled": False,
+                }
+            )
 
         except Exception as e:
             logger.error(f"Failed to disable steering: {e}")
-            return json.dumps({
-                "success": False,
-                "error": str(e),
-            })
+            return json.dumps(
+                {
+                    "success": False,
+                    "error": str(e),
+                }
+            )
 
 
-# LangChain Tool Wrappers
-@tool
-def configure_steering_tool(config_json: str) -> str:
-    """
-    Configure SAE-based feature steering for Java idiom suppression.
+# ─────────────────────────────────────────────────────────────────────────────
+# Typed args_schema models — one per LangChain tool wrapper
+# ─────────────────────────────────────────────────────────────────────────────
 
-    Args:
-        config_json: JSON string with configuration:
-            - sae_endpoint: Optional SAE endpoint URL
-            - sae_api_key: Optional API key
-            - steering_scale: Steering magnitude (default 2.0)
-            - suppression_targets: List of targets like ["java_forge", "java_class"]
-            - inference_backend: "openai_compatible", "vllm", "sglang", "transformers"
-            - inference_endpoint: Optional custom inference URL
 
-    Returns:
-        JSON confirmation with steering status
-    """
-    try:
-        config = json.loads(config_json)
-    except json.JSONDecodeError:
-        return json.dumps({"success": False, "error": "Invalid JSON config"})
+class ConfigureSteeringInput(BaseModel):
+    """Args for :class:`ConfigureSteeringTool`."""
 
-    return SteeringTools.configure_steering(
-        sae_endpoint=config.get("sae_endpoint"),
-        sae_api_key=config.get("sae_api_key"),
-        steering_scale=config.get("steering_scale", 2.0),
-        suppression_targets=config.get("suppression_targets"),
-        inference_backend=config.get("inference_backend", "openai_compatible"),
-        inference_endpoint=config.get("inference_endpoint"),
+    model_config = ConfigDict(extra="forbid")
+    sae_endpoint: Optional[str] = Field(
+        default=None,
+        description="Optional SAE service endpoint URL.",
+    )
+    sae_api_key: Optional[str] = Field(
+        default=None,
+        description="Optional API key for the SAE service.",
+    )
+    steering_scale: float = Field(
+        default=2.0,
+        description="Steering vector magnitude (default 2.0).",
+    )
+    suppression_targets: Optional[List[str]] = Field(
+        default=None,
+        description=(
+            'Idiom types to suppress, e.g. ["java_forge_suppress", '
+            '"java_class_suppress"]. None uses pipeline defaults.'
+        ),
+    )
+    inference_backend: str = Field(
+        default="openai_compatible",
+        description=(
+            "Inference backend identifier: openai_compatible, vllm, sglang, or transformers."
+        ),
+    )
+    inference_endpoint: Optional[str] = Field(
+        default=None,
+        description="Optional custom inference endpoint URL.",
     )
 
 
-@tool
-def apply_steering_tool(java_code: str, bedrock_code: str) -> str:
-    """
-    Apply SAE-based steering evaluation to a conversion result.
+class ApplySteeringInput(BaseModel):
+    """Args for :class:`ApplySteeringTool`."""
 
-    This tool evaluates whether Java idioms were properly suppressed
-    in the generated Bedrock code.
-
-    Args:
-        java_code: Original Java source code
-        bedrock_code: Generated Bedrock JavaScript code
-
-    Returns:
-        JSON with evaluation metrics (suppression rate, quality score, warnings)
-    """
-    return SteeringTools.apply_steering(java_code, bedrock_code)
-
-
-@tool
-def get_steering_stats_tool() -> str:
-    """
-    Get current steering pipeline statistics.
-
-    Returns:
-        JSON with generation counts, steering applications, and feature tracking
-    """
-    return SteeringTools.get_steering_stats()
-
-
-@tool
-def enable_steering_tool() -> str:
-    """
-    Enable SAE-based feature steering globally.
-
-    Returns:
-        JSON confirmation
-    """
-    return SteeringTools.enable_steering()
-
-
-@tool
-def disable_steering_tool() -> str:
-    """
-    Disable SAE-based feature steering globally.
-
-    Returns:
-        JSON confirmation
-    """
-    return SteeringTools.disable_steering()
-
-
-@tool
-def evaluate_conversion_quality_tool(
-    original_java: str, generated_bedrock: str, steering_applied: bool = True
-) -> str:
-    """
-    Evaluate the quality of a Java-to-Bedrock conversion.
-
-    Args:
-        original_java: Original Java code
-        generated_bedrock: Generated Bedrock code
-        steering_applied: Whether steering was used (default True)
-
-    Returns:
-        JSON with overall quality score (0-100) and per-category metrics
-    """
-    result = evaluate_steering_effectiveness(
-        java_code=original_java,
-        bedrock_code=generated_bedrock,
-        steering_applied=steering_applied,
+    model_config = ConfigDict(extra="forbid")
+    java_code: str = Field(
+        min_length=1,
+        description="Original Java source code that was converted.",
+    )
+    bedrock_code: str = Field(
+        min_length=1,
+        description="Generated Bedrock JavaScript code to evaluate.",
     )
 
-    return result.to_json()
+
+class _NoArgs(BaseModel):
+    """Empty input schema for steering tools that take no arguments."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class EvaluateConversionQualityInput(BaseModel):
+    """Args for :class:`EvaluateConversionQualityTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    original_java: str = Field(
+        min_length=1,
+        description="Original Java source code.",
+    )
+    generated_bedrock: str = Field(
+        min_length=1,
+        description="Generated Bedrock JavaScript / JSON code.",
+    )
+    steering_applied: bool = Field(
+        default=True,
+        description="Whether SAE steering was used during generation.",
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Typed BaseTool subclasses — replace the previous @tool decorated wrappers
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class _BaseSteeringTool(BaseTool):
+    """Common scaffolding for the steering typed tool wrappers."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+class ConfigureSteeringTool(_BaseSteeringTool):
+    """Configure SAE-based feature steering for Java idiom suppression."""
+
+    name: str = "configure_steering_tool"
+    description: str = (
+        "Configure SAE-based feature steering. "
+        "Args: sae_endpoint, sae_api_key, steering_scale, "
+        "suppression_targets, inference_backend, inference_endpoint."
+    )
+    args_schema: ClassVar[type[BaseModel]] = ConfigureSteeringInput
+
+    def _run(  # type: ignore[override]
+        self,
+        sae_endpoint: Optional[str] = None,
+        sae_api_key: Optional[str] = None,
+        steering_scale: float = 2.0,
+        suppression_targets: Optional[List[str]] = None,
+        inference_backend: str = "openai_compatible",
+        inference_endpoint: Optional[str] = None,
+    ) -> str:
+        return SteeringTools.configure_steering(
+            sae_endpoint=sae_endpoint,
+            sae_api_key=sae_api_key,
+            steering_scale=steering_scale,
+            suppression_targets=suppression_targets,
+            inference_backend=inference_backend,
+            inference_endpoint=inference_endpoint,
+        )
+
+
+class ApplySteeringTool(_BaseSteeringTool):
+    """Evaluate whether Java idioms were properly suppressed in the conversion."""
+
+    name: str = "apply_steering_tool"
+    description: str = (
+        "Apply SAE-based steering evaluation to a Java→Bedrock conversion. "
+        "Returns suppression rate, quality score, and warnings. "
+        "Args: java_code (str, required), bedrock_code (str, required)."
+    )
+    args_schema: ClassVar[type[BaseModel]] = ApplySteeringInput
+
+    def _run(self, java_code: str, bedrock_code: str) -> str:  # type: ignore[override]
+        return SteeringTools.apply_steering(java_code, bedrock_code)
+
+
+class GetSteeringStatsTool(_BaseSteeringTool):
+    """Return current steering pipeline statistics."""
+
+    name: str = "get_steering_stats_tool"
+    description: str = (
+        "Get steering pipeline statistics: generation counts, steering "
+        "applications, feature tracking. Takes no arguments."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _NoArgs
+
+    def _run(self) -> str:  # type: ignore[override]
+        return SteeringTools.get_steering_stats()
+
+
+class EnableSteeringTool(_BaseSteeringTool):
+    """Enable SAE-based feature steering globally."""
+
+    name: str = "enable_steering_tool"
+    description: str = "Enable SAE-based feature steering globally. Takes no arguments."
+    args_schema: ClassVar[type[BaseModel]] = _NoArgs
+
+    def _run(self) -> str:  # type: ignore[override]
+        return SteeringTools.enable_steering()
+
+
+class DisableSteeringTool(_BaseSteeringTool):
+    """Disable SAE-based feature steering globally."""
+
+    name: str = "disable_steering_tool"
+    description: str = "Disable SAE-based feature steering globally. Takes no arguments."
+    args_schema: ClassVar[type[BaseModel]] = _NoArgs
+
+    def _run(self) -> str:  # type: ignore[override]
+        return SteeringTools.disable_steering()
+
+
+class EvaluateConversionQualityTool(_BaseSteeringTool):
+    """Evaluate the quality of a Java-to-Bedrock conversion."""
+
+    name: str = "evaluate_conversion_quality_tool"
+    description: str = (
+        "Evaluate Java→Bedrock conversion quality. Returns overall score "
+        "(0-100) and per-category metrics. "
+        "Args: original_java (str, required), generated_bedrock (str, required), "
+        "steering_applied (bool, default True)."
+    )
+    args_schema: ClassVar[type[BaseModel]] = EvaluateConversionQualityInput
+
+    def _run(  # type: ignore[override]
+        self,
+        original_java: str,
+        generated_bedrock: str,
+        steering_applied: bool = True,
+    ) -> str:
+        result = evaluate_steering_effectiveness(
+            java_code=original_java,
+            bedrock_code=generated_bedrock,
+            steering_applied=steering_applied,
+        )
+        return result.to_json()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Module-level tool instances — preserve the names the wider codebase imports
+# ─────────────────────────────────────────────────────────────────────────────
+
+configure_steering_tool: ConfigureSteeringTool = ConfigureSteeringTool()
+apply_steering_tool: ApplySteeringTool = ApplySteeringTool()
+get_steering_stats_tool: GetSteeringStatsTool = GetSteeringStatsTool()
+enable_steering_tool: EnableSteeringTool = EnableSteeringTool()
+disable_steering_tool: DisableSteeringTool = DisableSteeringTool()
+evaluate_conversion_quality_tool: EvaluateConversionQualityTool = EvaluateConversionQualityTool()
 
 
 def register_steering_tools(agent) -> None:
-    """
-    Register all steering tools with a LangChain agent.
+    """Register all steering tools with a LangChain agent.
 
     Args:
         agent: LangChain agent instance to register tools with
@@ -338,9 +452,6 @@ def register_steering_tools(agent) -> None:
 
         agent = LogicTranslatorAgent()
         register_steering_tools(agent)
-        for tool in agent.tools:
-            if 'steering' in str(tool):
-                print(f"Registered: {tool.name}")
     """
     steering_tools = [
         configure_steering_tool,
@@ -351,7 +462,7 @@ def register_steering_tools(agent) -> None:
         evaluate_conversion_quality_tool,
     ]
 
-    for tool in steering_tools:
-        if hasattr(agent, 'tools'):
-            agent.tools.append(tool)
-        logger.info(f"Registered steering tool: {tool.name}")
+    for steering_tool in steering_tools:
+        if hasattr(agent, "tools"):
+            agent.tools.append(steering_tool)
+        logger.info(f"Registered steering tool: {steering_tool.name}")
