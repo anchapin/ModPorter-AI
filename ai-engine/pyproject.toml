@@ -243,9 +243,8 @@ dependencies = [
     "openai>=2.32.0",
     "sentence-transformers",
 
-    # Vector Database (pin version for embedchain compatibility)
-
-    "chromadb<1.6.0",
+    # Vector Database — pin relaxed after legacy framework removal (#1439, unblocked by #1201)
+    "chromadb>=1.5.8,<2.0",
     
     # Data Processing
     "numpy",
