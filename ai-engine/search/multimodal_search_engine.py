@@ -13,6 +13,8 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
+logger = logging.getLogger(__name__)
+
 from schemas.multimodal_schema import (
     ContentType,
     EmbeddingModel,
@@ -35,8 +37,6 @@ except ImportError:
     except ImportError:
         EMBEDDING_GENERATOR_AVAILABLE = False
         logger.warning("Embedding generator not available for multi-modal search")
-
-logger = logging.getLogger(__name__)
 
 
 # Default weights for modality-aware scoring
