@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 """
-PortKit Coder Fine-Tuning — Stage A (Reasoning + Code Generation)
-Fine-tunes Qwen2.5-Coder-7B-Instruct with QLoRA on MMSD synthesis pairs,
-mixed with general Java/JS code data (12% ratio) to mitigate catastrophic forgetting.
+PortKit Coder Fine-Tuning — Kaggle Version
+Fine-tunes Qwen2.5-Coder-7B-Instruct with QLoRA on MMSD synthesis pairs.
 
-Data pipeline:
-1. git clone portkit repo (sparse) + git lfs pull for synthesis_pairs.jsonl
-2. Run structural validation → validated_pairs.jsonl
-3. Download and sample general Java/JS code pairs from HuggingFace (~200 examples)
-4. Format as ChatML conversations (system + user + assistant)
-5. Mix datasets: ~12% general / ~88% MMSD by token count
-6. 90/10 train/eval split (no shuffle, deterministic)
-7. QLoRA fine-tuning with SFTTrainer
-8. Push LoRA adapter + merged model to HF Hub
+Kaggle-specific features:
+- Google Drive mounting for persistent storage & checkpoints
+- Auto-resume from last checkpoint on restart
+- More frequent checkpointing to prevent lost progress
+- HuggingFace token from Kaggle secrets or environment
+
+Usage:
+1. Upload this script to Kaggle
+2. Add HF_TOKEN to Kaggle secrets (or set HF_TOKEN env var)
+3. Mount Google Drive when prompted (or set USE_GOOGLE_DRIVE=0)
+4. Run!
 """
 
 import os
@@ -20,33 +21,67 @@ import json
 import subprocess
 import re
 import shutil
-import torch
 import gc
 from pathlib import Path
 from typing import Tuple
 
-from datasets import Dataset
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-from peft import LoraConfig, TaskType
-from trl import SFTTrainer, SFTConfig
+import torch
+
+IS_KAGGLE = os.path.exists("/kaggle")
+WORK_DIR = Path("/kaggle/working") if IS_KAGGLE else Path("./output")
+CHECKPOINT_DIR = WORK_DIR / "checkpoints"
+FINAL_DIR = WORK_DIR / "final"
+DATA_DIR = WORK_DIR / "data"
+
+os.makedirs(WORK_DIR, exist_ok=True)
+os.makedirs(CHECKPOINT_DIR, exist_ok=True)
+os.makedirs(DATA_DIR, exist_ok=True)
+
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
+# Reduce memory fragmentation on CUDA
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
+
+def get_checkpoint_path() -> Path:
+    """Find the latest checkpoint if it exists."""
+    if not CHECKPOINT_DIR.exists():
+        return None
+    checkpoints = list(CHECKPOINT_DIR.glob("checkpoint-*"))
+    if not checkpoints:
+        return None
+    return max(checkpoints, key=lambda p: p.stat().st_mtime)
+
+
+def check_torch_cuda_compat():
+    """Check PyTorch CUDA compatibility and warn if needed."""
+    if not torch.cuda.is_available():
+        return
+    props = torch.cuda.get_device_properties(0)
+    cap = props.major * 10 + props.minor
+    supported_caps = [70, 75, 80, 86, 90, 100, 120]
+    if cap not in supported_caps:
+        print(f"\n⚠️  WARNING: GPU compute capability sm_{cap} may not be fully supported")
+        print(f"   If you encounter issues, consider switching to T4 in Notebook Settings")
+        print()
+
 
 # ── Config ─────────────────────────────────────────────────────────────────
 
-MODEL_ID = "Qwen/Qwen2.5-Coder-7B-Instruct"
-LORA_REPO = "alexchapin/portkit-coder-7b-lora"
-MERGED_REPO = "alexchapin/portkit-coder-7b-merged"
+MODEL_ID = "Qwen/Qwen2.5-Coder-1.5B-Instruct"
+LORA_REPO = "alexchapin/portkit-coder-1b-lora"
+MERGED_REPO = "alexchapin/portkit-coder-1b-merged"
 
-TRACKIO_PROJECT = os.environ.get("TRACKIO_PROJECT", "portkit-sft")
-TRACKIO_SPACE_ID = os.environ.get("TRACKIO_SPACE_ID", "")
+HF_TOKEN = os.environ.get("HF_TOKEN", "")
 
 # QLoRA
-LORA_R = 64
-LORA_ALPHA = 128
+LORA_R = 16  # Reduced for 1.5B model (was 64)
+LORA_ALPHA = 32  # Standard alpha = 2 * r for smaller models
 LORA_DROPOUT = 0.1
 TARGET_MODULES = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
 
-# Training
-MAX_LENGTH = 4096
+# Kaggle T4 settings (optimized for 16GB GPU)
+MAX_LENGTH = 2048
 NUM_EPOCHS = 3
 BATCH_SIZE = 2
 GRAD_ACCUM = 8
@@ -56,20 +91,21 @@ SCHEDULER = "cosine"
 SEED = 42
 TRAIN_RATIO = 0.9
 
-# Catastrophic forgetting mitigation: general code mix
-GENERAL_CODE_DATASET = "m-a-p/CodeFeedback-Filtered-Instruction"
-GENERAL_CODE_LANGUAGES = ["java", "javascript"]
-GENERAL_CODE_SAMPLE_SIZE = 200
-MIX_RATIO = 0.12  # ~12% of training tokens from general code
+# Kaggle: save checkpoint every N steps (more frequent than default)
+CHECKPOINT_STEPS = 100  # Save every 100 steps to prevent lost progress
+LR = 2e-4
+WARMUP = 0.05
+SCHEDULER = "cosine"
+SEED = 42
+TRAIN_RATIO = 0.9
+
+# Kaggle: save checkpoint every N steps (more frequent than default)
+CHECKPOINT_STEPS = 100  # Save every 100 steps to prevent lost progress
 
 SYSTEM_PROMPT = (
     "You are PortKit, an expert at converting Minecraft Java Edition mods (Forge) "
     "to Bedrock Edition Add-ons. Given a mod description and Java source code, "
-    "first reason through the platform mapping, then produce the Bedrock Add-on implementation.\n\n"
-    "IMPORTANT: Target Bedrock Scripting API version 2.x (@minecraft/server ^2.0.0) for all scripting output.\n"
-    "- manifest.json must use format_version 2 with min_engine_version [1, 21, 0]\n"
-    "- All scripting imports must use @minecraft/server and @minecraft/server-ui only\n"
-    "- Do NOT mix API 1.x and 2.x patterns in the same output"
+    "first reason through the platform mapping, then produce the Bedrock Add-on implementation."
 )
 
 
@@ -78,13 +114,14 @@ SYSTEM_PROMPT = (
 
 def clone_and_validate() -> str:
     """Clone portkit repo, run validation, return path to validated_pairs.jsonl."""
-    work = Path("/tmp/portkit_train")
-    work.mkdir(exist_ok=True)
-    validated = work / "validated_pairs.jsonl"
+    validated = DATA_DIR / "validated_pairs.jsonl"
 
     if validated.exists() and validated.stat().st_size > 1000:
         print(f"[data] Using cached {validated}")
         return str(validated)
+
+    work = Path("/tmp/portkit_train")
+    work.mkdir(exist_ok=True)
 
     repo = work / "portkit"
     if not repo.exists():
@@ -107,11 +144,11 @@ def clone_and_validate() -> str:
                 str(repo),
                 "sparse-checkout",
                 "set",
-                "ai_engine/mmsd/synthesis_pairs.jsonl",
-                "ai_engine/mmsd/validators/",
-                "ai_engine/mmsd/run_validation.py",
-                "ai_engine/mmsd/__init__.py",
-                "ai_engine/__init__.py",
+                "ai-engine/mmsd/synthesis_pairs.jsonl",
+                "ai-engine/mmsd/validators/",
+                "ai-engine/mmsd/run_validation.py",
+                "ai-engine/mmsd/__init__.py",
+                "ai-engine/__init__.py",
             ],
             check=True,
         )
@@ -122,18 +159,18 @@ def clone_and_validate() -> str:
                 str(repo),
                 "lfs",
                 "pull",
-                "--include=ai_engine/mmsd/synthesis_pairs.jsonl",
+                "--include=ai-engine/mmsd/synthesis_pairs.jsonl",
             ],
             check=False,
         )
 
-    raw = repo / "ai_engine/mmsd/synthesis_pairs.jsonl"
+    raw = repo / "ai-engine/mmsd/synthesis_pairs.jsonl"
     assert raw.exists() and raw.stat().st_size > 100_000, (
         f"Bad data file: {raw.stat().st_size if raw.exists() else 0} bytes"
     )
 
     # Prepare processed dir
-    proc_dir = repo / "ai_engine/mmsd/data/processed"
+    proc_dir = repo / "ai-engine/mmsd/data/processed"
     proc_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(str(raw), str(proc_dir / "synthesis_pairs.jsonl"))
 
@@ -229,168 +266,32 @@ def format_stage_a(example: dict) -> dict:
     }
 
 
-GENERAL_SYSTEM_PROMPT = (
-    "You are a general-purpose code assistant. Provide clear, correct code solutions "
-    "with concise explanations when helpful."
-)
-
-
-def format_general_code(example: dict) -> dict:
-    instruction = example.get("instruction", example.get("input", ""))
-    response = example.get("output", example.get("response", ""))
-
-    if not instruction or not response:
-        return None
-
-    return {
-        "messages": [
-            {"role": "system", "content": GENERAL_SYSTEM_PROMPT},
-            {
-                "role": "user",
-                "content": f"Write code for: {instruction}",
-            },
-            {
-                "role": "assistant",
-                "content": response,
-            },
-        ]
-    }
-
-
-def load_general_code_dataset() -> list:
-    """Download and sample general Java/JS code pairs for catastrophic forgetting mitigation."""
-    try:
-        from datasets import load_dataset
-    except ImportError:
-        print("[general] datasets not installed, skipping general code mix")
-        return []
-
-    cache_dir = Path("/tmp/portkit_general_code")
-    cache_dir.mkdir(exist_ok=True)
-
-    sample_file = cache_dir / "general_code_sample.jsonl"
-    if sample_file.exists() and sample_file.stat().st_size > 1000:
-        print(f"[general] Using cached sample from {sample_file}")
-        examples = []
-        with open(sample_file) as f:
-            for line in f:
-                if line.strip():
-                    examples.append(json.loads(line))
-        return examples
-
-    print(f"[general] Loading {GENERAL_CODE_DATASET}...")
-    try:
-        dataset = load_dataset(
-            GENERAL_CODE_DATASET,
-            split="train",
-            trust_remote_code=True,
-            cache_dir=str(cache_dir),
-        )
-    except Exception as e:
-        print(f"[general] Failed to load dataset: {e}")
-        return []
-
-    lang_field = None
-    for candidate in ["lang", "language", " Programming_Language"]:
-        if candidate in dataset.column_names:
-            lang_field = candidate
-            break
-
-    if lang_field is None:
-        print(f"[general] No language column found. Columns: {dataset.column_names}")
-        return []
-
-    print(f"[general] Filtering to {GENERAL_CODE_LANGUAGES}...")
-    filtered = dataset.filter(lambda x: x.get(lang_field) in GENERAL_CODE_LANGUAGES)
-
-    if len(filtered) == 0:
-        print("[general] No examples found after filtering, skipping mix")
-        return []
-
-    sample_size = min(GENERAL_CODE_SAMPLE_SIZE, len(filtered))
-    print(f"[general] Sampling {sample_size} examples from {len(filtered)} filtered")
-
-    try:
-        sampled = filtered.shuffle(seed=SEED).select(range(sample_size))
-    except Exception as e:
-        print(f"[general] Shuffle/select failed: {e}")
-        sampled = filtered.select(range(min(sample_size, len(filtered))))
-
-    examples = []
-    for item in sampled:
-        formatted = format_general_code(item)
-        if formatted is not None:
-            examples.append(formatted)
-
-    with open(sample_file, "w") as f:
-        for ex in examples:
-            f.write(json.dumps(ex) + "\n")
-
-    print(f"[general] Saved {len(examples)} formatted examples")
-    return examples
-
-
-def count_tokens(messages: list, tokenizer) -> int:
-    """Rough token count for a messages list using the tokenizer."""
-    text = ""
-    for msg in messages:
-        text += msg["role"] + ": " + msg["content"] + "\n"
-    return len(tokenizer.encode(text))
-
-
-def mix_datasets(
-    mmsd_examples: list, general_examples: list, target_ratio: float = MIX_RATIO
-) -> list:
-    """Mix MMSD and general code examples to achieve target token ratio (~12%)."""
-    if not general_examples:
-        return mmsd_examples
-
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-
-    mmsd_tokens = sum(count_tokens(ex["messages"], tokenizer) for ex in mmsd_examples)
-    general_tokens = sum(count_tokens(ex["messages"], tokenizer) for ex in general_examples)
-
-    print(f"[mix] MMSD tokens: {mmsd_tokens:,}, General tokens: {general_tokens:,}")
-
-    target_general_tokens = int(mmsd_tokens * target_ratio / (1 - target_ratio))
-    general_count = general_examples
-    current_general_tokens = general_tokens
-
-    if current_general_tokens > target_general_tokens:
-        scale = target_general_tokens / current_general_tokens
-        n = max(1, int(len(general_examples) * scale))
-        general_count = general_examples[:n]
-        current_general_tokens = sum(
-            count_tokens(ex["messages"], tokenizer) for ex in general_count
-        )
-        print(f"[mix] Scaled general sample to {len(general_count)} examples to hit target ratio")
-
-    actual_ratio = current_general_tokens / (mmsd_tokens + current_general_tokens)
-    print(f"[mix] Target ratio: {target_ratio:.1%}, Actual ratio: {actual_ratio:.1%}")
-
-    mixed = mmsd_examples + general_count
-    import random
-
-    random.seed(SEED)
-    random.shuffle(mixed)
-    return mixed
-
-
 # ── Main ───────────────────────────────────────────────────────────────────
 
 
 def main():
+    # Set environment variables for stability
+    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+    os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+
     print("=" * 60)
-    print("PortKit Coder SFT — Stage A")
+    print("PortKit Coder SFT — Kaggle Version")
     print(f"Model: {MODEL_ID}")
     print(f"LoRA: r={LORA_R}, α={LORA_ALPHA}")
     print(f"Effective batch: {BATCH_SIZE * GRAD_ACCUM}, LR: {LR}")
     print(f"CUDA: {torch.cuda.is_available()}")
     if torch.cuda.is_available():
-        print(
-            f"GPU: {torch.cuda.get_device_name(0)}, VRAM: {torch.cuda.get_device_properties(0).total_mem / 1e9:.1f} GB"
-        )
+        props = torch.cuda.get_device_properties(0)
+        print(f"GPU: {props.name}, VRAM: {props.total_memory / 1e9:.1f} GB")
+    print(f"Work dir: {WORK_DIR}")
+    print(f"Checkpoint dir: {CHECKPOINT_DIR}")
+    check_torch_cuda_compat()
     print("=" * 60)
+
+    # ── Auth with HuggingFace ────────────────────────────────────────────────
+    if HF_TOKEN:
+        os.environ["HF_TOKEN"] = HF_TOKEN
+        print(f"[auth] HF_TOKEN set for {LORA_REPO}")
 
     # ── Data ────────────────────────────────────────────────────────────────
     data_path = clone_and_validate()
@@ -402,22 +303,19 @@ def main():
 
     n = len(pairs)
     split = int(n * TRAIN_RATIO)
-    mmsd_train = [format_stage_a(p) for p in pairs[:split]]
-    eval_ds = Dataset.from_list([format_stage_a(p) for p in pairs[split:]])
+    from datasets import Dataset
 
-    general_examples = load_general_code_dataset()
-    if general_examples:
-        mixed_train = mix_datasets(mmsd_train, general_examples, target_ratio=MIX_RATIO)
-        train_ds = Dataset.from_list(mixed_train)
-        print(
-            f"Data: {n} total → {len(train_ds)} train (mixed, {len(general_examples)} general), {len(eval_ds)} eval"
-        )
-    else:
-        train_ds = Dataset.from_list(mmsd_train)
-        print(f"Data: {n} total → {len(train_ds)} train, {len(eval_ds)} eval")
+    train_ds = Dataset.from_list([format_stage_a(p) for p in pairs[:split]])
+    eval_ds = Dataset.from_list([format_stage_a(p) for p in pairs[split:]])
+    print(f"Data: {n} total → {len(train_ds)} train, {len(eval_ds)} eval")
 
     # ── Model ───────────────────────────────────────────────────────────────
     print("\nLoading model...")
+    from datasets import Dataset
+    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+    from peft import LoraConfig, TaskType
+    from trl import SFTTrainer, SFTConfig
+
     bnb = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",
@@ -430,6 +328,7 @@ def main():
         torch_dtype=torch.bfloat16,
         use_cache=False,
         device_map="auto",
+        attn_implementation="eager",  # Safer on T4, avoids SDPA issues
     )
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
     if tokenizer.pad_token is None:
@@ -444,10 +343,15 @@ def main():
         bias="none",
     )
 
-    # ── Train ───────────────────────────────────────────────────────────────
-    report_to = "trackio" if TRACKIO_SPACE_ID else "none"
+    # ── Training ─────────────────────────────────────────────────────────────
+    resume_from_checkpoint = None
+    last_checkpoint = get_checkpoint_path()
+    if last_checkpoint and CHECKPOINT_DIR.exists():
+        print(f"[resume] Found checkpoint: {last_checkpoint}")
+        resume_from_checkpoint = str(last_checkpoint)
+
     args = SFTConfig(
-        output_dir="./portkit-lora",
+        output_dir=str(CHECKPOINT_DIR),
         max_length=MAX_LENGTH,
         packing=False,
         num_train_epochs=NUM_EPOCHS,
@@ -463,17 +367,19 @@ def main():
         logging_strategy="steps",
         logging_steps=10,
         logging_first_step=True,
-        disable_tqdm=True,
+        disable_tqdm=False,
         eval_strategy="steps",
         eval_steps=100,
         save_strategy="steps",
-        save_steps=200,
-        save_total_limit=3,
+        save_steps=CHECKPOINT_STEPS,
+        save_total_limit=5,
+        resume_from_checkpoint=resume_from_checkpoint,
         push_to_hub=True,
         hub_model_id=LORA_REPO,
         hub_private_repo=True,
-        run_name=f"portkit-sft-stageA-lr{LR}-bs{BATCH_SIZE * GRAD_ACCUM}",
-        report_to=report_to,
+        hub_token=HF_TOKEN,
+        run_name=f"portkit-sft-kaggle-lr{LR}-bs{BATCH_SIZE * GRAD_ACCUM}",
+        report_to="none",
     )
 
     trainer = SFTTrainer(
@@ -497,7 +403,7 @@ def main():
         print(f"  {k}: {v}")
 
     # ── Save & Push LoRA ────────────────────────────────────────────────────
-    trainer.save_model("./portkit-lora/final")
+    trainer.save_model(str(FINAL_DIR / "lora"))
     try:
         trainer.push_to_hub()
         print(f"✓ LoRA pushed to {LORA_REPO}")
@@ -514,13 +420,13 @@ def main():
         torch.cuda.empty_cache()
 
         merged = AutoPeftModelForCausalLM.from_pretrained(
-            "./portkit-lora/final",
+            str(FINAL_DIR / "lora"),
             torch_dtype=torch.bfloat16,
             device_map="auto",
         ).merge_and_unload()
 
-        merged.push_to_hub(MERGED_REPO, private=True, safe_serialization=True)
-        tokenizer.push_to_hub(MERGED_REPO, private=True)
+        merged.push_to_hub(MERGED_REPO, private=True, safe_serialization=True, token=HF_TOKEN)
+        tokenizer.push_to_hub(MERGED_REPO, private=True, token=HF_TOKEN)
         print(f"✓ Merged model pushed to {MERGED_REPO}")
     except Exception as e:
         print(f"✗ Merge/push failed: {e}")
@@ -543,18 +449,9 @@ def main():
             "max_length": MAX_LENGTH,
             "warmup": WARMUP,
             "scheduler": SCHEDULER,
+            "checkpoint_steps": CHECKPOINT_STEPS,
         },
-        "data": {
-            "total": n,
-            "train": len(train_ds),
-            "eval": len(eval_ds),
-            "general_code_mix": {
-                "dataset": GENERAL_CODE_DATASET,
-                "sample_size": GENERAL_CODE_SAMPLE_SIZE,
-                "target_ratio": MIX_RATIO,
-                "languages": GENERAL_CODE_LANGUAGES,
-            },
-        },
+        "data": {"total": n, "train": len(train_ds), "eval": len(eval_ds)},
         "results": {
             "train_loss": train_metrics.get("train_loss"),
             "eval_loss": eval_metrics.get("eval_loss"),
@@ -562,7 +459,7 @@ def main():
         },
         "repos": {"lora": LORA_REPO, "merged": MERGED_REPO},
     }
-    with open("./training_summary.json", "w") as f:
+    with open(str(WORK_DIR / "training_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
     print(f"\n✓ Summary: {json.dumps(summary['results'], indent=2)}")
     print("=" * 60)

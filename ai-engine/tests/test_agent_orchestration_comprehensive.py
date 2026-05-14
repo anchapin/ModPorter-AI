@@ -19,11 +19,11 @@ try:
         from agents.qa_agent import QAAgent
         from tools.search_tool import SearchTool
     except ImportError:
-        from ai_engine.qa.orchestrator import QAOrchestrator
-        from ai_engine.agents.java_analyzer import JavaAnalyzerAgent
-        from ai_engine.agents.bedrock_builder import BedrockBuilderAgent
-        from ai_engine.agents.qa_agent import QAAgent
-        from ai_engine.tools.search_tool import SearchTool
+        from qa.orchestrator import QAOrchestrator
+        from agents.java_analyzer import JavaAnalyzerAgent
+        from agents.bedrock_builder import BedrockBuilderAgent
+        from agents.qa_agent import QAAgent
+        from tools.search_tool import SearchTool
     
     IMPORTS_AVAILABLE = True
 except ImportError as e:

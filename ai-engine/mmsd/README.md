@@ -64,7 +64,7 @@ The `run_validation.py` script runs full validation including Mojmap checks befo
 ## Dataset Structure
 
 ```
-ai_engine/mmsd/
+ai-engine/mmsd/
 ├── synthesis_pairs.jsonl     # Raw generated pairs (1400 pairs)
 ├── data/
 │   └── processed/

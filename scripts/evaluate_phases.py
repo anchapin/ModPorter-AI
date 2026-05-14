@@ -21,7 +21,7 @@ from datasets import Dataset
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
 PROJECT_ROOT = SCRIPT_DIR.parent
-DATASET_PATH = PROJECT_ROOT / "ai_engine/mmsd/data/processed/validated_pairs.jsonl"
+DATASET_PATH = PROJECT_ROOT / "ai-engine/mmsd/data/processed/validated_pairs.jsonl"
 
 SYSTEM_PROMPT = (
     "You are PortKit, an expert at converting Minecraft Java Edition mods (Forge) "

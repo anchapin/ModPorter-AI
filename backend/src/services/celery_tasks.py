@@ -645,7 +645,7 @@ def handle_java_analysis_task(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 def handle_texture_extraction_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Handle texture extraction task."""
-    from ai_engine.utils.texture_metadata_extractor import TextureMetadataExtractor
+    from utils.texture_metadata_extractor import TextureMetadataExtractor
 
     jar_path = payload.get("jar_path")
     logger.info(f"Processing texture extraction: {jar_path}")

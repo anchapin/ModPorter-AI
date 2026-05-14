@@ -9,7 +9,7 @@ import json
 import re
 from typing import Optional
 
-from ai_engine.evaluation.models import (
+from evaluation.models import (
     RubricCategory,
     RubricScore,
     RubricResult,

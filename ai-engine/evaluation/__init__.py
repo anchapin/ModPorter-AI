@@ -16,14 +16,14 @@ Each rubric provides:
 - Structured feedback for RL reward signals
 
 Usage:
-    from ai_engine.evaluation.rubric import ConversionRubric, RubricEvaluator
+    from evaluation.rubric import ConversionRubric, RubricEvaluator
 
     evaluator = RubricEvaluator()
     result = evaluator.evaluate(java_source, bedrock_output)
     reward_signal = result.to_reward_signal()
 """
 
-from ai_engine.evaluation.models import (
+from evaluation.models import (
     RubricCategory,
     RubricScore,
     RubricResult,
@@ -32,7 +32,7 @@ from ai_engine.evaluation.models import (
     BedrockConstraint,
     BEDROCK_CONSTRAINTS,
 )
-from ai_engine.evaluation.evaluator import RubricEvaluator, BedrockConstraintChecker
+from evaluation.evaluator import RubricEvaluator, BedrockConstraintChecker
 
 __all__ = [
     "RubricCategory",

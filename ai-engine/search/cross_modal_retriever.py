@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 # Try to import embedding generator
 try:
-    from ai_engine.utils.embedding_generator import LocalEmbeddingGenerator
+    from utils.embedding_generator import LocalEmbeddingGenerator
 
     EMBEDDING_GENERATOR_AVAILABLE = True
 except ImportError:

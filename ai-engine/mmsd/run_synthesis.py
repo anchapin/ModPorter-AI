@@ -3,7 +3,7 @@ import json
 import time
 import asyncio
 import argparse
-from ai_engine.mmsd.pipeline.dual_teacher import DualTeacherPipeline
+from mmsd.pipeline.dual_teacher import DualTeacherPipeline
 
 
 def load_processed(output_path: str) -> set:

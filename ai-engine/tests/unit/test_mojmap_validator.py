@@ -1,5 +1,5 @@
 import pytest
-from ai_engine.mmsd.validators.mojmap_validator import MojmapMappingValidator
+from mmsd.validators.mojmap_validator import MojmapMappingValidator
 
 
 class TestMojmapMappingValidator:

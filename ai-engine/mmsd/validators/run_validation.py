@@ -1,6 +1,6 @@
 import os
 import json
-from ai_engine.mmsd.validators.code_validator import CodeValidator
+from mmsd.validators.code_validator import CodeValidator
 
 
 def _has_error_fields(entry):
@@ -13,8 +13,8 @@ def _has_error_fields(entry):
 
 
 def main():
-    input_path = "ai_engine/mmsd/data/processed/synthesis_pairs.jsonl"
-    output_path = "ai_engine/mmsd/data/processed/validated_pairs.jsonl"
+    input_path = "ai-engine/mmsd/data/processed/synthesis_pairs.jsonl"
+    output_path = "ai-engine/mmsd/data/processed/validated_pairs.jsonl"
 
     if not os.path.exists(input_path):
         print(f"File not found: {input_path}")

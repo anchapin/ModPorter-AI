@@ -4,7 +4,7 @@ import json
 import httpx
 import random
 
-output_path = "/home/alex/Projects/portkit/ai_engine/mmsd/data/raw/instructions.jsonl"
+output_path = "/home/alex/Projects/portkit/ai-engine/mmsd/data/raw/instructions.jsonl"
 os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
 themes = [

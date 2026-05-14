@@ -29,7 +29,7 @@ try:
     EMBEDDING_GENERATOR_AVAILABLE = True
 except ImportError:
     try:
-        from ai_engine.utils.embedding_generator import LocalEmbeddingGenerator
+        from utils.embedding_generator import LocalEmbeddingGenerator
 
         EMBEDDING_GENERATOR_AVAILABLE = True
     except ImportError:
@@ -435,7 +435,7 @@ class MultiModalSearchEngine:
 
         # Check if cross-modal retrieval is available
         try:
-            from ai_engine.search.cross_modal_retriever import CrossModalRetriever
+            from search.cross_modal_retriever import CrossModalRetriever
 
             retriever = CrossModalRetriever(db_session=self._db_session)
 

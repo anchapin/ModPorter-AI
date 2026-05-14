@@ -230,7 +230,7 @@ print(f'✅ Success: {response.content}')
 Users can provide their own OpenRouter API key for premium conversion using frontier models:
 
 ```python
-from ai_engine.mmsd.premium_client import PortKitPremium
+from mmsd.premium_client import PortKitPremium
 
 with PortKitPremium() as client:
     result = client.convert(

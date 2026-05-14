@@ -184,7 +184,7 @@ def main():
     parser.add_argument(
         "--eval-data",
         type=str,
-        default="ai_engine/mmsd/data/processed/validated_pairs.jsonl",
+        default="ai-engine/mmsd/data/processed/validated_pairs.jsonl",
         help="Path to validated pairs JSONL",
     )
     parser.add_argument(

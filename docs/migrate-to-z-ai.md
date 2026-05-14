@@ -154,7 +154,7 @@ After migration, verify:
 
 1. **Backend Selection**:
    ```python
-   from ai_engine.utils.rate_limiter import get_llm_backend
+   from utils.rate_limiter import get_llm_backend
    llm = get_llm_backend()
    print(f"Using: {type(llm).__name__}")
    ```
@@ -231,7 +231,7 @@ print('Ollama:', '✅' if os.getenv('USE_OLLAMA') == 'true' else '❌')
 
 **Solution**: Verify backend selection:
 ```python
-from ai_engine.utils.rate_limiter import get_llm_backend
+from utils.rate_limiter import get_llm_backend
 llm = get_llm_backend()
 print(f"Backend: {type(llm).__name__}")  # Should show "RateLimitedZAI"
 ```

@@ -1,6 +1,6 @@
 import httpx
 from typing import Optional, Dict
-from ai_engine.mmsd.validators.code_validator import CodeValidator
+from mmsd.validators.code_validator import CodeValidator
 
 
 class DualTeacherPipeline:
@@ -8,9 +8,9 @@ class DualTeacherPipeline:
     Synthesizes parallel Java and Bedrock modding codebases with reasoning traces.
     """
 
-    def __init__(self, model: str = "default", api_base: str = "http://localhost:8002/v1"):
+    def __init__(self, model: str = "qwen2.5-coder:3b"):
         self.model = model
-        self.url = f"{api_base}/chat/completions"
+        self.url = "http://localhost:11434/api/generate"
         self.validator = CodeValidator()
 
     def synthesize_pair(self, instruction: str) -> Optional[Dict]:
@@ -103,19 +103,17 @@ class DualTeacherPipeline:
             resp = httpx.post(
                 self.url,
                 json={
-                    "messages": [
-                        {"role": "system", "content": system},
-                        {"role": "user", "content": prompt},
-                    ],
-                    "temperature": 0.7,
-                    "max_tokens": 4096,
+                    "model": self.model,
+                    "prompt": prompt,
+                    "system": system,
+                    "stream": False,
+                    "options": {"temperature": 0.7},
                 },
                 timeout=600.0,
             )
 
             if resp.status_code == 200:
-                data = resp.json()
-                text = data["choices"][0]["message"]["content"].strip()
+                text = resp.json().get("response", "").strip()
                 if not text:
                     return "Error: empty response from model"
                 return text
