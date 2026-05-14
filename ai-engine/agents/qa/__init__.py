@@ -12,7 +12,10 @@ import json
 import logging
 import zipfile
 
-from langchain_core.tools import tool
+from typing import ClassVar
+
+from langchain_core.tools import BaseTool
+from pydantic import BaseModel, ConfigDict, Field
 
 from models.smart_assumptions import SmartAssumptionEngine
 
@@ -364,11 +367,15 @@ class QAValidatorAgent:
 
         checks += 1
         temp_patterns = [".DS_Store", "__MACOSX", ".git", ".svn", "Thumbs.db", ".tmp"]
-        found_temp = [name for name in namelist if any(pattern in name for pattern in temp_patterns)]
+        found_temp = [
+            name for name in namelist if any(pattern in name for pattern in temp_patterns)
+        ]
         if not found_temp:
             passed += 1
         else:
-            validation["warnings"].append(f"Found temporary files that should be removed: {found_temp[:3]}")
+            validation["warnings"].append(
+                f"Found temporary files that should be removed: {found_temp[:3]}"
+            )
 
         checks += 1
         manifest_count = sum(1 for name in namelist if name.endswith("manifest.json"))
@@ -561,7 +568,9 @@ class QAValidatorAgent:
 
         checks += 1
         temp_patterns = [".DS_Store", "__MACOSX", ".git", ".svn", "Thumbs.db", ".tmp"]
-        found_temp = [name for name in namelist if any(pattern in name for pattern in temp_patterns)]
+        found_temp = [
+            name for name in namelist if any(pattern in name for pattern in temp_patterns)
+        ]
         if not found_temp:
             passed += 1
         else:
@@ -758,7 +767,9 @@ class QAValidatorAgent:
 
             if mcaddon_path:
                 validation_result = self.validate_mcaddon(mcaddon_path)
-                compat_validation = validation_result["validations"].get("bedrock_compatibility", {})
+                compat_validation = validation_result["validations"].get(
+                    "bedrock_compatibility", {}
+                )
 
                 checks = compat_validation.get("checks", 0)
                 passed = compat_validation.get("passed", 0)
@@ -831,7 +842,9 @@ class QAValidatorAgent:
             if mcaddon_path:
                 validation_result = self.validate_mcaddon(mcaddon_path)
                 stats = validation_result.get("stats", {})
-                compat_validation = validation_result["validations"].get("bedrock_compatibility", {})
+                compat_validation = validation_result["validations"].get(
+                    "bedrock_compatibility", {}
+                )
 
                 total_size_mb = stats.get("total_size_bytes", 0) / (1024 * 1024)
                 size_score = max(0, 1.0 - (total_size_mb / 500))
@@ -950,66 +963,178 @@ class QAValidatorAgent:
             logger.error(f"QA report generation error: {e}", exc_info=True)
             return json.dumps({"success": False, "error": f"QA report generation failed: {str(e)}"})
 
-    @tool
-    @staticmethod
-    def validate_conversion_quality_tool(quality_data: str) -> str:
-        """
-        Validate overall conversion quality.
+    # ─────────────────────────────────────────────────────────────────────
+    # Typed args_schema models — one per LangChain tool wrapper
+    # ─────────────────────────────────────────────────────────────────────
 
-        Args:
-            quality_data: JSON string with mcaddon_path or conversion data
 
-        Returns:
-            JSON string with validation results
-        """
+class _ValidateConversionQualityInput(BaseModel):
+    """Args for :class:`_ValidateConversionQualityTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    quality_data: str = Field(
+        min_length=1,
+        description=(
+            "JSON string with mcaddon_path or conversion data describing the "
+            "Java→Bedrock conversion to validate."
+        ),
+    )
+
+
+class _ValidateMcaddonInput(BaseModel):
+    """Args for :class:`_ValidateMcaddonTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    mcaddon_path: str = Field(
+        min_length=1,
+        description="Filesystem path to the .mcaddon archive to validate.",
+    )
+
+
+class _RunFunctionalTestsInput(BaseModel):
+    """Args for :class:`_RunFunctionalTestsTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    test_data: str = Field(
+        min_length=1,
+        description="JSON string describing the functional test scenarios to run.",
+    )
+
+
+class _AnalyzeBedrockCompatibilityInput(BaseModel):
+    """Args for :class:`_AnalyzeBedrockCompatibilityTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    compatibility_data: str = Field(
+        min_length=1,
+        description="JSON string describing the conversion artifacts to analyze.",
+    )
+
+
+class _AssessPerformanceMetricsInput(BaseModel):
+    """Args for :class:`_AssessPerformanceMetricsTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    performance_data: str = Field(
+        min_length=1,
+        description="JSON string describing the conversion artifacts to measure.",
+    )
+
+
+class _GenerateQaReportInput(BaseModel):
+    """Args for :class:`_GenerateQaReportTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    report_data: str = Field(
+        min_length=1,
+        description="JSON string with validation results to assemble into a QA report.",
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Typed BaseTool subclasses — replace the previous @tool @staticmethod wrappers
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class _BaseQATool(BaseTool):
+    """Common scaffolding for QA Validator typed tool wrappers."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+class _ValidateConversionQualityTool(_BaseQATool):
+    name: str = "validate_conversion_quality_tool"
+    description: str = (
+        "Validate overall conversion quality. "
+        "Args: quality_data (str, required) — JSON with mcaddon_path or "
+        "conversion data."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _ValidateConversionQualityInput
+
+    def _run(self, quality_data: str) -> str:  # type: ignore[override]
         agent = QAValidatorAgent.get_instance()
         return agent.validate_conversion_quality(quality_data)
 
-    @tool
-    @staticmethod
-    def validate_mcaddon_tool(mcaddon_path: str) -> str:
-        """
-        Validate a .mcaddon file and generate comprehensive QA report.
 
-        Args:
-            mcaddon_path: Path to the .mcaddon file to validate
+class _ValidateMcaddonTool(_BaseQATool):
+    name: str = "validate_mcaddon_tool"
+    description: str = (
+        "Validate a .mcaddon file and generate a comprehensive QA report. "
+        "Returns overall_score (0-100), status (pass/partial/fail), per-category "
+        "validations, issues, and recommendations. "
+        "Args: mcaddon_path (str, required) — filesystem path to .mcaddon."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _ValidateMcaddonInput
 
-        Returns:
-            JSON string with comprehensive validation results including:
-            - overall_score (0-100)
-            - status (pass/partial/fail)
-            - validations for each category (structural, manifest, content, bedrock_compatibility)
-            - issues and recommendations
-        """
+    def _run(self, mcaddon_path: str) -> str:  # type: ignore[override]
         agent = QAValidatorAgent.get_instance()
         result = agent.validate_mcaddon(mcaddon_path)
         result["success"] = result["status"] != "error"
         return json.dumps(result, indent=2)
 
-    @tool
-    @staticmethod
-    def run_functional_tests_tool(test_data: str) -> str:
-        """Run functional tests on the converted addon."""
+
+class _RunFunctionalTestsTool(_BaseQATool):
+    name: str = "run_functional_tests_tool"
+    description: str = (
+        "Run functional tests on the converted addon. "
+        "Args: test_data (str, required) — JSON describing the test scenarios."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _RunFunctionalTestsInput
+
+    def _run(self, test_data: str) -> str:  # type: ignore[override]
         agent = QAValidatorAgent.get_instance()
         return agent.run_functional_tests(test_data)
 
-    @tool
-    @staticmethod
-    def analyze_bedrock_compatibility_tool(compatibility_data: str) -> str:
-        """Analyze Bedrock compatibility of the conversion."""
+
+class _AnalyzeBedrockCompatibilityTool(_BaseQATool):
+    name: str = "analyze_bedrock_compatibility_tool"
+    description: str = (
+        "Analyze Bedrock compatibility of the conversion. "
+        "Args: compatibility_data (str, required) — JSON of conversion artifacts."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _AnalyzeBedrockCompatibilityInput
+
+    def _run(self, compatibility_data: str) -> str:  # type: ignore[override]
         agent = QAValidatorAgent.get_instance()
         return agent.analyze_bedrock_compatibility(compatibility_data)
 
-    @tool
-    @staticmethod
-    def assess_performance_metrics_tool(performance_data: str) -> str:
-        """Assess performance metrics of the converted addon."""
+
+class _AssessPerformanceMetricsTool(_BaseQATool):
+    name: str = "assess_performance_metrics_tool"
+    description: str = (
+        "Assess performance metrics of the converted addon. "
+        "Args: performance_data (str, required) — JSON of conversion artifacts."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _AssessPerformanceMetricsInput
+
+    def _run(self, performance_data: str) -> str:  # type: ignore[override]
         agent = QAValidatorAgent.get_instance()
         return agent.assess_performance_metrics(performance_data)
 
-    @tool
-    @staticmethod
-    def generate_qa_report_tool(report_data: str) -> str:
-        """Generate comprehensive QA report."""
+
+class _GenerateQaReportTool(_BaseQATool):
+    name: str = "generate_qa_report_tool"
+    description: str = (
+        "Generate a comprehensive QA report. "
+        "Args: report_data (str, required) — JSON of validation results."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _GenerateQaReportInput
+
+    def _run(self, report_data: str) -> str:  # type: ignore[override]
         agent = QAValidatorAgent.get_instance()
         return agent.generate_qa_report(report_data)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Module-level tool instances — preserved as class attributes on
+# QAValidatorAgent so the existing access patterns
+# (``QAValidatorAgent.validate_mcaddon_tool`` and ``agent.validate_mcaddon_tool``)
+# both continue to work without changes to call sites or tests.
+# ─────────────────────────────────────────────────────────────────────────────
+
+QAValidatorAgent.validate_conversion_quality_tool = _ValidateConversionQualityTool()
+QAValidatorAgent.validate_mcaddon_tool = _ValidateMcaddonTool()
+QAValidatorAgent.run_functional_tests_tool = _RunFunctionalTestsTool()
+QAValidatorAgent.analyze_bedrock_compatibility_tool = _AnalyzeBedrockCompatibilityTool()
+QAValidatorAgent.assess_performance_metrics_tool = _AssessPerformanceMetricsTool()
+QAValidatorAgent.generate_qa_report_tool = _GenerateQaReportTool()
