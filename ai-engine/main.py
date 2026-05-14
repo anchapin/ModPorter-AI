@@ -1,6 +1,6 @@
 """
 Portkit Engine
-FastAPI service for AI-powered mod conversion using CrewAI/LangGraph
+FastAPI service for AI-powered mod conversion using LangGraph + LangChain
 """
 
 import json
@@ -38,7 +38,6 @@ setup_logging(
 
 logger = get_agent_logger("main")
 
-from crew.conversion_crew import PortkitConversionCrew
 from models.smart_assumptions import SmartAssumptionEngine
 from utils.gpu_config import get_gpu_config, optimize_for_inference, print_gpu_info
 
@@ -132,7 +131,6 @@ app.add_middleware(
 )
 
 # Global instances
-conversion_crew = None
 assumption_engine = None
 redis_client = None
 
@@ -288,7 +286,7 @@ class ConversionStatus(BaseModel):
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup"""
-    global conversion_crew, assumption_engine, redis_client, job_manager
+    global assumption_engine, redis_client, job_manager
 
     logger.info("Starting Portkit Engine...")
 
@@ -308,9 +306,6 @@ async def startup_event():
         # Initialize SmartAssumptionEngine
         assumption_engine = SmartAssumptionEngine()
         logger.info("SmartAssumptionEngine initialized")
-
-        # Note: We now initialize the conversion crew per request to support variants
-        # The global conversion_crew will remain None
 
         logger.info("Portkit Engine startup complete")
 
@@ -503,14 +498,18 @@ async def process_conversion(
     job_id: str,
     mod_file_path: str,
     options: Dict[str, Any],
+    experiment_variant: Optional[str] = None,
 ):
-    """Process a conversion job using the AI crew or LangGraph pipeline"""
+    """Process a conversion job through the LangGraph pipeline (issue #1201).
+
+    The ``experiment_variant`` parameter is accepted for API compatibility
+    with the legacy variant-aware crew; it is currently advisory only and
+    forwarded into the pipeline options dict for downstream consumers.
+    """
 
     progress_callback = None
 
     try:
-        use_langgraph = os.getenv("USE_LANGGRAPH_PIPELINE", "false").lower() == "true"
-
         # Get current job status
         job_status = await job_manager.get_job_status(job_id)
         if not job_status:
@@ -524,7 +523,7 @@ async def process_conversion(
         job_status.progress = 10
         await job_manager.set_job_status(job_id, job_status)
 
-        logger.info(f"Processing conversion for job {job_id} (langgraph={use_langgraph})")
+        logger.info(f"Processing conversion for job {job_id} (engine=langgraph)")
 
         # Create progress callback for real-time updates if available
         if PROGRESS_CALLBACK_AVAILABLE and create_progress_callback:
@@ -547,10 +546,13 @@ async def process_conversion(
         # Ensure the output directory exists
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-        if use_langgraph:
-            await _process_with_langgraph_pipeline(
-                job_id, mod_file_path, output_path, options, job_manager, progress_callback
-            )
+        # Forward variant for downstream telemetry / A-B observability
+        if experiment_variant:
+            options = {**options, "experiment_variant": experiment_variant}
+
+        await _process_with_langgraph_pipeline(
+            job_id, mod_file_path, output_path, options, job_manager, progress_callback
+        )
 
     except Exception as e:
         logger.error(f"Conversion failed for job {job_id}: {e}", exc_info=True)

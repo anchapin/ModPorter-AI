@@ -1,14 +1,17 @@
 """
-LangGraph-based conversion pipeline orchestrator.
+LangGraph-based conversion pipeline orchestrator (canonical path).
 
-This module replaces the CrewAI-based orchestration with LangGraph for:
-- Typed state management with ConversionState
-- Checkpointing for resume capability (SQLite/Postgres)
-- interrupt() for HITL (Human-In-The-Loop) mid-conversion review
+This module is the single conversion-orchestration path for the AI
+engine. It owns:
+
+- Typed state management with ``ConversionState``
+- Checkpointing for resume capability (SQLite / Postgres)
+- ``interrupt()`` for HITL (Human-In-The-Loop) mid-conversion review
 - Conditional edges for QA retry loops
 - Parallel subgraph execution for independent converters
 
-Migration from CrewAI per issue #1201.
+Issue #1201 — full LangChain/LangGraph migration; the legacy
+``PortkitConversionCrew`` has been removed.
 """
 
 import logging
@@ -16,7 +19,7 @@ import os
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, TypedDict, Union
+from typing import Annotated, Any, Dict, List, Optional, TypedDict, Union
 
 from langgraph.checkpoint.memory import MemorySaver
 
@@ -52,40 +55,80 @@ class NodeStatus(Enum):
     INTERRUPTED = "interrupted"
 
 
+
+
+def _merge_dicts(a: Dict[str, Any], b: Dict[str, Any]) -> Dict[str, Any]:
+    """Reducer: shallow-merge two dicts; rhs keys win.
+
+    Used by ``ConversionState`` for fields that multiple parallel nodes
+    write disjoint keys to (e.g. ``node_status``). LangGraph requires
+    every state key written by parallel branches to be ``Annotated`` with
+    a reducer; otherwise a fan-out emits ``INVALID_CONCURRENT_GRAPH_UPDATE``.
+    """
+    if not a:
+        return dict(b or {})
+    if not b:
+        return dict(a or {})
+    out = dict(a)
+    out.update(b)
+    return out
+
+
+def _concat_lists(a: List[Any], b: List[Any]) -> List[Any]:
+    """Reducer: concatenate two lists.
+
+    Mergeable list fields written by parallel converter nodes
+    (``converted_scripts``, ``converted_assets``, ``errors``,
+    ``warnings``) use this reducer so partial returns from each branch
+    are accumulated rather than racing for last-write-wins.
+    """
+    return list(a or []) + list(b or [])
+
 class ConversionState(TypedDict, total=False):
-    """Typed state for the conversion pipeline.
+    """Typed state for the LangGraph conversion pipeline.
 
     Every stage reads from and writes to this explicit state object.
+
+    Fields wrapped in ``Annotated[..., reducer]`` are written by multiple
+    parallel converter nodes during fan-out; LangGraph requires a reducer
+    for any key updated by more than one concurrent branch.
     """
 
+    # Identity / paths — written once by the entry node.
     job_id: str
     mod_path: str
     output_path: str
     temp_dir: str
 
+    # Analysis output — written once by ``_java_analyzer_node``.
     mod_info: Dict[str, Any]
     features: Dict[str, Any]
     assets: Dict[str, Any]
 
+    # Planning output — written once by ``_strategy_planner_node``.
     conversion_plan: ConversionPlan
     smart_assumptions_applied: List[Dict[str, Any]]
 
-    converted_scripts: List[Dict[str, Any]]
-    converted_assets: List[Dict[str, Any]]
+    # Converter output — accumulated across parallel converter nodes.
+    converted_scripts: Annotated[List[Dict[str, Any]], _concat_lists]
+    converted_assets: Annotated[List[Dict[str, Any]], _concat_lists]
     bedrock_json: Dict[str, Any]
 
+    # QA output — written once by ``_qa_validator_node``.
     qa_results: Dict[str, Any]
     qa_passed: bool
     pass_rate: float
     confidence_score: float
 
+    # HITL.
     hitl_feedback: Optional[Dict[str, Any]]
     needs_human_review: bool
 
-    errors: List[str]
-    warnings: List[str]
+    # Diagnostic accumulators — mergeable across parallel branches.
+    errors: Annotated[List[str], _concat_lists]
+    warnings: Annotated[List[str], _concat_lists]
+    node_status: Annotated[Dict[str, str], _merge_dicts]
 
-    node_status: Dict[str, str]
     retry_count: int
     max_retries: int
 
@@ -93,6 +136,10 @@ class ConversionState(TypedDict, total=False):
 
     execution_time: float
     interrupted_segments: List[str]
+
+    # Final report assembled by ``_final_report_node``.
+    final_report: Dict[str, Any]
+    status: str
 
 
 class BlockConversionInput(BaseModel):
@@ -397,42 +444,49 @@ class ConversionPipeline:
             state["execution_time"] = time.time() - start_time
             return dict(state)
 
-    def _java_analyzer_node(self, state: ConversionState) -> ConversionState:
-        """Node: Analyze Java mod structure and extract features."""
+    def _java_analyzer_node(self, state: ConversionState) -> Dict[str, Any]:
+        """Node: Analyze Java mod structure and extract features.
+
+        Returns a partial state delta so the LangGraph reducers do not
+        re-apply mergeable fields (``errors``, ``warnings``, ``node_status``,
+        ``converted_scripts``, ``converted_assets``).
+        """
         logger.info(f"[{self.job_id}] Running Java analyzer node")
-        state["node_status"]["java_analyzer"] = NodeStatus.RUNNING.value
 
         try:
             agent = self._agent_instances["java_analyzer"]
             result_json = agent.analyze_mod_file(state["mod_path"])
             result = self._parse_json_result(result_json)
 
-            state["mod_info"] = result.get("mod_info", {})
-            state["features"] = result.get("features", {})
-            state["assets"] = result.get("assets", {})
-            state["node_status"]["java_analyzer"] = NodeStatus.COMPLETED.value
-
+            features = result.get("features", {})
             logger.info(
-                f"[{self.job_id}] Java analyzer completed: "
-                f"{len(state.get('features', {}))} features found"
+                f"[{self.job_id}] Java analyzer completed: {len(features)} features found"
             )
+            return {
+                "mod_info": result.get("mod_info", {}),
+                "features": features,
+                "assets": result.get("assets", {}),
+                "node_status": {"java_analyzer": NodeStatus.COMPLETED.value},
+            }
         except Exception as e:
             logger.error(f"[{self.job_id}] Java analyzer failed: {e}")
-            state["errors"].append(f"java_analyzer: {str(e)}")
-            state["node_status"]["java_analyzer"] = NodeStatus.FAILED.value
+            return {
+                "errors": [f"java_analyzer: {str(e)}"],
+                "node_status": {"java_analyzer": NodeStatus.FAILED.value},
+            }
 
-        return state
+    def _strategy_planner_node(self, state: ConversionState) -> Dict[str, Any]:
+        """Node: Create conversion strategy using smart assumptions.
 
-    def _strategy_planner_node(self, state: ConversionState) -> ConversionState:
-        """Node: Create conversion strategy using smart assumptions."""
+        Returns a partial state delta (see ``_java_analyzer_node``).
+        """
         logger.info(f"[{self.job_id}] Running strategy planner node")
-        state["node_status"]["strategy_planner"] = NodeStatus.RUNNING.value
 
         try:
             features = state.get("features", {})
 
-            plan_components = []
-            smart_assumptions = []
+            plan_components: List[ConversionPlanComponent] = []
+            smart_assumptions: List[Dict[str, Any]] = []
 
             for feature_type, feature_list in features.items():
                 if not isinstance(feature_list, list):
@@ -460,21 +514,21 @@ class ConversionPipeline:
                             }
                         )
 
-            conversion_plan = ConversionPlan(components=plan_components)
-            state["conversion_plan"] = conversion_plan
-            state["smart_assumptions_applied"] = smart_assumptions
-            state["node_status"]["strategy_planner"] = NodeStatus.COMPLETED.value
-
             logger.info(
                 f"[{self.job_id}] Strategy planner completed: "
                 f"{len(plan_components)} plan components"
             )
+            return {
+                "conversion_plan": ConversionPlan(components=plan_components),
+                "smart_assumptions_applied": smart_assumptions,
+                "node_status": {"strategy_planner": NodeStatus.COMPLETED.value},
+            }
         except Exception as e:
             logger.error(f"[{self.job_id}] Strategy planner failed: {e}")
-            state["errors"].append(f"strategy_planner: {str(e)}")
-            state["node_status"]["strategy_planner"] = NodeStatus.FAILED.value
-
-        return state
+            return {
+                "errors": [f"strategy_planner: {str(e)}"],
+                "node_status": {"strategy_planner": NodeStatus.FAILED.value},
+            }
 
     def _create_plan_component(
         self, feature_context: Dict[str, Any]
@@ -499,14 +553,17 @@ class ConversionPipeline:
 
         return None
 
-    def _block_converter_node(self, state: ConversionState) -> ConversionState:
-        """Node: Convert Java blocks to Bedrock block definitions."""
+    def _block_converter_node(self, state: ConversionState) -> Dict[str, Any]:
+        """Node: Convert Java blocks to Bedrock block definitions.
+
+        Returns a partial state delta (LangGraph fan-out merges via
+        ``ConversionState`` reducers).
+        """
         logger.info(f"[{self.job_id}] Running block converter node")
-        state["node_status"]["block_converter"] = NodeStatus.RUNNING.value
 
         try:
             blocks = state.get("features", {}).get("blocks", [])
-            converted = []
+            converted: List[Dict[str, Any]] = []
 
             for block in blocks:
                 if isinstance(block, dict):
@@ -523,25 +580,28 @@ class ConversionPipeline:
 
                     converted.append(block_result)
 
-            state["converted_scripts"] = state.get("converted_scripts", []) + converted
-            state["node_status"]["block_converter"] = NodeStatus.COMPLETED.value
-
             logger.info(f"[{self.job_id}] Block converter completed: {len(converted)} blocks")
+            return {
+                "converted_scripts": converted,
+                "node_status": {"block_converter": NodeStatus.COMPLETED.value},
+            }
         except Exception as e:
             logger.error(f"[{self.job_id}] Block converter failed: {e}")
-            state["errors"].append(f"block_converter: {str(e)}")
-            state["node_status"]["block_converter"] = NodeStatus.FAILED.value
+            return {
+                "errors": [f"block_converter: {str(e)}"],
+                "node_status": {"block_converter": NodeStatus.FAILED.value},
+            }
 
-        return state
+    def _entity_converter_node(self, state: ConversionState) -> Dict[str, Any]:
+        """Node: Convert Java entities to Bedrock entity definitions.
 
-    def _entity_converter_node(self, state: ConversionState) -> ConversionState:
-        """Node: Convert Java entities to Bedrock entity definitions."""
+        Returns a partial state delta (see ``_block_converter_node``).
+        """
         logger.info(f"[{self.job_id}] Running entity converter node")
-        state["node_status"]["entity_converter"] = NodeStatus.RUNNING.value
 
         try:
             entities = state.get("features", {}).get("entities", [])
-            converted = []
+            converted: List[Dict[str, Any]] = []
 
             for entity in entities:
                 if isinstance(entity, dict):
@@ -558,25 +618,28 @@ class ConversionPipeline:
 
                     converted.append(entity_result)
 
-            state["converted_scripts"] = state.get("converted_scripts", []) + converted
-            state["node_status"]["entity_converter"] = NodeStatus.COMPLETED.value
-
             logger.info(f"[{self.job_id}] Entity converter completed: {len(converted)} entities")
+            return {
+                "converted_scripts": converted,
+                "node_status": {"entity_converter": NodeStatus.COMPLETED.value},
+            }
         except Exception as e:
             logger.error(f"[{self.job_id}] Entity converter failed: {e}")
-            state["errors"].append(f"entity_converter: {str(e)}")
-            state["node_status"]["entity_converter"] = NodeStatus.FAILED.value
+            return {
+                "errors": [f"entity_converter: {str(e)}"],
+                "node_status": {"entity_converter": NodeStatus.FAILED.value},
+            }
 
-        return state
+    def _recipe_converter_node(self, state: ConversionState) -> Dict[str, Any]:
+        """Node: Convert Java recipes to Bedrock recipe definitions.
 
-    def _recipe_converter_node(self, state: ConversionState) -> ConversionState:
-        """Node: Convert Java recipes to Bedrock recipe definitions."""
+        Returns a partial state delta (see ``_block_converter_node``).
+        """
         logger.info(f"[{self.job_id}] Running recipe converter node")
-        state["node_status"]["recipe_converter"] = NodeStatus.RUNNING.value
 
         try:
             recipes = state.get("features", {}).get("recipes", [])
-            converted = []
+            converted: List[Dict[str, Any]] = []
 
             for recipe in recipes:
                 if isinstance(recipe, dict):
@@ -590,25 +653,28 @@ class ConversionPipeline:
                         }
                     )
 
-            state["converted_scripts"] = state.get("converted_scripts", []) + converted
-            state["node_status"]["recipe_converter"] = NodeStatus.COMPLETED.value
-
             logger.info(f"[{self.job_id}] Recipe converter completed: {len(converted)} recipes")
+            return {
+                "converted_scripts": converted,
+                "node_status": {"recipe_converter": NodeStatus.COMPLETED.value},
+            }
         except Exception as e:
             logger.error(f"[{self.job_id}] Recipe converter failed: {e}")
-            state["errors"].append(f"recipe_converter: {str(e)}")
-            state["node_status"]["recipe_converter"] = NodeStatus.FAILED.value
+            return {
+                "errors": [f"recipe_converter: {str(e)}"],
+                "node_status": {"recipe_converter": NodeStatus.FAILED.value},
+            }
 
-        return state
+    def _asset_converter_node(self, state: ConversionState) -> Dict[str, Any]:
+        """Node: Convert assets (textures, models, sounds) to Bedrock format.
 
-    def _asset_converter_node(self, state: ConversionState) -> ConversionState:
-        """Node: Convert assets (textures, models, sounds) to Bedrock format."""
+        Returns a partial state delta (see ``_block_converter_node``).
+        """
         logger.info(f"[{self.job_id}] Running asset converter node")
-        state["node_status"]["asset_converter"] = NodeStatus.RUNNING.value
 
         try:
             assets = state.get("assets", {})
-            converted = []
+            converted: List[Dict[str, Any]] = []
 
             for asset_type, asset_list in assets.items():
                 if isinstance(asset_list, list):
@@ -624,21 +690,24 @@ class ConversionPipeline:
                                 }
                             )
 
-            state["converted_assets"] = converted
-            state["node_status"]["asset_converter"] = NodeStatus.COMPLETED.value
-
             logger.info(f"[{self.job_id}] Asset converter completed: {len(converted)} assets")
+            return {
+                "converted_assets": converted,
+                "node_status": {"asset_converter": NodeStatus.COMPLETED.value},
+            }
         except Exception as e:
             logger.error(f"[{self.job_id}] Asset converter failed: {e}")
-            state["errors"].append(f"asset_converter: {str(e)}")
-            state["node_status"]["asset_converter"] = NodeStatus.FAILED.value
+            return {
+                "errors": [f"asset_converter: {str(e)}"],
+                "node_status": {"asset_converter": NodeStatus.FAILED.value},
+            }
 
-        return state
+    def _output_assembler_node(self, state: ConversionState) -> Dict[str, Any]:
+        """Node: Assemble converted outputs into Bedrock JSON structure.
 
-    def _output_assembler_node(self, state: ConversionState) -> ConversionState:
-        """Node: Assemble converted outputs into Bedrock JSON structure."""
+        Returns a partial state delta (see ``_java_analyzer_node``).
+        """
         logger.info(f"[{self.job_id}] Running output assembler node")
-        state["node_status"]["output_assembler"] = NodeStatus.RUNNING.value
 
         try:
             bedrock_json = {
@@ -646,26 +715,28 @@ class ConversionPipeline:
                 "converted_scripts": state.get("converted_scripts", []),
                 "converted_assets": state.get("converted_assets", []),
                 "smart_assumptions": state.get("smart_assumptions_applied", []),
+                # Bedrock add-on manifest skeleton; downstream packaging fills the UUID.
+                "manifest": {"format_version": 2, "header": {}, "modules": []},
             }
-
-            state["bedrock_json"] = bedrock_json
-            state["node_status"]["output_assembler"] = NodeStatus.COMPLETED.value
-
             logger.info(f"[{self.job_id}] Output assembler completed")
+            return {
+                "bedrock_json": bedrock_json,
+                "node_status": {"output_assembler": NodeStatus.COMPLETED.value},
+            }
         except Exception as e:
             logger.error(f"[{self.job_id}] Output assembler failed: {e}")
-            state["errors"].append(f"output_assembler: {str(e)}")
-            state["node_status"]["output_assembler"] = NodeStatus.FAILED.value
+            return {
+                "errors": [f"output_assembler: {str(e)}"],
+                "node_status": {"output_assembler": NodeStatus.FAILED.value},
+            }
 
-        return state
-
-    def _qa_validator_node(self, state: ConversionState) -> ConversionState:
+    def _qa_validator_node(self, state: ConversionState) -> Dict[str, Any]:
         """Node: Run QA validation on converted output.
 
-        Uses interrupt() for HITL when human review is needed.
+        Uses ``interrupt()`` for HITL when human review is needed. Returns
+        a partial state delta (see ``_java_analyzer_node``).
         """
         logger.info(f"[{self.job_id}] Running QA validator node")
-        state["node_status"]["qa_validator"] = NodeStatus.RUNNING.value
 
         try:
             output_path = state.get("output_path")
@@ -678,24 +749,20 @@ class ConversionPipeline:
                     "validation_time": 0.0,
                 }
 
-            state["qa_results"] = qa_result
-            state["qa_passed"] = qa_result.get("status") == "pass"
-            state["pass_rate"] = qa_result.get("overall_score", 0.0) / 100.0
-            state["confidence_score"] = qa_result.get("overall_score", 0.0) / 100.0
+            qa_passed = qa_result.get("status") == "pass"
+            pass_rate = qa_result.get("overall_score", 0.0) / 100.0
+            confidence_score = pass_rate
 
             confidence_segments = self._generate_confidence_segments(state)
-            state["confidence_segments"] = confidence_segments
-
             flagged = [s for s in confidence_segments if s.get("review_flag")]
-            state["interrupted_segments"] = [s.get("block_id") for s in flagged]
-
+            interrupted_segments = [s.get("block_id") for s in flagged]
             hard_flagged = [s for s in flagged if s.get("confidence_level") == "hard_flag"]
-            state["needs_human_review"] = len(hard_flagged) > 0
+            needs_human_review = len(hard_flagged) > 0
 
-            if state["needs_human_review"]:
+            if needs_human_review:
                 interrupted_info = {
                     "reason": "Human review required for low-confidence segments",
-                    "segments": state["interrupted_segments"],
+                    "segments": interrupted_segments,
                     "flagged_count": len(flagged),
                     "hard_flag_count": len(hard_flagged),
                 }
@@ -704,21 +771,28 @@ class ConversionPipeline:
                 )
                 interrupt(interrupted_info)
 
-            state["node_status"]["qa_validator"] = NodeStatus.COMPLETED.value
-
             logger.info(
                 f"[{self.job_id}] QA validator completed: "
-                f"pass_rate={state['pass_rate']:.2%}, "
-                f"flagged={len(flagged)}"
+                f"pass_rate={pass_rate:.2%}, flagged={len(flagged)}"
             )
+            return {
+                "qa_results": qa_result,
+                "qa_passed": qa_passed,
+                "pass_rate": pass_rate,
+                "confidence_score": confidence_score,
+                "confidence_segments": confidence_segments,
+                "interrupted_segments": interrupted_segments,
+                "needs_human_review": needs_human_review,
+                "node_status": {"qa_validator": NodeStatus.COMPLETED.value},
+            }
         except Exception as e:
             if "interrupted" in str(e).lower():
                 raise
             logger.error(f"[{self.job_id}] QA validator failed: {e}")
-            state["errors"].append(f"qa_validator: {str(e)}")
-            state["node_status"]["qa_validator"] = NodeStatus.FAILED.value
-
-        return state
+            return {
+                "errors": [f"qa_validator: {str(e)}"],
+                "node_status": {"qa_validator": NodeStatus.FAILED.value},
+            }
 
     def _generate_confidence_segments(self, state: ConversionState) -> List[Dict[str, Any]]:
         """Generate confidence segments for each converted item."""
@@ -744,13 +818,13 @@ class ConversionPipeline:
 
         return segments
 
-    def _logic_translator_retry_node(self, state: ConversionState) -> ConversionState:
-        """Node: Retry logic translation for failed segments."""
-        logger.info(f"[{self.job_id}] Running logic translator retry node")
-        state["node_status"]["logic_translator_retry"] = NodeStatus.RUNNING.value
+    def _logic_translator_retry_node(self, state: ConversionState) -> Dict[str, Any]:
+        """Node: Retry logic translation for failed segments.
 
+        Returns a partial state delta (see ``_java_analyzer_node``).
+        """
+        logger.info(f"[{self.job_id}] Running logic translator retry node")
         retry_count = state.get("retry_count", 0)
-        state["retry_count"] = retry_count + 1
 
         try:
             interrupted = state.get("interrupted_segments", [])
@@ -760,72 +834,85 @@ class ConversionPipeline:
 
             if hitl_feedback:
                 corrections = hitl_feedback.get("corrections", {})
-                for segment_id, correction in corrections.items():
+                for segment_id, _correction in corrections.items():
                     logger.info(
                         f"[{self.job_id}] Applying HITL correction for segment {segment_id}"
                     )
 
-            state["node_status"]["logic_translator_retry"] = NodeStatus.COMPLETED.value
-
             logger.info(
                 f"[{self.job_id}] Logic translator retry completed (attempt {retry_count + 1})"
             )
+            return {
+                "retry_count": retry_count + 1,
+                "node_status": {"logic_translator_retry": NodeStatus.COMPLETED.value},
+            }
         except Exception as e:
             logger.error(f"[{self.job_id}] Logic translator retry failed: {e}")
-            state["errors"].append(f"logic_translator_retry: {str(e)}")
-            state["node_status"]["logic_translator_retry"] = NodeStatus.FAILED.value
+            return {
+                "retry_count": retry_count + 1,
+                "errors": [f"logic_translator_retry: {str(e)}"],
+                "node_status": {"logic_translator_retry": NodeStatus.FAILED.value},
+            }
 
-        return state
+    def _final_report_node(self, state: ConversionState) -> Dict[str, Any]:
+        """Node: Generate final conversion report.
 
-    def _final_report_node(self, state: ConversionState) -> ConversionState:
-        """Node: Generate final conversion report."""
+        Delegates to ``services.report_formatter.format_conversion_report``
+        for the PRD Feature 3 shape (issue #1201). Adds confidence-segment
+        rollups for the LangGraph-specific reviewer pipeline. Returns a
+        partial state delta (see ``_java_analyzer_node``).
+        """
         logger.info(f"[{self.job_id}] Running final report node")
-        state["node_status"]["final_report"] = NodeStatus.RUNNING.value
 
         try:
-            total_segments = len(state.get("confidence_segments", []))
-            high_conf = sum(
-                1
-                for s in state.get("confidence_segments", [])
-                if s.get("confidence_level") == "high"
-            )
-            soft_flag = sum(
-                1
-                for s in state.get("confidence_segments", [])
-                if s.get("confidence_level") == "soft_flag"
-            )
-            hard_flag = sum(
-                1
-                for s in state.get("confidence_segments", [])
-                if s.get("confidence_level") == "hard_flag"
+            from services.report_formatter import format_conversion_report
+
+            engine = None
+            architect = self._agent_instances.get("bedrock_architect") if hasattr(self, "_agent_instances") else None
+            if architect is not None and hasattr(architect, "smart_assumption_engine"):
+                engine = architect.smart_assumption_engine
+
+            base_report = format_conversion_report(
+                state,
+                smart_assumption_engine=engine,
             )
 
-            state["final_report"] = {
+            confidence_segments = state.get("confidence_segments", []) or []
+            total_segments = len(confidence_segments)
+            high_conf = sum(
+                1 for s in confidence_segments if s.get("confidence_level") == "high"
+            )
+            soft_flag = sum(
+                1 for s in confidence_segments if s.get("confidence_level") == "soft_flag"
+            )
+            hard_flag = sum(
+                1 for s in confidence_segments if s.get("confidence_level") == "hard_flag"
+            )
+
+            final_report = {
+                **base_report,
                 "job_id": self.job_id,
-                "status": "completed" if state.get("qa_passed") else "partial",
-                "overall_success_rate": state.get("pass_rate", 0.0),
                 "total_segments": total_segments,
                 "high_confidence": high_conf,
                 "soft_flag": soft_flag,
                 "hard_flag": hard_flag,
-                "smart_assumptions_applied": state.get("smart_assumptions_applied", []),
-                "download_url": state.get("output_path"),
-                "detailed_report": {
-                    "stage": "completed",
-                    "progress": int(state.get("pass_rate", 0.0) * 100),
-                    "logs": state.get("errors", []),
-                },
             }
+            # Surface a top-level status for callers that don't dive into the report.
+            final_status = "completed" if state.get("qa_passed") else "partial"
 
-            state["node_status"]["final_report"] = NodeStatus.COMPLETED.value
-
-            logger.info(f"[{self.job_id}] Final report completed")
+            logger.info(f"[{self.job_id}] Final report completed status={final_status}")
+            return {
+                "final_report": final_report,
+                "status": final_status,
+                "node_status": {"final_report": NodeStatus.COMPLETED.value},
+            }
         except Exception as e:
             logger.error(f"[{self.job_id}] Final report failed: {e}")
-            state["errors"].append(f"final_report: {str(e)}")
-            state["node_status"]["final_report"] = NodeStatus.FAILED.value
-
-        return state
+            return {
+                "errors": [f"final_report: {str(e)}"],
+                "status": "failed",
+                "node_status": {"final_report": NodeStatus.FAILED.value},
+            }
 
     def _parse_json_result(self, result_str: str) -> Dict[str, Any]:
         """Parse JSON string result safely."""
@@ -834,7 +921,7 @@ class ConversionPipeline:
         try:
             return json.loads(result_str)
         except json.JSONDecodeError:
-            logger.warning(f"Failed to parse JSON result, returning empty dict")
+            logger.warning("Failed to parse JSON result, returning empty dict")
             return {}
 
     def resume_from_interruption(
