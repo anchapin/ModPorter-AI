@@ -2,15 +2,23 @@
 
 This module provides the BedrockArchitectAgent class which orchestrates conversion
 strategies using smart assumptions as specified in PRD Feature 2.
+
+Phase 8 A4a (refs #1201): the legacy ``@tool @staticmethod`` wrappers have
+been replaced with typed :class:`langchain_core.tools.BaseTool` subclasses,
+each declaring an explicit Pydantic ``args_schema``. The single-string
+``<name>_data`` shape is preserved so chat models and existing call sites
+continue to invoke ``BedrockArchitectAgent.<tool_name>.invoke({...})``
+without changes.
 """
 
 from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Dict, List
+from typing import Any, ClassVar, Dict, List
 
-from langchain_core.tools import tool
+from langchain_core.tools import BaseTool
+from pydantic import BaseModel, ConfigDict, Field
 
 from models.smart_assumptions import (
     AssumptionResult,
@@ -65,9 +73,17 @@ class BedrockArchitectAgent:
             self.create_llm_conversion_plan_tool,
         ]
 
-    @tool
+    # ------------------------------------------------------------------
+    # Static implementations (used by typed BaseTool subclasses below).
+    #
+    # These were previously decorated with ``@tool @staticmethod``; the
+    # ``@tool`` decorator has been removed and each method renamed with a
+    # leading underscore so it does not collide with the class-attribute
+    # binding of the typed BaseTool instance below.
+    # ------------------------------------------------------------------
+
     @staticmethod
-    def analyze_java_feature_tool(feature_data: str) -> str:
+    def _analyze_java_feature(feature_data: str) -> str:
         """Analyze a Java mod feature to determine applicable smart assumptions."""
         agent = BedrockArchitectAgent.get_instance()
 
@@ -78,11 +94,20 @@ class BedrockArchitectAgent:
 
             assumption = analysis_result.applied_assumption
             if assumption.impact.value == "high":
-                return f"High-impact conversion required using {assumption.java_feature} assumption. Significant functionality changes expected."
+                return (
+                    f"High-impact conversion required using {assumption.java_feature} "
+                    "assumption. Significant functionality changes expected."
+                )
             elif assumption.impact.value == "medium":
-                return f"Moderate conversion using {assumption.java_feature} assumption. Some functionality changes expected."
+                return (
+                    f"Moderate conversion using {assumption.java_feature} assumption. "
+                    "Some functionality changes expected."
+                )
             else:
-                return f"Low-impact conversion using {assumption.java_feature} assumption. Minimal functionality changes expected."
+                return (
+                    f"Low-impact conversion using {assumption.java_feature} assumption. "
+                    "Minimal functionality changes expected."
+                )
 
         try:
             data = json.loads(feature_data)
@@ -119,9 +144,8 @@ class BedrockArchitectAgent:
             logger.error(f"Feature analysis error: {e}")
             return json.dumps(error_response)
 
-    @tool
     @staticmethod
-    def apply_smart_assumption_tool(assumption_data: str) -> str:
+    def _apply_smart_assumption(assumption_data: str) -> str:
         """Apply smart assumption to a feature."""
         agent = BedrockArchitectAgent.get_instance()
         try:
@@ -158,7 +182,8 @@ class BedrockArchitectAgent:
                     },
                 }
                 logger.info(
-                    f"Applied assumption for {feature_context.feature_id}: {plan_component.assumption_type}"
+                    f"Applied assumption for {feature_context.feature_id}: "
+                    f"{plan_component.assumption_type}"
                 )
             else:
                 response = {
@@ -173,9 +198,8 @@ class BedrockArchitectAgent:
             logger.error(f"Assumption application error: {e}")
             return json.dumps(error_response)
 
-    @tool
     @staticmethod
-    def create_conversion_plan_tool(plan_data: Any) -> str:
+    def _create_conversion_plan(plan_data: Any) -> str:
         """Create a conversion plan for features."""
         agent = BedrockArchitectAgent.get_instance()
         try:
@@ -254,9 +278,8 @@ class BedrockArchitectAgent:
             logger.error(f"Conversion plan creation error: {e}")
             return json.dumps(error_response)
 
-    @tool
     @staticmethod
-    def get_assumption_conflicts_tool(conflict_data: str) -> str:
+    def _get_assumption_conflicts(conflict_data: str) -> str:
         """Get assumption conflicts for features."""
         agent = BedrockArchitectAgent.get_instance()
         try:
@@ -271,9 +294,8 @@ class BedrockArchitectAgent:
             logger.error(f"Conflict analysis error: {e}")
             return json.dumps(error_response)
 
-    @tool
     @staticmethod
-    def validate_bedrock_compatibility_tool(compatibility_data: str) -> str:
+    def _validate_bedrock_compatibility(compatibility_data: str) -> str:
         """Validate Bedrock compatibility of features."""
         BedrockArchitectAgent.get_instance()
 
@@ -361,11 +383,20 @@ class BedrockArchitectAgent:
 
         assumption = analysis_result.applied_assumption
         if assumption.impact.value == "high":
-            return f"High-impact conversion required using {assumption.java_feature} assumption. Significant functionality changes expected."
+            return (
+                f"High-impact conversion required using {assumption.java_feature} "
+                "assumption. Significant functionality changes expected."
+            )
         elif assumption.impact.value == "medium":
-            return f"Moderate conversion using {assumption.java_feature} assumption. Some functionality changes expected."
+            return (
+                f"Moderate conversion using {assumption.java_feature} assumption. "
+                "Some functionality changes expected."
+            )
         else:
-            return f"Low-impact conversion using {assumption.java_feature} assumption. Minimal functionality changes expected."
+            return (
+                f"Low-impact conversion using {assumption.java_feature} assumption. "
+                "Minimal functionality changes expected."
+            )
 
     def _validate_component_compatibility(self, component: Dict[str, Any]) -> Dict[str, Any]:
         """Validate individual component compatibility with Bedrock"""
@@ -413,27 +444,23 @@ class BedrockArchitectAgent:
 
     # --- Placeholder methods for Bedrock Definition Generation ---
 
-    @tool
     @staticmethod
-    def generate_block_definitions_tool(block_data: str) -> str:
+    def _generate_block_definitions(block_data: str) -> str:
         """Generate Bedrock block definition files (placeholder)."""
         return BedrockArchitectAgent._generate_placeholder_definition(block_data, "block")
 
-    @tool
     @staticmethod
-    def generate_item_definitions_tool(item_data: str) -> str:
+    def _generate_item_definitions(item_data: str) -> str:
         """Generate Bedrock item definition files (placeholder)."""
         return BedrockArchitectAgent._generate_placeholder_definition(item_data, "item")
 
-    @tool
     @staticmethod
-    def generate_recipe_definitions_tool(recipe_data: str) -> str:
+    def _generate_recipe_definitions(recipe_data: str) -> str:
         """Generate Bedrock recipe JSON files (placeholder)."""
         return BedrockArchitectAgent._generate_placeholder_definition(recipe_data, "recipe")
 
-    @tool
     @staticmethod
-    def generate_entity_definitions_tool(entity_data: str) -> str:
+    def _generate_entity_definitions(entity_data: str) -> str:
         """Generate Bedrock entity definition files (placeholder)."""
         return BedrockArchitectAgent._generate_placeholder_definition(entity_data, "entity")
 
@@ -466,7 +493,10 @@ class BedrockArchitectAgent:
                     "metadata_generated": {  # Custom section for our tool's info
                         "source_java_id": component_data.get("id", "unknown_java_id"),
                         "conversion_tool": "ModPorterAI_BedrockArchitect",
-                        "conversion_notes": f"This is an AI-generated placeholder {component_type} definition. Review and refine.",
+                        "conversion_notes": (
+                            f"This is an AI-generated placeholder {component_type} "
+                            "definition. Review and refine."
+                        ),
                     },
                 },
             }
@@ -502,15 +532,19 @@ class BedrockArchitectAgent:
                     "success": True,
                     "component_type": component_type,
                     "identifier": identifier,
-                    "definition_json": placeholder_definition,  # Return the definition as a JSON object, not a string
-                    "message": f"Placeholder {component_type} definition generated successfully for {identifier}.",
+                    "definition_json": placeholder_definition,
+                    "message": (
+                        f"Placeholder {component_type} definition generated successfully "
+                        f"for {identifier}."
+                    ),
                 },
                 indent=2,
             )
 
         except json.JSONDecodeError as e:
             logger.error(
-                f"Invalid JSON input for placeholder {component_type} definition: {str(e)} - Input: {component_data_str[:500]}...",
+                f"Invalid JSON input for placeholder {component_type} definition: "
+                f"{str(e)} - Input: {component_data_str[:500]}...",
                 exc_info=True,
             )  # Log part of the input
             return json.dumps(
@@ -527,14 +561,15 @@ class BedrockArchitectAgent:
             return json.dumps(
                 {
                     "success": False,
-                    "error": f"Failed to generate placeholder {component_type} definition: {str(e)}",
+                    "error": (
+                        f"Failed to generate placeholder {component_type} definition: {str(e)}"
+                    ),
                 },
                 indent=2,
             )
 
-    @tool
     @staticmethod
-    def create_llm_conversion_plan_tool(plan_data: str) -> str:
+    def _create_llm_conversion_plan(plan_data: str) -> str:
         """
         Use LLM + RAG to generate conversion plans with Bedrock API context.
 
@@ -576,7 +611,8 @@ class BedrockArchitectAgent:
                     "model_used": result.get("model_used", "unknown"),
                 }
                 logger.info(
-                    f"LLM conversion plan generated with feasibility: {result.get('overall_feasibility', 'unknown')}"
+                    "LLM conversion plan generated with feasibility: "
+                    f"{result.get('overall_feasibility', 'unknown')}"
                 )
             else:
                 response = {
@@ -595,3 +631,293 @@ class BedrockArchitectAgent:
             }
             logger.error(f"LLM conversion planning error: {e}")
             return json.dumps(error_response)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Typed args_schema models — one per LangChain tool wrapper
+#
+# Each schema preserves the legacy single-string ``<name>_data`` shape so chat
+# models and existing call sites continue to invoke ``BedrockArchitectAgent.
+# <tool_name>.invoke({"<name>_data": "..."})`` without changes. Pydantic
+# ``extra="forbid"`` makes hallucinated extra fields fail loud at validation,
+# and ``min_length=1`` rejects empty strings before they reach the underlying
+# JSON-decoding logic.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class _AnalyzeJavaFeatureInput(BaseModel):
+    """Args for :class:`_AnalyzeJavaFeatureTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    feature_data: str = Field(
+        min_length=1,
+        description=(
+            "JSON string with feature_id, feature_type, name, and original_data "
+            "describing the Java mod feature to analyze."
+        ),
+    )
+
+
+class _ApplySmartAssumptionInput(BaseModel):
+    """Args for :class:`_ApplySmartAssumptionTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    assumption_data: str = Field(
+        min_length=1,
+        description=(
+            "JSON string containing a feature_context object describing the "
+            "Java mod feature to which a smart assumption should be applied."
+        ),
+    )
+
+
+class _CreateConversionPlanInput(BaseModel):
+    """Args for :class:`_CreateConversionPlanTool`.
+
+    Accepts either a JSON string or a list of feature dicts to preserve the
+    legacy ``plan_data: Any`` calling shape; non-string values are JSON-encoded
+    by the underlying impl before being parsed.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    plan_data: Any = Field(
+        description=(
+            "JSON string or list of feature dicts describing the Java mod "
+            "features to assemble into a conversion plan."
+        ),
+    )
+
+
+class _GetAssumptionConflictsInput(BaseModel):
+    """Args for :class:`_GetAssumptionConflictsTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    conflict_data: str = Field(
+        min_length=1,
+        description=(
+            "JSON string with a feature_type field identifying which feature "
+            "type to inspect for assumption conflicts."
+        ),
+    )
+
+
+class _ValidateBedrockCompatibilityInput(BaseModel):
+    """Args for :class:`_ValidateBedrockCompatibilityTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    compatibility_data: str = Field(
+        min_length=1,
+        description=(
+            "JSON string with a components list describing conversion plan "
+            "components to validate against Bedrock compatibility rules."
+        ),
+    )
+
+
+class _GenerateBlockDefinitionsInput(BaseModel):
+    """Args for :class:`_GenerateBlockDefinitionsTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    block_data: str = Field(
+        min_length=1,
+        description="JSON string describing the Bedrock block to generate.",
+    )
+
+
+class _GenerateItemDefinitionsInput(BaseModel):
+    """Args for :class:`_GenerateItemDefinitionsTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    item_data: str = Field(
+        min_length=1,
+        description="JSON string describing the Bedrock item to generate.",
+    )
+
+
+class _GenerateRecipeDefinitionsInput(BaseModel):
+    """Args for :class:`_GenerateRecipeDefinitionsTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    recipe_data: str = Field(
+        min_length=1,
+        description="JSON string describing the Bedrock recipe to generate.",
+    )
+
+
+class _GenerateEntityDefinitionsInput(BaseModel):
+    """Args for :class:`_GenerateEntityDefinitionsTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    entity_data: str = Field(
+        min_length=1,
+        description="JSON string describing the Bedrock entity to generate.",
+    )
+
+
+class _CreateLlmConversionPlanInput(BaseModel):
+    """Args for :class:`_CreateLlmConversionPlanTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    plan_data: str = Field(
+        min_length=1,
+        description=(
+            "JSON string with feature_context and bedrock_docs_query fields used "
+            "to drive the LLM-augmented conversion-plan generation."
+        ),
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Typed BaseTool subclasses — replace the previous @tool @staticmethod wrappers
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class _BaseBedrockArchitectTool(BaseTool):
+    """Common scaffolding for Bedrock Architect typed tool wrappers."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+class _AnalyzeJavaFeatureTool(_BaseBedrockArchitectTool):
+    name: str = "analyze_java_feature_tool"
+    description: str = (
+        "Analyze a Java mod feature to determine applicable smart assumptions. "
+        "Args: feature_data (str, required) — JSON with feature_id, feature_type, "
+        "name, and original_data."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _AnalyzeJavaFeatureInput
+
+    def _run(self, feature_data: str) -> str:  # type: ignore[override]
+        return BedrockArchitectAgent._analyze_java_feature(feature_data)
+
+
+class _ApplySmartAssumptionTool(_BaseBedrockArchitectTool):
+    name: str = "apply_smart_assumption_tool"
+    description: str = (
+        "Apply a smart assumption to a Java mod feature, returning the resulting "
+        "conversion-plan component. "
+        "Args: assumption_data (str, required) — JSON containing a feature_context."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _ApplySmartAssumptionInput
+
+    def _run(self, assumption_data: str) -> str:  # type: ignore[override]
+        return BedrockArchitectAgent._apply_smart_assumption(assumption_data)
+
+
+class _CreateConversionPlanTool(_BaseBedrockArchitectTool):
+    name: str = "create_conversion_plan_tool"
+    description: str = (
+        "Create a conversion plan for a list of Java mod features. "
+        "Args: plan_data (str or list, required) — JSON string or list of feature dicts."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _CreateConversionPlanInput
+
+    def _run(self, plan_data: Any) -> str:  # type: ignore[override]
+        return BedrockArchitectAgent._create_conversion_plan(plan_data)
+
+
+class _GetAssumptionConflictsTool(_BaseBedrockArchitectTool):
+    name: str = "get_assumption_conflicts_tool"
+    description: str = (
+        "Get the assumption-conflict analysis for a given feature type. "
+        "Args: conflict_data (str, required) — JSON with a feature_type field."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _GetAssumptionConflictsInput
+
+    def _run(self, conflict_data: str) -> str:  # type: ignore[override]
+        return BedrockArchitectAgent._get_assumption_conflicts(conflict_data)
+
+
+class _ValidateBedrockCompatibilityTool(_BaseBedrockArchitectTool):
+    name: str = "validate_bedrock_compatibility_tool"
+    description: str = (
+        "Validate the Bedrock compatibility of a conversion plan, surfacing "
+        "warnings and recommendations per component. "
+        "Args: compatibility_data (str, required) — JSON with a components list."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _ValidateBedrockCompatibilityInput
+
+    def _run(self, compatibility_data: str) -> str:  # type: ignore[override]
+        return BedrockArchitectAgent._validate_bedrock_compatibility(compatibility_data)
+
+
+class _GenerateBlockDefinitionsTool(_BaseBedrockArchitectTool):
+    name: str = "generate_block_definitions_tool"
+    description: str = (
+        "Generate a placeholder Bedrock block definition. "
+        "Args: block_data (str, required) — JSON describing the block."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _GenerateBlockDefinitionsInput
+
+    def _run(self, block_data: str) -> str:  # type: ignore[override]
+        return BedrockArchitectAgent._generate_block_definitions(block_data)
+
+
+class _GenerateItemDefinitionsTool(_BaseBedrockArchitectTool):
+    name: str = "generate_item_definitions_tool"
+    description: str = (
+        "Generate a placeholder Bedrock item definition. "
+        "Args: item_data (str, required) — JSON describing the item."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _GenerateItemDefinitionsInput
+
+    def _run(self, item_data: str) -> str:  # type: ignore[override]
+        return BedrockArchitectAgent._generate_item_definitions(item_data)
+
+
+class _GenerateRecipeDefinitionsTool(_BaseBedrockArchitectTool):
+    name: str = "generate_recipe_definitions_tool"
+    description: str = (
+        "Generate a placeholder Bedrock recipe definition. "
+        "Args: recipe_data (str, required) — JSON describing the recipe."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _GenerateRecipeDefinitionsInput
+
+    def _run(self, recipe_data: str) -> str:  # type: ignore[override]
+        return BedrockArchitectAgent._generate_recipe_definitions(recipe_data)
+
+
+class _GenerateEntityDefinitionsTool(_BaseBedrockArchitectTool):
+    name: str = "generate_entity_definitions_tool"
+    description: str = (
+        "Generate a placeholder Bedrock entity definition. "
+        "Args: entity_data (str, required) — JSON describing the entity."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _GenerateEntityDefinitionsInput
+
+    def _run(self, entity_data: str) -> str:  # type: ignore[override]
+        return BedrockArchitectAgent._generate_entity_definitions(entity_data)
+
+
+class _CreateLlmConversionPlanTool(_BaseBedrockArchitectTool):
+    name: str = "create_llm_conversion_plan_tool"
+    description: str = (
+        "Use the LLM + RAG pipeline to generate a Bedrock conversion plan with "
+        "feasibility assessment. "
+        "Args: plan_data (str, required) — JSON with feature_context and "
+        "bedrock_docs_query."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _CreateLlmConversionPlanInput
+
+    def _run(self, plan_data: str) -> str:  # type: ignore[override]
+        return BedrockArchitectAgent._create_llm_conversion_plan(plan_data)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Module-level tool instances — preserved as class attributes on
+# BedrockArchitectAgent so the existing access patterns
+# (``BedrockArchitectAgent.<tool_name>`` and ``agent.<tool_name>``)
+# both continue to work unchanged for call sites and tests.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+BedrockArchitectAgent.analyze_java_feature_tool = _AnalyzeJavaFeatureTool()
+BedrockArchitectAgent.apply_smart_assumption_tool = _ApplySmartAssumptionTool()
+BedrockArchitectAgent.create_conversion_plan_tool = _CreateConversionPlanTool()
+BedrockArchitectAgent.get_assumption_conflicts_tool = _GetAssumptionConflictsTool()
+BedrockArchitectAgent.validate_bedrock_compatibility_tool = _ValidateBedrockCompatibilityTool()
+BedrockArchitectAgent.generate_block_definitions_tool = _GenerateBlockDefinitionsTool()
+BedrockArchitectAgent.generate_item_definitions_tool = _GenerateItemDefinitionsTool()
+BedrockArchitectAgent.generate_recipe_definitions_tool = _GenerateRecipeDefinitionsTool()
+BedrockArchitectAgent.generate_entity_definitions_tool = _GenerateEntityDefinitionsTool()
+BedrockArchitectAgent.create_llm_conversion_plan_tool = _CreateLlmConversionPlanTool()
