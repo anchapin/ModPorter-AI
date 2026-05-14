@@ -156,18 +156,20 @@ def test_rag_chain_integration():
     try:
         from services.rag_service import build_rag_chain
 
-        chain = build_rag_chain()
+        build_rag_chain()  # smoke: must not raise
         print("[OK] RAG chain initialized via services.rag_service")
         return True
     except Exception as e:
         print(f"[FAIL] RAG chain integration test failed: {e}")
         return False
 
+
 def _legacy_rag_crew_integration_disabled():  # noqa: D401 - kept for git history clarity
     """Legacy LangChain integration — removed in #1201."""
     try:
         # placeholder so the rest of this function compiles for diff readability
         from services.rag_service import build_rag_chain  # noqa: F401
+
         rag_crew = type("LegacyShim", (), {"get_system_status": lambda self: {}})()
 
         # Check system status
