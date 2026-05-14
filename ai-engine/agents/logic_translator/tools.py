@@ -1,40 +1,249 @@
-"""
-LangChain tool wrappers for Logic Translator Agent.
+"""LangChain tool wrappers for the Logic Translator Agent.
+
+This module exposes typed ``BaseTool`` subclasses backed by the
+``LogicTranslatorAgent`` singleton. Each tool declares a Pydantic
+``args_schema`` so chat models with native tool-calling can invoke it with
+structured arguments instead of a JSON-encoded ``<name>_data: str`` blob.
+
+Backwards compatibility:
+
+* ``LogicTranslatorTools`` is preserved as a facade. Each typed tool is
+  exposed as a class attribute on ``LogicTranslatorTools`` (``LogicTranslatorTools.<name>``)
+  with the legacy tool name, and the ``@property`` accessors on
+  ``LogicTranslatorAgent`` continue to return the same instance.
+* The agent's ``__init__`` is heavy (model loading); each tool defers
+  resolving the singleton until invocation, never at module import.
+
+This conversion is Phase 8 A2 of issue #1201, mirroring the pattern proven
+in :mod:`tools.search_tool` (PR #1446).
 """
 
+from __future__ import annotations
+
+import asyncio
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
-from langchain_core.tools import tool
+from langchain_core.tools import BaseTool
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
+from agents.logic_translator.block_state_mapper import JAVA_TO_BEDROCK_BLOCK_PROPERTIES
 from agents.logic_translator.translator import LogicTranslatorAgent
 from utils.logging_config import get_agent_logger
 
 logger = get_agent_logger("logic_translator.tools")
 
 
-class LogicTranslatorTools:
-    """Collection of LangChain tools for Java to Bedrock logic translation."""
+# ---------------------------------------------------------------------------
+# Pydantic args schemas
+# ---------------------------------------------------------------------------
 
-    @tool
+
+class GetRagContextInput(BaseModel):
+    """Args for :class:`GetRagContextTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    java_feature: str = Field(
+        min_length=1, description="Description of the Java feature to convert."
+    )
+    feature_type: str = Field(
+        min_length=1, description="Feature type (block, item, entity, recipe, event)."
+    )
+
+
+class SetRagContextInput(BaseModel):
+    """Args for :class:`SetRagContextTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    enabled: bool = Field(description="True to enable RAG context, False to disable.")
+
+
+class TranslateJavaMethodInput(BaseModel):
+    """Args for :class:`TranslateJavaMethodTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    method_name: str = Field(min_length=1, description="Java method name.")
+    method_body: str = Field(default="", description="Java method body (optional).")
+    feature_type: str = Field(
+        default="unknown", description="Feature type for optional RAG context."
+    )
+
+
+class ConvertJavaClassInput(BaseModel):
+    """Args for :class:`ConvertJavaClassTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    class_name: str = Field(min_length=1, description="Java class name.")
+    methods: List[Dict[str, Any]] = Field(
+        default_factory=list, description="List of method dicts on the class."
+    )
+    feature_type: str = Field(
+        default="unknown", description="Feature type for optional RAG context."
+    )
+
+
+class MapJavaApisInput(BaseModel):
+    """Args for :class:`MapJavaApisTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    apis: List[str] = Field(default_factory=list, description="List of Java API call signatures.")
+
+
+class GenerateEventHandlersInput(BaseModel):
+    """Args for :class:`GenerateEventHandlersTool`.
+
+    Mirrors the live ``LogicTranslatorAgent.generate_event_handlers`` schema.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    event_type: str = Field(default="unknown", description="Event type identifier.")
+    handlers: List[Dict[str, Any]] = Field(
+        default_factory=list, description="List of handler descriptors."
+    )
+
+
+class ValidateJavascriptSyntaxInput(BaseModel):
+    """Args for :class:`ValidateJavascriptSyntaxTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    javascript_code: str = Field(default="", description="JavaScript source to validate.")
+
+
+class TranslateCraftingRecipeInput(BaseModel):
+    """Args for :class:`TranslateCraftingRecipeTool`.
+
+    The ``recipe`` field carries the raw Java crafting recipe dict
+    (with ``type`` and the appropriate shaped/shapeless fields).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    recipe: Dict[str, Any] = Field(description="Java crafting recipe dict.")
+
+
+class GenerateBedrockBlockInput(BaseModel):
+    """Args for :class:`GenerateBedrockBlockTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    java_block_analysis: Dict[str, Any] = Field(description="Java block analysis dict.")
+    namespace: str = Field(default="modporter", min_length=1, description="Bedrock namespace.")
+    use_rag: bool = Field(default=True, description="Augment with RAG context when available.")
+
+
+class ValidateBlockJsonInput(BaseModel):
+    """Args for :class:`ValidateBlockJsonTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    block_json: Dict[str, Any] = Field(description="Bedrock block JSON to validate against schema.")
+
+
+class MapBlockPropertiesInput(BaseModel):
+    """Args for :class:`MapBlockPropertiesTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    java_properties: Dict[str, Any] = Field(description="Java block properties dict.")
+
+
+# ---------------------------------------------------------------------------
+# Module-level helper for block-property mapping.
+#
+# Pre-existing bug: the legacy ``map_block_properties_tool`` wrapper called
+# ``LogicTranslatorAgent.map_java_block_properties_to_bedrock``, a method that
+# does not exist on the agent (only on this module's ``LogicTranslatorTools``
+# facade). The typed rewrite routes through this module-level function so
+# both call sites share a single implementation.
+# ---------------------------------------------------------------------------
+
+
+def _map_java_block_properties_to_bedrock(java_properties: Dict[str, Any]) -> Dict[str, Any]:
+    """Map Java block properties to Bedrock equivalents."""
+    bedrock_properties: Dict[str, Any] = {}
+
+    material = java_properties.get("material", "stone")
+    if f"Material.{material.upper()}" in JAVA_TO_BEDROCK_BLOCK_PROPERTIES:
+        mapping = JAVA_TO_BEDROCK_BLOCK_PROPERTIES[f"Material.{material.upper()}"]
+        bedrock_properties.update(mapping)
+
+    if "hardness" in java_properties:
+        bedrock_properties["hardness"] = java_properties["hardness"]
+
+    if "explosion_resistance" in java_properties:
+        bedrock_properties["explosion_resistance"] = java_properties["explosion_resistance"]
+
+    if "light_level" in java_properties and java_properties["light_level"] > 0:
+        bedrock_properties["light_level"] = min(java_properties["light_level"], 15)
+
+    sound_type = java_properties.get("sound_type", "stone")
+    if f"SoundType.{sound_type.upper()}" in JAVA_TO_BEDROCK_BLOCK_PROPERTIES:
+        bedrock_properties["sound_category"] = sound_type
+
+    if java_properties.get("requires_tool", False):
+        tool_type = java_properties.get("tool_type", "pickaxe")
+        if f"ToolType.{tool_type.upper()}" in JAVA_TO_BEDROCK_BLOCK_PROPERTIES:
+            bedrock_properties["requires_tool"] = tool_type
+
+    return bedrock_properties
+
+
+# ---------------------------------------------------------------------------
+# Typed BaseTool scaffolding
+# ---------------------------------------------------------------------------
+
+
+class _BaseLogicTranslatorTool(BaseTool):
+    """Common scaffolding for the Logic Translator typed tool wrappers.
+
+    Holds an optional injected agent for tests; defers resolving the
+    ``LogicTranslatorAgent`` singleton until the tool is actually invoked,
+    so module import never triggers the agent's heavy ``__init__``.
+    """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    _agent: Any = PrivateAttr(default=None)
+
+    def __init__(self, agent: Optional[Any] = None, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self._agent = agent
+
+    def _get_agent(self) -> Any:
+        """Return the injected agent or the module singleton (lazy)."""
+        if self._agent is not None:
+            return self._agent
+        return LogicTranslatorAgent.get_instance()
+
     @staticmethod
-    def get_rag_context_tool(java_feature: str, feature_type: str) -> str:
-        """
-        Get RAG context for context-augmented translation.
+    def _run_async(coro: Any) -> Any:
+        """Drive an awaitable from a sync caller; refuse if a loop is running."""
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(coro)
+        # Close the unawaited coroutine to avoid a noisy RuntimeWarning.
+        coro.close()
+        raise RuntimeError(
+            "Sync invoke() called from inside a running event loop; use ainvoke() instead."
+        )
 
-        This tool retrieves relevant pattern mappings, Bedrock code examples,
-        and prior translations from the knowledge base to assist with accurate conversion.
 
-        Args:
-            java_feature: Description of the Java feature to convert
-            feature_type: Type of feature (block, item, entity, recipe, event)
+# ---------------------------------------------------------------------------
+# Typed BaseTool subclasses (one per legacy @tool wrapper)
+# ---------------------------------------------------------------------------
 
-        Returns:
-            JSON string with context including pattern mappings and code examples
-        """
-        agent = LogicTranslatorAgent.get_instance()
+
+class GetRagContextTool(_BaseLogicTranslatorTool):
+    """Get RAG context for context-augmented translation."""
+
+    name: str = "get_rag_context_tool"
+    description: str = (
+        "Retrieve RAG context for translating a Java feature. "
+        "Args: java_feature (str, required), feature_type (str, required)."
+    )
+    args_schema: ClassVar[type[BaseModel]] = GetRagContextInput
+
+    async def _arun(  # type: ignore[override]
+        self, java_feature: str, feature_type: str
+    ) -> str:
+        agent = self._get_agent()
         context_str = agent._get_rag_context(java_feature, feature_type)
-
         if not context_str:
             return json.dumps(
                 {
@@ -44,7 +253,6 @@ class LogicTranslatorTools:
                     "rag_enabled": agent._rag_context_enabled,
                 }
             )
-
         return json.dumps(
             {
                 "success": True,
@@ -53,28 +261,338 @@ class LogicTranslatorTools:
             }
         )
 
-    @tool
-    @staticmethod
-    def set_rag_context_tool(enabled: bool) -> str:
-        """
-        Enable or disable RAG context for translation.
+    def _run(  # type: ignore[override]
+        self, java_feature: str, feature_type: str
+    ) -> str:
+        return self._run_async(self._arun(java_feature=java_feature, feature_type=feature_type))
 
-        Args:
-            enabled: True to enable RAG context, False to disable
 
-        Returns:
-            JSON string with confirmation
-        """
-        agent = LogicTranslatorAgent.get_instance()
+class SetRagContextTool(_BaseLogicTranslatorTool):
+    """Enable or disable RAG context for translation."""
+
+    name: str = "set_rag_context_tool"
+    description: str = "Enable or disable RAG context. Args: enabled (bool)."
+    args_schema: ClassVar[type[BaseModel]] = SetRagContextInput
+
+    async def _arun(self, enabled: bool) -> str:  # type: ignore[override]
+        agent = self._get_agent()
         agent.enable_rag_context(enabled)
-
         return json.dumps(
             {
                 "success": True,
                 "rag_enabled": agent._rag_context_enabled,
-                "message": f"RAG context {'enabled' if agent._rag_context_enabled else 'disabled'}",
+                "message": (
+                    f"RAG context {'enabled' if agent._rag_context_enabled else 'disabled'}"
+                ),
             }
         )
+
+    def _run(self, enabled: bool) -> str:  # type: ignore[override]
+        return self._run_async(self._arun(enabled=enabled))
+
+
+class TranslateJavaMethodTool(_BaseLogicTranslatorTool):
+    """Translate a Java method to JavaScript via the agent."""
+
+    name: str = "translate_java_method_tool"
+    description: str = (
+        "Translate a Java method to JavaScript. Args: method_name (str, required), "
+        "method_body (str, default ''), feature_type (str, default 'unknown')."
+    )
+    args_schema: ClassVar[type[BaseModel]] = TranslateJavaMethodInput
+
+    async def _arun(  # type: ignore[override]
+        self,
+        method_name: str,
+        method_body: str = "",
+        feature_type: str = "unknown",
+    ) -> str:
+        agent = self._get_agent()
+        payload = json.dumps(
+            {
+                "method_name": method_name,
+                "method_body": method_body,
+                "feature_type": feature_type,
+            }
+        )
+        return agent.translate_java_method(payload)
+
+    def _run(  # type: ignore[override]
+        self,
+        method_name: str,
+        method_body: str = "",
+        feature_type: str = "unknown",
+    ) -> str:
+        return self._run_async(
+            self._arun(
+                method_name=method_name,
+                method_body=method_body,
+                feature_type=feature_type,
+            )
+        )
+
+
+class ConvertJavaClassTool(_BaseLogicTranslatorTool):
+    """Convert a Java class declaration to JavaScript."""
+
+    name: str = "convert_java_class_tool"
+    description: str = (
+        "Convert a Java class to JavaScript. Args: class_name (str, required), "
+        "methods (list[dict], default []), feature_type (str, default 'unknown')."
+    )
+    args_schema: ClassVar[type[BaseModel]] = ConvertJavaClassInput
+
+    async def _arun(  # type: ignore[override]
+        self,
+        class_name: str,
+        methods: Optional[List[Dict[str, Any]]] = None,
+        feature_type: str = "unknown",
+    ) -> str:
+        agent = self._get_agent()
+        payload = json.dumps(
+            {
+                "class_name": class_name,
+                "methods": methods or [],
+                "feature_type": feature_type,
+            }
+        )
+        return agent.convert_java_class(payload)
+
+    def _run(  # type: ignore[override]
+        self,
+        class_name: str,
+        methods: Optional[List[Dict[str, Any]]] = None,
+        feature_type: str = "unknown",
+    ) -> str:
+        return self._run_async(
+            self._arun(class_name=class_name, methods=methods, feature_type=feature_type)
+        )
+
+
+class MapJavaApisTool(_BaseLogicTranslatorTool):
+    """Map Java APIs to JavaScript equivalents."""
+
+    name: str = "map_java_apis_tool"
+    description: str = "Map Java APIs to JavaScript. Args: apis (list[str], default [])."
+    args_schema: ClassVar[type[BaseModel]] = MapJavaApisInput
+
+    async def _arun(  # type: ignore[override]
+        self, apis: Optional[List[str]] = None
+    ) -> str:
+        agent = self._get_agent()
+        payload = json.dumps({"apis": apis or []})
+        return agent.map_java_apis(payload)
+
+    def _run(  # type: ignore[override]
+        self, apis: Optional[List[str]] = None
+    ) -> str:
+        return self._run_async(self._arun(apis=apis))
+
+
+class GenerateEventHandlersTool(_BaseLogicTranslatorTool):
+    """Generate JavaScript event handlers from Java event metadata."""
+
+    name: str = "generate_event_handlers_tool"
+    description: str = (
+        "Generate JavaScript event handlers. Args: event_type (str, default 'unknown'), "
+        "handlers (list[dict], default [])."
+    )
+    args_schema: ClassVar[type[BaseModel]] = GenerateEventHandlersInput
+
+    async def _arun(  # type: ignore[override]
+        self,
+        event_type: str = "unknown",
+        handlers: Optional[List[Dict[str, Any]]] = None,
+    ) -> str:
+        agent = self._get_agent()
+        payload = json.dumps({"event_type": event_type, "handlers": handlers or []})
+        return agent.generate_event_handlers(payload)
+
+    def _run(  # type: ignore[override]
+        self,
+        event_type: str = "unknown",
+        handlers: Optional[List[Dict[str, Any]]] = None,
+    ) -> str:
+        return self._run_async(self._arun(event_type=event_type, handlers=handlers))
+
+
+class ValidateJavascriptSyntaxTool(_BaseLogicTranslatorTool):
+    """Validate JavaScript syntax."""
+
+    name: str = "validate_javascript_syntax_tool"
+    description: str = "Validate JavaScript source. Args: javascript_code (str, default '')."
+    args_schema: ClassVar[type[BaseModel]] = ValidateJavascriptSyntaxInput
+
+    async def _arun(  # type: ignore[override]
+        self, javascript_code: str = ""
+    ) -> str:
+        agent = self._get_agent()
+        return agent.validate_javascript_syntax(json.dumps({"javascript_code": javascript_code}))
+
+    def _run(  # type: ignore[override]
+        self, javascript_code: str = ""
+    ) -> str:
+        return self._run_async(self._arun(javascript_code=javascript_code))
+
+
+class TranslateCraftingRecipeTool(_BaseLogicTranslatorTool):
+    """Translate a Java crafting recipe to Bedrock format."""
+
+    name: str = "translate_crafting_recipe_tool"
+    description: str = (
+        "Translate a Java crafting recipe to Bedrock format. "
+        "Args: recipe (dict containing 'type' and shape/ingredient fields)."
+    )
+    args_schema: ClassVar[type[BaseModel]] = TranslateCraftingRecipeInput
+
+    async def _arun(  # type: ignore[override]
+        self, recipe: Dict[str, Any]
+    ) -> str:
+        agent = self._get_agent()
+        return agent.translate_crafting_recipe_json(json.dumps(recipe))
+
+    def _run(  # type: ignore[override]
+        self, recipe: Dict[str, Any]
+    ) -> str:
+        return self._run_async(self._arun(recipe=recipe))
+
+
+class GenerateBedrockBlockTool(_BaseLogicTranslatorTool):
+    """Generate Bedrock block JSON from a Java block analysis."""
+
+    name: str = "generate_bedrock_block_tool"
+    description: str = (
+        "Generate Bedrock block JSON. Args: java_block_analysis (dict, required), "
+        "namespace (str, default 'modporter'), use_rag (bool, default True)."
+    )
+    args_schema: ClassVar[type[BaseModel]] = GenerateBedrockBlockInput
+
+    async def _arun(  # type: ignore[override]
+        self,
+        java_block_analysis: Dict[str, Any],
+        namespace: str = "modporter",
+        use_rag: bool = True,
+    ) -> str:
+        agent = self._get_agent()
+        try:
+            result = agent.generate_bedrock_block_json(
+                java_block_analysis=java_block_analysis,
+                namespace=namespace,
+                use_rag=use_rag,
+            )
+            return json.dumps(result)
+        except Exception as e:
+            return json.dumps({"success": False, "error": str(e), "block_json": None})
+
+    def _run(  # type: ignore[override]
+        self,
+        java_block_analysis: Dict[str, Any],
+        namespace: str = "modporter",
+        use_rag: bool = True,
+    ) -> str:
+        return self._run_async(
+            self._arun(
+                java_block_analysis=java_block_analysis,
+                namespace=namespace,
+                use_rag=use_rag,
+            )
+        )
+
+
+class ValidateBlockJsonTool(_BaseLogicTranslatorTool):
+    """Validate a Bedrock block JSON document."""
+
+    name: str = "validate_block_json_tool"
+    description: str = "Validate a Bedrock block JSON document. Args: block_json (dict, required)."
+    args_schema: ClassVar[type[BaseModel]] = ValidateBlockJsonInput
+
+    async def _arun(  # type: ignore[override]
+        self, block_json: Dict[str, Any]
+    ) -> str:
+        agent = self._get_agent()
+        try:
+            result = agent._validate_block_json(block_json)
+            return json.dumps({"success": True, "validation": result})
+        except Exception as e:
+            return json.dumps({"success": False, "error": str(e)})
+
+    def _run(  # type: ignore[override]
+        self, block_json: Dict[str, Any]
+    ) -> str:
+        return self._run_async(self._arun(block_json=block_json))
+
+
+class MapBlockPropertiesTool(_BaseLogicTranslatorTool):
+    """Map Java block properties to Bedrock equivalents.
+
+    Routes through the module-level :func:`_map_java_block_properties_to_bedrock`
+    helper. The legacy wrapper called a non-existent agent method; this tool
+    fixes that by calling the actually-implemented mapping logic.
+    """
+
+    name: str = "map_block_properties_tool"
+    description: str = (
+        "Map Java block properties to Bedrock. Args: java_properties (dict, required)."
+    )
+    args_schema: ClassVar[type[BaseModel]] = MapBlockPropertiesInput
+
+    async def _arun(  # type: ignore[override]
+        self, java_properties: Dict[str, Any]
+    ) -> str:
+        try:
+            result = _map_java_block_properties_to_bedrock(java_properties)
+            return json.dumps({"success": True, "bedrock_properties": result})
+        except Exception as e:
+            return json.dumps({"success": False, "error": str(e)})
+
+    def _run(  # type: ignore[override]
+        self, java_properties: Dict[str, Any]
+    ) -> str:
+        return self._run_async(self._arun(java_properties=java_properties))
+
+
+# ---------------------------------------------------------------------------
+# Module-level singleton instances. Created at import time but agent-less,
+# so :class:`LogicTranslatorAgent` is not instantiated until a tool is
+# actually invoked.
+# ---------------------------------------------------------------------------
+
+_get_rag_context_tool = GetRagContextTool()
+_set_rag_context_tool = SetRagContextTool()
+_translate_java_method_tool = TranslateJavaMethodTool()
+_convert_java_class_tool = ConvertJavaClassTool()
+_map_java_apis_tool = MapJavaApisTool()
+_generate_event_handlers_tool = GenerateEventHandlersTool()
+_validate_javascript_syntax_tool = ValidateJavascriptSyntaxTool()
+_translate_crafting_recipe_tool = TranslateCraftingRecipeTool()
+_generate_bedrock_block_tool = GenerateBedrockBlockTool()
+_validate_block_json_tool = ValidateBlockJsonTool()
+_map_block_properties_tool = MapBlockPropertiesTool()
+
+
+class LogicTranslatorTools:
+    """Collection of LangChain tools for Java to Bedrock logic translation."""
+
+    # ------------------------------------------------------------------
+    # Typed BaseTool wrappers (Phase 8 A2, refs #1201).
+    #
+    # Class attributes preserve the ``LogicTranslatorTools.<name>`` access
+    # used by ``LogicTranslatorAgent.get_tools()`` and the agent's
+    # ``@property`` accessors. Each name matches the legacy tool name so
+    # the public surface is unchanged.
+    # ------------------------------------------------------------------
+
+    get_rag_context_tool = _get_rag_context_tool
+    set_rag_context_tool = _set_rag_context_tool
+    translate_java_method_tool = _translate_java_method_tool
+    convert_java_class_tool = _convert_java_class_tool
+    map_java_apis_tool = _map_java_apis_tool
+    generate_event_handlers_tool = _generate_event_handlers_tool
+    validate_javascript_syntax_tool = _validate_javascript_syntax_tool
+    translate_crafting_recipe_tool = _translate_crafting_recipe_tool
+    generate_bedrock_block_tool = _generate_bedrock_block_tool
+    validate_block_json_tool = _validate_block_json_tool
+    map_block_properties_tool = _map_block_properties_tool
 
     def translate_java_code(self, java_code: str, code_type: str) -> str:
         """
@@ -118,48 +636,6 @@ class LogicTranslatorTools:
                     "errors": [str(e)],
                 }
             )
-
-    @tool
-    @staticmethod
-    def translate_java_method_tool(method_data: str) -> str:
-        """Translate Java method to JavaScript."""
-        agent = LogicTranslatorAgent.get_instance()
-        return agent.translate_java_method(method_data)
-
-    @tool
-    @staticmethod
-    def convert_java_class_tool(class_data: str) -> str:
-        """Convert Java class to JavaScript."""
-        agent = LogicTranslatorAgent.get_instance()
-        return agent.convert_java_class(class_data)
-
-    @tool
-    @staticmethod
-    def map_java_apis_tool(api_data: str) -> str:
-        """Map Java APIs to JavaScript."""
-        agent = LogicTranslatorAgent.get_instance()
-        return agent.map_java_apis(api_data)
-
-    @tool
-    @staticmethod
-    def generate_event_handlers_tool(event_data: str) -> str:
-        """Generate event handlers for JavaScript."""
-        agent = LogicTranslatorAgent.get_instance()
-        return agent.generate_event_handlers(event_data)
-
-    @tool
-    @staticmethod
-    def validate_javascript_syntax_tool(js_data: str) -> str:
-        """Validate JavaScript syntax."""
-        agent = LogicTranslatorAgent.get_instance()
-        return agent.validate_javascript_syntax(js_data)
-
-    @tool
-    @staticmethod
-    def translate_crafting_recipe_tool(recipe_json_data: str) -> str:
-        """Translate a Java crafting recipe JSON to Bedrock recipe JSON format."""
-        agent = LogicTranslatorAgent.get_instance()
-        return agent.translate_crafting_recipe_json(recipe_json_data)
 
     def _get_tree_sitter_parser(self):
         """Get or create tree-sitter parser instance."""
@@ -1081,79 +1557,6 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {{
                 bedrock_properties["requires_tool"] = tool_type
 
         return bedrock_properties
-
-    @tool
-    @staticmethod
-    def generate_bedrock_block_tool(block_data: str) -> str:
-        """
-        Generate Bedrock block JSON from Java block analysis.
-
-        Args:
-            block_data: JSON string containing Java block analysis data
-
-        Returns:
-            JSON string with generated Bedrock block JSON
-        """
-        agent = LogicTranslatorAgent.get_instance()
-        try:
-            data = json.loads(block_data)
-            java_analysis = data.get("java_block_analysis", data)
-            namespace = data.get("namespace", "modporter")
-            use_rag = data.get("use_rag", True)
-
-            result = agent.generate_bedrock_block_json(
-                java_block_analysis=java_analysis, namespace=namespace, use_rag=use_rag
-            )
-
-            return json.dumps(result)
-        except Exception as e:
-            return json.dumps({"success": False, "error": str(e), "block_json": None})
-
-    @tool
-    @staticmethod
-    def validate_block_json_tool(block_json_data: str) -> str:
-        """
-        Validate a Bedrock block JSON against schema requirements.
-
-        Args:
-            block_json_data: JSON string containing the block JSON to validate
-
-        Returns:
-            JSON string with validation results
-        """
-        agent = LogicTranslatorAgent.get_instance()
-        try:
-            data = json.loads(block_json_data)
-            block_json = data.get("block_json", data)
-
-            result = agent._validate_block_json(block_json)
-
-            return json.dumps({"success": True, "validation": result})
-        except Exception as e:
-            return json.dumps({"success": False, "error": str(e)})
-
-    @tool
-    @staticmethod
-    def map_block_properties_tool(properties_data: str) -> str:
-        """
-        Map Java block properties to Bedrock equivalents.
-
-        Args:
-            properties_data: JSON string containing Java block properties
-
-        Returns:
-            JSON string with mapped Bedrock properties
-        """
-        agent = LogicTranslatorAgent.get_instance()
-        try:
-            data = json.loads(properties_data)
-            java_properties = data.get("java_properties", data)
-
-            result = agent.map_java_block_properties_to_bedrock(java_properties)
-
-            return json.dumps({"success": True, "bedrock_properties": result})
-        except Exception as e:
-            return json.dumps({"success": False, "error": str(e)})
 
     def get_block_generation_tools(self) -> List:
         """Get block generation tools available to this agent."""
