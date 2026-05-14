@@ -1,5 +1,5 @@
 """
-Standalone unit tests for model conversion functionality (without CrewAI dependency)
+Standalone unit tests for model conversion functionality
 """
 
 import os

@@ -241,7 +241,7 @@ class ValidationCache:
 ### Public Methods (QAValidatorAgent)
 
 1. `get_instance()` - Singleton accessor
-2. `get_tools()` - Get CrewAI tools
+2. `get_tools()` - Get LangChain tools
 3. `validate_mcaddon(path)` - Main validation entry
 4. `validate_conversion_quality(data)` - Quality validation tool
 5. `run_functional_tests(data)` - Functional tests tool
@@ -249,7 +249,7 @@ class ValidationCache:
 7. `assess_performance_metrics(data)` - Performance assessment tool
 8. `generate_qa_report(data)` - QA report generation tool
 
-### CrewAI Tools
+### LangChain Tools
 
 1. `validate_mcaddon_tool(path)` - Direct validation tool
 2. `validate_conversion_quality_tool(data)` - Quality validation
@@ -301,7 +301,7 @@ VALIDATION_RULES = {
 ## Integration Readiness
 
 ### Current Integration Points
-- ✅ Compatible with CrewAI tools framework
+- ✅ Compatible with LangChain tools framework
 - ✅ Compatible with existing agent system
 - ✅ No breaking changes to existing APIs
 - ✅ Singleton pattern for efficiency

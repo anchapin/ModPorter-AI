@@ -19,7 +19,7 @@ Phase 15-03 focuses on expanding the RAG knowledge base with Minecraft modding d
 | **sentence-transformers** | all-MiniLM-L6-v2 | Embedding generation | Free, self-hosted, 64.3 MTEB score |
 | **FastAPI** | 0.104+ | Backend API endpoints | Existing project stack, async support |
 | **SQLAlchemy 2.0** | Async | Database ORM | Existing project patterns, async/await |
-| **CrewAI** | Latest | Agent orchestration | Existing multi-agent system |
+| **LangChain/LangGraph** | Latest | Agent orchestration | Existing multi-agent system |
 
 ### Supporting
 | Library | Version | Purpose | When to Use |
@@ -42,7 +42,7 @@ Phase 15-03 focuses on expanding the RAG knowledge base with Minecraft modding d
 **Installation:**
 ```bash
 # Core dependencies (already installed)
-pip install fastapi sqlalchemy[asyncio] pgvector sentence-transformers crewai
+pip install fastapi sqlalchemy[asyncio] pgvector sentence-transformers langchain
 
 # Additional for documentation ingestion
 pip install langchain beautifulsoup4 markdown pypdf2 aiohttp PyGithub python-frontmatter

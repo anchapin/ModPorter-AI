@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-This document identifies common pitfalls when adding multi-agent QA (Translator, Reviewer, Tester, Semantic Checker) to an existing AI-powered Java→Bedrock mod converter. Research draws from CrewAI, AutoGen, and Semantic Kernel documentation, plus industry patterns for code generation pipelines. The primary risks involve agent coordination failures, non-deterministic behavior, and integration conflicts with existing conversion pipelines.
+This document identifies common pitfalls when adding multi-agent QA (Translator, Reviewer, Tester, Semantic Checker) to an existing AI-powered Java→Bedrock mod converter. Research draws from LangChain/LangGraph, AutoGen, and Semantic Kernel documentation, plus industry patterns for code generation pipelines. The primary risks involve agent coordination failures, non-deterministic behavior, and integration conflicts with existing conversion pipelines.
 
 ---
 
@@ -153,7 +153,7 @@ Adding multi-agent QA breaks the existing conversion pipeline. The new QA layer 
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| CrewAI/LangChain | Not specifying `verbose=True` during development | Enable verbose logging from day 1 for debugging |
+| LangChain/LangGraph/LangChain | Not specifying `verbose=True` during development | Enable verbose logging from day 1 for debugging |
 | CodeT5+ Translation Output | Assuming translator output format never changes | Version the output schema, validate on both ends |
 | PostgreSQL (pgvector) | QA agents make individual DB connections | Use connection pooling, single session for pipeline |
 | Redis Cache | Cache invalidation not handled for QA state | Implement TTL or explicit invalidation triggers |
@@ -220,7 +220,7 @@ Adding multi-agent QA breaks the existing conversion pipeline. The new QA layer 
 
 ## Sources
 
-- CrewAI documentation: Troubleshooting multi-agent flows, agent performance bottlenecks
+- LangChain/LangGraph documentation: Troubleshooting multi-agent flows, agent performance bottlenecks
 - AutoGen issues (2,500+ closed): Non-deterministic interactions, tool argument flow problems
 - Semantic Kernel: Multi-agent orchestration patterns, sequential vs concurrent execution
 - DeepSeek-Coder: Trust remote code errors, evaluation pipeline challenges

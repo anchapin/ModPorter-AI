@@ -1,6 +1,6 @@
 # AI Engine
 
-The AI Engine is the core component of PortKit responsible for intelligent mod conversion using a multi-agent system powered by CrewAI and enhanced with RAG (Retrieval Augmented Generation) capabilities.
+The AI Engine is the core component of PortKit responsible for intelligent mod conversion using a multi-agent system powered by LangChain and LangGraph and enhanced with RAG (Retrieval Augmented Generation) capabilities.
 
 ## Architecture
 
@@ -137,7 +137,7 @@ RAG_MAX_RESULTS=10
 - **Base URL Auto-Detection**: The system automatically detects the correct Ollama base URL based on the environment
 - **Model Compatibility**: Supports `llama3.2`, `codellama`, `mistral`, and other Ollama models
 - **Fallback Handling**: If Ollama fails, the system provides clear error messages with setup instructions
-- **Memory Management**: Ollama mode automatically disables CrewAI memory to avoid validation issues
+- **Memory Management**: Ollama mode automatically disables LangChain/LangGraph memory to avoid validation issues
 
 ### Agent Configuration
 
@@ -189,7 +189,7 @@ Agents are configured via `src/config/rag_agents.yaml`. See the full configurati
   2. Increase timeout: Set `request_timeout=300` in configuration
   3. Try smaller model: `export OLLAMA_MODEL=llama3.2:1b`
 
-#### CrewAI Memory Validation Issues
+#### LangChain/LangGraph Memory Validation Issues
 - **Cause**: Memory validation conflicts with Ollama
 - **Solution**: Automatic - memory is disabled when `USE_OLLAMA=true`
 

@@ -11,7 +11,7 @@ overwriting this one.
 | --- | --- | --- | --- | --- |
 | [#1437](https://github.com/anchapin/portkit/issues/1437) | [#1440](https://github.com/anchapin/portkit/pull/1440) | `fix/1437-trivy-sarif-permission` | `.github/workflows/ai-quality-gates.yml` (+3 / −0) | ✅ Closes #1437 |
 | [#1438](https://github.com/anchapin/portkit/issues/1438) | [#1441](https://github.com/anchapin/portkit/pull/1441) | `ops/1438-fly-token-rotation-runbook` | `docs/operations/fly-token-rotation.md` (+277 / −0) | ⚠️ Manual rotation still required; issue remains open until verified |
-| [#1439](https://github.com/anchapin/portkit/issues/1439) | [#1442](https://github.com/anchapin/portkit/pull/1442) | `fix/1439-crewai-langchain-openai-conflict` | `ai-engine/requirements.txt` (+7 / −3) | ✅ Closes #1439 |
+| [#1439](https://github.com/anchapin/portkit/issues/1439) | [#1442](https://github.com/anchapin/portkit/pull/1442) | `fix/1439-langchain-langchain-openai-conflict` | `ai-engine/requirements.txt` (+7 / −3) | ✅ Closes #1439 |
 
 All three branches were forked from `main @ accf7329` and have disjoint write
 sets, so they could be merged in any order without conflicts. The order below
@@ -23,7 +23,7 @@ was chosen for safety, not for technical dependency.
 | --- | --- | --- | --- |
 | 1 | [#1440](https://github.com/anchapin/portkit/pull/1440) | `eabbe6b4` | Landed the Trivy SARIF permissions fix; [#1437](https://github.com/anchapin/portkit/issues/1437) is closed. |
 | 2 | [#1441](https://github.com/anchapin/portkit/pull/1441) | `6f1d5f4a` | Landed the Fly.io token rotation runbook; [#1438](https://github.com/anchapin/portkit/issues/1438) remains open because credential rotation is still manual. |
-| 3 | [#1442](https://github.com/anchapin/portkit/pull/1442) | `0519803b` | Landed the `crewai` / `langchain-openai` dependency fix after all CI gates passed; [#1439](https://github.com/anchapin/portkit/issues/1439) is closed. |
+| 3 | [#1442](https://github.com/anchapin/portkit/pull/1442) | `0519803b` | Landed the `langchain` / `langchain-openai` dependency fix after all CI gates passed; [#1439](https://github.com/anchapin/portkit/issues/1439) is closed. |
 | 4 | [#1443](https://github.com/anchapin/portkit/pull/1443) | `68fa6bbd` | Landed this dated follow-up checklist. |
 
 After #1441 merged, GitHub briefly marked #1438 closed because the PR body
@@ -45,7 +45,7 @@ open until the token rotation is performed and verified.
    The critical gates were `build-python-base`, `ai-engine-test`,
    `Tests + Coverage (70% min)`, `Integration Tests (ai-engine|backend|integration)`,
    `Mutation Testing - Python (ai-engine)`, `Mutation Testing - Frontend`, and
-   `Trivy Dependency Scan`. The `crewai 0.11.x → 0.193.x` jump crossed an API
+   `Trivy Dependency Scan`. The `langchain 0.11.x → 0.193.x` jump crossed an API
    boundary; `pip` resolver convergence (proven locally) was not treated as
    enough proof of runtime compatibility. These checks passed before #1442 was
    merged.
@@ -144,29 +144,29 @@ short-lived branch in a real runner before being landed on `main`. If
 dynamic indexing fails in practice, fall back to two explicit `Deploy to
 Fly.io` steps with `if:` matrix-environment guards and static secret names.
 
-### B. `chromadb` bump to unlock `crewai 1.x`
+### B. `chromadb` bump to unlock `langchain 1.x`
 
-`ai-engine/requirements.txt` currently pins `crewai>=0.140.0,<0.201.0` because
-`crewai 0.201+` (and all `1.x`) declares `chromadb~=1.1.0`, which is mutually
+`ai-engine/requirements.txt` currently pins `langchain>=0.140.0,<0.201.0` because
+`langchain 0.201+` (and all `1.x`) declares `chromadb~=1.1.0`, which is mutually
 exclusive with the existing `chromadb==1.5.8` hard pin. To pick up bug fixes
-and features in `crewai 1.x`:
+and features in `langchain 1.x`:
 
 1. Audit the codebase for `chromadb` API usage that may have changed between
-   `1.5.8` and the current `crewai 1.x` constraint band.
-2. Lower-bound `chromadb` to whatever `crewai 1.x` declares (currently
-   `~=1.1.0` per PyPI metadata for `crewai 1.14.4`).
+   `1.5.8` and the current `langchain 1.x` constraint band.
+2. Lower-bound `chromadb` to whatever `langchain 1.x` declares (currently
+   `~=1.1.0` per PyPI metadata for `langchain 1.14.4`).
 3. Re-run `pip install --dry-run -r ai-engine/requirements.txt` and the
    ai-engine test suite to confirm no second-order conflicts (e.g. with
    `embedchain`, `langchain-*`, or the `opentelemetry-exporter-*` stack the
    file already calls out).
-4. Bump `crewai` to `1.x` in the same PR.
+4. Bump `langchain` to `1.x` in the same PR.
 
-### C. Update the `crewai` major-line — codebase audit
+### C. Update the `langchain` major-line — codebase audit
 
-PR #1442 jumped `crewai` from `0.11.x` to `0.193.2`. The Agent / Task / Crew
-constructor surface that `ai-engine/crew/conversion_crew.py` and
+PR #1442 jumped `langchain` from `0.11.x` to `0.193.2`. The Agent / Task / Crew
+constructor surface that `ai-engine/orchestration/langgraph_pipeline.py` and
 `ai-engine/agents/rag_agents.py` rely on was structurally compatible based on
-the `crewai 0.193.2` wheel inspection that informed the version pick, and the
+the `langchain 0.193.2` wheel inspection that informed the version pick, and the
 critical CI gates passed before merge. If future runtime issues appear around
 `Agent.__init__()`, `Task.__init__()`, `Crew.__init__()`, or `Process`, handle
 them in a focused follow-up PR that adapts the call sites rather than mixing

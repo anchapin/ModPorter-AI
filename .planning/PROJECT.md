@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-**portkit** is an AI-powered platform that automates the conversion of Minecraft Java Edition mods to Bedrock Edition add-ons, filling a critical gap in the Minecraft modding ecosystem. Using advanced multi-agent AI systems (CrewAI + LangChain) with semantic code understanding, portkit enables mod creators to reach Bedrock's 3x larger player base without manual code rewriting.
+**portkit** is an AI-powered platform that automates the conversion of Minecraft Java Edition mods to Bedrock Edition add-ons, filling a critical gap in the Minecraft modding ecosystem. Using advanced multi-agent AI systems (LangChain/LangGraph + LangChain) with semantic code understanding, portkit enables mod creators to reach Bedrock's 3x larger player base without manual code rewriting.
 
 ### Unique Value Proposition
 
@@ -221,7 +221,7 @@
 |-------|------------|-----------|
 | Frontend | React 19 + TypeScript | Type safety, component ecosystem |
 | Backend | FastAPI + Python 3.11 | High performance, async support |
-| AI Engine | CrewAI + LangChain | Multi-agent orchestration |
+| AI Engine | LangChain/LangGraph + LangChain | Multi-agent orchestration |
 | Translation | CodeT5+ 16B | Encoder-decoder optimal for seq2seq |
 | RAG | ChromaDB + pgvector | Vector search for similar conversions |
 | Database | PostgreSQL 15 (pgvector) | Relational + vector in one |
@@ -409,7 +409,7 @@ portkit eliminates the technical barriers between Java and Bedrock editions, ena
 - CodeT5/CodeT5+ (Salesforce, EMNLP 2021/arXiv 2023)
 - GraphCodeBERT (ICLR 2021)
 - Code Llama (Meta, arXiv 2023)
-- MetaGPT, AutoGen, CrewAI (multi-agent frameworks)
+- MetaGPT, AutoGen, LangChain/LangGraph (multi-agent frameworks)
 
 ### User Research
 - Bedrock OSS documentation, bedrock.dev

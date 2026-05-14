@@ -31,7 +31,7 @@ Verify and document existing RAG infrastructure with embedding generation, vecto
 ### RAG Components
 
 **Files Verified:**
-- `ai-engine/crew/rag_crew.py` (395 lines) - RAG crew with search and summarize tasks
+- `ai-engine/services/rag_service.py` (395 lines) - RAG crew with search and summarize tasks
 - `ai-engine/utils/embedding_generator.py` (561 lines) - Embedding generation with multiple backends
 - `ai-engine/config/rag_agents.yaml` - RAG agent configuration
 - `ai-engine/agents/advanced_rag_agent.py` - Advanced RAG agent
@@ -153,7 +153,7 @@ F1 Score: 0.81
 
 | File | Lines | Purpose |
 |------|-------|---------|
-| `crew/rag_crew.py` | 395 | RAG crew definition |
+| `services/rag_service.py` | 395 | RAG crew definition |
 | `utils/embedding_generator.py` | 561 | Embedding generation |
 | `config/rag_agents.yaml` | ~100 | Agent configuration |
 | `agents/advanced_rag_agent.py` | ~500 | Advanced RAG agent |

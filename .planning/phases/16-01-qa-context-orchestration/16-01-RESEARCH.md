@@ -15,7 +15,7 @@ Phase 16-01 establishes the core infrastructure for the multi-agent QA system. T
 ### Core
 | Library | Version | Purpose | Why Standard |
 |---------|---------|---------|--------------|
-| crewai | >=0.11.0 | Agent framework with @tool decorators | Already in project, provides structured agent execution |
+| langchain | >=0.11.0 | Agent framework with @tool decorators | Already in project, provides structured agent execution |
 | pydantic | >=2.0.0 | Data validation and QAContext dataclass | Type-safe context passing between agents |
 | pytest | (dev dep) | Test framework | Already configured in pyproject.toml |
 
@@ -101,7 +101,7 @@ except CircuitBreakerOpenError:
 | Problem | Don't Build | Use Instead | Why |
 |---------|-------------|-------------|-----|
 | Circuit breaker | Custom implementation | `utils.error_recovery.CircuitBreaker` | Already implemented, tested, and used in project |
-| Agent tools | Custom decorators | crewai `@tool` decorator | Consistent with existing agents |
+| Agent tools | Custom decorators | langchain `@tool` decorator | Consistent with existing agents |
 | Logging | Print statements | structlog | Already configured project-wide |
 | Configuration | Hardcoded values | pydantic Settings | Type-safe, env var support |
 
@@ -247,7 +247,7 @@ def validate_agent_output(output: Dict) -> AgentOutput:
 - `pyproject.toml` - Test framework configuration
 
 ### Secondary (MEDIUM confidence)
-- crewai documentation - Agent tool patterns
+- langchain documentation - Agent tool patterns
 
 ### Tertiary (LOW confidence)
 - N/A - Strong internal patterns available

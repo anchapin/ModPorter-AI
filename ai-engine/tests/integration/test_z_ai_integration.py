@@ -1,20 +1,32 @@
-"""
-Integration tests for Z.AI LLM backend
+"""Integration tests for the Z.AI LLM backend (issue #1201).
+
+After the LangChain/LangGraph migration, ``create_z_ai_llm`` returns a
+stock ``langchain_openai.ChatOpenAI`` configured against the Z.AI
+OpenAI-compatible endpoint. The tests below verify environment-variable
+plumbing and provider-priority logic without making real network calls.
 """
 
-import pytest
+from __future__ import annotations
+
 import os
-from unittest.mock import patch, MagicMock
-from utils.rate_limiter import create_z_ai_llm, get_llm_backend, ZAIConfig, RateLimitedZAI
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from langchain_core.language_models import BaseChatModel
+
+from utils.rate_limiter import (
+    ZAIConfig,
+    create_z_ai_llm,
+    get_llm_backend,
+)
 
 
 class TestZAIIntegration:
-    """Test suite for Z.AI integration"""
+    """Configuration and provider-priority tests for the Z.AI backend."""
 
     @pytest.mark.asyncio
     async def test_z_ai_config_from_environment(self):
-        """Test that Z.AI configuration is correctly loaded from environment variables"""
-        # Set up environment variables
         env_vars = {
             "Z_AI_API_KEY": "test-key",
             "Z_AI_MODEL": "glm-4-test",
@@ -26,160 +38,76 @@ class TestZAIIntegration:
         }
 
         with patch.dict(os.environ, env_vars):
-            config = ZAIConfig()
-            zai_llm = RateLimitedZAI(config)
+            llm = create_z_ai_llm(ZAIConfig())
 
-            assert zai_llm.config.api_key == "test-key"
-            assert zai_llm.config.model == "glm-4-test"
-            assert zai_llm.config.base_url == "https://test.z.ai/v1"
-            assert zai_llm.config.max_retries == 5
-            assert zai_llm.config.timeout == 600
-            assert zai_llm.config.temperature == 0.5
-            assert zai_llm.config.max_tokens == 2000
+            assert isinstance(llm, BaseChatModel)
+            # ChatOpenAI exposes the configured model and base_url as attributes.
+            assert (
+                getattr(llm, "model_name", None) == "glm-4-test"
+                or getattr(llm, "model", None) == "glm-4-test"
+            )
+            base_url = str(getattr(llm, "openai_api_base", "") or getattr(llm, "base_url", ""))
+            assert "test.z.ai/v1" in base_url
 
     @pytest.mark.asyncio
     async def test_z_ai_missing_api_key(self):
-        """Test that Z.AI fails gracefully when API key is missing"""
         with patch.dict(os.environ, {"Z_AI_API_KEY": ""}, clear=False):
             with pytest.raises(ValueError, match="Z.AI API key is required"):
                 create_z_ai_llm()
 
     @pytest.mark.asyncio
-    async def test_get_llm_backend_prioritizes_z_ai(self):
-        """Test that get_llm_backend() prioritizes Z.AI over other backends"""
+    async def test_get_llm_backend_prioritises_z_ai(self):
         env_vars = {"USE_Z_AI": "true", "Z_AI_API_KEY": "test-key"}
-
-        # Mock the Z.AI client to avoid actual API calls
-        mock_client = MagicMock()
-
-        with patch.dict(os.environ, env_vars):
-            with patch("openai.OpenAI", return_value=mock_client):
-                llm = get_llm_backend()
-                assert isinstance(llm, RateLimitedZAI)
-
-    @pytest.mark.asyncio
-    async def test_get_llm_backend_fallback_to_ollama(self):
-        """Test fallback to Ollama when Z.AI is not configured"""
-        env_vars = {"USE_Z_AI": "false", "USE_OLLAMA": "true"}
-
+        # Disable the OpenAI-compatible path so Z.AI gets selected.
         with patch.dict(os.environ, env_vars, clear=False):
-            with patch("utils.rate_limiter.create_ollama_llm") as mock_ollama:
-                mock_llm = MagicMock()
-                mock_ollama.return_value = mock_llm
+            with patch(
+                "utils.rate_limiter.create_openai_compatible_llm", side_effect=Exception("disabled")
+            ):
+                with patch("langchain_openai.ChatOpenAI") as mock_chat:
+                    fake_model = MagicMock(spec=BaseChatModel)
+                    mock_chat.return_value = fake_model
+                    # Ensure LLM_BASE_URL won't trigger compatible path
+                    with patch("utils.config.Config") as mock_cfg:
+                        mock_cfg.return_value.LLM_BASE_URL = ""
+                        llm = get_llm_backend()
+                        assert llm is fake_model
 
-                get_llm_backend()
+    @pytest.mark.asyncio
+    async def test_get_llm_backend_falls_back_to_ollama(self):
+        env_vars = {"USE_Z_AI": "false", "USE_OLLAMA": "true"}
+        with patch.dict(os.environ, env_vars, clear=False):
+            with (
+                patch("utils.rate_limiter.create_ollama_llm") as mock_ollama,
+                patch("utils.config.Config") as mock_cfg,
+            ):
+                mock_cfg.return_value.LLM_BASE_URL = ""
+                fake = MagicMock(spec=BaseChatModel)
+                mock_ollama.return_value = fake
+
+                llm = get_llm_backend()
                 mock_ollama.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_z_ai_message_conversion(self):
-        """Test that different input formats are correctly converted to messages"""
-        env_vars = {"Z_AI_API_KEY": "test-key"}
-
-        with patch.dict(os.environ, env_vars):
-            with patch("openai.OpenAI") as mock_openai:
-                # Mock the OpenAI client and response
-                mock_client = MagicMock()
-                mock_openai.return_value = mock_client
-
-                mock_response = MagicMock()
-                mock_response.choices = [MagicMock()]
-                mock_response.choices[0].message.content = "Test response"
-                mock_response.choices[0].finish_reason = "stop"
-                mock_response.usage = MagicMock()
-                mock_response.usage.model_dump.return_value = {"total_tokens": 10}
-
-                mock_client.chat.completions.create.return_value = mock_response
-
-                # Test string input
-                zai_llm = create_z_ai_llm()
-                messages = zai_llm._convert_to_messages("Hello world")
-                assert messages == [{"role": "user", "content": "Hello world"}]
-
-                # Test list input
-                class MockMessage:
-                    def __init__(self, content, msg_type="user"):
-                        self.content = content
-                        self.type = msg_type
-
-                msg_list = [MockMessage("Hello"), MockMessage("How are you?")]
-                messages = zai_llm._convert_to_messages(msg_list)
-                assert len(messages) == 2
-                assert messages[0]["role"] == "user"
-                assert messages[0]["content"] == "Hello"
-
-    @pytest.mark.asyncio
-    async def test_z_ai_crew_mode_compatibility(self):
-        """Test CrewAI compatibility mode"""
-        env_vars = {"Z_AI_API_KEY": "test-key"}
-
-        with patch.dict(os.environ, env_vars):
-            with patch("openai.OpenAI"):
-                zai_llm = create_z_ai_llm()
-
-                # Test CrewAI mode methods don't raise exceptions
-                zai_llm.enable_crew_mode()
-                zai_llm.disable_crew_mode()
-
-    @pytest.mark.asyncio
-    async def test_z_ai_rate_limiting(self):
-        """Test that rate limiting is applied to Z.AI calls"""
-        env_vars = {"Z_AI_API_KEY": "test-key"}
-
-        with patch.dict(os.environ, env_vars):
-            with patch("openai.OpenAI") as mock_openai:
-                mock_client = MagicMock()
-                mock_openai.return_value = mock_client
-
-                mock_response = MagicMock()
-                mock_response.choices = [MagicMock()]
-                mock_response.choices[0].message.content = "Test response"
-                mock_response.choices[0].finish_reason = "stop"
-                mock_response.usage = MagicMock()
-                mock_response.usage.model_dump.return_value = {"total_tokens": 10}
-
-                mock_client.chat.completions.create.return_value = mock_response
-
-                zai_llm = create_z_ai_llm()
-
-                # Test that invoke works with rate limiting
-                result = zai_llm.invoke("Test message")
-                assert result.content == "Test response"
-
-                # Verify the API client was called
-                mock_client.chat.completions.create.assert_called()
+                assert llm is fake
 
 
 @pytest.mark.integration
-class TestZAIIntegrationWithCrewAI:
-    """Test Z.AI integration specifically with CrewAI workflows"""
+class TestZAIIntegrationWithLangGraph:
+    """Z.AI in the LangGraph pipeline produces a BaseChatModel."""
 
     @pytest.mark.asyncio
-    async def test_z_ai_llm_in_crewai_workflow(self):
-        """Test that Z.AI LLM can be used in CrewAI workflows"""
+    async def test_z_ai_llm_in_langgraph_pipeline(self):
         env_vars = {"USE_Z_AI": "true", "Z_AI_API_KEY": "test-key"}
+        with patch.dict(os.environ, env_vars, clear=False):
+            with (
+                patch("utils.config.Config") as mock_cfg,
+                patch("langchain_openai.ChatOpenAI") as mock_chat,
+            ):
+                mock_cfg.return_value.LLM_BASE_URL = ""
+                fake_llm = MagicMock(spec=BaseChatModel)
+                mock_chat.return_value = fake_llm
 
-        with patch.dict(os.environ, env_vars):
-            with patch("openai.OpenAI") as mock_openai:
-                mock_client = MagicMock()
-                mock_openai.return_value = mock_client
-
-                mock_response = MagicMock()
-                mock_response.choices = [MagicMock()]
-                mock_response.choices[0].message.content = "CrewAI response"
-                mock_response.choices[0].finish_reason = "stop"
-                mock_response.usage = MagicMock()
-                mock_response.usage.model_dump.return_value = {"total_tokens": 15}
-
-                mock_client.chat.completions.create.return_value = mock_response
-
-                # Test the invoke method (used by CrewAI)
                 llm = get_llm_backend()
-                result = llm.invoke("Analyze this Java code")
-
-                assert result.content == "CrewAI response"
-                assert "model" in result.response_metadata
-                assert "finish_reason" in result.response_metadata
-                assert "usage" in result.response_metadata
+                # Must be a BaseChatModel so LangGraph nodes can use it.
+                assert llm is fake_llm
 
 
 if __name__ == "__main__":

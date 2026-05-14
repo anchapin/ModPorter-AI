@@ -26,17 +26,18 @@ def get_install_requires():
         "fastapi>=0.104.0",
         "uvicorn[standard]>=0.24.0",
         "python-multipart>=0.0.6",
-        # AI Framework
-        "crewai>=0.11.0",
-        "langchain>=0.3.0",
-        "langchain-openai>=0.2.0",
-        "langchain-ollama>=0.1.0",
+        # AI Framework — LangChain/LangGraph stack (issue #1201)
+        "langchain>=0.3.28",
+        "langchain-core>=0.3",
+        "langchain-openai>=0.3.35",
+        "langchain-ollama>=0.3.10",
+        "langgraph>=1.1.0",
         "openai>=1.0.0",
         # Embeddings - Using sentence-transformers for local embeddings
         # Note: This is a core dependency for RAG functionality
         "sentence-transformers>=2.2.0",
         # Vector Database (pin version for embedchain compatibility)
-        "chromadb<1.6.0",
+        "chromadb>=1.5.8,<2.0",
         # Data Processing
         "numpy",
         "python-dotenv",
@@ -68,7 +69,7 @@ setup(
     author_email="ai@portkit.ai",
     license="MIT",
     packages=find_packages(where="."),
-    python_requires=">=3.9",
+    python_requires=">=3.11",
     install_requires=get_install_requires(),
     extras_require={
         # Development dependencies
@@ -112,8 +113,6 @@ setup(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
     ],

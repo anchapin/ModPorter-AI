@@ -227,7 +227,7 @@ class CurseForgeManifestParser:
 
 class CurseForgeParserAgent:
     """
-    CrewAI agent for parsing CurseForge modpack manifests.
+    LangChain agent runnable for parsing CurseForge modpack manifests.
     """
 
     def __init__(self):

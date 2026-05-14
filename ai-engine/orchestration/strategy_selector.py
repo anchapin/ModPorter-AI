@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class OrchestrationStrategy(Enum):
     """Available orchestration strategies"""
 
-    SEQUENTIAL = "sequential"  # Original CrewAI sequential execution (control)
+    SEQUENTIAL = "sequential"  # Sequential single-threaded execution (baseline)
     PARALLEL_BASIC = "parallel_basic"  # Basic parallel execution
     PARALLEL_ADAPTIVE = "parallel_adaptive"  # Adaptive parallel with dynamic spawning
     HYBRID = "hybrid"  # Mix of sequential and parallel based on dependencies

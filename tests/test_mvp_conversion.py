@@ -70,19 +70,6 @@ sys.modules["pydub.exceptions"] = pydub_mock.exceptions
 sys.modules["pydub.utils"] = pydub_mock.utils
 
 
-# Mock crewai
-def tool(func):
-    return func
-
-
-sys.modules["crewai"] = type(sys)("crewai")
-sys.modules["crewai"].Agent = type("Agent", (), {})
-sys.modules["crewai"].Crew = type("Crew", (), {})
-sys.modules["crewai"].Task = type("Task", (), {})
-sys.modules["crewai"].LLM = type("LLM", (), {})
-sys.modules["crewai.tools"] = type(sys)("crewai.tools")
-sys.modules["crewai.tools"].tool = tool
-sys.modules["crewai.tools"].BaseTool = type("BaseTool", (), {})
 
 # Mock models.smart_assumptions
 sys.modules["models"] = type(sys)("models")

@@ -608,12 +608,12 @@ class DiagnosticIntegration:
         self.suite = suite
         self._original_methods: Dict[str, Callable] = {}
 
-    def instrument_conversion_crew(self, crew_instance: Any) -> None:
-        logger.info("Instrumenting conversion crew with procedural diagnostics")
-        if hasattr(crew_instance, "convert_mod"):
-            self._original_methods["convert_mod"] = crew_instance.convert_mod
-            crew_instance.convert_mod = self._wrapped_convert_mod(
-                crew_instance, crew_instance.convert_mod
+    def instrument_conversion_pipeline(self, pipeline_instance: Any) -> None:
+        logger.info("Instrumenting conversion pipeline with procedural diagnostics")
+        if hasattr(pipeline_instance, "convert_mod"):
+            self._original_methods["convert_mod"] = pipeline_instance.convert_mod
+            pipeline_instance.convert_mod = self._wrapped_convert_mod(
+                pipeline_instance, pipeline_instance.convert_mod
             )
 
     def _wrapped_convert_mod(self, instance: Any, original_method: Callable) -> Callable:

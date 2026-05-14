@@ -402,7 +402,7 @@ class PerformanceAnalyzer:
         metrics = []
 
         ai_metrics = [
-            ("CrewAI Agent Orchestration", 500, 1000, "ms"),
+            ("LangGraph Pipeline Orchestration", 500, 1000, "ms"),
             ("LangChain Tool Execution", 800, 1500, "ms"),
             ("Vector Database Query", 200, 500, "ms"),
             ("RAG Retrieval Time", 300, 800, "ms"),

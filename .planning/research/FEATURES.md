@@ -242,7 +242,7 @@ The Multi-Agent QA system builds on existing portkit components:
 | Bedrock Code Generation | Script API complexity | Start with simple mods, expand coverage |
 | Test Generation | Bedrock testing environment | Mock Script API initially |
 | Behavior Equivalence | Java vs Bedrock semantics | Use proxy metrics (API coverage, structure similarity) |
-| Inter-Agent Communication | Context passing overhead | Use CrewAI's built-in context sharing |
+| Inter-Agent Communication | Context passing overhead | Use LangChain/LangGraph's built-in context sharing |
 
 ---
 
@@ -251,7 +251,7 @@ The Multi-Agent QA system builds on existing portkit components:
 - **Project Context:** `.planning/PROJECT.md` (v4.7 Multi-Agent QA Review milestone)
 - **Stack Reference:** `.planning/research/STACK.md`
 - **Existing Codebase:** `ai-engine/agents/qa_agent.py`, `validation_agent.py`, `testing/qa_framework.py`
-- **Multi-Agent Patterns:** CrewAI documentation (sequential, hierarchical workflows)
+- **Multi-Agent Patterns:** LangChain/LangGraph documentation (sequential, hierarchical workflows)
 
 ---
 

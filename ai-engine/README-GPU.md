@@ -121,7 +121,7 @@ python -c "import torch; print(f'ROCm available: {torch.cuda.is_available()}')"
 |-----------|-----|---------|------------|
 | **Sentence Transformers** | 1x | 15x | 20x |
 | **ChromaDB Embeddings** | 1x | 12x | 20x |
-| **CrewAI/LangChain** | 1x | 8x | 15x |
+| **LangChain/LangGraph/LangChain** | 1x | 8x | 15x |
 
 ## GPU Detection in Code
 

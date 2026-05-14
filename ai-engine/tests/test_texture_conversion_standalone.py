@@ -1,5 +1,5 @@
 """
-Standalone unit tests for texture conversion functionality (without CrewAI dependency)
+Standalone unit tests for texture conversion functionality
 """
 
 import os
@@ -10,7 +10,7 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-# Import only the parts we need without triggering CrewAI import
+# Import only the parts we need
 from PIL import Image
 
 

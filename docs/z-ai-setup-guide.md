@@ -103,10 +103,10 @@ response = llm.invoke("Analyze this Java code for mod compatibility")
 print(response.content)
 ```
 
-### 3. Test with CrewAI workflows:
+### 3. Test with LangGraph workflows:
 
 ```python
-from crewai import Agent, Task, Crew
+from langchain_core import Agent, Task, Crew
 from ai_engine.utils.rate_limiter import get_llm_backend
 
 # Z.AI LLM will be automatically selected

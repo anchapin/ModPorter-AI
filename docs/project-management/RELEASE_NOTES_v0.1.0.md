@@ -10,7 +10,7 @@ This is the first major release of Portkit, focusing on the core functionality o
 - **Java to Bedrock Conversion Pipeline**: Complete end-to-end conversion from `.jar` files to `.mcaddon` packages
 - **Block Conversion Support**: Successfully converts simple Java block mods to Bedrock format
 - **Texture Preservation**: Automatically extracts and copies texture files during conversion
-- **AI-Powered Analysis**: Multi-agent system using CrewAI for intelligent mod analysis and conversion
+- **AI-Powered Analysis**: Multi-agent system using LangChain/LangGraph for intelligent mod analysis and conversion
 
 ### Technical Achievements
 - **Multi-Service Architecture**: FastAPI backend, React frontend, AI engine, PostgreSQL, and Redis
@@ -55,7 +55,7 @@ This is the first major release of Portkit, focusing on the core functionality o
 
 - **Frontend**: React + TypeScript + Vite + CSS Modules
 - **Backend**: Python + FastAPI + SQLAlchemy + AsyncPG
-- **AI Engine**: CrewAI + LangChain + Ollama
+- **AI Engine**: LangChain/LangGraph + LangChain + Ollama
 - **RAG System**: Vector database (pgvector) + Bedrock documentation
 - **Database**: PostgreSQL 15 with async support
 - **Cache**: Redis 7 for sessions and caching

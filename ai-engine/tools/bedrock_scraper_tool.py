@@ -8,7 +8,7 @@ import json
 import logging
 from typing import Dict
 
-from crewai.tools import BaseTool
+from langchain_core.tools import BaseTool
 from pydantic import Field
 
 from utils.bedrock_docs_scraper import BedrockDocsScraper
@@ -93,6 +93,17 @@ class BedrockScraperTool(BaseTool):
         except Exception as e:
             logger.error(f"Bedrock scraper tool failed: {str(e)}")
             return json.dumps({"error": f"Bedrock scraper tool failed: {str(e)}", "action": action})
+
+    async def _arun(self, action: str) -> str:
+        """Async LangChain entry point for use in LangGraph nodes (issue #1201).
+
+        ``_run`` itself drives ``asyncio.run`` for its internal scrapers,
+        so we delegate to a thread pool to avoid nested event loops when
+        called from an async context.
+        """
+        import asyncio
+
+        return await asyncio.to_thread(self._run, action)
 
     def _scrape_all_documentation(self, params: Dict) -> str:
         """

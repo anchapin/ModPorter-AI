@@ -23,11 +23,11 @@ This orchestration system provides parallel execution and dynamic spawning capab
 3. **ParallelOrchestrator** (`orchestrator.py`): Main coordination engine
 4. **StrategySelector** (`strategy_selector.py`): Intelligent strategy selection
 5. **OrchestrationMonitor** (`monitoring.py`): Performance monitoring and alerting
-6. **EnhancedConversionCrew** (`crew_integration.py`): Integration with existing CrewAI system
+6. **EnhancedConversionCrew** (`crew_integration.py`): Integration with existing LangChain/LangGraph system
 
 ### Orchestration Strategies
 
-1. **Sequential**: Original CrewAI behavior (control group for A/B testing)
+1. **Sequential**: Original LangChain/LangGraph behavior (control group for A/B testing)
 2. **Parallel Basic**: Independent tasks run concurrently
 3. **Parallel Adaptive**: Dynamic spawning based on analysis results
 4. **Hybrid**: Mix of sequential and parallel based on dependencies
@@ -116,7 +116,7 @@ Based on initial testing and design analysis:
 
 The orchestration system is designed for seamless integration:
 
-1. **Backward Compatibility**: Original CrewAI system remains as fallback
+1. **Backward Compatibility**: Original LangChain/LangGraph system remains as fallback
 2. **Gradual Rollout**: A/B testing enables safe deployment
 3. **Stateless Agents**: Existing agents work without modification
 4. **Monitoring Integration**: Comprehensive metrics for performance analysis

@@ -1,14 +1,14 @@
 # Portkit - AI Coding Agent Instructions
 
 ## 🎯 Project Overview
-Portkit is a **multi-agent AI system** that converts Minecraft Java Edition mods to Bedrock Edition add-ons using CrewAI, RAG (Retrieval Augmented Generation), and smart assumptions to bridge technical gaps.
+Portkit is a **multi-agent AI system** that converts Minecraft Java Edition mods to Bedrock Edition add-ons using LangChain/LangGraph, RAG (Retrieval Augmented Generation), and smart assumptions to bridge technical gaps.
 
 ## 🏗️ Architecture (3-Service + Multi-Agent Pattern)
 
 ### Service Structure
 - **Frontend**: React+TypeScript+Vite+pnpm (port 3000) - Nginx-served UI with proxy routing
 - **Backend**: FastAPI+SQLAlchemy+AsyncPG (port 8080) - API orchestration, file handling, database operations
-- **AI Engine**: CrewAI+LangChain+FastAPI (port 8001) - Multi-agent conversion system with 6 specialized agents
+- **AI Engine**: LangChain/LangGraph+LangChain+FastAPI (port 8001) - Multi-agent conversion system with 6 specialized agents
 - **Infrastructure**: PostgreSQL (5433) + Redis (6379) + Docker orchestration with optimized base images
 
 ### AI Agent System (Core Innovation)
@@ -20,7 +20,7 @@ The conversion uses **6 specialized AI agents** working in sequence:
 5. `PackagingAgent` - Assembles final .mcaddon files
 6. `QAValidatorAgent` - Validates conversion quality
 
-**Key Files**: `ai-engine/src/crew/conversion_crew.py`, `ai-engine/src/agents/`, `ai-engine/src/utils/smart_assumption_engine.py`
+**Key Files**: `ai-engine/src/orchestration/langgraph_pipeline.py`, `ai-engine/src/agents/`, `ai-engine/src/utils/smart_assumption_engine.py`
 
 ## 🚀 Development Workflow
 
@@ -51,7 +51,7 @@ npm run lint:backend                   # Ruff + Black
 ```
 
 ### CI/CD Optimization (60-70% Build Time Reduction)
-- **Pre-built Base Images**: Heavy ML dependencies (sentence-transformers, chromadb, crewai) pre-installed
+- **Pre-built Base Images**: Heavy ML dependencies (sentence-transformers, chromadb, langchain) pre-installed
 - **Smart Cache Keys**: Dependency hash-based invalidation (`python-hash`, `node-hash`)
 - **Parallel Test Matrix**: All test suites run simultaneously
 - **Optimized vs Standard**: Graceful fallback when base images unavailable
@@ -72,7 +72,7 @@ async def get_conversion(db: AsyncSession, conversion_id: str):
     return result.scalar_one_or_none()
 ```
 
-### Agent Tool Pattern (CrewAI + Singleton)
+### Agent Tool Pattern (LangChain/LangGraph + Singleton)
 ```python
 # Each agent uses singleton pattern with specialized tools
 class JavaAnalyzerAgent:
@@ -195,13 +195,13 @@ depends_on:
 ```
 
 ### Rate Limiting in AI Conversions
-- CrewAI agents make 20+ LLM calls per conversion
+- LangChain agent runnables make 20+ LLM calls per conversion
 - Use `AI_ENGINE_TIMEOUT=1800` and WebSocket progress monitoring
 - Consider Ollama fallback for development: `USE_OLLAMA=true`
 
 ## 📁 Key Integration Points
 
-- **Conversion Orchestration**: `ai-engine/src/crew/conversion_crew.py` - Multi-agent workflow coordination
+- **Conversion Orchestration**: `ai-engine/src/orchestration/langgraph_pipeline.py` - Multi-agent workflow coordination
 - **Smart Assumptions Engine**: `ai-engine/src/utils/smart_assumption_engine.py` - Handles Java→Bedrock incompatibilities  
 - **RAG System**: `ai-engine/src/engines/` - Vector embeddings + knowledge retrieval
 - **API Router Organization**: `backend/src/api/` - Modular endpoint structure (validation, comparison, embeddings)

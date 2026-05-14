@@ -10,7 +10,7 @@ graph TB
     Frontend --> API[🔌 API Gateway<br/>FastAPI]
     
     API --> Backend[🐍 Backend Service<br/>Python + FastAPI]
-    Backend --> AIEngine[🤖 AI Engine<br/>CrewAI + LangChain]
+    Backend --> AIEngine[🤖 AI Engine<br/>LangChain/LangGraph + LangChain]
     Backend --> Database[(🗄️ PostgreSQL<br/>Conversion Data)]
     Backend --> Cache[(⚡ Redis<br/>Session Cache)]
     Backend --> FileStorage[📁 File Storage<br/>Conversion Assets]

@@ -19,7 +19,7 @@ key_files:
 decisions:
   - Used pytest fixtures for test setup/teardown
   - Mocked file operations to avoid external dependencies
-  - Added tool tests to cover CrewAI @tool decorators
+  - Added tool tests to cover LangChain/LangGraph @tool decorators
 metrics:
   duration: "15 minutes"
   completed_date: "2026-03-30"
@@ -79,7 +79,7 @@ Increase test coverage for core AI Engine agents to 80%+.
 
 **1. [Rule 3 - Blocked] Missing dependencies**
 - **Found during:** Test execution
-- **Issue:** PIL, crewai, structlog, javalang modules missing
+- **Issue:** PIL, langchain, structlog, javalang modules missing
 - **Fix:** Installed required packages via uv pip
 - **Files modified:** Environment setup
 

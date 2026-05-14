@@ -191,7 +191,7 @@ class TestValidationWithMockAddon:
 
     def test_validate_mcaddon_tool(self, mock_mcaddon_path):
         """Test validate_mcaddon tool."""
-        # Note: The @tool decorator creates a Tool object that's used by CrewAI agents.
+        # Note: The @tool decorator creates a LangChain BaseTool/StructuredTool instance.
         # For testing, we call the underlying method directly via the agent instance.
         agent = QAValidatorAgent.get_instance()
         result = agent.validate_mcaddon(mock_mcaddon_path)
@@ -201,7 +201,7 @@ class TestValidationWithMockAddon:
 
     def test_generate_qa_report_tool(self, mock_mcaddon_path):
         """Test generate_qa_report tool."""
-        # Note: The @tool decorator creates a Tool object that's used by CrewAI agents.
+        # Note: The @tool decorator creates a LangChain BaseTool/StructuredTool instance.
         # For testing, we call the underlying method directly via the agent instance.
         agent = QAValidatorAgent.get_instance()
         result = agent.generate_qa_report({"mcaddon_path": mock_mcaddon_path})

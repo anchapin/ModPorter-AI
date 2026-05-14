@@ -1,7 +1,7 @@
 """
 Steering Integration for LogicTranslator Agent.
 
-This module provides CrewAI tool wrappers for applying SAE-based feature steering
+This module provides LangChain tool wrappers for applying SAE-based feature steering
 during Java to Bedrock code conversion. Integrates with LogicTranslatorAgent
 to suppress Java idioms in generated Bedrock code.
 
@@ -20,9 +20,9 @@ import logging
 from typing import Any, Dict, List, Optional
 
 try:
-    from crewai.tools import tool
+    from langchain_core.tools import tool
 except ImportError:
-    # Fallback if CrewAI not available
+    # Fallback if LangChain not available
     def tool(func):
         return func
 
@@ -44,7 +44,7 @@ logger = get_agent_logger("logic_translator.steering_tools")
 
 class SteeringTools:
     """
-    Collection of CrewAI tools for SAE-based feature steering.
+    Collection of LangChain tools for SAE-based feature steering.
 
     These tools integrate with the LogicTranslatorAgent to provide
     real-time idiom suppression during code conversion.
@@ -218,7 +218,7 @@ class SteeringTools:
             })
 
 
-# CrewAI Tool Wrappers
+# LangChain Tool Wrappers
 @tool
 def configure_steering_tool(config_json: str) -> str:
     """
@@ -328,10 +328,10 @@ def evaluate_conversion_quality_tool(
 
 def register_steering_tools(agent) -> None:
     """
-    Register all steering tools with a CrewAI agent.
+    Register all steering tools with a LangChain agent.
 
     Args:
-        agent: CrewAI Agent instance to register tools with
+        agent: LangChain agent instance to register tools with
 
     Usage:
         from agents.logic_translator.translator import LogicTranslatorAgent

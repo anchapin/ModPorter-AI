@@ -1,6 +1,6 @@
 # ai-engine/agents/__init__.py
 
-# Import RAG components first (no crewai dependency)
+# Import RAG components first (no LangChain-tool dependency)
 try:
     from .rag_agents import RAGAgents
 
@@ -9,7 +9,7 @@ except ImportError:
     RAGAgents = None
     __all__ = []
 
-# Import knowledge base (no crewai dependency)
+# Import knowledge base (no LangChain-tool dependency)
 try:
     from .knowledge_base_agent import KnowledgeBaseAgent
 
@@ -17,7 +17,7 @@ try:
 except ImportError:
     KnowledgeBaseAgent = None
 
-# Try to import crewai-dependent agents
+# Try to import LangChain-tool-dependent agents
 try:
     from .asset_converter import AssetConverterAgent as AssetConverter
 

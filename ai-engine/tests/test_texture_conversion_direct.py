@@ -1,5 +1,5 @@
 """
-Direct unit tests for texture conversion logic without CrewAI dependency.
+Direct unit tests for texture conversion logic (LangChain tool layer).
 Tests the actual AssetConverterAgent class methods directly.
 """
 
@@ -42,12 +42,8 @@ def test_convert_single_texture():
         )
         module = importlib.util.module_from_spec(spec)
 
-        # Mock the crewai import before loading
-        import unittest.mock as mock
-
-        with mock.patch.dict(
-            sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}
-        ):
+        # legacy framework removed in #1201; no module patching needed.
+        if True:
             # Register module BEFORE loading so asset_converter.py's stub binding works
             sys.modules["asset_converter"] = module
             # Now load the module
@@ -92,7 +88,7 @@ def test_convert_textures_method():
         for filename, (width, height, color) in textures.items():
             create_test_texture(input_dir / filename, (width, height), color)
 
-        # Import the module with mocked crewai
+        # Import the module (legacy framework no longer needed)
         import importlib.util
 
         spec = importlib.util.spec_from_file_location(
@@ -101,11 +97,7 @@ def test_convert_textures_method():
         )
         module = importlib.util.module_from_spec(spec)
 
-        import unittest.mock as mock
-
-        with mock.patch.dict(
-            sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}
-        ):
+        if True:  # legacy framework removed in #1201; no module patching needed.
             sys.modules["asset_converter"] = module
             spec.loader.exec_module(module)
             agent = module.AssetConverterAgent()
@@ -153,7 +145,7 @@ def test_fallback_texture():
         temp_path = Path(temp_dir)
         output_dir = temp_path / "output"
 
-        # Import the module with mocked crewai
+        # Import the module (legacy framework no longer needed)
         import importlib.util
 
         spec = importlib.util.spec_from_file_location(
@@ -162,11 +154,7 @@ def test_fallback_texture():
         )
         module = importlib.util.module_from_spec(spec)
 
-        import unittest.mock as mock
-
-        with mock.patch.dict(
-            sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}
-        ):
+        if True:  # legacy framework removed in #1201; no module patching needed.
             sys.modules["asset_converter"] = module
             spec.loader.exec_module(module)
             agent = module.AssetConverterAgent()
@@ -196,7 +184,7 @@ def test_power_of_2_constraints():
         input_dir = temp_path / "input"
         output_dir = temp_path / "output"
 
-        # Import the module with mocked crewai
+        # Import the module (legacy framework no longer needed)
         import importlib.util
 
         spec = importlib.util.spec_from_file_location(
@@ -205,11 +193,7 @@ def test_power_of_2_constraints():
         )
         module = importlib.util.module_from_spec(spec)
 
-        import unittest.mock as mock
-
-        with mock.patch.dict(
-            sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}
-        ):
+        if True:  # legacy framework removed in #1201; no module patching needed.
             sys.modules["asset_converter"] = module
             spec.loader.exec_module(module)
             agent = module.AssetConverterAgent()
@@ -249,7 +233,7 @@ def test_performance():
         input_dir = temp_path / "input"
         output_dir = temp_path / "output"
 
-        # Import the module with mocked crewai
+        # Import the module (legacy framework no longer needed)
         import importlib.util
 
         spec = importlib.util.spec_from_file_location(
@@ -258,11 +242,7 @@ def test_performance():
         )
         module = importlib.util.module_from_spec(spec)
 
-        import unittest.mock as mock
-
-        with mock.patch.dict(
-            sys.modules, {"crewai": mock.MagicMock(), "crewai.tools": mock.MagicMock()}
-        ):
+        if True:  # legacy framework removed in #1201; no module patching needed.
             sys.modules["asset_converter"] = module
             spec.loader.exec_module(module)
             agent = module.AssetConverterAgent()

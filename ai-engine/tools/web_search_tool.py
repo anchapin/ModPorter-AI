@@ -8,7 +8,7 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
-from crewai.tools import BaseTool
+from langchain_core.tools import BaseTool
 from duckduckgo_search import DDGS
 from pydantic import Field
 
@@ -114,6 +114,17 @@ class WebSearchTool(BaseTool):
                 "results": [],
             }
             return json.dumps(error_response)
+
+    async def _arun(self, query: str) -> str:
+        """Async LangChain entry point for use in LangGraph nodes (issue #1201).
+
+        DuckDuckGo's Python client is synchronous; we run the blocking
+        ``_run`` in the default thread pool so callers don't block the
+        event loop.
+        """
+        import asyncio
+
+        return await asyncio.to_thread(self._run, query)
 
     def _search_duckduckgo(self, query: str) -> List[Dict[str, Any]]:
         """

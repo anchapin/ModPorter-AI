@@ -12,7 +12,7 @@ import json
 import logging
 import zipfile
 
-from crewai.tools import tool
+from langchain_core.tools import tool
 
 from models.smart_assumptions import SmartAssumptionEngine
 

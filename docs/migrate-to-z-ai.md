@@ -165,9 +165,9 @@ After migration, verify:
    print(f"Response: {response.content[:100]}...")
    ```
 
-3. **CrewAI Integration**:
+3. **LangChain/LangGraph Integration**:
    ```python
-   from crewai import Agent, Task, Crew
+   from langchain_core import Agent, Task, Crew
    
    agent = Agent(
        role='Test Agent',
@@ -182,7 +182,7 @@ After migration, verify:
    
    crew = Crew(agents=[agent], tasks=[task])
    result = crew.kickoff()
-   print(f"CrewAI result: {result}")
+   print(f"LangChain/LangGraph result: {result}")
    ```
 
 ## Performance Comparison
@@ -272,8 +272,8 @@ print(f"Backend: {type(llm).__name__}")  # Should show "RateLimitedZAI"
 **Q: Can I use multiple backends simultaneously?**
 A: Yes, the system will prioritize Z.AI but fall back to others if needed.
 
-**Q: Will my existing CrewAI workflows work with Z.AI?**
-A: Yes, Z.AI is fully compatible with CrewAI and requires no changes to your workflows.
+**Q: Will my existing LangGraph workflows work with Z.AI?**
+A: Yes, Z.AI is fully compatible with LangChain/LangGraph and requires no changes to your workflows.
 
 **Q: What happens to my existing Ollama setup?**
 A: It remains as a fallback option. You can disable it if desired.

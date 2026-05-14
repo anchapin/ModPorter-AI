@@ -191,49 +191,49 @@ class TestPackagingAgent:
     def test_analyze_conversion_components_tool(self, agent):
         """Test analyze_conversion_components_tool"""
         input_data = json.dumps({"components": []})
-        result = agent.analyze_conversion_components_tool.run(component_data=input_data)
+        result = agent.analyze_conversion_components_tool.invoke({"component_data": input_data})
         result_data = json.loads(result)
         assert result_data.get("success") is True
 
     def test_create_package_structure_tool(self, agent, temp_dir):
         """Test create_package_structure_tool"""
         input_data = json.dumps({"output_dir": temp_dir, "mod_name": "test_mod"})
-        result = agent.create_package_structure_tool.run(structure_data=input_data)
+        result = agent.create_package_structure_tool.invoke({"structure_data": input_data})
         result_data = json.loads(result)
         assert result_data.get("success") is True
 
     def test_generate_manifests_tool(self, agent, temp_dir):
         """Test generate_manifests_tool"""
         input_data = json.dumps({"package_info": {"name": "Test", "output_directory": temp_dir}})
-        result = agent.generate_manifests_tool.run(manifest_data=input_data)
+        result = agent.generate_manifests_tool.invoke({"manifest_data": input_data})
         result_data = json.loads(result)
         assert result_data.get("success") is True
 
     def test_validate_package_tool(self, agent):
         """Test validate_package_tool"""
         input_data = json.dumps({"package_path": "/fake/path"})
-        result = agent.validate_package_tool.run(validation_data=input_data)
+        result = agent.validate_package_tool.invoke({"validation_data": input_data})
         result_data = json.loads(result)
         assert result_data.get("success") is True
 
     def test_build_mcaddon_tool(self, agent, temp_dir):
         """Test build_mcaddon_tool"""
         input_data = json.dumps({"output_path": temp_dir, "mod_name": "TestMod"})
-        result = agent.build_mcaddon_tool.run(build_data=input_data)
+        result = agent.build_mcaddon_tool.invoke({"build_data": input_data})
         result_data = json.loads(result)
         assert result_data.get("success") is True
 
     def test_generate_enhanced_manifests_tool(self, agent):
         """Test generate_enhanced_manifests_tool"""
         input_data = json.dumps({"mod_name": "EnhancedMod", "mod_version": [1, 0, 0]})
-        result = agent.generate_enhanced_manifests_tool.run(mod_data=input_data)
+        result = agent.generate_enhanced_manifests_tool.invoke({"mod_data": input_data})
         result_data = json.loads(result)
         # May fail due to dependencies but should handle gracefully
 
     def test_generate_blocks_and_items_tool(self, agent):
         """Test generate_blocks_and_items_tool"""
         input_data = json.dumps({"blocks": [], "items": []})
-        result = agent.generate_blocks_and_items_tool.run(conversion_data=input_data)
+        result = agent.generate_blocks_and_items_tool.invoke({"conversion_data": input_data})
         result_data = json.loads(result)
         # Should handle gracefully
 

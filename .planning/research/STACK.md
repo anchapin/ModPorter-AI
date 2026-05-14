@@ -6,9 +6,9 @@
 
 ## Executive Summary
 
-The Multi-Agent QA System for portkit requires minimal **new** stack additions because the foundation (CrewAI + LangChain) already exists. The primary work involves **extending existing capabilities** through custom agent tools, validation frameworks, and specialized testing infrastructure for Bedrock output.
+The Multi-Agent QA System for portkit requires minimal **new** stack additions because the foundation (LangChain/LangGraph + LangChain) already exists. The primary work involves **extending existing capabilities** through custom agent tools, validation frameworks, and specialized testing infrastructure for Bedrock output.
 
-**Key Finding:** The existing CrewAI framework already provides the multi-agent orchestration, role-based agents, task delegation, and inter-agent communication patterns needed. What remains is adding specialized validation tools, test execution environments, and semantic analysis capabilities specific to Java→Bedrock conversion validation.
+**Key Finding:** The existing LangChain/LangGraph framework already provides the multi-agent orchestration, role-based agents, task delegation, and inter-agent communication patterns needed. What remains is adding specialized validation tools, test execution environments, and semantic analysis capabilities specific to Java→Bedrock conversion validation.
 
 ---
 
@@ -18,7 +18,7 @@ The Multi-Agent QA System for portkit requires minimal **new** stack additions b
 
 | Technology | Current Version | Purpose | Notes |
 |------------|-----------------|---------|-------|
-| **CrewAI** | >=0.11.0,<1.0.0 | Multi-agent orchestration | Already supports role-based agents, delegation, and crew workflows |
+| **LangChain/LangGraph** | >=0.11.0,<1.0.0 | Multi-agent orchestration | Already supports role-based agents, delegation, and crew workflows |
 | **LangChain** | >=0.3.0,<1.0.0 | LLM integration | Provides tools, chains, and agent execution |
 | **FastAPI** | 0.135.1 | API layer | Serves the multi-agent QA endpoints |
 | **Pydantic** | ~=2.11.9 | Data validation | Defines agent input/output schemas |
@@ -81,7 +81,7 @@ The Multi-Agent QA System for portkit requires minimal **new** stack additions b
 
 **1. Sequential Flow (Default)**
 - Translator → Reviewer → Tester → Semantic Checker
-- Uses CrewAI's task output passing
+- Uses LangChain/LangGraph's task output passing
 - Each agent receives previous agent's artifacts
 
 **2. Parallel Validation**
@@ -91,7 +91,7 @@ The Multi-Agent QA System for portkit requires minimal **new** stack additions b
 
 **3. Feedback Loop**
 - Semantic Checker can request re-validation from Reviewer
-- CrewAI's delegation tools enable agent-to-agent requests
+- LangChain/LangGraph's delegation tools enable agent-to-agent requests
 
 ---
 
@@ -144,8 +144,8 @@ pip install tree-sitter>=0.21.0
 
 | Recommended | Alternative | When to Use Alternative |
 |-------------|-------------|-------------------------|
-| CrewAI (existing) | AutoGen | If Microsoft ecosystem preferred; NOTE: AutoGen being consolidated into new Microsoft Agent Framework (Oct 2025) - avoid for new projects |
-| CrewAI (existing) | MetaGPT | If need more structured software engineering workflows |
+| LangChain/LangGraph (existing) | AutoGen | If Microsoft ecosystem preferred; NOTE: AutoGen being consolidated into new Microsoft Agent Framework (Oct 2025) - avoid for new projects |
+| LangChain/LangGraph (existing) | MetaGPT | If need more structured software engineering workflows |
 | pytest (existing in backend) | unittest | Only if strict Python stdlib required |
 | pytest (new) | pytest-bdd | If behavior-driven tests needed for acceptance criteria |
 | vitest (new) | Jest | If simpler ecosystem preferred; vitest has better TypeScript integration |
@@ -157,7 +157,7 @@ pip install tree-sitter>=0.21.0
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| **AutoGen v0.2** | Being deprecated; Microsoft consolidating into new Agent Framework | CrewAI (stable, active development) |
+| **AutoGen v0.2** | Being deprecated; Microsoft consolidating into new Agent Framework | LangChain/LangGraph (stable, active development) |
 | **LangChain "Legacy" Agents** | Being replaced by LangGraph; API changes frequent | Use `create_agent()` factory or LangGraph |
 | **javalang** (for new code) | Limited AST capabilities; slow | tree-sitter for robust parsing |
 | **Plain subprocess for code execution** | Security risk; no isolation | Use containerized execution or code review gates |
@@ -172,7 +172,7 @@ pip install tree-sitter>=0.21.0
 | pytest>=8.0.0 | Python 3.10+ | Requires Python 3.10+ |
 | pytest-asyncio>=0.23.0 | pytest>=7.0.0, Python 3.10+ | Use `pytest_asyncio.fixture` |
 | pytest-xdist>=3.5.0 | pytest>=7.0.0 | Parallel test execution |
-| crewai>=0.11.0,<1.0.0 | Python 3.10-3.13 | Already in requirements |
+| langchain>=0.11.0,<1.0.0 | Python 3.10-3.13 | Already in requirements |
 | langchain>=0.3.0,<1.0.0 | Python 3.10+ | Already in requirements |
 | TypeScript ^5.4.0 | Node.js 18+ | LTS support |
 | vitest ^1.5.0 | Node.js 18+ | Compatible with TypeScript 5.4 |
@@ -184,7 +184,7 @@ pip install tree-sitter>=0.21.0
 **IfTranslator Agent needs faster Java parsing:**
 - Upgrade: javalang → tree-sitter
 - Benefit: 100x faster AST extraction
-- Integration: Custom CrewAI tool wrapping tree-sitter
+- Integration: Custom LangChain tool wrapping tree-sitter
 
 **IfSemantic Checker requires deep behavior analysis:**
 - Add: graphviz for data flow visualization
@@ -198,14 +198,14 @@ pip install tree-sitter>=0.21.0
 
 **Ifneed real-time validation feedback:**
 - Add: WebSocket via FastAPI
-- Integrate: Agent streaming with `stream_log()` from CrewAI
+- Integrate: Agent streaming with `stream_log()` from LangChain/LangGraph
 - Frontend: Existing React app can consume streaming updates
 
 ---
 
 ## Sources
 
-- **Context7: CrewAI** — Agent architecture, delegation, tools, telemetry with OpenTelemetry
+- **Context7: LangChain/LangGraph** — Agent architecture, delegation, tools, telemetry with OpenTelemetry
 - **Context7: LangChain** — Multi-agent patterns, LangGraph integration, create_agent() factory
 - **Context7: AutoGen** — CodeExecutorAgent for sandboxed execution (NOTE: being consolidated)
 - **Context7: Pytest** — Async testing, plugins, fixtures
@@ -228,7 +228,7 @@ The codebase already contains:
 1. **Refactor** `qa_agent.py` → becomes Tester Agent
 2. **Refactor** `validation_agent.py` → becomes Semantic Checker + Reviewer
 3. **Create** new Translator Agent for code generation
-4. **Orchestrate** via CrewAI crew with custom tools
+4. **Orchestrate** via LangGraph pipeline with custom tools
 
 ### Shared Context
 

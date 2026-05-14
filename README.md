@@ -23,7 +23,7 @@ Empower Minecraft creators with production-grade AI tooling that converts Java E
 | **Entities** | Entity behaviors and spawn rules |
 
 ### Core Platform
-- **AI-Powered Conversion**: Multi-agent CrewAI pipeline for intelligent content transformation
+- **AI-Powered Conversion**: Multi-agent LangGraph pipeline for intelligent content transformation
 - **Adversarial Logic Auditor**: QA pipeline that validates conversion accuracy
 - **Conversion History Dashboard**: Track and review past conversions
 - **Usage Metering**: Production billing via Stripe with OAuth authentication
@@ -33,7 +33,7 @@ Empower Minecraft creators with production-grade AI tooling that converts Java E
 ### Tech Stack
 - **Frontend**: React + TypeScript + Vite (Nginx in production)
 - **Backend**: Python + FastAPI + SQLAlchemy + AsyncPG
-- **AI Engine**: CrewAI + LangChain + FastAPI
+- **AI Engine**: LangChain/LangGraph + LangChain + FastAPI
 - **RAG System**: Vector database (pgvector) + Embedding generation
 - **Database**: PostgreSQL 15 with async support
 - **Cache**: Redis 7 for sessions and caching
@@ -147,7 +147,7 @@ PortKit uses a microservices architecture with the following containers:
 |---------|------------|------|---------|
 | **Frontend** | React + Nginx | 3000 | User interface |
 | **Backend** | FastAPI + Python | 8080 | Main API server |
-| **AI Engine** | FastAPI + CrewAI | 8001 | AI conversion engine |
+| **AI Engine** | FastAPI + LangChain/LangGraph | 8001 | AI conversion engine |
 | **PostgreSQL** | PostgreSQL 15 | 5433 | Primary database |
 | **Redis** | Redis 7 | 6379 | Caching & sessions |
 
@@ -437,7 +437,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🏆 Acknowledgments
 
-- **CrewAI**: For the multi-agent AI framework
+- **LangChain/LangGraph**: For the multi-agent AI framework
 - **FastAPI**: For the high-performance API framework
 - **React**: For the frontend framework
 - **Docker**: For containerization

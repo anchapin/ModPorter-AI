@@ -28,7 +28,7 @@ key_files:
     - "ai-engine/tests/test_logic_translator_coverage.py"
     - "ai-engine/tests/unit/test_smart_assumptions.py"
 decisions:
-  - "Used unittest.mock for crewai dependency isolation"
+  - "Used unittest.mock for langchain dependency isolation"
   - "Tested RL components with mocked TrainingEpisode objects"
   - "Behavioral framework tests use mocked MinecraftEnvironmentManager"
 metrics:

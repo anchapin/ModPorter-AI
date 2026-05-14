@@ -88,7 +88,6 @@ ignore = [
 "agents/recipe_converter.py" = ["C901"]
 "agents/validation_agent.py" = ["C901"]
 "benchmarking/performance_system.py" = ["C901"]
-"crew/__init__.py" = ["N802"]  # Function name should be lowercase (factory functions RAGTasks, RAGCrew)
 "agents/java_analyzer/" = ["N806"]  # Variable in function should be lowercase (RuntimeVisibleAnnotations) - split into submodules
 "agents/logic_translator/" = ["N806", "C901"]  # Split into submodules per Issue #1141
 "tools/search_tool.py" = ["N806"]  # Variable in function should be lowercase (FallbackToolClass)
@@ -217,7 +216,7 @@ description = "AI Engine with GPU acceleration support"
 authors = [{name = "PortKit", email = "ai@portkit.ai"}]
 license = {text = "MIT"}
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -235,11 +234,12 @@ dependencies = [
     "uvicorn[standard]>=0.24.0",
     "python-multipart>=0.0.6",
 
-    # AI Framework
-    "crewai>=0.11.0",  # Latest available is 0.11.2
+    # AI Framework — LangChain/LangGraph stack (issue #1201)
     "langchain>=0.3.28",
+    "langchain-core>=0.3",
     "langchain-openai>=0.3.35",
     "langchain-ollama>=0.3.10",
+    "langgraph>=1.1.0",
     "openai>=2.32.0",
     "sentence-transformers",
 
@@ -363,7 +363,6 @@ omit = [
     "*/scripts/*",
     "*/setup.py",
     "*/conftest.py",
-    "*/crewai/**",
     "*/mcp/**",
     "*/mcp_server/**",
     "benchmarking/**",

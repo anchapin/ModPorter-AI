@@ -276,30 +276,22 @@ class FewShotEnhancerAgent:
 
 class FewShotEnhancerTools:
     """
-    Tool wrapper for CrewAI integration.
+    Tool wrapper for LangChain/LangGraph integration.
 
-    Provides tools that can be used by the crew orchestrator.
+    Provides LangChain tools that can be bound to a chat model via
+    ``llm.bind_tools(...)`` or registered with a LangGraph node.
     """
 
     @staticmethod
     def enhance_tool(java_source: str, instruction: str, model: str = "deepseek-v4-pro") -> str:
         """
-        CrewAI tool for few-shot enhancement.
+        LangChain tool for few-shot enhancement.
 
-        Usage in crew:
-            from crewai import Agent, Task
+        Usage::
 
-            enhancer = Agent(
-                role="Enhancer",
-                goal="Generate initial Bedrock conversion draft",
-                tools=[FewShotEnhancerTools.enhance_tool]
-            )
+            from langchain_core.tools import tool
 
-            enhancement_task = Task(
-                description="Enhance this Java mod: {java_source}",
-                agent=enhancer,
-                tool=FewShotEnhancerTools.enhance_tool
-            )
+            llm_with_tools = llm.bind_tools([FewShotEnhancerTools.enhance_tool])
         """
         agent = FewShotEnhancerAgent(model=model)
         result = agent.enhance(java_source=java_source, instruction=instruction)
@@ -328,7 +320,7 @@ Quality Score: {result.quality_score}/10
 
     @staticmethod
     def get_tools() -> List[callable]:
-        """Return list of tools for CrewAI registration."""
+        """Return the list of tools for LangChain/LangGraph registration."""
         return [
             FewShotEnhancerTools.enhance_tool,
         ]

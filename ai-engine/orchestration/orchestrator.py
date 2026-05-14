@@ -137,7 +137,7 @@ class ParallelOrchestrator:
     def _create_sequential_workflow(
         self, task_graph: TaskGraph, base_input: Dict[str, Any]
     ) -> TaskGraph:
-        """Create sequential workflow (original CrewAI behavior)"""
+        """Create sequential workflow (baseline single-threaded execution)"""
 
         # Create tasks in sequential order
         analyze_task = TaskNode(
@@ -439,7 +439,7 @@ class ParallelOrchestrator:
     async def _execute_sequential(
         self, task_graph: TaskGraph, worker_pool: WorkerPool
     ) -> Dict[str, Any]:
-        """Execute tasks sequentially (mimics original CrewAI behavior)"""
+        """Execute tasks sequentially (baseline single-threaded execution)"""
 
         task_order = ["analyze", "plan", "translate", "convert_assets", "package", "validate"]
         results = {}

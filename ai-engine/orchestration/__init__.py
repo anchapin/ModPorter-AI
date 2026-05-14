@@ -1,8 +1,11 @@
 """
-Enhanced Multi-Agent Orchestration System
+Multi-Agent Orchestration package for the LangGraph-based conversion pipeline.
 
-This module provides parallel execution and dynamic spawning capabilities
-for the PortKit conversion pipeline, as outlined in Issue #156.
+The conversion engine runs entirely on LangGraph + LangChain (issue #1201).
+The legacy LangChain/LangGraph-coupled bridges (``EnhancedConversionCrew``,
+``RunAgentCrewBridge``) have been removed; the ``RunAgent`` constraint
+framework remains as a generic step-execution helper that can be wired
+into LangGraph nodes when needed.
 """
 
 from .orchestrator import ParallelOrchestrator
@@ -23,6 +26,7 @@ from .langgraph_pipeline import (
     BlockConversionOutput,
     EntityConversionOutput,
 )
+from .progress import PipelineProgress, PipelineStage, log_pipeline_progress
 from .run_agent import (
     RunAgent,
     RunAgentPlan,
@@ -32,10 +36,9 @@ from .run_agent import (
     Constraint,
     StepResult,
 )
-from .run_agent_integration import RunAgentOrchestrator, RunAgentCrewBridge
 
 __all__ = [
-    # Legacy orchestration components
+    # Legacy task-graph orchestration components (still used by some code paths)
     "TaskGraph",
     "TaskNode",
     "TaskStatus",
@@ -43,7 +46,7 @@ __all__ = [
     "WorkerPool",
     "OrchestrationStrategy",
     "StrategySelector",
-    # LangGraph-based pipeline (migration from CrewAI per issue #1201)
+    # LangGraph-based conversion pipeline (the canonical path)
     "ConversionPipeline",
     "ConversionState",
     "LangGraphOrchestrator",
@@ -57,7 +60,11 @@ __all__ = [
     "AssetConversionInput",
     "BlockConversionOutput",
     "EntityConversionOutput",
-    # RunAgent components
+    # Progress tracking
+    "PipelineProgress",
+    "PipelineStage",
+    "log_pipeline_progress",
+    # RunAgent components (generic constraint-guided step execution)
     "RunAgent",
     "RunAgentPlan",
     "Step",
@@ -65,6 +72,4 @@ __all__ = [
     "StepResult",
     "Constraint",
     "RunAgentStepStatus",
-    "RunAgentOrchestrator",
-    "RunAgentCrewBridge",
 ]

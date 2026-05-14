@@ -9,7 +9,7 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
-from crewai.tools import tool
+from langchain_core.tools import tool
 
 from utils.config import Config
 from utils.vector_db_client import VectorDBClient
@@ -243,7 +243,7 @@ class SearchTool:
                     api_category = data.get("api_category")
                 except json.JSONDecodeError:
                     query = query_data  # Treat as plain string query
-            else:  # Should not happen if called by CrewAI with string arg
+            else:  # Should not happen if called by LangChain with string arg
                 query = str(query_data)
 
             if not query:

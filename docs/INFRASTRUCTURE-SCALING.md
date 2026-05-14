@@ -109,7 +109,7 @@ docker-compose up -d --scale backend=3
 kubectl autoscale deployment backend --min=3 --max=10 --cpu-percent=80
 ```
 
-### AI Engine (CrewAI + Models)
+### AI Engine (LangChain/LangGraph + Models)
 
 **Current:** Single CPU instance
 **Scale:** Dedicated GPU instances

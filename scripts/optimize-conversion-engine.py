@@ -279,7 +279,7 @@ class PerformanceOptimizer:
         optimizations = []
 
         # 1. Agent result caching
-        optimizations.append("CrewAI agent result caching for similar inputs")
+        optimizations.append("LangChain LLM-call result caching for similar inputs")
 
         # 2. Batch processing for AI operations
         optimizations.append("Batch processing for multiple AI requests")

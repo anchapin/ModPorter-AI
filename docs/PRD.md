@@ -26,12 +26,12 @@ The new approach hinges on an AI engine capable of making "smart assumptions"—
 | **Client-Side Rendering** | No access to Bedrock's Render Dragon engine.4 | The AI will identify these mods (e.g., shaders, performance enhancers) and explicitly exclude them from the conversion, notifying the user that they are unsupported. |
 | **Mod Dependencies** | Bedrock add-ons are designed to be self-contained.8 | The AI will analyze the dependency. If it's a simple library, it may attempt to bundle the required functions. For complex dependencies (e.g., another large content mod), it will flag the dependency as a critical failure point and halt conversion of that specific mod, explaining the issue to a user.9 |
 
-## **1.0.3 Capabilities of AI Frameworks (LangChain/CrewAI)**
+## **1.0.3 Capabilities of AI Frameworks (LangChain/LangChain/LangGraph)**
 
-Achieving this level of automated reasoning requires more than a simple code transpiler.11 It necessitates a multi-agent system built on a framework like LangChain or CrewAI.
+Achieving this level of automated reasoning requires more than a simple code transpiler.11 It necessitates a multi-agent system built on a framework like LangChain or LangChain/LangGraph.
 
 * **LangChain:** This framework can be used to orchestrate the complex workflow of conversion.13 We can create a "chain" that sequentially analyzes the Java code, plans the conversion by applying smart assumptions, generates the new files, and validates the output. LangChain's ability to integrate with various tools (code parsers, file writers) makes it ideal for managing the step-by-step process.15  
-* **CrewAI:** This framework allows for a more sophisticated, collaborative approach by creating a "crew" of specialized AI agents.17 For instance, a "Java Analyst" agent would deconstruct the mod, a "Bedrock Architect" agent would design the conversion plan using the smart assumption table, a "Logic Translator" agent would rewrite code, and a "QA Agent" would check the output for errors.19 This division of labor allows for more robust and nuanced problem-solving than a single monolithic chain.
+* **LangChain/LangGraph:** This framework allows for a more sophisticated, collaborative approach by creating a "crew" of specialized AI agents.17 For instance, a "Java Analyst" agent would deconstruct the mod, a "Bedrock Architect" agent would design the conversion plan using the smart assumption table, a "Logic Translator" agent would rewrite code, and a "QA Agent" would check the output for errors.19 This division of labor allows for more robust and nuanced problem-solving than a single monolithic chain.
 
 ## **1.0.4 Final Assessment: Conditionally Feasible**
 
@@ -318,7 +318,7 @@ The following features are explicitly **out of scope** for the MVP and will be a
 
 * **Architecture:** A cloud-based web application to handle the intense computational load of the AI models. A lightweight client-side interface will handle file uploads and display results. For the AI Validation feature, a local agent will need to be installed on the user's machine to interface with their Minecraft installations.  
 * **Technology Stack:**  
-  * **AI Orchestration:** A multi-agent framework such as **CrewAI** 29 or a custom-built workflow using  
+  * **AI Orchestration:** A multi-agent framework such as **LangChain/LangGraph** 29 or a custom-built workflow using  
     **LangChain**.31  
   * **Language Models:** A combination of state-of-the-art LLMs (e.g., GPT-4, Claude 3\) and multimodal models (e.g., Gemini) fine-tuned on a corpus of Java mod code, Bedrock add-on documentation, and successful manual ports.23  
   * **Backend:** Python for AI/ML processing, with Node.js for handling web requests.  
@@ -376,10 +376,10 @@ The following features are explicitly **out of scope** for the MVP and will be a
 14. LangChain, accessed July 2, 2025, [https://www.langchain.com/](https://www.langchain.com/)
 15. Migration - Python LangChain, accessed July 2, 2025, [https://python.langchain.com/docs/versions/v0\_2/](https://python.langchain.com/docs/versions/v0_2/)
 16. How to migrate from v0.0 chains - Python LangChain, accessed July 2, 2025, [https://python.langchain.com/docs/versions/migrating\_chains/](https://python.langchain.com/docs/versions/migrating_chains/)
-17. Introduction - CrewAI, accessed July 2, 2025, [https://docs.crewai.com/introduction](https://docs.crewai.com/introduction)
-18. Framework for orchestrating role-playing, autonomous AI agents. By fostering collaborative intelligence, CrewAI empowers agents to work together seamlessly, tackling complex tasks. - GitHub, accessed July 2, 2025, [https://github.com/crewAIInc/crewAI](https://github.com/crewAIInc/crewAI)
-19. Tasks - CrewAI, accessed July 2, 2025, [https://docs.crewai.com/en/concepts/tasks](https://docs.crewai.com/en/concepts/tasks)
-20. Build AI Pair Programmer with CrewAI - Analytics Vidhya, accessed July 2, 2025, [https://www.analyticsvidhya.com/blog/2024/10/ai-pair-programmer/](https://www.analyticsvidhya.com/blog/2024/10/ai-pair-programmer/)
+17. Introduction - LangChain/LangGraph, accessed July 2, 2025, [https://docs.langchain.com/introduction](https://docs.langchain.com/introduction)
+18. The AI Engine uses LangChain runnables and a LangGraph state-graph pipeline (issue #1201).
+19. Tasks - LangChain/LangGraph, accessed July 2, 2025, [https://docs.langchain.com/en/concepts/tasks](https://docs.langchain.com/en/concepts/tasks)
+20. Build AI Pair Programmer with LangChain/LangGraph - Analytics Vidhya, accessed July 2, 2025, [https://www.analyticsvidhya.com/blog/2024/10/ai-pair-programmer/](https://www.analyticsvidhya.com/blog/2024/10/ai-pair-programmer/)
 21. How to convert Minecraft java mods to bedrock? - Reddit, accessed July 2, 2025, [https://www.reddit.com/r/Minecraft/comments/1ejunha/how\_to\_convert\_minecraft\_java\_mods\_to\_bedrock/](https://www.reddit.com/r/Minecraft/comments/1ejunha/how_to_convert_minecraft_java_mods_to_bedrock/)
 22. Converting java mod to bedrock : r/MinecraftBedrockers - Reddit, accessed July 2, 2025, [https://www.reddit.com/r/MinecraftBedrockers/comments/1it403z/converting\_java\_mod\_to\_bedrock/](https://www.reddit.com/r/MinecraftBedrockers/comments/1it403z/converting_java_mod_to_bedrock/)
 23. AI Player - Minecraft Mod - Modrinth, accessed July 2, 2025, [https://modrinth.com/mod/ai-player](https://modrinth.com/mod/ai-player)

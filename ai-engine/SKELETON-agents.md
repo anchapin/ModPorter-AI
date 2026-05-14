@@ -112,7 +112,7 @@ It contains class/function signatures, type definitions, and docstrings — **no
 
 ### `ai-engine/agents/asset_converter.py`
 > Asset Converter Agent for handling texture, model, and audio asset conversion
-*deps: PIL, crewai.tools, models.smart_assumptions, pydub, pydub.exceptions, zipfile*
+*deps: PIL, langchain_core.tools, models.smart_assumptions, pydub, pydub.exceptions, zipfile*
 
 **class AssetConverterAgent:**
   *Asset Converter Agent responsible for converting visual and audio assets*
@@ -368,7 +368,7 @@ It contains class/function signatures, type definitions, and docstrings — **no
 
 ### `ai-engine/agents/bedrock_architect.py`
 > Bedrock Architect Agent for conversion planning and smart assumption application.
-*deps: __future__, crewai.tools, models.smart_assumptions, utils.llm_agent_tools*
+*deps: __future__, langchain_core.tools, models.smart_assumptions, utils.llm_agent_tools*
 
 **class BedrockArchitectAgent:**
   *Bedrock Architect Agent for optimal conversion strategies.*
@@ -409,7 +409,7 @@ It contains class/function signatures, type definitions, and docstrings — **no
 
 ### `ai-engine/agents/bedrock_builder.py`
 > Bedrock Builder Agent for generating Bedrock add-on files from Java mod analysis.
-*deps: PIL, crewai.tools, jinja2, models.smart_assumptions, templates.template_engine, utils.atlas_descriptor_parser, zipfile*
+*deps: PIL, langchain_core.tools, jinja2, models.smart_assumptions, templates.template_engine, utils.atlas_descriptor_parser, zipfile*
 
 **class BedrockBuilderAgent:**
   *Bedrock Builder Agent responsible for generating Bedrock add-on files*
@@ -543,7 +543,7 @@ It contains class/function signatures, type definitions, and docstrings — **no
     *Get all optional mods.*
 
 **class CurseForgeParserAgent:**
-  *CrewAI agent for parsing CurseForge modpack manifests.*
+  *LangChain agent runnable for parsing CurseForge modpack manifests.*
   `def __init__(self)`
   `def get_tools(self)`
     *Get the tools for this agent.*
@@ -1164,11 +1164,11 @@ It contains class/function signatures, type definitions, and docstrings — **no
 ---
 
 ### `ai-engine/agents/java_analyzer/tools.py`
-> CrewAI tool wrappers for Java Analyzer Agent
-*deps: agents.java_analyzer, crewai.tools, utils.llm_agent_tools, utils.logging_config, zipfile*
+> LangChain tool wrappers for Java Analyzer Agent
+*deps: agents.java_analyzer, langchain_core.tools, utils.llm_agent_tools, utils.logging_config, zipfile*
 
 **class JavaAnalyzerTools:**
-  *Collection of CrewAI tools for Java mod analysis*
+  *Collection of LangChain tools for Java mod analysis*
   `def __init__(self, agent_instance = None)`
   `def analyze_mod_structure_tool(mod_data: Union[str, Dict]) -> str`
     *Analyze the overall structure of a Java mod.*

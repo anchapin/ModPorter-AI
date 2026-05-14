@@ -12,7 +12,7 @@ gaps:
         issue: "Only 36% coverage (target 80%)"
       - path: "ai-engine/utils/bedrock_docs_scraper.py"
         issue: "Only 13% coverage (target 80%)"
-      - path: "ai-engine/crew/conversion_crew.py"
+      - path: "ai-engine/orchestration/langgraph_pipeline.py"
         issue: "Only 16% coverage (target 80%)"
       - path: "backend/src/main.py"
         issue: "Overall backend coverage is 21% (not broken down per-file)"
@@ -59,7 +59,7 @@ gaps:
 | `ai-engine/main.py` | Coverage >80% | ✗ FAILED | Only 36% coverage |
 | `backend/src/main.py` | Coverage >80% | ✗ PARTIAL | Test file 97%, but overall backend 21% |
 | `ai-engine/utils/bedrock_docs_scraper.py` | Coverage >80% | ✗ FAILED | Only 13% coverage |
-| `ai-engine/crew/conversion_crew.py` | Coverage >80% | ✗ FAILED | Only 16% coverage |
+| `ai-engine/orchestration/langgraph_pipeline.py` | Coverage >80% | ✗ FAILED | Only 16% coverage |
 
 ### Key Link Verification
 
@@ -75,7 +75,7 @@ gaps:
 - Overall: 6%
 - main.py: 36%
 - utils/bedrock_docs_scraper.py: 13%
-- crew/conversion_crew.py: 16%
+- orchestration/langgraph_pipeline.py: 16%
 
 **Backend:**
 - Overall: 21%

@@ -1067,7 +1067,7 @@ It contains class/function signatures, type definitions, and docstrings — **no
 ---
 
 ### `ai-engine/orchestration/crew_integration.py`
-> Integration layer for connecting the parallel orchestrator with existing CrewAI agents.
+> Integration layer for connecting the parallel orchestrator with existing LangChain agent runnables.
 *deps: agents.asset_converter, agents.bedrock_architect, agents.fewshot_enhancer_agent, agents.java_analyzer, agents.logic_translator, agents.packaging_agent, agents.qa_validator, qa.hooks*
 
 **class EnhancedConversionCrew:**

@@ -129,7 +129,7 @@ This document provides a comprehensive strategic analysis based on AI expert eva
 ## RL/AI Strategy Assessment
 
 ### Current AI Approach: ✅ Appropriate for MVP
-- **CrewAI + LLM agents**: Excellent for MVP complexity
+- **LangChain/LangGraph + LLM agents**: Excellent for MVP complexity
 - **Template-based conversion**: Sufficient for initial mod types
 - **Smart assumptions framework**: Well-designed for bridging gaps
 

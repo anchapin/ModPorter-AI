@@ -66,7 +66,7 @@ This review analyzes the current Java to Bedrock conversion pipeline and identif
 | **AST Analysis** | Basic tree traversal | ⚠️ Basic |
 | **Code Translation** | Rule-based + templates | ⚠️ Manual rules |
 | **RAG** | ChromaDB + embeddings | ✅ Good |
-| **Multi-Agent** | CrewAI | ✅ Good |
+| **Multi-Agent** | LangChain/LangGraph | ✅ Good |
 | **Orchestration** | Custom parallel orchestrator | ✅ Good |
 
 ---

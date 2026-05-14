@@ -1,220 +1,152 @@
+"""Unit tests for the rebuilt LLM backend factories (issue #1201).
+
+After the LangChain/LangGraph migration the bespoke ``RateLimitedChatOpenAI``,
+``RateLimitedZAI`` and ``OpenAICompatibleLLM`` wrappers are gone — every
+factory returns a stock LangChain ``BaseChatModel`` that uses
+``langchain_core.rate_limiters.InMemoryRateLimiter`` for throttling.
 """
-Unit tests for RateLimiter and LLM wrappers.
-"""
+
+from __future__ import annotations
+
+import os
+from unittest.mock import MagicMock, patch
 
 import pytest
-import time
-import os
-from unittest.mock import MagicMock, patch, Mock
-from utils.rate_limiter import RateLimiter, RateLimitConfig, with_rate_limiting, _execute_with_retry, RateLimitedChatOpenAI, create_ollama_llm, RateLimitedZAI, get_llm_backend, get_fallback_llm, ZAIConfig
 
-class TestRateLimiter:
-    def test_clean_old_requests(self):
+from langchain_core.language_models import BaseChatModel
+
+from utils.rate_limiter import (
+    OpenAICompatibleConfig,
+    RateLimitConfig,
+    RateLimiter,
+    ZAIConfig,
+    create_ollama_llm,
+    create_openai_compatible_llm,
+    create_rate_limited_llm,
+    create_z_ai_llm,
+    get_fallback_llm,
+    get_llm_backend,
+)
+
+
+class TestRateLimiterShim:
+    """The legacy RateLimiter class is now a no-op shim retained for back-compat."""
+
+    def test_construct_with_default_config(self):
         limiter = RateLimiter()
-        now = time.time()
-        limiter.request_times = [now - 70, now - 30]
-        limiter.token_usage = [{"time": now - 70, "tokens": 100}, {"time": now - 30, "tokens": 200}]
-        
-        limiter._clean_old_requests(now)
-        assert len(limiter.request_times) == 1
-        assert len(limiter.token_usage) == 1
-        assert limiter.request_times[0] == now - 30
+        assert isinstance(limiter.config, RateLimitConfig)
+        assert limiter.config.requests_per_minute == 60
 
-    def test_should_rate_limit_requests(self):
-        config = RateLimitConfig(requests_per_minute=2)
-        limiter = RateLimiter(config)
-        now = time.time()
-        limiter.request_times = [now - 10, now - 5]
-        
-        should_limit, wait_time = limiter._should_rate_limit()
-        assert should_limit is True
-        assert wait_time > 0
-
-    def test_should_rate_limit_tokens(self):
-        config = RateLimitConfig(tokens_per_minute=1000)
-        limiter = RateLimiter(config)
-        now = time.time()
-        limiter.token_usage = [{"time": now - 5, "tokens": 900}]
-        
-        # Adding 200 more tokens should trigger limit
-        should_limit, wait_time = limiter._should_rate_limit(estimated_tokens=200)
-        assert should_limit is True
-        assert wait_time > 0
-
-    def test_wait_if_needed(self):
+    def test_wait_and_record_are_no_ops(self):
         limiter = RateLimiter()
-        with patch.object(limiter, '_should_rate_limit', return_value=(True, 0.1)), \
-             patch('time.sleep') as mock_sleep:
-            limiter.wait_if_needed()
-            mock_sleep.assert_called_once_with(0.1)
+        # Must not raise; behaviour is delegated to the LangChain limiter.
+        limiter.wait_if_needed(123)
+        limiter.record_request(456)
 
-class TestExecuteWithRetry:
-    def test_success_first_try(self):
-        func = MagicMock(return_value="success")
-        limiter = RateLimiter()
-        res = _execute_with_retry(func, limiter, RateLimitConfig())
-        assert res == "success"
-        assert func.call_count == 1
 
-    def test_retry_on_429(self):
-        func = MagicMock(side_effect=[Exception("Rate limit 429"), "success"])
-        limiter = RateLimiter()
-        config = RateLimitConfig(max_retries=1, base_delay=0.01)
-        with patch('time.sleep'):
-            res = _execute_with_retry(func, limiter, config)
-            assert res == "success"
-            assert func.call_count == 2
+class TestOpenAIFactory:
+    @patch("langchain_openai.ChatOpenAI")
+    def test_create_rate_limited_llm_returns_chat_openai(self, mock_chat):
+        fake = MagicMock(spec=BaseChatModel)
+        mock_chat.return_value = fake
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "test"}):
+            llm = create_rate_limited_llm("gpt-4o-mini", temperature=0.0)
+        assert llm is fake
+        # Keyword args include the LangChain rate limiter
+        kwargs = mock_chat.call_args.kwargs
+        assert "rate_limiter" in kwargs
+        assert kwargs["model"] == "gpt-4o-mini"
+        assert kwargs["temperature"] == 0.0
 
-    def test_retry_on_temporary_error(self):
-        func = MagicMock(side_effect=[Exception("503 Service Unavailable"), "success"])
-        limiter = RateLimiter()
-        config = RateLimitConfig(max_retries=1, base_delay=0.01)
-        with patch('time.sleep'):
-            res = _execute_with_retry(func, limiter, config)
-            assert res == "success"
 
-    def test_no_retry_on_fatal_error(self):
-        func = MagicMock(side_effect=ValueError("Invalid arg"))
-        limiter = RateLimiter()
-        with pytest.raises(ValueError):
-            _execute_with_retry(func, limiter, RateLimitConfig())
-        assert func.call_count == 1
+class TestZAIFactory:
+    @patch("langchain_openai.ChatOpenAI")
+    def test_create_z_ai_llm_uses_openai_compatible_endpoint(self, mock_chat):
+        fake = MagicMock(spec=BaseChatModel)
+        mock_chat.return_value = fake
+        cfg = ZAIConfig(api_key="test", model="glm-4-test", base_url="https://api.z.ai/v1")
+        llm = create_z_ai_llm(cfg)
+        assert llm is fake
+        kwargs = mock_chat.call_args.kwargs
+        assert kwargs["base_url"] == "https://api.z.ai/v1"
+        assert kwargs["model"] == "glm-4-test"
+        assert kwargs["api_key"] == "test"
 
-class TestRateLimitedChatOpenAI:
-    @patch('utils.rate_limiter.ChatOpenAI')
-    def test_initialization(self, mock_chat):
-        with patch.dict('os.environ', {'OPENAI_API_KEY': 'test-key'}):
-            llm = RateLimitedChatOpenAI(model_name="gpt-4")
-            assert llm.model_name == "gpt-4"
-            mock_chat.assert_called_once()
+    def test_create_z_ai_llm_requires_api_key(self):
+        cfg = ZAIConfig(api_key="")
+        with patch.dict(os.environ, {"Z_AI_API_KEY": ""}, clear=False):
+            with pytest.raises(ValueError, match="Z.AI API key is required"):
+                create_z_ai_llm(cfg)
 
-    @patch('utils.rate_limiter.ChatOpenAI')
-    def test_invoke(self, mock_chat):
-        mock_instance = mock_chat.return_value
-        mock_instance.invoke.return_value = "response"
-        
-        with patch.dict('os.environ', {'OPENAI_API_KEY': 'test-key'}):
-            llm = RateLimitedChatOpenAI()
-            res = llm.invoke("hello")
-            assert res == "response"
 
-class TestOllamaLLM:
-    def test_create_ollama_llm_success(self):
-        mock_litellm = MagicMock()
-        with patch.dict('sys.modules', {'litellm': mock_litellm}):
-            mock_litellm.completion.return_value = MagicMock(choices=[MagicMock(message=MagicMock(content="hi"), finish_reason="stop")], usage=None)
-            
-            llm = create_ollama_llm(model_name="llama3")
-            res = llm.invoke("hello")
-            assert res.content == "hi"
+class TestOpenAICompatibleFactory:
+    @patch("langchain_openai.ChatOpenAI")
+    def test_create_openai_compatible_llm_uses_config(self, mock_chat):
+        fake = MagicMock(spec=BaseChatModel)
+        mock_chat.return_value = fake
+        cfg = OpenAICompatibleConfig(
+            api_key="key",
+            model="custom-model",
+            base_url="https://example.com/v1",
+            provider="openrouter",
+        )
+        llm = create_openai_compatible_llm(cfg)
+        assert llm is fake
+        kwargs = mock_chat.call_args.kwargs
+        assert kwargs["base_url"] == "https://example.com/v1"
+        assert kwargs["model"] == "custom-model"
 
-    def test_create_ollama_llm_import_error(self):
-        with patch.dict('sys.modules', {'litellm': None}):
-            with pytest.raises(ImportError):
-                create_ollama_llm()
 
-class TestZAI:
-    def test_zai_initialization(self):
-        with patch.dict('os.environ', {'Z_AI_API_KEY': 'test-key', 'Z_AI_BASE_URL': 'http://z.ai'}):
-            with patch('openai.OpenAI'):
-                llm = RateLimitedZAI()
-                assert llm.config.api_key == "test-key"
+class TestOllamaFactory:
+    @patch("langchain_ollama.ChatOllama")
+    def test_create_ollama_llm_returns_chat_ollama(self, mock_chat):
+        fake = MagicMock(spec=BaseChatModel)
+        mock_chat.return_value = fake
+        llm = create_ollama_llm(model_name="llama3.2", base_url="http://ollama:11434")
+        assert llm is fake
+        kwargs = mock_chat.call_args.kwargs
+        assert kwargs["model"] == "llama3.2"
+        assert kwargs["base_url"] == "http://ollama:11434"
+        assert "rate_limiter" in kwargs
 
-    def test_zai_invoke(self):
-        with patch.dict('os.environ', {'Z_AI_API_KEY': 'test-key'}):
-            with patch('openai.OpenAI') as mock_openai:
-                mock_client = mock_openai.return_value
-                mock_client.chat.completions.create.return_value = MagicMock(choices=[MagicMock(message=MagicMock(content="z-hi"), finish_reason="stop")], usage=None)
-                
-                llm = RateLimitedZAI()
-                res = llm.invoke("hello")
-                assert res.content == "z-hi"
-class TestDecorators:
-    def test_with_rate_limiting(self):
-        func = MagicMock(return_value="ok")
-        decorated = with_rate_limiting()(func)
-        assert decorated("test") == "ok"
-        assert func.called
+    @patch("langchain_ollama.ChatOllama")
+    def test_create_ollama_llm_strips_litellm_prefix(self, mock_chat):
+        fake = MagicMock(spec=BaseChatModel)
+        mock_chat.return_value = fake
+        create_ollama_llm(model_name="ollama/codellama")
+        kwargs = mock_chat.call_args.kwargs
+        assert kwargs["model"] == "codellama"
 
-class TestExecuteWithRetryExhaustion:
-    def test_exhaust_retries_429(self):
-        func = MagicMock(side_effect=Exception("429 Too Many Requests"))
-        limiter = RateLimiter()
-        config = RateLimitConfig(max_retries=1, base_delay=0.01)
-        with patch('time.sleep'), patch('logging.Logger.error'):
-            with pytest.raises(Exception, match="429"):
-                _execute_with_retry(func, limiter, config)
-        assert func.call_count == 2
 
-    def test_exhaust_retries_temporary(self):
-        func = MagicMock(side_effect=Exception("503 error"))
-        limiter = RateLimiter()
-        config = RateLimitConfig(max_retries=1, base_delay=0.01)
-        with patch('time.sleep'):
-            with pytest.raises(Exception, match="503"):
-                _execute_with_retry(func, limiter, config)
+class TestBackendSelection:
+    def test_get_llm_backend_prefers_openai_compatible_when_base_url_set(self):
+        with (
+            patch("utils.config.Config") as mock_cfg,
+            patch("utils.rate_limiter.create_openai_compatible_llm") as mock_factory,
+        ):
+            mock_cfg.return_value.LLM_BASE_URL = "https://example.com/v1"
+            mock_cfg.return_value.LLM_PROVIDER = "openrouter"
+            fake = MagicMock(spec=BaseChatModel)
+            mock_factory.return_value = fake
+            assert get_llm_backend() is fake
+            mock_factory.assert_called_once()
 
-class TestRateLimitedChatOpenAIOverrides:
-    @patch('utils.rate_limiter.ChatOpenAI')
-    def test_env_overrides(self, mock_chat):
-        with patch.dict('os.environ', {
-            'OPENAI_API_KEY': 'key',
-            'OPENAI_RPM_LIMIT': '10',
-            'OPENAI_TPM_LIMIT': '1000',
-            'OPENAI_MAX_RETRIES': '5'
-        }):
-            llm = RateLimitedChatOpenAI()
-            assert llm.rate_config.requests_per_minute == 10
-            assert llm.rate_config.tokens_per_minute == 1000
-            assert llm.rate_config.max_retries == 5
+    def test_get_llm_backend_falls_back_to_openai_when_others_disabled(self):
+        with (
+            patch("utils.config.Config") as mock_cfg,
+            patch("utils.rate_limiter.create_rate_limited_llm") as mock_oai,
+            patch.dict(os.environ, {"USE_Z_AI": "false", "USE_OLLAMA": "false"}, clear=False),
+        ):
+            mock_cfg.return_value.LLM_BASE_URL = ""
+            fake = MagicMock(spec=BaseChatModel)
+            mock_oai.return_value = fake
+            assert get_llm_backend() is fake
 
-    @patch('utils.rate_limiter.ChatOpenAI')
-    def test_other_methods(self, mock_chat):
-        mock_instance = mock_chat.return_value
-        mock_instance.generate.return_value = "gen"
-        mock_instance.predict.return_value = "pred"
-
-        with patch.dict('os.environ', {'OPENAI_API_KEY': 'key'}):
-            llm = RateLimitedChatOpenAI()
-            assert llm.generate(["msg"]) == "gen"
-            assert llm.predict("hi") == "pred"
-            assert llm("call") == mock_instance.invoke.return_value
-
-class TestLiteLLMOllamaWrapperMethods:
-    def test_wrapper_methods(self):
-        mock_litellm = MagicMock()
-        with patch.dict('sys.modules', {'litellm': mock_litellm}):
-            mock_litellm.completion.return_value = MagicMock(choices=[MagicMock(message=MagicMock(content="resp"), finish_reason="stop")], usage=None)
-
-            llm = create_ollama_llm()
-            assert llm.generate("q").content == "resp"
-            assert llm.predict("q").content == "resp"
-            assert llm("q").content == "resp"
-            llm.enable_crew_mode()
-            llm.disable_crew_mode()
-
-    def test_wrapper_invoke_complex_input(self):
-        mock_litellm = MagicMock()
-        with patch.dict('sys.modules', {'litellm': mock_litellm}):
-            llm = create_ollama_llm()
-
-            # Message objects
-            msg = MagicMock(); msg.content = "cont"; msg.type = "user"
-            llm.invoke([msg])
-            assert mock_litellm.completion.called
-
-class TestRateLimitedZAIOverrides:
-    def test_zai_overrides(self):
-        with patch.dict('os.environ', {
-            'Z_AI_API_KEY': 'key',
-            'Z_AI_MODEL': 'model-x',
-            'Z_AI_MAX_RETRIES': '2'
-        }), patch('openai.OpenAI'):
-            llm = RateLimitedZAI()
-            assert llm.config.model == "model-x"
-            assert llm.config.max_retries == 2
-
-            with patch.object(llm, '_execute_with_rate_limit', return_value="ok"):
-                assert llm.generate("q") == "ok"
-                assert llm.predict("q") == "ok"
-
+    @patch("langchain_ollama.ChatOllama")
+    def test_get_fallback_llm_returns_chat_ollama(self, mock_chat):
+        fake = MagicMock(spec=BaseChatModel)
+        mock_chat.return_value = fake
+        llm = get_fallback_llm()
+        assert llm is fake
+        kwargs = mock_chat.call_args.kwargs
+        assert kwargs["model"] == "llama3.2"

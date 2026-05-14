@@ -23,11 +23,20 @@ from orchestration.run_agent import (
     require_key_in_output,
     validate_no_missing_dependencies,
 )
-from orchestration.run_agent_integration import (
-    ConversionStepFactory,
-    RunAgentCrewBridge,
-    RunAgentOrchestrator,
-)
+# `orchestration.run_agent_integration` was removed in #1201 along with the
+# legacy orchestration bridge. The classes below stub the surface that some tests still
+# exercise so test imports keep working until those tests are rewritten.
+
+class _DeletedShim:  # pragma: no cover - shim
+    def __init__(self, *args, **kwargs):
+        raise pytest.skip.Exception(
+            "run_agent_integration was removed in #1201"
+        )
+
+ConversionStepFactory = _DeletedShim
+RunAgentCrewBridge = _DeletedShim
+RunAgentOrchestrator = _DeletedShim
+
 
 
 class TestStepStatus:
@@ -333,6 +342,7 @@ class TestRunAgent:
             RunAgent(plan)
 
 
+@pytest.mark.skip(reason="run_agent_integration removed in #1201 (LangChain/LangGraph migration)")
 class TestConversionStepFactory:
     """Test ConversionStepFactory for creating conversion steps"""
 
@@ -379,8 +389,9 @@ class TestConversionStepFactory:
         assert len(steps) == 6
 
 
+@pytest.mark.skip(reason="run_agent_integration removed in #1201 (LangChain/LangGraph migration)")
 class TestRunAgentCrewBridge:
-    """Test RunAgentCrewBridge integration"""
+    """Test RunAgentCrewBridge integration (legacy)."""
 
     @pytest.mark.asyncio
     async def test_bridge_creation(self):
@@ -479,8 +490,9 @@ class TestConstraintHelpers:
         assert len(constraints) >= 2
 
 
+@pytest.mark.skip(reason="run_agent_integration removed in #1201 (LangChain/LangGraph migration)")
 class TestRunAgentOrchestrator:
-    """Test RunAgentOrchestrator wrapper"""
+    """Test RunAgentOrchestrator wrapper (legacy)."""
 
     def test_orchestrator_creation(self):
         """Test creating RunAgentOrchestrator with mock base"""
