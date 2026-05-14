@@ -21,7 +21,8 @@ class TestLogicTranslatorCoverage:
     def test_get_tools(self, agent):
         tools = agent.get_tools()
         assert len(tools) > 0
-        assert any("translate_java_method_tool" in str(t) for t in tools)
+        # Typed BaseTool subclasses expose the legacy tool name via the .name attribute.
+        assert any(getattr(t, "name", "") == "translate_java_method_tool" for t in tools)
 
     def test_get_javascript_type(self, agent):
         assert agent._get_javascript_type("int") == "number"
