@@ -10,7 +10,7 @@ split into a package per Issue #1141:
         block_templates.py       # BEDROCK_*_TEMPLATES from JSON
         block_state_mapper.py    # JAVA_TO_BEDROCK_BLOCK_PROPERTIES
         assumptions.py           # SMART_ASSUMPTIONS
-        tools.py                 # LogicTranslatorTools (CrewAI wrappers)
+        tools.py                 # LogicTranslatorTools (LangChain/LangGraph wrappers)
 
 New code should import from the package:
 

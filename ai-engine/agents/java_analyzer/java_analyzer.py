@@ -7,7 +7,7 @@ This module provides the main JavaAnalyzerAgent class which combines functionali
 - feature_extractor: AST-based feature extraction
 - embedding_bridge: embedding generation
 - llm_analyzer: LLM complexity analysis
-- tools: CrewAI @tool wrappers
+- tools: LangChain/LangGraph @tool wrappers
 """
 
 import json

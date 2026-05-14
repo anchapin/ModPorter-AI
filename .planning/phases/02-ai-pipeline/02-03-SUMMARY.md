@@ -16,7 +16,7 @@ Verify and document existing multi-agent QA infrastructure with MetaGPT-style co
 
 | Task | Status | Notes |
 |------|--------|-------|
-| 1.6.1 MetaGPT-Style Framework | ✅ Existing | CrewAI with sequential/hierarchical processes |
+| 1.6.1 MetaGPT-Style Framework | ✅ Existing | LangChain/LangGraph with sequential/hierarchical processes |
 | 1.6.2 Translator Agent | ✅ Existing | logic_translator.py |
 | 1.6.3 Reviewer Agent | ✅ Existing | qa_validator.py, validation_agent.py |
 | 1.6.4 Test Agent | ✅ Existing | qa_agent.py with behavioral test engine |
@@ -34,13 +34,13 @@ Verify and document existing multi-agent QA infrastructure with MetaGPT-style co
 - `agents/qa_validator.py` (2026 lines) - QA validation agent with comprehensive rules
 - `agents/qa_agent.py` (338 lines) - QA agent with behavioral test engine
 - `agents/validation_agent.py` - Additional validation agent
-- `crew/conversion_crew.py` (1408 lines) - Multi-agent crew with QA integration
+- `orchestration/langgraph_pipeline.py` (1408 lines) - Multi-agent crew with QA integration
 - `orchestration/orchestrator.py` - Enhanced orchestration with QA executors
 - `tools/qa_validator.py` - QA validation tools
 
 ### Multi-Agent Architecture
 
-**CrewAI-Based Coordination:**
+**LangChain/LangGraph-Based Coordination:**
 ```python
 # From conversion_crew.py
 class ConversionCrew:
@@ -178,7 +178,7 @@ print(f"Issues: {result['issues']}")
 ```bash
 # Run conversion crew
 cd ai-engine
-python crew/conversion_crew.py --mod /path/to/mod.jar
+python orchestration/langgraph_pipeline.py --mod /path/to/mod.jar
 ```
 
 **Expected Flow:**
@@ -195,7 +195,7 @@ python crew/conversion_crew.py --mod /path/to/mod.jar
 |------|-------|---------|
 | `agents/qa_validator.py` | 2026 | QA validation with rules |
 | `agents/qa_agent.py` | 338 | Behavioral test engine |
-| `crew/conversion_crew.py` | 1408 | Multi-agent crew |
+| `orchestration/langgraph_pipeline.py` | 1408 | Multi-agent crew |
 | `orchestration/orchestrator.py` | ~500 | Enhanced orchestration |
 | `tools/qa_validator.py` | ~600 | QA validation tools |
 
@@ -240,4 +240,4 @@ quality_score = engine.calculate_quality_score(
 
 ---
 
-*Phase 0.6 complete. Multi-agent QA system is fully implemented with CrewAI coordination.*
+*Phase 0.6 complete. Multi-agent QA system is fully implemented with LangChain/LangGraph coordination.*

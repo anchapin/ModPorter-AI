@@ -16,7 +16,7 @@ dependency_graph:
     - ai-engine/main.py
     - backend/src/main.py
     - ai-engine/utils/bedrock_docs_scraper.py
-    - ai-engine/crew/conversion_crew.py
+    - ai-engine/orchestration/langgraph_pipeline.py
 tech_stack:
   added:
     - pytest

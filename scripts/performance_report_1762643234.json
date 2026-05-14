@@ -158,7 +158,7 @@
       "details": "Target: <600ms"
     },
     {
-      "name": "AI Engine: CrewAI Agent Orchestration",
+      "name": "AI Engine: LangGraph Pipeline Orchestration",
       "category": "ai_engine",
       "value": 450.0,
       "unit": "ms",

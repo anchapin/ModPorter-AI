@@ -221,7 +221,7 @@ print(f"Validations: {result['validations']}")
 print(f"Recommendations: {result['recommendations']}")
 ```
 
-### CrewAI Tools
+### LangChain Tools
 
 ```python
 # Tool 1: Direct mcaddon validation
@@ -331,7 +331,7 @@ All existing tools and methods remain functional:
 ### Current Integration
 
 The QA Validator is integrated with:
-- **CrewAI**: Tools available for crew workflows
+- **LangChain/LangGraph**: Tools available for crew workflows
 - **Validation Agent**: Complements existing validation framework
 - **Packaging Agent**: Can validate output packages
 

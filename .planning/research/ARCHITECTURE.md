@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-This document specifies how the Multi-Agent QA system (Translator, Reviewer, Tester, Semantic Checker) integrates with the existing CrewAI + LangChain conversion architecture. The integration requires **minimal new infrastructure** — the existing agent orchestration framework already supports the required patterns. The primary work involves extending existing agents, adding specialized validation tools, and establishing clear data flow contracts between QA agents and the conversion pipeline.
+This document specifies how the Multi-Agent QA system (Translator, Reviewer, Tester, Semantic Checker) integrates with the existing LangChain/LangGraph + LangChain conversion architecture. The integration requires **minimal new infrastructure** — the existing agent orchestration framework already supports the required patterns. The primary work involves extending existing agents, adding specialized validation tools, and establishing clear data flow contracts between QA agents and the conversion pipeline.
 
 **Key Architectural Decision:** The QA system operates as a **post-conversion validation layer** that receives output from the existing conversion crew, validates it through the 4-agent pipeline, and produces a comprehensive QA report. This separation ensures QA doesn't disrupt the existing conversion flow while providing thorough validation.
 
@@ -74,7 +74,7 @@ The QA system integrates at the **end of the existing conversion pipeline**, imm
 | **Output** | `QAValidatorAgent` (existing) | 4 new QA agents | `ConversionReport` |
 | **Config** | Existing crew config | QA-specific config | Shared via `JobContext` |
 
-**Implementation Location:** `ai-engine/crew/conversion_crew.py` — Add QA task at end of task list.
+**Implementation Location:** `ai-engine/orchestration/langgraph_pipeline.py` — Add QA task at end of task list.
 
 ### 2. Shared Context Integration
 
@@ -198,9 +198,9 @@ Translator → Reviewer → Tester → Semantic Checker
 
 | Mechanism | Use Case | Implementation |
 |-----------|----------|----------------|
-| **Task Context** | Pass output from one agent to the next | CrewAI's `context=[previous_task]` |
+| **Task Context** | Pass output from one agent to the next | LangChain/LangGraph's `context=[previous_task]` |
 | **Shared State** | Access common data (metadata, configs) | `QAContext` dataclass in Redis |
-| **Tool Calls** | Request specific actions from other agents | CrewAI's delegation tools |
+| **Tool Calls** | Request specific actions from other agents | LangChain/LangGraph's delegation tools |
 | **Message Passing** | Real-time status updates | WebSocket via FastAPI |
 
 ### Agent-to-Agent Tool Contracts
@@ -317,7 +317,7 @@ class SemanticCheckerOutput:
 
 | Component | Responsibility | Location |
 |-----------|---------------|----------|
-| `QAOrchestrator` | Coordinates 4-agent pipeline, manages context | `ai-engine/crew/qa_orchestrator.py` |
+| `QAValidatorAgent` | LangGraph QA node, manages context | `ai-engine/agents/qa/__init__.py` |
 | `TranslatorAgent` | Generates Bedrock code from Java (for re-validation) | `ai-engine/agents/qa_translator.py` |
 | `ReviewerAgent` | Code quality validation | `ai-engine/agents/qa_reviewer.py` |
 | `TesterAgent` | Test generation + execution | `ai-engine/agents/qa_tester.py` (refactor qa_agent.py) |
@@ -359,7 +359,7 @@ class SemanticCheckerOutput:
 
 **Why Bad:** Hard to modify one agent without breaking others.
 
-**Instead:** Use CrewAI's task-based communication. Agents communicate through task outputs, not direct calls.
+**Instead:** Use LangChain/LangGraph's task-based communication. Agents communicate through task outputs, not direct calls.
 
 ### Anti-Pattern 4: Ignoring Existing Validation
 
@@ -384,7 +384,7 @@ class SemanticCheckerOutput:
 **Problem:** 4 agents × multiple LLM calls per agent = rate limit exhaustion
 
 **Mitigation:**
-- Use CrewAI's built-in retry with exponential backoff
+- Use LangChain/LangGraph's built-in retry with exponential backoff
 - Implement request queuing with priority
 - Cache validation results for identical inputs
 
@@ -414,11 +414,11 @@ Before implementing the QA system, verify:
 
 ## Sources
 
-- **Existing Codebase:** `ai-engine/crew/conversion_crew.py`, `ai-engine/agents/qa_validator.py`, `ai-engine/agents/qa_agent.py`
+- **Existing Codebase:** `ai-engine/orchestration/langgraph_pipeline.py`, `ai-engine/agents/qa_validator.py`, `ai-engine/agents/qa_agent.py`
 - **Project Context:** `.planning/PROJECT.md` (v4.7 milestone)
 - **Stack Reference:** `.planning/research/STACK.md`
 - **Features Reference:** `.planning/research/FEATURES.md`
-- **CrewAI Documentation:** Sequential task execution, context passing, delegation patterns
+- **LangChain/LangGraph Documentation:** Sequential task execution, context passing, delegation patterns
 
 ---
 

@@ -11,7 +11,7 @@ graph TB
     User[User] --> Frontend[React Frontend]
     Frontend --> Gateway[API Gateway]
     Gateway --> Backend[FastAPI Backend]
-    Backend --> AIEngine[CrewAI Engine]
+    Backend --> AIEngine[LangChain/LangGraph Engine]
     Backend --> Database[(PostgreSQL)]
     Backend --> Cache[(Redis)]
     Backend --> FileStorage[File Storage]
@@ -52,7 +52,7 @@ graph TB
 
 **Technologies**: FastAPI, Pydantic, SQLAlchemy, Redis
 
-### AI Engine (CrewAI + LangChain)
+### AI Engine (LangChain/LangGraph + LangChain)
 **Purpose**: Core conversion intelligence implementing PRD Feature 2
 
 **Agent Architecture**:
@@ -62,7 +62,7 @@ Java Analyzer → Bedrock Architect → Logic Translator
 Asset Converter ← Packaging Agent ← QA Validator
 ```
 
-**Technologies**: CrewAI, LangChain, OpenAI/Anthropic APIs
+**Technologies**: LangChain/LangGraph, LangChain, OpenAI/Anthropic APIs
 
 ## Inference Strategy
 

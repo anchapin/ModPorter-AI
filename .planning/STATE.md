@@ -247,7 +247,7 @@ Plan: Not started
 | **CodeT5+ 16B** | Code translation model | ✅ Available | Salesforce, Hugging Face |
 | **BGE-M3** | Embedding generation | ✅ Available | Free, self-hosted |
 | **pgvector 0.8+** | Vector database | ✅ Available | PostgreSQL extension |
-| **CrewAI** | Multi-agent orchestration | ✅ Available | Existing in codebase |
+| **LangChain/LangGraph** | Multi-agent orchestration | ✅ Available | Existing in codebase |
 | **Modal** | GPU infrastructure | ✅ Available | Pay-per-second billing |
 | **Ollama** | Local LLM deployment | ✅ Available | For DeepSeek-Coder |
 
@@ -255,7 +255,7 @@ Plan: Not started
 
 | Dependency | Purpose | Status | Notes |
 |------------|---------|--------|-------|
-| **Existing AI Engine** | Base for conversion pipeline | ✅ Available | CrewAI + LangChain |
+| **Existing AI Engine** | Base for conversion pipeline | ✅ Available | LangChain/LangGraph + LangChain |
 | **FastAPI Backend** | API layer | ✅ Available | 24 routers existing |
 | **React Frontend** | User interface | ✅ Available | 23 component directories |
 | **PostgreSQL + pgvector** | Database | ✅ Available | Schema defined |
@@ -270,7 +270,7 @@ Plan: Not started
 | Role | Allocation | Current | Notes |
 |------|------------|---------|-------|
 | **Backend Engineer** | 1.0 FTE | TBD | Python, FastAPI, databases |
-| **AI/ML Engineer** | 1.0 FTE | TBD | CrewAI, LLMs, RAG |
+| **AI/ML Engineer** | 1.0 FTE | TBD | LangChain/LangGraph, LLMs, RAG |
 | **Frontend Engineer** | 0.5 FTE | TBD | React, TypeScript, UI/UX |
 | **DevOps Engineer** | 0.25 FTE | TBD | Docker, CI/CD, monitoring |
 | **Product Manager** | 0.25 FTE | TBD | Requirements, user research |

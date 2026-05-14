@@ -42,7 +42,7 @@ conda activate modporter
 
 **Error:**
 ```
-ModuleNotFoundError: No module named 'crewai'
+ModuleNotFoundError: No module named 'langchain'
 ```
 
 **Solution:**
@@ -224,7 +224,7 @@ Block validation failed: Missing 'identifier' in description
 }
 ```
 
-### CrewAI Agent Errors
+### LangChain agent runnable Errors
 
 #### Memory Validation Error
 
@@ -553,7 +553,7 @@ Enable comprehensive debugging:
 ```bash
 # Set all debug flags
 export LOG_LEVEL=DEBUG
-export CREWAI_DEBUG=true
+export LANGCHAIN_VERBOSE=true  # or LANGSMITH_TRACING=true
 export PYTHONFAULTHANDLER=1
 
 # Run with debug output

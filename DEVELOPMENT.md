@@ -103,7 +103,7 @@ docker-compose exec backend alembic upgrade head
 - Hot reload enabled in development
 - Depends on: postgres, redis, jaeger
 
-**ai-engine** (CrewAI + LangChain)
+**ai-engine** (LangChain/LangGraph + LangChain)
 - Port: 8001
 - Multi-agent AI conversion pipeline
 - Depends on: redis, jaeger

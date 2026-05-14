@@ -240,7 +240,7 @@ class ModrinthPackParser:
 
 class ModrinthParserAgent:
     """
-    CrewAI agent for parsing Modrinth pack format files.
+    LangChain agent runnable for parsing Modrinth pack format files.
     """
 
     def __init__(self):

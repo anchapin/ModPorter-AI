@@ -2,7 +2,7 @@
 SteeringPipeline facade for SAE-based feature steering.
 
 Provides a stable, lightweight orchestration layer that the LogicTranslator
-agent's CrewAI tools (``agents.logic_translator.steering_tools``) consume.
+agent's LangChain tools (``agents.logic_translator.steering_tools``) consume.
 
 Historically the agent code imported ``SteeringPipeline``,
 ``SteeringPipelineConfig``, ``get_steering_pipeline``, and

@@ -424,7 +424,7 @@ modpack_orchestrator = ModpackOrchestrator()
 
 class ModpackConversionCrew:
     """
-    CrewAI agent crew for modpack conversion.
+    LangChain agent runnable crew for modpack conversion.
 
     Coordinates all agents needed for complete modpack conversion.
     """

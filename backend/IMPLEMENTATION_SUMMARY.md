@@ -358,7 +358,7 @@ The current implementation uses simulated progress. To integrate with the actual
                                      │ HTTP
                                      │
 ┌────────────────────────────────────┼─────────────────────────────┐
-│                        AI Engine (CrewAI)                        │
+│                        AI Engine (LangChain/LangGraph)                        │
 │                                                                   │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐   │
 │  │   Agents     │  │    Tasks     │  │      Crews           │   │

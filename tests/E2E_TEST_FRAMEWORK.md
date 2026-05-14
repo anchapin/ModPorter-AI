@@ -389,7 +389,7 @@ jobs:
 
 ### Common Issues
 
-**Issue**: `ModuleNotFoundError: No module named 'crewai'`
+**Issue**: `ModuleNotFoundError: No module named 'langchain'`
 - **Solution**: Install ai-engine dependencies
   ```bash
   cd ai-engine

@@ -8,10 +8,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- LangGraph state-graph conversion pipeline as the only conversion path (issue #1201)
+- `services/rag_service.py` LCEL chain replacing the legacy `RAGCrew` (issue #1201)
+- `services/report_formatter.py` framework-agnostic conversion-report builder
+- `orchestration/progress.py` framework-agnostic progress tracker
+- `tests/test_no_crewai_references.py` regression guard for the migration
+
 ### Changed
+- `utils/rate_limiter` LLM factories now return stock LangChain `BaseChatModel`
+  instances (`ChatOpenAI` / `ChatOllama`) with built-in `InMemoryRateLimiter`,
+  enabling LangGraph tool-calling, `bind_tools()` and `with_structured_output()`
+- All tool layers migrated from `crewai.tools` to `langchain_core.tools`
+- `chromadb` pin relaxed to `>=1.5.8,<2.0` (closes #1439, unblocked by #1201)
+- `requires-python` floor bumped to `>=3.11` for langchain/langgraph compatibility
+
 ### Deprecated
+- `crew/__init__.py` is now a no-op stub raising `ImportError` for any
+  attribute access; remove the package entirely after one release window
+
 ### Removed
+- **BREAKING**: removed the legacy multi-agent orchestration framework; the AI
+  Engine now runs entirely on LangChain/LangGraph (issue #1201)
+- `crew/conversion_crew.py`, `crew/rag_crew.py`, `orchestration/crew_integration.py`,
+  `orchestration/run_agent_integration.py` deleted
+- `OrchestrationStrategy.SEQUENTIAL` rebranded as a single-threaded baseline
+  (the comment about mimicking the legacy framework is gone)
+- `RateLimitedChatOpenAI`, `RateLimitedZAI`, `OpenAICompatibleLLM`,
+  `enable_crew_mode` / `disable_crew_mode` removed from `utils.rate_limiter`
+- `USE_LANGGRAPH_PIPELINE` environment variable retired (LangGraph is the only path)
+- `config/rag_agents.yaml` deleted along with the legacy researcher/writer agent schema
+
 ### Fixed
+- `process_conversion` no longer silently no-ops past `progress=10` when
+  `USE_LANGGRAPH_PIPELINE` is unset — the LangGraph path always runs
+
 ### Security
 
 ---

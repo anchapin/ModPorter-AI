@@ -1,5 +1,5 @@
 """
-LLM Agent Tools - Provides LLM-powered analysis tools for CrewAI agents.
+LLM Agent Tools - Provides LLM-powered analysis tools for LangChain agent runnables.
 
 This module adds real LLM capabilities to agents for:
 - Java Analyzer: AST analysis and complexity classification
@@ -30,7 +30,7 @@ class LLMAnalysisResult:
 
 class LLMAgentTools:
     """
-    LLM-powered tools for CrewAI agents.
+    LLM-powered tools for LangChain agent runnables.
 
     Provides real LLM reasoning for:
     - Java mod complexity analysis

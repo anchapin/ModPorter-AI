@@ -9,7 +9,7 @@ Split into submodules per Issue #1141:
 - block_templates: BEDROCK_*_TEMPLATES loaded from data/bedrock_block_templates.json
 - block_state_mapper: JAVA_TO_BEDROCK_BLOCK_PROPERTIES and JAVA_BLOCK_METHOD_MAPPINGS
 - assumptions: SMART_ASSUMPTIONS for untranslatable features
-- tools: CrewAI @tool wrappers via LogicTranslatorTools
+- tools: LangChain/LangGraph @tool wrappers via LogicTranslatorTools
 """
 
 from agents.logic_translator.assumptions import SMART_ASSUMPTIONS, get_smart_assumptions

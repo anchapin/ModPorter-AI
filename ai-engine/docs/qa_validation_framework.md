@@ -150,7 +150,7 @@ print(f"Status: {result['status']}")
 print(f"Validations: {result['validations']}")
 ```
 
-### CrewAI Tools
+### LangChain Tools
 
 ```python
 # Tool 1: Validate conversion quality

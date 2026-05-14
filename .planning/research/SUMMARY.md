@@ -7,16 +7,16 @@
 
 ## Executive Summary
 
-The Multi-Agent QA System adds four specialized agents (Translator, Reviewer, Tester, Semantic Checker) to the existing portkit conversion pipeline for validating Java→Bedrock Minecraft mod conversions. Research confirms this follows the software engineering "review cycle" pattern used in production codebases—generation → review → test → semantic validation—with each agent having distinct responsibilities. The existing CrewAI + LangChain stack already provides the multi-agent orchestration foundation; the primary work involves extending existing agents and adding specialized validation tools for Bedrock output. Key risks include agent coordination failures (circular dependencies), non-deterministic validation results, and integration conflicts with the existing conversion pipeline. The recommended approach is to implement QA as a post-conversion layer that runs asynchronously after packaging completes, ensuring QA doesn't block or disrupt existing conversion workflows.
+The Multi-Agent QA System adds four specialized agents (Translator, Reviewer, Tester, Semantic Checker) to the existing portkit conversion pipeline for validating Java→Bedrock Minecraft mod conversions. Research confirms this follows the software engineering "review cycle" pattern used in production codebases—generation → review → test → semantic validation—with each agent having distinct responsibilities. The existing LangChain/LangGraph + LangChain stack already provides the multi-agent orchestration foundation; the primary work involves extending existing agents and adding specialized validation tools for Bedrock output. Key risks include agent coordination failures (circular dependencies), non-deterministic validation results, and integration conflicts with the existing conversion pipeline. The recommended approach is to implement QA as a post-conversion layer that runs asynchronously after packaging completes, ensuring QA doesn't block or disrupt existing conversion workflows.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The existing stack requires minimal new additions. CrewAI and LangChain already provide multi-agent orchestration, role-based agents, and task delegation. The main extensions involve testing infrastructure and TypeScript validation tools.
+The existing stack requires minimal new additions. LangChain/LangGraph and LangChain already provide multi-agent orchestration, role-based agents, and task delegation. The main extensions involve testing infrastructure and TypeScript validation tools.
 
 **Core technologies (already in use):**
-- **CrewAI** (>=0.11.0,<1.0.0) — Multi-agent orchestration with delegation and crew workflows
+- **LangChain/LangGraph** (>=0.11.0,<1.0.0) — Multi-agent orchestration with delegation and crew workflows
 - **LangChain** (>=0.3.0,<1.0.0) — LLM integration via tools, chains, and agent execution
 - **FastAPI** (0.135.1) — API layer for QA endpoints
 - **Pydantic** (~=2.11.9) — Data validation for agent input/output schemas
@@ -118,8 +118,8 @@ Phases with standard patterns (skip research-phase):
 |------|------------|-------|
 | Stack | HIGH | Existing stack verified; new additions are standard testing tools |
 | Features | HIGH | Clear agent roles based on software engineering review patterns |
-| Architecture | HIGH | Uses CrewAI native patterns, clear integration points |
-| Pitfalls | MEDIUM | Research from CrewAI/AutoGen issues; some inference for mitigation |
+| Architecture | HIGH | Uses LangChain/LangGraph native patterns, clear integration points |
+| Pitfalls | MEDIUM | Research from LangChain/LangGraph/AutoGen issues; some inference for mitigation |
 
 **Overall confidence:** HIGH
 
@@ -132,7 +132,7 @@ Phases with standard patterns (skip research-phase):
 ## Sources
 
 ### Primary (HIGH confidence)
-- **Context7: CrewAI** — Agent architecture, delegation, tools, sequential/hierarchical workflows
+- **Context7: LangChain/LangGraph** — Agent architecture, delegation, tools, sequential/hierarchical workflows
 - **Context7: LangChain** — Multi-agent patterns, LangGraph integration, create_agent() factory
 - **Context7: Pytest** — Async testing, plugins, fixtures, parallel execution
 - **Existing Codebase:** ai-engine/agents/qa_agent.py, validation_agent.py, testing/qa_framework.py
@@ -140,7 +140,7 @@ Phases with standard patterns (skip research-phase):
 ### Secondary (MEDIUM confidence)
 - **Context7: AutoGen** — CodeExecutorAgent patterns (noting deprecation/consolidation)
 - **Context7: TypeScript** — Type checking, compiler API
-- **PITFALLS.md sources:** CrewAI/AutoGen issues, Semantic Kernel patterns
+- **PITFALLS.md sources:** LangChain/LangGraph/AutoGen issues, Semantic Kernel patterns
 
 ### Tertiary (LOW confidence)
 - **DeepSeek-Coder** — Trust remote code errors, evaluation pipeline challenges (needs validation)

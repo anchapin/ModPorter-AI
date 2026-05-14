@@ -12,7 +12,7 @@ graph TB
     Frontend --> API[🔌 API Gateway<br/>FastAPI]
     
     API --> Backend[🐍 Backend Service<br/>Python + FastAPI]
-    Backend --> AIEngine[🤖 AI Engine<br/>CrewAI + LangChain]
+    Backend --> AIEngine[🤖 AI Engine<br/>LangChain/LangGraph + LangChain]
     Backend --> Database[(🗄️ PostgreSQL<br/>Conversion Data)]
     Backend --> Cache[(⚡ Redis<br/>Session Cache)]
     Backend --> FileStorage[📁 File Storage<br/>Conversion Assets]
@@ -137,7 +137,7 @@ export const Documentation: React.FC = () => {
         <p className={styles.sectionDescription}>
           The ModPorter AI system follows a modern microservices architecture
           with a React frontend, FastAPI backend, and a multi-agent AI engine
-          powered by CrewAI and LangChain.
+          powered by LangChain and LangGraph.
         </p>
         <MermaidDiagram chart={systemArchitecture} />
 

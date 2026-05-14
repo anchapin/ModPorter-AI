@@ -65,17 +65,17 @@ The v2.5 Mode Classification system could use:
 - **Pipeline pattern** for classification: Extract → Classify → Route → Process
 - **Supervisor pattern** for QA: Classifier validates mode, routes to appropriate pipeline
 
-### 2.3 CrewAI Patterns (Relevant to AI Engine)
+### 2.3 LangChain/LangGraph Patterns (Relevant to AI Engine)
 
 ```
-CrewAI Key Concepts:
+LangChain/LangGraph Key Concepts:
 ├── Agents     # Autonomous workers with specific roles
 ├── Tasks      # Definable work items with expected output
 ├── Crews      # Orchestrates agents to complete tasks
 └── Processes # Sequential, Parallel, or Hierarchical
 ```
 
-**Best Practice from CrewAI:** Agents should have:
+**Best Practice from LangChain/LangGraph:** Agents should have:
 - Clear role definition
 - Specific goal
 - Tools appropriate to role
@@ -253,7 +253,7 @@ Error Handling Pipeline:
 |--------|-------|
 | Claude Code Docs | Context management, subagents |
 | Azure AI Architecture | Multi-agent patterns |
-| CrewAI GitHub | Multi-agent orchestration |
+| LangChain/LangGraph GitHub | Multi-agent orchestration |
 | Cursor Best Practices | Agent workflow design |
 
 ---

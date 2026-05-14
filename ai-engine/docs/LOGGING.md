@@ -177,7 +177,7 @@ ai-engine/utils/
 
 1. **main.py**: Application startup logging configuration
 2. **agents/*.py**: Individual agent logging enhancement
-3. **crew/conversion_crew.py**: Crew-level operation logging
+3. **orchestration/langgraph_pipeline.py**: Crew-level operation logging
 4. **tools/*.py**: Tool usage logging (future enhancement)
 
 ## Debugging Workflows

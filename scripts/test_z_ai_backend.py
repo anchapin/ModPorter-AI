@@ -64,41 +64,18 @@ def test_backend_selection():
         return False
 
 
-def test_crewai_compatibility():
-    """Test CrewAI compatibility"""
-
+def test_langchain_compatibility():
+    """Test that the backend is a LangChain BaseChatModel and supports invoke()."""
     try:
-        from crewai import Agent, Task, Crew
+        from langchain_core.language_models import BaseChatModel
+        from langchain_core.messages import HumanMessage
 
-        # Get LLM backend
         llm = get_llm_backend()
-
-        # Create a simple agent
-        analyzer = Agent(
-            role="Java Expert",
-            goal="Analyze Java code for mod compatibility",
-            backstory="Expert in Minecraft modding and Java development",
-            llm=llm,
-            verbose=True,
-        )
-
-        # Create a simple task
-        task = Task(
-            description="Explain what makes a Minecraft mod compatible with different versions",
-            agent=analyzer,
-            expected_output="Brief explanation of mod compatibility",
-        )
-
-        # Create and run crew
-        crew = Crew(agents=[analyzer], tasks=[task])
-
-        result = crew.kickoff()
-
-        return True
-
-    except ImportError:
-        return True
-    except Exception as e:
+        if not isinstance(llm, BaseChatModel):
+            return False
+        # bind_tools / with_structured_output must be exposed for LangGraph nodes
+        return hasattr(llm, "invoke") and hasattr(llm, "bind_tools")
+    except Exception:
         return False
 
 
@@ -122,7 +99,7 @@ def main():
     tests = [
         ("Z.AI Direct", test_z_ai_direct),
         ("Backend Selection", test_backend_selection),
-        ("CrewAI Compatibility", test_crewai_compatibility),
+        ("LangChain Compatibility", test_langchain_compatibility),
     ]
 
     results = []
