@@ -80,7 +80,7 @@ jobs:
         # Test functionality
         echo "Testing Python base image..."
         docker run --rm test-python-base python -c "
-        import fastapi, crewai, langchain
+        import fastapi, langchain, langgraph
         print('✅ Python dependencies available')
         "
         

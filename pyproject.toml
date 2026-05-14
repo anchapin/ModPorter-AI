@@ -117,7 +117,6 @@ ignore = [
 
 # ai-engine specific ignores
 "ai-engine/agents/asset_converter.py" = ["F811", "F841", "C901"]
-"ai-engine/crew/__init__.py" = ["N802"]
 "ai-engine/agents/java_analyzer.py" = ["N806", "C901"]
 "ai-engine/tools/search_tool.py" = ["N806"]
 "ai-engine/src/utils/validators.py" = ["N805"]

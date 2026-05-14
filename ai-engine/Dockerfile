@@ -1,5 +1,5 @@
 # AI Engine Dockerfile
-# Uses Python 3.12 as crewai requires Python 3.10-3.13
+# Uses Python 3.12 for langchain/langgraph compatibility (issue #1201)
 FROM python:3.12-slim
 
 # Set working directory
