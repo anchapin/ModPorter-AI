@@ -1,32 +1,55 @@
+"""Comprehensive unit tests for the typed ``SearchTool`` family (issue #1201, Phase 8 A).
+
+This rewrite targets the ``BaseTool`` subclasses introduced when the legacy
+``@tool``-decorated single-string-arg pattern was retired. Each test now
+drives the public ``ainvoke({...})`` surface with structured arguments, and
+mocks the underlying ``VectorDBClient.search_documents`` instead of the
+removed private ``_perform_*`` wrappers.
 """
-Comprehensive unit tests for SearchTool.
-Tests semantic search, document search, similarity search, and fallback mechanisms.
-"""
+
+from __future__ import annotations
+
+import json
+from typing import Any, Dict, List
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import json
-import asyncio
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from typing import List, Dict, Any, Optional
-import logging
+from pydantic import ValidationError
 
-# Set up imports
 try:
-    from tools.search_tool import SearchTool
+    from tools.search_tool import (
+        BedrockApiSearchTool,
+        ComponentLookupTool,
+        ConversionExamplesTool,
+        DocumentSearchTool,
+        SchemaValidationLookupTool,
+        SearchTool,
+        SemanticSearchTool,
+        SimilaritySearchTool,
+        _attempt_fallback_search,
+        _document_search_payload,
+        _semantic_search_payload,
+        _similarity_search_payload,
+    )
     from utils.vector_db_client import VectorDBClient
+
     IMPORTS_AVAILABLE = True
-except ImportError as e:
+except ImportError as exc:  # pragma: no cover - environmental
     IMPORTS_AVAILABLE = False
-    IMPORT_ERROR = str(e)
+    IMPORT_ERROR = str(exc)
 
 
-# Skip all tests if imports fail
-pytestmark = pytest.mark.skipif(not IMPORTS_AVAILABLE, reason=f"Required imports unavailable")
+pytestmark = pytest.mark.skipif(not IMPORTS_AVAILABLE, reason="Required imports unavailable")
+
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
 
 
 @pytest.fixture
-def mock_vector_client():
-    """Create a mock VectorDBClient for testing."""
+def mock_vector_client() -> AsyncMock:
+    """An async-spec'd ``VectorDBClient`` mock with a default empty result set."""
     client = AsyncMock(spec=VectorDBClient)
     client.search_documents = AsyncMock(return_value=[])
     client.index_document = AsyncMock(return_value=True)
@@ -36,774 +59,573 @@ def mock_vector_client():
 
 
 @pytest.fixture
-def search_tool_instance(mock_vector_client):
-    """Create a SearchTool instance with mocked vector client."""
-    with patch.object(SearchTool, 'vector_client', mock_vector_client, create=True):
-        tool = SearchTool()
-        tool.vector_client = mock_vector_client
-        # Patch get_instance to return this specific instance
-        with patch.object(SearchTool, 'get_instance', return_value=tool):
-            yield tool
-
-
-@pytest.fixture
-def sample_search_results():
-    """Sample search results for mocking."""
+def sample_search_results() -> List[Dict[str, Any]]:
+    """Sample vector-DB results."""
     return [
         {
             "id": "doc_1",
             "content": "Java block entity implementation",
             "source": "java_source",
-            "similarity": 0.95
+            "similarity_score": 0.95,
         },
         {
             "id": "doc_2",
             "content": "Block state management in Bedrock",
             "source": "bedrock_docs",
-            "similarity": 0.87
+            "similarity_score": 0.87,
         },
         {
             "id": "doc_3",
             "content": "Custom block properties",
             "source": "reference",
-            "similarity": 0.72
-        }
+            "similarity_score": 0.72,
+        },
     ]
 
 
-class TestSearchToolInitialization:
-    """Test SearchTool initialization and singleton pattern."""
-    
-    def test_search_tool_instantiation(self, mock_vector_client):
-        """Test that SearchTool can be instantiated."""
-        with patch.object(SearchTool, '__init__', return_value=None):
-            tool = SearchTool()
-            assert tool is not None
-    
-    def test_get_instance_singleton(self):
-        """Test singleton pattern implementation."""
-        # Reset singleton
+@pytest.fixture
+def disable_fallback() -> Any:
+    """Force ``Config.SEARCH_FALLBACK_ENABLED = False`` for the duration of a test."""
+    with patch("tools.search_tool.Config") as mock_config:
+        mock_config.SEARCH_FALLBACK_ENABLED = False
+        yield mock_config
+
+
+@pytest.fixture
+def enable_fallback() -> Any:
+    """Force ``Config.SEARCH_FALLBACK_ENABLED = True`` for the duration of a test."""
+    with patch("tools.search_tool.Config") as mock_config:
+        mock_config.SEARCH_FALLBACK_ENABLED = True
+        mock_config.FALLBACK_SEARCH_TOOL = "web_search_tool"
+        yield mock_config
+
+
+# ---------------------------------------------------------------------------
+# Facade
+# ---------------------------------------------------------------------------
+
+
+class TestSearchToolFacade:
+    """Tests for the ``SearchTool`` facade and singleton behaviour."""
+
+    def test_get_tools_returns_seven_basetool_instances(self) -> None:
+        from langchain_core.tools import BaseTool
+
         SearchTool._instance = None
-        
-        with patch('tools.search_tool.VectorDBClient'):
-            instance1 = SearchTool.get_instance()
-            instance2 = SearchTool.get_instance()
-            
-            assert instance1 is instance2
-        
-        # Clean up
+        with patch("tools.search_tool.VectorDBClient"):
+            facade = SearchTool()
+            tools = facade.get_tools()
+
+        assert len(tools) == 7
+        assert all(isinstance(t, BaseTool) for t in tools)
+        names = {t.name for t in tools}
+        assert names == {
+            "semantic_search",
+            "document_search",
+            "similarity_search",
+            "bedrock_api_search",
+            "component_lookup",
+            "conversion_examples",
+            "schema_validation_lookup",
+        }
         SearchTool._instance = None
-    
-    def test_get_tools_returns_list(self, search_tool_instance):
-        """Test that get_tools returns a list of available tools."""
-        tools = search_tool_instance.get_tools()
-        
-        assert isinstance(tools, list)
-        assert len(tools) > 0
-        # Should return callable LangChain tools
-        for tool in tools:
-            assert callable(tool) or hasattr(tool, '__call__') or hasattr(tool, 'func')
+
+    def test_get_instance_singleton(self) -> None:
+        SearchTool._instance = None
+        with patch("tools.search_tool.VectorDBClient"):
+            i1 = SearchTool.get_instance()
+            i2 = SearchTool.get_instance()
+        assert i1 is i2
+        SearchTool._instance = None
+
+    def test_facade_exposes_typed_basetool_properties(self) -> None:
+        SearchTool._instance = None
+        with patch("tools.search_tool.VectorDBClient"):
+            facade = SearchTool()
+        assert isinstance(facade.semantic_search, SemanticSearchTool)
+        assert isinstance(facade.document_search, DocumentSearchTool)
+        assert isinstance(facade.similarity_search, SimilaritySearchTool)
+        assert isinstance(facade.bedrock_api_search, BedrockApiSearchTool)
+        assert isinstance(facade.component_lookup, ComponentLookupTool)
+        assert isinstance(facade.conversion_examples, ConversionExamplesTool)
+        assert isinstance(facade.schema_validation_lookup, SchemaValidationLookupTool)
+        SearchTool._instance = None
 
 
-class TestSemanticSearch:
-    """Test semantic_search tool functionality."""
-    
-    @pytest.mark.asyncio
-    async def test_semantic_search_json_input(self, search_tool_instance, sample_search_results):
-        """Test semantic search with JSON input."""
-        search_tool_instance.vector_client.search_documents = AsyncMock(
-            return_value=sample_search_results
-        )
-        search_tool_instance._perform_semantic_search = AsyncMock(
-            return_value=sample_search_results
-        )
-        
-        query_data = json.dumps({
-            "query": "block entity implementation",
-            "limit": 5,
-            "document_source": "java_source"
-        })
-        
-        result = await SearchTool.semantic_search.func(query_data)
-        
-        assert isinstance(result, str)
-        result_data = json.loads(result)
-        assert "query" in result_data
-        assert "results" in result_data or "error" in result_data
-        assert result_data["query"] == "block entity implementation"
-    
-    @pytest.mark.asyncio
-    async def test_semantic_search_string_input(self, search_tool_instance, sample_search_results):
-        """Test semantic search with plain string input."""
-        search_tool_instance._perform_semantic_search = AsyncMock(
-            return_value=sample_search_results
-        )
-        
-        result = await SearchTool.semantic_search.func("block implementation")
-        
-        result_data = json.loads(result)
-        assert result_data["query"] == "block implementation"
-        assert len(result_data["results"]) > 0
-    
-    @pytest.mark.asyncio
-    async def test_semantic_search_no_query_error(self, search_tool_instance):
-        """Test semantic search returns error when query is empty."""
-        query_data = json.dumps({"query": "", "limit": 5})
-        
-        result = await SearchTool.semantic_search.func(query_data)
-        result_data = json.loads(result)
-        
-        assert "error" in result_data
-        assert "Query is required" in result_data["error"]
-    
-    @pytest.mark.asyncio
-    async def test_semantic_search_custom_limit(self, search_tool_instance, sample_search_results):
-        """Test semantic search with custom result limit."""
-        search_tool_instance._perform_semantic_search = AsyncMock(
-            return_value=sample_search_results[:2]
-        )
-        
-        query_data = json.dumps({
-            "query": "block",
-            "limit": 2
-        })
-        
-        result = await SearchTool.semantic_search.func(query_data)
-        result_data = json.loads(result)
-        
-        assert result_data["total_results"] == 2
-    
-    @pytest.mark.asyncio
-    async def test_semantic_search_exception_handling(self, search_tool_instance):
-        """Test semantic search exception handling."""
-        search_tool_instance._perform_semantic_search = AsyncMock(
-            side_effect=Exception("Vector DB connection failed")
-        )
-        
-        result = await SearchTool.semantic_search.func("test query")
-        result_data = json.loads(result)
-        
-        assert "error" in result_data
+# ---------------------------------------------------------------------------
+# SemanticSearchTool
+# ---------------------------------------------------------------------------
 
 
-class TestDocumentSearch:
-    """Test document_search tool functionality."""
-    
-    @pytest.mark.asyncio
-    async def test_document_search_basic(self, search_tool_instance, sample_search_results):
-        """Test basic document search."""
-        search_tool_instance._search_by_document_source = AsyncMock(
-            return_value=sample_search_results
-        )
-        
-        query_data = json.dumps({
-            "document_source": "java_source",
-            "limit": 3
-        })
-        
-        result = await SearchTool.document_search.func(query_data)
-        
-        assert isinstance(result, str)
-        result_data = json.loads(result)
-        assert len(result_data["results"]) > 0
-    
-    @pytest.mark.asyncio
-    async def test_document_search_no_source_error(self, search_tool_instance):
-        """Test document search returns error when source is empty."""
-        query_data = json.dumps({"document_source": "", "limit": 5})
-        
-        result = await SearchTool.document_search.func(query_data)
-        result_data = json.loads(result)
-        
-        assert "error" in result_data
-        assert "Document source is required" in result_data["error"]
+class TestSemanticSearchTool:
+    """Tests for ``SemanticSearchTool.ainvoke``."""
 
     @pytest.mark.asyncio
-    async def test_document_search_fallback(self, search_tool_instance):
-        """Test document search fallback."""
-        search_tool_instance._search_by_document_source = AsyncMock(return_value=[])
-        search_tool_instance._attempt_fallback_search = Mock(
-            return_value=[{"id": "f1", "content": "fallback"}]
-        )
-        
-        with patch('tools.search_tool.Config') as mock_config:
-            mock_config.SEARCH_FALLBACK_ENABLED = True
-            
-            query_data = json.dumps({"document_source": "test"})
-            result = await SearchTool.document_search.func(query_data)
-            result_data = json.loads(result)
-            
-            assert len(result_data["results"]) == 1
-            assert result_data["results"][0]["content"] == "fallback"
+    async def test_returns_canonical_payload(
+        self, mock_vector_client: AsyncMock, sample_search_results: List[Dict[str, Any]]
+    ) -> None:
+        mock_vector_client.search_documents.return_value = sample_search_results
+        tool = SemanticSearchTool(vector_client=mock_vector_client)
 
-    @pytest.mark.asyncio
-    async def test_document_search_exception(self, search_tool_instance):
-        """Test document search exception handling."""
-        search_tool_instance._search_by_document_source = AsyncMock(
-            side_effect=Exception("Error")
-        )
-        
-        result = await SearchTool.document_search.func("source")
-        result_data = json.loads(result)
-        assert "error" in result_data
-
-
-class TestSimilaritySearch:
-    """Test similarity_search tool functionality."""
-    @pytest.mark.asyncio
-    async def test_similarity_search_basic(self, search_tool_instance, sample_search_results):
-        """Test basic similarity search."""
-        search_tool_instance._find_similar_documents = AsyncMock(
-            return_value=sample_search_results
+        raw = await tool.ainvoke(
+            {"query": "block entity implementation", "limit": 5, "document_source": "java_source"}
         )
 
-        query_data = json.dumps({
-            "content": "entity behavior",
-            "limit": 5,
-            "threshold": 0.7
-        })
-
-        result = await SearchTool.similarity_search.func(query_data)
-
-        result_data = json.loads(result)
-        assert len(result_data["results"]) > 0
-    
-    @pytest.mark.asyncio
-    async def test_similarity_search_no_content_error(self, search_tool_instance):
-        """Test similarity search returns error when content is empty."""
-        query_data = json.dumps({"content": ""})
-        
-        result = await SearchTool.similarity_search.func(query_data)
-        result_data = json.loads(result)
-        
-        assert "error" in result_data
-        assert "Content is required" in result_data["error"]
-
-    @pytest.mark.asyncio
-    async def test_similarity_search_fallback(self, search_tool_instance):
-        """Test similarity search fallback."""
-        search_tool_instance._find_similar_documents = AsyncMock(return_value=[])
-        search_tool_instance._attempt_fallback_search = Mock(
-            return_value=[{"id": "f1", "content": "fallback"}]
+        payload = json.loads(raw)
+        assert payload["query"] == "block entity implementation"
+        assert payload["total_results"] == 3
+        assert payload["results"] == sample_search_results
+        mock_vector_client.search_documents.assert_awaited_once_with(
+            query_text="block entity implementation", top_k=5, document_source_filter="java_source"
         )
-        
-        with patch('tools.search_tool.Config') as mock_config:
-            mock_config.SEARCH_FALLBACK_ENABLED = True
-            
-            result = await SearchTool.similarity_search.func("some content")
-            result_data = json.loads(result)
-            
-            assert len(result_data["results"]) == 1
 
     @pytest.mark.asyncio
-    async def test_similarity_search_exception(self, search_tool_instance):
-        """Test similarity search exception handling."""
-        search_tool_instance._find_similar_documents = AsyncMock(
-            side_effect=Exception("Error")
+    async def test_default_limit_is_ten(self, mock_vector_client: AsyncMock) -> None:
+        tool = SemanticSearchTool(vector_client=mock_vector_client)
+        await tool.ainvoke({"query": "anything"})
+        mock_vector_client.search_documents.assert_awaited_once_with(
+            query_text="anything", top_k=10, document_source_filter=None
         )
-        
-        result = await SearchTool.similarity_search.func("content")
-        result_data = json.loads(result)
-        assert "error" in result_data
 
-
-class TestFallbackMechanism:
-    """Test fallback search mechanism."""
-    
     @pytest.mark.asyncio
-    async def test_fallback_search_on_empty_results(self, search_tool_instance):
-        """Test fallback search triggered on empty primary results."""
-        search_tool_instance._perform_semantic_search = AsyncMock(return_value=[])
-        search_tool_instance._attempt_fallback_search = Mock(
-            return_value=[
-                {"id": "fallback_1", "content": "fallback result", "source": "fallback"}
-            ]
+    async def test_vector_client_exception_returns_error_payload(
+        self, mock_vector_client: AsyncMock
+    ) -> None:
+        mock_vector_client.search_documents.side_effect = Exception("Vector DB connection failed")
+        tool = SemanticSearchTool(vector_client=mock_vector_client)
+
+        raw = await tool.ainvoke({"query": "test"})
+        payload = json.loads(raw)
+
+        assert "error" in payload
+        assert "Vector DB connection failed" in payload["error"]
+        assert payload["query"] == "test"
+
+    @pytest.mark.asyncio
+    async def test_fallback_triggers_when_results_empty(
+        self, mock_vector_client: AsyncMock, enable_fallback: Any
+    ) -> None:
+        mock_vector_client.search_documents.return_value = []
+        tool = SemanticSearchTool(vector_client=mock_vector_client)
+
+        with patch(
+            "tools.search_tool._attempt_fallback_search",
+            return_value=[{"id": "fb", "content": "fb content"}],
+        ) as mock_fb:
+            raw = await tool.ainvoke({"query": "x", "limit": 4})
+
+        mock_fb.assert_called_once_with("x", 4)
+        payload = json.loads(raw)
+        assert payload["total_results"] == 1
+        assert payload["results"][0]["content"] == "fb content"
+
+    @pytest.mark.asyncio
+    async def test_fallback_skipped_when_disabled(
+        self, mock_vector_client: AsyncMock, disable_fallback: Any
+    ) -> None:
+        mock_vector_client.search_documents.return_value = []
+        tool = SemanticSearchTool(vector_client=mock_vector_client)
+
+        with patch("tools.search_tool._attempt_fallback_search") as mock_fb:
+            raw = await tool.ainvoke({"query": "x"})
+
+        mock_fb.assert_not_called()
+        assert json.loads(raw)["total_results"] == 0
+
+    def test_sync_invoke_outside_loop(
+        self, mock_vector_client: AsyncMock, sample_search_results: List[Dict[str, Any]]
+    ) -> None:
+        mock_vector_client.search_documents.return_value = sample_search_results
+        tool = SemanticSearchTool(vector_client=mock_vector_client)
+
+        raw = tool.invoke({"query": "block"})
+        assert json.loads(raw)["total_results"] == 3
+
+    @pytest.mark.asyncio
+    async def test_sync_invoke_inside_loop_raises(self, mock_vector_client: AsyncMock) -> None:
+        tool = SemanticSearchTool(vector_client=mock_vector_client)
+        with pytest.raises(RuntimeError, match="event loop"):
+            tool.invoke({"query": "x"})
+
+
+# ---------------------------------------------------------------------------
+# DocumentSearchTool
+# ---------------------------------------------------------------------------
+
+
+class TestDocumentSearchTool:
+    @pytest.mark.asyncio
+    async def test_basic(
+        self, mock_vector_client: AsyncMock, sample_search_results: List[Dict[str, Any]]
+    ) -> None:
+        mock_vector_client.search_documents.return_value = sample_search_results
+        tool = DocumentSearchTool(vector_client=mock_vector_client)
+
+        raw = await tool.ainvoke({"document_source": "java_source", "limit": 3})
+        payload = json.loads(raw)
+
+        assert payload["document_source"] == "java_source"
+        assert payload["total_results"] == 3
+        mock_vector_client.search_documents.assert_awaited_once_with(
+            query_text="java_source", top_k=3, document_source_filter="java_source"
         )
-        
-        with patch('tools.search_tool.Config') as mock_config:
-            mock_config.SEARCH_FALLBACK_ENABLED = True
-            
-            result = await SearchTool.semantic_search.func("test query")
-            result_data = json.loads(result)
-            
-            # Fallback should have been called
-            search_tool_instance._attempt_fallback_search.assert_called()
-            assert len(result_data["results"]) > 0
-    
-    def test_fallback_search_returns_results(self, search_tool_instance):
-        """Test that fallback search returns valid results."""
-        fallback_results = [
-            {"id": "doc_1", "content": "fallback content", "source": "fallback"}
-        ]
-        
-        search_tool_instance._attempt_fallback_search = Mock(return_value=fallback_results)
-        
-        result = search_tool_instance._attempt_fallback_search("test", 5)
-        
-        assert len(result) > 0
-        assert all("id" in r for r in result)
-
-
-class TestComponentLookup:
-    """Test component_lookup tool functionality."""
-    
-    @pytest.mark.asyncio
-    async def test_component_lookup_basic(self, search_tool_instance, sample_search_results):
-        """Test basic component lookup."""
-        search_tool_instance._perform_semantic_search = AsyncMock(
-            return_value=sample_search_results
-        )
-        
-        query_data = json.dumps({
-            "component": "BlockEntity",
-            "limit": 5
-        })
-        
-        result = await SearchTool.component_lookup.func(query_data)
-        
-        result_data = json.loads(result)
-        assert isinstance(result_data, dict)
-    
-    @pytest.mark.asyncio
-    async def test_component_lookup_no_component_error(self, search_tool_instance):
-        """Test component lookup returns error when component is empty."""
-        query_data = json.dumps({"component": "", "limit": 5})
-        
-        result = await SearchTool.component_lookup.func(query_data)
-        result_data = json.loads(result)
-        
-        assert "error" in result_data
-
-
-class TestConversionExamples:
-    """Test conversion_examples tool functionality."""
-    
-    @pytest.mark.asyncio
-    async def test_conversion_examples_search(self, search_tool_instance, sample_search_results):
-        """Test conversion examples search."""
-        example_results = [
-            {
-                "id": "example_1",
-                "content": "Example: Convert Java block to Bedrock block",
-                "source": "examples",
-                "similarity": 0.9
-            }
-        ]
-        
-        search_tool_instance._perform_semantic_search = AsyncMock(
-            return_value=example_results
-        )
-        
-        query_data = json.dumps({
-            "context": "block conversion",
-            "limit": 5
-        })
-        
-        result = await SearchTool.conversion_examples.func(query_data)
-        
-        result_data = json.loads(result)
-        assert "results" in result_data or "error" in result_data
-
-
-class TestSchemaValidationLookup:
-    """Test schema_validation_lookup tool functionality."""
-    
-    @pytest.mark.asyncio
-    async def test_schema_lookup_basic(self, search_tool_instance, sample_search_results):
-        """Test schema validation lookup."""
-        schema_results = [
-            {
-                "id": "schema_1",
-                "content": "JSON schema for block definition",
-                "source": "schemas",
-                "similarity": 0.88
-            }
-        ]
-        
-        search_tool_instance._perform_semantic_search = AsyncMock(
-            return_value=schema_results
-        )
-        
-        query_data = json.dumps({
-            "schema_type": "block_definition",
-            "limit": 5
-        })
-        
-        result = await SearchTool.schema_validation_lookup.func(query_data)
-        
-        result_data = json.loads(result)
-        assert isinstance(result_data, dict)
-
-
-class TestBedrockAPISearch:
-    """Test bedrock_api_search tool functionality."""
-    
-    @pytest.mark.asyncio
-    async def test_bedrock_api_search(self, search_tool_instance, sample_search_results):
-        """Test Bedrock API search."""
-        bedrock_results = [r for r in sample_search_results if "bedrock" in r.get("content", "").lower()]
-        
-        search_tool_instance._perform_semantic_search = AsyncMock(
-            return_value=bedrock_results
-        )
-        
-        query_data = json.dumps({
-            "api_endpoint": "blocks",
-            "limit": 5
-        })
-        
-        result = await SearchTool.bedrock_api_search.func(query_data)
-        
-        result_data = json.loads(result)
-        assert isinstance(result_data, dict)
-
-
-class TestSearchToolPrivateMethods:
-    """Test SearchTool private methods."""
-    
-    @pytest.mark.asyncio
-    async def test_perform_semantic_search(self, search_tool_instance, sample_search_results):
-        """Test _perform_semantic_search private method."""
-        search_tool_instance.vector_client.search_documents = AsyncMock(
-            return_value=sample_search_results
-        )
-        
-        results = await search_tool_instance._perform_semantic_search(
-            query="test query",
-            limit=5,
-            document_source=None
-        )
-        
-        assert len(results) > 0
-        assert all(isinstance(r, dict) for r in results)
-
-    def test_attempt_fallback_search_disabled(self, search_tool_instance):
-        """Test _attempt_fallback_search when disabled."""
-        with patch('tools.search_tool.Config') as mock_config:
-            mock_config.SEARCH_FALLBACK_ENABLED = False
-            result = search_tool_instance._attempt_fallback_search("query", 5)
-            assert result == []
-
-    def test_attempt_fallback_search_logic(self, search_tool_instance):
-        """Test _attempt_fallback_search internal logic with successful import."""
-        with patch('tools.search_tool.Config') as mock_config:
-            mock_config.SEARCH_FALLBACK_ENABLED = True
-            mock_config.FALLBACK_SEARCH_TOOL = "web_search_tool"
-            
-            mock_fallback_instance = MagicMock()
-            mock_fallback_instance._run.return_value = "fallback results string"
-            
-            with patch('importlib.import_module') as mock_import:
-                mock_module = MagicMock()
-                mock_import.return_value = mock_module
-                setattr(mock_module, "WebSearchTool", MagicMock(return_value=mock_fallback_instance))
-                
-                result = search_tool_instance._attempt_fallback_search("query", 5)
-                
-                assert len(result) == 1
-                assert result[0]["content"] == "fallback results string"
-
-    def test_attempt_fallback_search_import_error(self, search_tool_instance):
-        """Test _attempt_fallback_search handling of ImportError."""
-        with patch('tools.search_tool.Config') as mock_config:
-            mock_config.SEARCH_FALLBACK_ENABLED = True
-            mock_config.FALLBACK_SEARCH_TOOL = "non_existent_tool"
-            
-            with patch('importlib.import_module', side_effect=ImportError("Module not found")):
-                result = search_tool_instance._attempt_fallback_search("query", 5)
-                assert result == []
-
-    def test_attempt_fallback_search_attribute_error(self, search_tool_instance):
-        """Test _attempt_fallback_search handling of AttributeError."""
-        with patch('tools.search_tool.Config') as mock_config:
-            mock_config.SEARCH_FALLBACK_ENABLED = True
-            mock_config.FALLBACK_SEARCH_TOOL = "web_search_tool"
-            
-            with patch('importlib.import_module') as mock_import:
-                mock_module = MagicMock()
-                # Class not in module
-                delattr(mock_module, "WebSearchTool")
-                mock_import.return_value = mock_module
-                
-                result = search_tool_instance._attempt_fallback_search("query", 5)
-                assert result == []
-
-    def test_attempt_fallback_search_generic_exception(self, search_tool_instance):
-        """Test _attempt_fallback_search handling of generic exceptions."""
-        with patch('tools.search_tool.Config') as mock_config:
-            mock_config.SEARCH_FALLBACK_ENABLED = True
-            mock_config.FALLBACK_SEARCH_TOOL = "web_search_tool"
-            
-            with patch('importlib.import_module', side_effect=Exception("Unexpected error")):
-                result = search_tool_instance._attempt_fallback_search("query", 5)
-                assert result == []
 
     @pytest.mark.asyncio
-    async def test_search_by_document_source_logic(self, search_tool_instance, sample_search_results):
-        """Test _search_by_document_source with content_type filter."""
-        results_with_metadata = [
+    async def test_content_type_filter_applies_client_side(
+        self, mock_vector_client: AsyncMock
+    ) -> None:
+        mock_vector_client.search_documents.return_value = [
             {"id": "1", "metadata": {"content_type": "text"}},
-            {"id": "2", "metadata": {"content_type": "json"}}
+            {"id": "2", "metadata": {"content_type": "json"}},
+            {"id": "3", "content_type": "text"},
         ]
-        search_tool_instance.vector_client.search_documents = AsyncMock(
-            return_value=results_with_metadata
-        )
-        
-        # Test filtering
-        result = await search_tool_instance._search_by_document_source(
-            document_source="test_source",
-            content_type="text"
-        )
-        assert len(result) == 1
-        assert result[0]["id"] == "1"
+        tool = DocumentSearchTool(vector_client=mock_vector_client)
+
+        raw = await tool.ainvoke({"document_source": "src", "content_type": "text"})
+        payload = json.loads(raw)
+
+        ids = sorted(r["id"] for r in payload["results"])
+        assert ids == ["1", "3"]
 
     @pytest.mark.asyncio
-    async def test_find_similar_documents_threshold(self, search_tool_instance):
-        """Test _find_similar_documents similarity threshold filtering."""
-        results = [
+    async def test_vector_client_exception_returns_error(
+        self, mock_vector_client: AsyncMock
+    ) -> None:
+        mock_vector_client.search_documents.side_effect = Exception("oops")
+        tool = DocumentSearchTool(vector_client=mock_vector_client)
+
+        raw = await tool.ainvoke({"document_source": "x"})
+        payload = json.loads(raw)
+
+        assert "error" in payload
+        assert payload["document_source"] == "x"
+
+    @pytest.mark.asyncio
+    async def test_fallback_triggers_when_empty(
+        self, mock_vector_client: AsyncMock, enable_fallback: Any
+    ) -> None:
+        mock_vector_client.search_documents.return_value = []
+        tool = DocumentSearchTool(vector_client=mock_vector_client)
+
+        with patch(
+            "tools.search_tool._attempt_fallback_search",
+            return_value=[{"id": "fb", "content": "fb"}],
+        ):
+            raw = await tool.ainvoke({"document_source": "x"})
+
+        assert json.loads(raw)["total_results"] == 1
+
+
+# ---------------------------------------------------------------------------
+# SimilaritySearchTool
+# ---------------------------------------------------------------------------
+
+
+class TestSimilaritySearchTool:
+    @pytest.mark.asyncio
+    async def test_basic_returns_preview(
+        self, mock_vector_client: AsyncMock, sample_search_results: List[Dict[str, Any]]
+    ) -> None:
+        mock_vector_client.search_documents.return_value = sample_search_results
+        tool = SimilaritySearchTool(vector_client=mock_vector_client)
+
+        raw = await tool.ainvoke({"content": "entity behavior", "threshold": 0.7, "limit": 5})
+        payload = json.loads(raw)
+
+        assert payload["reference_content"] == "entity behavior"
+        assert payload["threshold"] == 0.7
+        assert payload["total_results"] == 3
+
+    @pytest.mark.asyncio
+    async def test_long_content_is_truncated_in_preview(
+        self, mock_vector_client: AsyncMock
+    ) -> None:
+        mock_vector_client.search_documents.return_value = [{"id": "1", "similarity_score": 0.9}]
+        tool = SimilaritySearchTool(vector_client=mock_vector_client)
+        long_content = "a" * 200
+
+        raw = await tool.ainvoke({"content": long_content, "threshold": 0.0})
+        payload = json.loads(raw)
+
+        assert payload["reference_content"].endswith("...")
+        assert len(payload["reference_content"]) == 103  # 100 chars + "..."
+
+    @pytest.mark.asyncio
+    async def test_threshold_filters_results(self, mock_vector_client: AsyncMock) -> None:
+        mock_vector_client.search_documents.return_value = [
             {"id": "1", "similarity_score": 0.9},
-            {"id": "2", "similarity_score": 0.5}
+            {"id": "2", "similarity_score": 0.5},
         ]
-        search_tool_instance.vector_client.search_documents = AsyncMock(
-            return_value=results
+        tool = SimilaritySearchTool(vector_client=mock_vector_client)
+
+        raw = await tool.ainvoke({"content": "x", "threshold": 0.7})
+        payload = json.loads(raw)
+
+        assert [r["id"] for r in payload["results"]] == ["1"]
+
+    @pytest.mark.asyncio
+    async def test_vector_client_exception_returns_error(
+        self, mock_vector_client: AsyncMock
+    ) -> None:
+        mock_vector_client.search_documents.side_effect = Exception("nope")
+        tool = SimilaritySearchTool(vector_client=mock_vector_client)
+
+        raw = await tool.ainvoke({"content": "x"})
+        payload = json.loads(raw)
+
+        assert "error" in payload
+
+
+# ---------------------------------------------------------------------------
+# Wrapper tools (Bedrock/Component/Conversion/Schema)
+# ---------------------------------------------------------------------------
+
+
+class TestBedrockApiSearchTool:
+    @pytest.mark.asyncio
+    async def test_formats_query_with_category(self, mock_vector_client: AsyncMock) -> None:
+        mock_vector_client.search_documents.return_value = []
+        tool = BedrockApiSearchTool(vector_client=mock_vector_client)
+
+        await tool.ainvoke({"query": "player events", "api_category": "Scripting API"})
+
+        args = mock_vector_client.search_documents.await_args
+        assert args.kwargs["query_text"] == "Bedrock API Scripting API player events"
+
+    @pytest.mark.asyncio
+    async def test_formats_query_without_category(self, mock_vector_client: AsyncMock) -> None:
+        mock_vector_client.search_documents.return_value = []
+        tool = BedrockApiSearchTool(vector_client=mock_vector_client)
+
+        await tool.ainvoke({"query": "player events"})
+
+        args = mock_vector_client.search_documents.await_args
+        assert args.kwargs["query_text"] == "Bedrock API player events"
+
+
+class TestComponentLookupTool:
+    @pytest.mark.asyncio
+    async def test_formats_query(self, mock_vector_client: AsyncMock) -> None:
+        mock_vector_client.search_documents.return_value = []
+        tool = ComponentLookupTool(vector_client=mock_vector_client)
+
+        await tool.ainvoke({"component_name": "minecraft:behavior.float_wander"})
+
+        args = mock_vector_client.search_documents.await_args
+        assert (
+            args.kwargs["query_text"]
+            == "Bedrock component documentation for minecraft:behavior.float_wander"
         )
-        
-        # Test filtering with threshold 0.7
-        result = await search_tool_instance._find_similar_documents(
-            content="test content",
-            threshold=0.7
-        )
+        assert args.kwargs["top_k"] == 5  # default for this tool
+
+
+class TestConversionExamplesTool:
+    @pytest.mark.asyncio
+    async def test_formats_query(self, mock_vector_client: AsyncMock) -> None:
+        mock_vector_client.search_documents.return_value = []
+        tool = ConversionExamplesTool(vector_client=mock_vector_client)
+
+        await tool.ainvoke({"query": "potion effects"})
+
+        args = mock_vector_client.search_documents.await_args
+        assert args.kwargs["query_text"] == "Java to Bedrock conversion example for potion effects"
+        assert args.kwargs["top_k"] == 5
+
+
+class TestSchemaValidationLookupTool:
+    @pytest.mark.asyncio
+    async def test_formats_query(self, mock_vector_client: AsyncMock) -> None:
+        mock_vector_client.search_documents.return_value = []
+        tool = SchemaValidationLookupTool(vector_client=mock_vector_client)
+
+        await tool.ainvoke({"schema_name": "entity definition"})
+
+        args = mock_vector_client.search_documents.await_args
+        assert args.kwargs["query_text"] == "Bedrock JSON schema for entity definition"
+        assert args.kwargs["top_k"] == 3  # default for this tool
+
+
+# ---------------------------------------------------------------------------
+# Pydantic args-schema validation
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "tool_cls, bad_args, error_field",
+    [
+        # Empty / missing required string
+        (SemanticSearchTool, {"query": ""}, "query"),
+        (DocumentSearchTool, {"document_source": ""}, "document_source"),
+        (SimilaritySearchTool, {"content": ""}, "content"),
+        (BedrockApiSearchTool, {"query": ""}, "query"),
+        (ComponentLookupTool, {"component_name": ""}, "component_name"),
+        (ConversionExamplesTool, {"query": ""}, "query"),
+        (SchemaValidationLookupTool, {"schema_name": ""}, "schema_name"),
+        # Out-of-range numerics
+        (SemanticSearchTool, {"query": "x", "limit": 0}, "limit"),
+        (SemanticSearchTool, {"query": "x", "limit": 999}, "limit"),
+        (SimilaritySearchTool, {"content": "x", "threshold": 1.5}, "threshold"),
+        (SimilaritySearchTool, {"content": "x", "threshold": -0.1}, "threshold"),
+        # Forbidden extra field
+        (SemanticSearchTool, {"query": "x", "unexpected_field": 1}, "unexpected_field"),
+    ],
+)
+def test_typed_tool_rejects_invalid_args(
+    tool_cls: type, bad_args: Dict[str, Any], error_field: str, mock_vector_client: AsyncMock
+) -> None:
+    """Pydantic ``args_schema`` validates every required field and constraint."""
+    tool = tool_cls(vector_client=mock_vector_client)
+    with pytest.raises(ValidationError) as exc_info:
+        tool.invoke(bad_args)
+    assert error_field in str(exc_info.value)
+
+
+# ---------------------------------------------------------------------------
+# Fallback mechanism (module-level helper)
+# ---------------------------------------------------------------------------
+
+
+class TestAttemptFallbackSearch:
+    def test_disabled_returns_empty(self, disable_fallback: Any) -> None:
+        assert _attempt_fallback_search("q", 5) == []
+
+    def test_successful_import_wraps_string_result(self, enable_fallback: Any) -> None:
+        fake_instance = MagicMock()
+        fake_instance._run.return_value = "fallback results string"
+        fake_module = MagicMock()
+        setattr(fake_module, "WebSearchTool", MagicMock(return_value=fake_instance))
+
+        with patch("importlib.import_module", return_value=fake_module):
+            result = _attempt_fallback_search("q", 5)
+
         assert len(result) == 1
-        assert result[0]["id"] == "1"
+        assert result[0]["content"] == "fallback results string"
+        assert result[0]["document_source"] == "fallback_search"
 
+    def test_import_error_returns_empty(self, enable_fallback: Any) -> None:
+        with patch("importlib.import_module", side_effect=ImportError("boom")):
+            assert _attempt_fallback_search("q", 5) == []
+
+    def test_attribute_error_returns_empty(self, enable_fallback: Any) -> None:
+        # Use a real module-like object so getattr() raises AttributeError naturally
+        class _Empty:  # noqa: D401
+            pass
+
+        with patch("importlib.import_module", return_value=_Empty()):
+            assert _attempt_fallback_search("q", 5) == []
+
+    def test_generic_exception_returns_empty(self, enable_fallback: Any) -> None:
+        with patch("importlib.import_module", side_effect=RuntimeError("boom")):
+            assert _attempt_fallback_search("q", 5) == []
+
+    def test_search_service_error_propagates(self, enable_fallback: Any) -> None:
+        from tools.web_search_tool import SearchServiceError
+
+        fake_instance = MagicMock()
+        fake_instance._run.side_effect = SearchServiceError("upstream failure")
+        fake_module = MagicMock()
+        setattr(fake_module, "WebSearchTool", MagicMock(return_value=fake_instance))
+
+        with patch("importlib.import_module", return_value=fake_module):
+            with pytest.raises(SearchServiceError):
+                _attempt_fallback_search("q", 5)
+
+    def test_non_string_result_returns_empty(self, enable_fallback: Any) -> None:
+        fake_instance = MagicMock()
+        fake_instance._run.return_value = ["not a string"]
+        fake_module = MagicMock()
+        setattr(fake_module, "WebSearchTool", MagicMock(return_value=fake_instance))
+
+        with patch("importlib.import_module", return_value=fake_module):
+            assert _attempt_fallback_search("q", 5) == []
+
+
+# ---------------------------------------------------------------------------
+# Module-level payload helpers (direct unit tests)
+# ---------------------------------------------------------------------------
+
+
+class TestPayloadHelpers:
     @pytest.mark.asyncio
-    async def test_close_async(self, search_tool_instance):
-        """Test close method with async vector_client.close."""
-        mock_close = AsyncMock()
-        search_tool_instance.vector_client.close = mock_close
-        
-        await search_tool_instance.close()
-        mock_close.assert_awaited_once()
-
-    @pytest.mark.asyncio
-    async def test_close_sync(self, search_tool_instance):
-        """Test close method with sync vector_client.close."""
-        mock_close = MagicMock()
-        # Ensure it's not a coroutine function
-        search_tool_instance.vector_client.close = mock_close
-        
-        await search_tool_instance.close()
-        mock_close.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_close_no_method(self, search_tool_instance):
-        """Test close method when vector_client has no close method."""
-        delattr(search_tool_instance.vector_client, "close")
-        # Should not raise exception
-        await search_tool_instance.close()
-
-    @pytest.mark.asyncio
-    async def test_close_no_client(self, search_tool_instance):
-        """Test close method when vector_client is missing."""
-        delattr(search_tool_instance, "vector_client")
-        # Should not raise exception
-        await search_tool_instance.close()
-
-
-class TestSearchToolErrorHandling:
-    """Test error handling in SearchTool."""
-    
-    @pytest.mark.asyncio
-    async def test_json_decode_error_handling(self, search_tool_instance):
-        """Test handling of invalid JSON input."""
-        # Invalid JSON should be treated as string query in semantic_search
-        search_tool_instance._perform_semantic_search = AsyncMock(return_value=[])
-        result = await SearchTool.semantic_search.func("not a json string")
-        result_data = json.loads(result)
-        assert result_data.get("query") == "not a json string"
-
-        # Test document_search with invalid JSON
-        search_tool_instance._search_by_document_source = AsyncMock(return_value=[])
-        result = await SearchTool.document_search.func("not a json string")
-        result_data = json.loads(result)
-        assert result_data.get("document_source") == "not a json string"
-
-        # Test similarity_search with invalid JSON
-        search_tool_instance._find_similar_documents = AsyncMock(return_value=[])
-        result = await SearchTool.similarity_search.func("not a json string")
-        result_data = json.loads(result)
-        assert "reference_content" in result_data
-
-    @pytest.mark.asyncio
-    async def test_non_string_input_handling(self, search_tool_instance):
-        """Test handling of non-string input (e.g. dict)."""
-        search_tool_instance._perform_semantic_search = AsyncMock(return_value=[])
-        
-        # Test semantic_search with dict
-        query_dict = {"query": "test"}
-        result = await SearchTool.semantic_search.func(query_dict)
-        assert "query" in json.loads(result)
-
-        # Test document_search with dict
-        search_tool_instance._search_by_document_source = AsyncMock(return_value=[])
-        result = await SearchTool.document_search.func({"document_source": "src"})
-        assert "document_source" in json.loads(result)
-
-        # Test similarity_search with dict
-        search_tool_instance._find_similar_documents = AsyncMock(return_value=[])
-        result = await SearchTool.similarity_search.func({"content": "cont"})
-        assert "reference_content" in json.loads(result)
-
-    @pytest.mark.asyncio
-    async def test_all_tools_parameter_validation(self, search_tool_instance):
-        """Test parameter validation for all search tools."""
-        # bedrock_api_search
-        result = await SearchTool.bedrock_api_search.func("")
-        assert "error" in json.loads(result)
-        
-        # component_lookup
-        result = await SearchTool.component_lookup.func("")
-        assert "error" in json.loads(result)
-        
-        # conversion_examples
-        result = await SearchTool.conversion_examples.func("")
-        assert "error" in json.loads(result)
-        
-        # schema_validation_lookup
-        result = await SearchTool.schema_validation_lookup.func("")
-        assert "error" in json.loads(result)
-
-    @pytest.mark.asyncio
-    async def test_all_tools_exception_handling(self, search_tool_instance):
-        """Test exception handling for all search tools."""
-        # Use a real instance but mock its dependencies to fail, or patch a deeper method
-        with patch.object(SearchTool, '_perform_semantic_search', side_effect=Exception("Semantic fail")):
-            for tool_func in [
-                SearchTool.bedrock_api_search.func,
-                SearchTool.component_lookup.func,
-                SearchTool.conversion_examples.func,
-                SearchTool.schema_validation_lookup.func
-            ]:
-                result = await tool_func("test")
-                assert "error" in json.loads(result)
-
-    @pytest.mark.asyncio
-    async def test_non_string_input_all_tools(self, search_tool_instance):
-        """Test non-string input for all search tools."""
-        search_tool_instance._perform_semantic_search = AsyncMock(return_value=[])
-        
-        # bedrock_api_search with dict
-        result = await SearchTool.bedrock_api_search.func({"query": "q"})
-        assert "query" in result
-
-        # component_lookup with dict
-        result = await SearchTool.component_lookup.func({"component_name": "c"})
-        assert "query" in result
-
-        # conversion_examples with dict
-        result = await SearchTool.conversion_examples.func({"query": "q"})
-        assert "query" in result
-
-        # schema_validation_lookup with dict
-        result = await SearchTool.schema_validation_lookup.func({"schema_name": "s"})
-        assert "query" in result
-
-    @pytest.mark.asyncio
-    async def test_private_methods_exceptions(self, search_tool_instance):
-        """Test exception handling in private methods."""
-        search_tool_instance.vector_client.search_documents = AsyncMock(side_effect=Exception("DB Error"))
-        
-        # _perform_semantic_search
-        res1 = await search_tool_instance._perform_semantic_search("q")
-        assert res1 == []
-        
-        # _search_by_document_source
-        res2 = await search_tool_instance._search_by_document_source("s")
-        assert res2 == []
-        
-        # _find_similar_documents
-        res3 = await search_tool_instance._find_similar_documents("c")
-        assert res3 == []
-
-    @pytest.mark.asyncio
-    async def test_json_parsing_edge_cases(self, search_tool_instance):
-        """Test JSON parsing edge cases in tools."""
-        search_tool_instance._perform_semantic_search = AsyncMock(return_value=[])
-        
-        # bedrock_api_search with JSON
-        result = await SearchTool.bedrock_api_search.func(json.dumps({"query": "q", "api_category": "c"}))
-        assert "query" in result
-        
-        # component_lookup with JSON
-        result = await SearchTool.component_lookup.func(json.dumps({"component_name": "c"}))
-        assert "query" in result
-
-        # conversion_examples with JSON
-        result = await SearchTool.conversion_examples.func(json.dumps({"query": "q"}))
-        assert "query" in result
-
-        # schema_validation_lookup with JSON
-        result = await SearchTool.schema_validation_lookup.func(json.dumps({"schema_name": "s"}))
-        assert "query" in result
-
-
-class TestSearchToolIntegration:
-    """Integration tests for SearchTool."""
-    
-    @pytest.mark.asyncio
-    async def test_multiple_searches_in_sequence(self, search_tool_instance, sample_search_results):
-        """Test running multiple searches in sequence."""
-        search_tool_instance._perform_semantic_search = AsyncMock(
-            return_value=sample_search_results
+    async def test_semantic_payload_serialises_results(
+        self, mock_vector_client: AsyncMock, sample_search_results: List[Dict[str, Any]]
+    ) -> None:
+        mock_vector_client.search_documents.return_value = sample_search_results
+        raw = await _semantic_search_payload(
+            mock_vector_client, query="q", limit=10, document_source=None
         )
-        
-        queries = ["block", "entity", "conversion"]
-        results = []
-        
-        for query in queries:
-            result = await SearchTool.semantic_search.func(query)
-            results.append(json.loads(result))
-        
-        assert len(results) == len(queries)
-        assert all("results" in r for r in results)
-    
+        payload = json.loads(raw)
+        assert payload["query"] == "q"
+        assert payload["total_results"] == 3
+
     @pytest.mark.asyncio
-    async def test_search_with_various_input_formats(self, search_tool_instance, sample_search_results):
-        """Test search with various input formats."""
-        search_tool_instance._perform_semantic_search = AsyncMock(
-            return_value=sample_search_results
+    async def test_document_payload_includes_metadata(self, mock_vector_client: AsyncMock) -> None:
+        mock_vector_client.search_documents.return_value = [{"id": "1"}]
+        raw = await _document_search_payload(
+            mock_vector_client, document_source="src", content_type="text", limit=10
         )
-        
-        # Test JSON input
-        json_input = json.dumps({"query": "test", "limit": 5})
-        result1 = await SearchTool.semantic_search.func(json_input)
-        
-        # Test string input
-        result2 = await SearchTool.semantic_search.func("test")
-        
-        # Both should return valid results
-        assert all(isinstance(json.loads(r), dict) for r in [result1, result2])
+        payload = json.loads(raw)
+        assert payload["document_source"] == "src"
+        assert payload["content_type"] == "text"
+
+    @pytest.mark.asyncio
+    async def test_similarity_payload_truncates_preview(
+        self, mock_vector_client: AsyncMock
+    ) -> None:
+        mock_vector_client.search_documents.return_value = []
+        raw = await _similarity_search_payload(
+            mock_vector_client, content="x" * 200, threshold=0.0, limit=5
+        )
+        payload = json.loads(raw)
+        assert len(payload["reference_content"]) == 103
+        assert payload["reference_content"].endswith("...")
 
 
-class TestSearchToolResultFormatting:
-    """Test result formatting in SearchTool."""
-    
+# ---------------------------------------------------------------------------
+# SearchTool.close()
+# ---------------------------------------------------------------------------
+
+
+class TestSearchToolClose:
     @pytest.mark.asyncio
-    async def test_semantic_search_result_format(self, search_tool_instance, sample_search_results):
-        """Test semantic search result format."""
-        search_tool_instance._perform_semantic_search = AsyncMock(
-            return_value=sample_search_results
-        )
-        
-        result = await SearchTool.semantic_search.func("test")
-        result_data = json.loads(result)
-        
-        # Check required fields
-        assert "query" in result_data
-        assert "results" in result_data or "error" in result_data
-        assert "total_results" in result_data
-        
-        # Check result items have required fields
-        for item in result_data["results"]:
-            assert "id" in item
-            assert "content" in item
+    async def test_close_async_client(self) -> None:
+        client = AsyncMock(spec=VectorDBClient)
+        client.close = AsyncMock()
+        SearchTool._instance = None
+        with patch("tools.search_tool.VectorDBClient", return_value=client):
+            facade = SearchTool()
+            facade.vector_client = client  # ensure direct reference
+        await facade.close()
+        client.close.assert_awaited_once()
+        SearchTool._instance = None
+
+    @pytest.mark.asyncio
+    async def test_close_sync_client(self) -> None:
+        client = MagicMock(spec=VectorDBClient)
+        # MagicMock.close is a sync MagicMock by default
+        SearchTool._instance = None
+        with patch("tools.search_tool.VectorDBClient", return_value=client):
+            facade = SearchTool()
+            facade.vector_client = client
+        await facade.close()
+        client.close.assert_called_once()
+        SearchTool._instance = None
+
+    @pytest.mark.asyncio
+    async def test_close_no_client_is_noop(self) -> None:
+        SearchTool._instance = None
+        with patch("tools.search_tool.VectorDBClient"):
+            facade = SearchTool()
+        delattr(facade, "vector_client")
+        await facade.close()  # should not raise
+        SearchTool._instance = None
+
+    @pytest.mark.asyncio
+    async def test_close_client_without_close_method(self) -> None:
+        client = MagicMock(spec=[])  # no close attribute
+        SearchTool._instance = None
+        with patch("tools.search_tool.VectorDBClient", return_value=client):
+            facade = SearchTool()
+            facade.vector_client = client
+        await facade.close()  # should not raise
+        SearchTool._instance = None

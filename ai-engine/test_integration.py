@@ -212,7 +212,7 @@ def test_search_fallback_mechanism():
     print("=" * 60)
 
     try:
-        from tools.search_tool import SearchTool
+        from tools.search_tool import SearchTool, _attempt_fallback_search
         from utils.config import Config
 
         # Verify fallback is enabled
@@ -220,11 +220,11 @@ def test_search_fallback_mechanism():
         print(f"   Fallback tool: {Config.FALLBACK_SEARCH_TOOL}")
 
         # Test fallback mechanism (may not execute due to no vector DB)
-        search_tool = SearchTool.get_instance()
+        SearchTool.get_instance()
         print("[OK] SearchTool instance created")
 
-        # Test fallback import logic
-        fallback_results = search_tool._attempt_fallback_search("test query", 5)
+        # Test fallback import logic (now a module-level helper after Phase 8 A).
+        fallback_results = _attempt_fallback_search("test query", 5)
         if fallback_results:
             print(f"[OK] Fallback mechanism working: {len(fallback_results)} results")
         else:
