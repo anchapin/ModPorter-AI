@@ -59,25 +59,8 @@ sys.modules["pydub.exceptions"] = pydub_mock.exceptions
 sys.modules["pydub.utils"] = pydub_mock.utils
 
 
-# Mock crewai
-def tool(func):
-    return func
-
-
+# The legacy multi-agent framework was removed in #1201; the source no longer imports it, so no mock is needed.
 def patch_modules():
-    if "crewai" not in sys.modules or not hasattr(sys.modules["crewai"], "Agent"):
-        mock_crewai = type(sys)("crewai")
-        mock_crewai.Agent = type("Agent", (), {})
-        mock_crewai.Crew = type("Crew", (), {})
-        mock_crewai.Task = type("Task", (), {})
-        mock_crewai.LLM = type("LLM", (), {})
-        sys.modules["crewai"] = mock_crewai
-
-        mock_crewai_tools = type(sys)("crewai.tools")
-        mock_crewai_tools.tool = tool
-        mock_crewai_tools.BaseTool = type("BaseTool", (), {})
-        sys.modules["crewai.tools"] = mock_crewai_tools
-
     # Mock models.smart_assumptions
     if "models.smart_assumptions" not in sys.modules or not hasattr(
         sys.modules["models.smart_assumptions"], "SmartAssumptionEngine"

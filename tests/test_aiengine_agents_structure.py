@@ -121,13 +121,21 @@ def test_qa_validator_exists():
 
 
 def test_agents_use_agent_framework():
-    """Agents should use CrewAI or agent framework"""
+    """Agents should use the LangChain/LangGraph agent framework (issue #1201)."""
     path = "/home/alex/Projects/PortKit/ai-engine/agents/java_analyzer.py"
     with open(path) as f:
         source = f.read()
-    
-    # Should use some agent framework
-    assert "Agent" in source or "crew" in source.lower() or "llm" in source.lower()
+
+    # Must reference at least one LangChain/LangGraph primitive.
+    assert (
+        "langchain" in source.lower()
+        or "langgraph" in source.lower()
+        or "BaseTool" in source
+        or "Runnable" in source
+        or "@tool" in source
+        or "Agent" in source
+        or "llm" in source.lower()
+    )
 
 
 def test_agents_have_run_method():
@@ -200,8 +208,8 @@ def test_agent_count():
 # ============================================
 
 
-def test_agents_import_from_crew():
-    """Agents should be orchestrated"""
+def test_agents_import_from_orchestrator():
+    """Agents should be wired into the LangGraph orchestrator."""
     path = "/home/alex/Projects/PortKit/ai-engine/agents/java_analyzer.py"
     with open(path) as f:
         source = f.read()

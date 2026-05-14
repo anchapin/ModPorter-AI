@@ -195,9 +195,9 @@ public class Reflect {
             patch("os.walk", return_value=[("/fake", [], ["build.gradle"])]),
         ):
             # Using .run() for tool
-            res_json = JavaAnalyzerAgent.analyze_mod_structure_tool.run(
-                mod_data=json.dumps({"mod_path": "/fake"})
-            )
+            res_json = JavaAnalyzerAgent.analyze_mod_structure_tool.invoke({
+                "mod_data": json.dumps({"mod_path": "/fake"}),
+            })
             res = json.loads(res_json)
             assert isinstance(res, dict)
 

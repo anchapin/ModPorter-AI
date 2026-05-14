@@ -144,7 +144,7 @@ class TestJavaAnalyzerAgent:
 
     def test_analyze_mod_structure_tool(self, agent, mock_jar_path):
         """Test the analyze_mod_structure_tool"""
-        # Tools are CrewAI Tool objects, call them via func attribute
+        # Tools are LangChain `@tool`-decorated callables, invoke via .invoke or .func
         tool = agent.analyze_mod_structure_tool
         result = tool.func(str(mock_jar_path))
         result_data = json.loads(result)
@@ -154,7 +154,7 @@ class TestJavaAnalyzerAgent:
 
     def test_extract_assets_tool(self, agent, mock_jar_path):
         """Test the extract_assets_tool"""
-        # Tools are CrewAI Tool objects, call them via func attribute
+        # Tools are LangChain `@tool`-decorated callables, invoke via .invoke or .func
         tool = agent.extract_assets_tool
         result = tool.func(str(mock_jar_path))
         result_data = json.loads(result)
@@ -394,7 +394,7 @@ class TestRAGAgents:
 
     @pytest.fixture
     def mock_tools(self):
-        """Create mock tools with proper CrewAI tool interface"""
+        """Create mock tools with the LangChain BaseTool interface."""
         # Create a simple mock tool object
         from unittest.mock import MagicMock
 
@@ -410,7 +410,7 @@ class TestRAGAgents:
         assert rag_agents is not None
 
     @pytest.mark.skip(
-        reason="Requires valid CrewAI BaseTool instances which cannot be easily mocked"
+        reason="Requires valid LangChain BaseTool instances which cannot be easily mocked"
     )
     def test_search_agent_creation(self, rag_agents, mock_llm, mock_tools):
         """Test search agent creation"""
@@ -421,17 +421,19 @@ class TestRAGAgents:
         assert len(agent.tools) > 0
 
     def test_summarization_agent_creation(self, rag_agents, mock_llm):
-        """Test summarization agent creation"""
-        try:
-            agent = rag_agents.summarization_agent(mock_llm)
+        """Test summarization agent creation returns a LangChain runnable (issue #1201).
 
-            assert agent is not None
-            assert agent.role == "Content Summarizer"
-        except Exception as e:
-            # If agent creation fails due to LLM validation, skip the test
-            if "Model must be a non-empty string" in str(e) or "LLM" in str(e):
-                pytest.skip(f"Agent creation requires valid LLM: {e}")
-            raise
+        After the LangChain/LangGraph migration the legacy multi-agent ``Agent``
+        with ``role`` / ``goal`` / ``backstory`` attributes is gone; the
+        factory now returns a composed ``Runnable`` (prompt | llm | parser).
+        """
+        from langchain_core.runnables import Runnable
+
+        agent = rag_agents.summarization_agent(mock_llm)
+        assert agent is not None
+        assert isinstance(agent, Runnable), f"expected a LangChain Runnable, got {type(agent)!r}"
+        assert hasattr(agent, "invoke")
+        assert hasattr(agent, "ainvoke")
 
 
 # ========== Mock External Dependencies Tests ==========

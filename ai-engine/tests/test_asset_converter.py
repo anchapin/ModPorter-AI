@@ -283,7 +283,7 @@ class TestAssetConverterAgent:
 
         # Call the tool
         input_data = json.dumps([model_path])
-        result_str = self.agent.convert_models_tool.run(model_data=input_data)
+        result_str = self.agent.convert_models_tool.invoke({"model_data": input_data})
         result = json.loads(result_str)
 
         # Verify the result
@@ -301,7 +301,7 @@ class TestAssetConverterAgent:
 
         # Call the tool
         input_data = json.dumps([{"path": audio_path, "type": "block.stone"}])
-        result_str = self.agent.convert_audio_tool.run(audio_data=input_data)
+        result_str = self.agent.convert_audio_tool.invoke({"audio_data": input_data})
         result = json.loads(result_str)
 
         # Verify the result
@@ -314,7 +314,7 @@ class TestAssetConverterAgent:
         """Test asset analysis tool"""
         img_path = self.create_test_image("test_texture.png", (32, 32))
         input_data = json.dumps([img_path])
-        result_str = self.agent.analyze_assets_tool.run(asset_data=input_data)
+        result_str = self.agent.analyze_assets_tool.invoke({"asset_data": input_data})
         result = json.loads(result_str)
         assert result["success"] is True
         assert result["total_assets"] == 1
@@ -338,7 +338,7 @@ class TestAssetConverterAgent:
                 {"path": "unknown.txt"}
             ]
         })
-        result_str = self.agent.analyze_assets_tool.run(asset_data=input_data)
+        result_str = self.agent.analyze_assets_tool.invoke({"asset_data": input_data})
         result = json.loads(result_str)
         assert result["success"] is True
         assert result["total_assets"] == 4
@@ -357,7 +357,7 @@ class TestAssetConverterAgent:
                 {"path": "sound.ogg", "type": "audio", "metadata": {"duration_seconds": 45}}
             ]
         })
-        result_str = self.agent.validate_bedrock_assets_tool.run(validation_data=input_data)
+        result_str = self.agent.validate_bedrock_assets_tool.invoke({"validation_data": input_data})
         result = json.loads(result_str)
         assert result["success"] is True
         assert result["quality_metrics"]["total_assets"] == 4
@@ -517,7 +517,7 @@ class TestAssetConverterAgent:
             "output_dir": self.temp_dir
         })
         # Call the tool via run() to hit the static method implementation
-        result_str = self.agent.convert_textures_tool.run(texture_data=input_data)
+        result_str = self.agent.convert_textures_tool.invoke({"texture_data": input_data})
         result = json.loads(result_str)
         assert result["success"] is True
         assert result["conversion_summary"]["successfully_converted"] == 1
@@ -539,7 +539,7 @@ class TestAssetConverterAgent:
                 {"path": model_path, "entity_type": "item"}
             ]
         })
-        result_str = self.agent.convert_models_tool.run(model_data=input_data)
+        result_str = self.agent.convert_models_tool.invoke({"model_data": input_data})
         result = json.loads(result_str)
         assert result["success"] is True
         assert result["conversion_summary"]["successfully_converted"] == 1
@@ -683,7 +683,7 @@ class TestAssetConverterAgent:
             mock_audio.from_ogg.return_value = mock_instance
             
             input_data = json.dumps([{"path": audio_path, "type": "ambient.cave"}])
-            result_str = self.agent.convert_audio_tool.run(audio_data=input_data)
+            result_str = self.agent.convert_audio_tool.invoke({"audio_data": input_data})
             result = json.loads(result_str)
             assert result["success"] is True
 
@@ -747,7 +747,7 @@ class TestAssetConverterAgent:
                 "jar_path": "test.jar",
                 "output_dir": self.temp_dir
             })
-            result_str = self.agent.extract_jar_textures_tool.run(jar_data=input_data)
+            result_str = self.agent.extract_jar_textures_tool.invoke({"jar_data": input_data})
             result = json.loads(result_str)
             assert result["success"] is True
             assert result["converted_count"] == 1

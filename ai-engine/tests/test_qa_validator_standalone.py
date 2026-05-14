@@ -25,23 +25,6 @@ if "models.smart_assumptions" not in sys.modules:
         "SmartAssumptionEngine", (), {}
     )
 
-if "crewai" not in sys.modules or not hasattr(sys.modules["crewai"], "Agent"):
-    mock_crewai = type(sys)("crewai")
-    mock_crewai.Agent = type("Agent", (), {})
-    mock_crewai.Crew = type("Crew", (), {})
-    mock_crewai.Task = type("Task", (), {})
-    mock_crewai.LLM = type("LLM", (), {})
-    sys.modules["crewai"] = mock_crewai
-    
-    if "crewai.tools" not in sys.modules:
-        mock_tools = type(sys)("crewai.tools")
-        def tool(func):
-            return func
-        mock_tools.tool = tool
-        mock_tools.BaseTool = type("BaseTool", (), {})
-        sys.modules["crewai.tools"] = mock_tools
-
-
 
 spec.loader.exec_module(qa_module)
 
@@ -295,7 +278,7 @@ def test_tools():
 
     try:
         # Test validate_mcaddon
-        # Note: The @tool decorator creates a Tool object for CrewAI agents.
+        # Note: The @tool decorator creates a LangChain BaseTool/StructuredTool instance.
         # For testing, we call the underlying methods directly via the agent instance.
         agent = QAValidatorAgent.get_instance()
 

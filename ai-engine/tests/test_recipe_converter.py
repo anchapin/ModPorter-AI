@@ -9,43 +9,15 @@ class TestRecipeConverterAgent:
 
     @pytest.fixture(autouse=True)
     def setup_agent(self):
-        """Set up test environment with mocked crewai."""
-        # Create a compatible mock for tool decorator
-        def tool_decorator(func):
-            # Return something that looks like a Tool object but is also callable
-            class MockTool:
-                def __init__(self, fn):
-                    self.fn = fn
-                    self.func = fn # For compatibility with some tests
-                    self.name = fn.__name__
-                def __call__(self, *args, **kwargs):
-                    return self.fn(*args, **kwargs)
-            return MockTool(func)
+        """Set up test environment (legacy framework removed in #1201; LangChain `@tool` is used directly)."""
+        from agents.recipe_converter import RecipeConverterAgent
 
-        mock_crewai = mock.MagicMock()
-        mock_crewai.Agent = mock.MagicMock()
-        mock_crewai.Crew = mock.MagicMock()
-        mock_crewai.Task = mock.MagicMock()
-        mock_crewai.LLM = mock.MagicMock()
-        
-        mock_tools = mock.MagicMock()
-        mock_tools.tool = tool_decorator
-        mock_tools.BaseTool = mock.MagicMock()
-
-        with mock.patch.dict(sys.modules, {"crewai": mock_crewai, "crewai.tools": mock_tools}):
-            import agents.recipe_converter
-            import importlib
-            importlib.reload(agents.recipe_converter)
-            from agents.recipe_converter import RecipeConverterAgent
-
-            # Clear singleton instance to ensure it uses our mock
-            if hasattr(RecipeConverterAgent, "_instance"):
-                RecipeConverterAgent._instance = None
-            
-            self.agent = RecipeConverterAgent.get_instance()
-            yield
-            # Clear again after test
+        if hasattr(RecipeConverterAgent, "_instance"):
             RecipeConverterAgent._instance = None
+        self.agent = RecipeConverterAgent.get_instance()
+        yield
+        # Clear again after test
+        RecipeConverterAgent._instance = None
 
     def test_agent_singleton(self):
         """Test that agent returns singleton instance."""
@@ -451,37 +423,17 @@ class TestRecipeConverterAgent:
         assert result["minecraft:recipe_furnace"]["ingredients"][0]["item"] == "minecraft:iron_ore"
 
 class TestRecipeConverterTools:
-    """Test the CrewAI tools provided by RecipeConverterAgent."""
+    """Test the LangChain tools provided by RecipeConverterAgent."""
 
     @pytest.fixture(autouse=True)
     def setup_tools(self):
-        """Set up mocked environment."""
-        # Reuse same logic
-        def tool_decorator(func):
-            class MockTool:
-                def __init__(self, fn):
-                    self.fn = fn
-                    self.func = fn
-                    self.name = fn.__name__
-                def __call__(self, *args, **kwargs):
-                    return self.fn(*args, **kwargs)
-            return MockTool(func)
+        """Set up tool tests (legacy framework removed in #1201; LangChain tools are used directly)."""
+        from agents.recipe_converter import RecipeConverterAgent
 
-        mock_crewai = mock.MagicMock()
-        mock_tools = mock.MagicMock()
-        mock_tools.tool = tool_decorator
-        
-        with mock.patch.dict(sys.modules, {"crewai": mock_crewai, "crewai.tools": mock_tools}):
-            import agents.recipe_converter
-            import importlib
-            importlib.reload(agents.recipe_converter)
-            from agents.recipe_converter import RecipeConverterAgent
-
-            if hasattr(RecipeConverterAgent, "_instance"):
-
-                RecipeConverterAgent._instance = None
-            yield
+        if hasattr(RecipeConverterAgent, "_instance"):
             RecipeConverterAgent._instance = None
+        yield
+        RecipeConverterAgent._instance = None
 
     def test_convert_recipe_tool(self):
         """Test convert_recipe_tool static method."""

@@ -1,7 +1,7 @@
 """
 Tests for LangGraph-based conversion pipeline.
 
-Migration from CrewAI per issue #1201.
+Tests for the LangGraph pipeline (issue #1201 migration completed).
 """
 
 import pytest

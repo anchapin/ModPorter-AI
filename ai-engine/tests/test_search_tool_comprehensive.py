@@ -100,7 +100,7 @@ class TestSearchToolInitialization:
         
         assert isinstance(tools, list)
         assert len(tools) > 0
-        # Should return callable tools or CrewAI tool objects
+        # Should return callable LangChain tools
         for tool in tools:
             assert callable(tool) or hasattr(tool, '__call__') or hasattr(tool, 'func')
 

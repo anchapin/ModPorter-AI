@@ -35,7 +35,7 @@ class TestBedrockArchitectAgent:
             mock_analyze.return_value = mock_result
             
             # Call the tool's run method
-            result_str = BedrockArchitectAgent.analyze_java_feature_tool.run(feature_data=feature_data)
+            result_str = BedrockArchitectAgent.analyze_java_feature_tool.invoke({"feature_data": feature_data})
             result = json.loads(result_str)
             
             assert result["feature_id"] == "test_block"
@@ -57,7 +57,7 @@ class TestBedrockArchitectAgent:
             mock_result.conflict_resolution_reason = None
             mock_analyze.return_value = mock_result
             
-            result_str = BedrockArchitectAgent.analyze_java_feature_tool.run(feature_data=feature_data)
+            result_str = BedrockArchitectAgent.analyze_java_feature_tool.invoke({"feature_data": feature_data})
             result = json.loads(result_str)
             
             assert "High-impact conversion" in result["recommendation"]
@@ -89,7 +89,7 @@ class TestBedrockArchitectAgent:
             mock_component.technical_notes = "test notes"
             mock_apply.return_value = mock_component
             
-            result_str = BedrockArchitectAgent.apply_smart_assumption_tool.run(assumption_data=assumption_data)
+            result_str = BedrockArchitectAgent.apply_smart_assumption_tool.invoke({"assumption_data": assumption_data})
             result = json.loads(result_str)
             
             assert result["success"] is True
@@ -123,7 +123,7 @@ class TestBedrockArchitectAgent:
             mock_report_obj.assumptions_applied = []
             mock_report.return_value = mock_report_obj
             
-            result_str = BedrockArchitectAgent.create_conversion_plan_tool.run(plan_data=plan_data)
+            result_str = BedrockArchitectAgent.create_conversion_plan_tool.invoke({"plan_data": plan_data})
             result = json.loads(result_str)
             
             assert result["success"] is True
@@ -133,7 +133,7 @@ class TestBedrockArchitectAgent:
         conflict_data = json.dumps({"feature_type": "block"})
         with patch.object(agent.smart_assumption_engine, "get_conflict_analysis") as mock_conflicts:
             mock_conflicts.return_value = {"conflicts": []}
-            result_str = BedrockArchitectAgent.get_assumption_conflicts_tool.run(conflict_data=conflict_data)
+            result_str = BedrockArchitectAgent.get_assumption_conflicts_tool.invoke({"conflict_data": conflict_data})
             result = json.loads(result_str)
             assert "conflicts" in result
 
@@ -145,7 +145,7 @@ class TestBedrockArchitectAgent:
                 {"original_feature_id": "c3", "assumption_type": "gui"}
             ]
         })
-        result_str = BedrockArchitectAgent.validate_bedrock_compatibility_tool.run(compatibility_data=compatibility_data)
+        result_str = BedrockArchitectAgent.validate_bedrock_compatibility_tool.invoke({"compatibility_data": compatibility_data})
         result = json.loads(result_str)
         assert result["is_compatible"] is True
         assert len(result["component_validations"]) == 3
@@ -155,28 +155,28 @@ class TestBedrockArchitectAgent:
         block_data = json.dumps({"id": "test_block", "name": "Test Block"})
         
         # Test block
-        result_str = BedrockArchitectAgent.generate_block_definitions_tool.run(block_data=block_data)
+        result_str = BedrockArchitectAgent.generate_block_definitions_tool.invoke({"block_data": block_data})
         result = json.loads(result_str)
         assert result["success"] is True
         assert result["component_type"] == "block"
         
         # Test item
-        result_str = BedrockArchitectAgent.generate_item_definitions_tool.run(item_data=block_data)
+        result_str = BedrockArchitectAgent.generate_item_definitions_tool.invoke({"item_data": block_data})
         result = json.loads(result_str)
         assert result["success"] is True
         
         # Test recipe
-        result_str = BedrockArchitectAgent.generate_recipe_definitions_tool.run(recipe_data=block_data)
+        result_str = BedrockArchitectAgent.generate_recipe_definitions_tool.invoke({"recipe_data": block_data})
         result = json.loads(result_str)
         assert result["success"] is True
         
         # Test entity
-        result_str = BedrockArchitectAgent.generate_entity_definitions_tool.run(entity_data=block_data)
+        result_str = BedrockArchitectAgent.generate_entity_definitions_tool.invoke({"entity_data": block_data})
         result = json.loads(result_str)
         assert result["success"] is True
 
     def test_generate_placeholder_definition_error(self, agent):
-        result_str = BedrockArchitectAgent.generate_block_definitions_tool.run(block_data="invalid json")
+        result_str = BedrockArchitectAgent.generate_block_definitions_tool.invoke({"block_data": "invalid json"})
         result = json.loads(result_str)
         assert result["success"] is False
         assert "Invalid JSON" in result["error"]

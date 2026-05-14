@@ -7,7 +7,7 @@ def test_can_import_main():
     """Test that main.py exists and has correct structure without actually importing it.
 
     This test verifies the package structure exists without requiring heavy dependencies
-    like CrewAI that may not be available in all test environments.
+    like the deleted legacy orchestration that may not be available in legacy environments.
     """
     # Check main.py exists and is readable
     assert os.path.exists("main.py"), "main.py should exist in current directory"
@@ -19,8 +19,10 @@ def test_can_import_main():
 
     # Verify key imports are present
     assert "from fastapi import" in main_content and "FastAPI" in main_content, "main.py should import FastAPI"
-    assert "from crew.conversion_crew import" in main_content, (
-        "main.py should import from crew.conversion_crew"
+    # The legacy `crew.conversion_crew` import was removed in #1201; the LangGraph
+    # pipeline is the only conversion path.
+    assert "from orchestration.langgraph_pipeline import" in main_content or            "ConversionPipeline" in main_content, (
+        "main.py should reference the LangGraph ConversionPipeline"
     )
     assert "ConversionStatusEnum" in main_content, "main.py should define ConversionStatusEnum"
     assert "app = FastAPI" in main_content, "main.py should initialize FastAPI app"

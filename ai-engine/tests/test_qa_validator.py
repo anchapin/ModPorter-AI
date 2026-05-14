@@ -130,44 +130,44 @@ class TestQAValidatorAgent:
 
     def test_validate_mcaddon_tool(self, agent, mock_mcaddon):
         """Test validate_mcaddon_tool"""
-        result = agent.validate_mcaddon_tool.run(mcaddon_path=mock_mcaddon)
+        result = agent.validate_mcaddon_tool.invoke({"mcaddon_path": mock_mcaddon})
         result_data = json.loads(result)
         assert result_data.get("success") is True
 
     def test_validate_mcaddon_tool_invalid_path(self, agent):
         """Test validate_mcaddon_tool with invalid path"""
-        result = agent.validate_mcaddon_tool.run(mcaddon_path="/nonexistent/path/addon.mcaddon")
+        result = agent.validate_mcaddon_tool.invoke({"mcaddon_path": "/nonexistent/path/addon.mcaddon"})
         result_data = json.loads(result)
         # Should handle gracefully
 
     def test_validate_conversion_quality_tool(self, agent):
         """Test validate_conversion_quality_tool"""
         input_data = json.dumps({"mcaddon_path": "/fake/path/addon.mcaddon"})
-        result = agent.validate_conversion_quality_tool.run(quality_data=input_data)
+        result = agent.validate_conversion_quality_tool.invoke({"quality_data": input_data})
         result_data = json.loads(result)
 
     def test_run_functional_tests_tool(self, agent):
         """Test run_functional_tests_tool"""
         input_data = json.dumps({"mcaddon_path": "/fake/path/addon.mcaddon"})
-        result = agent.run_functional_tests_tool.run(test_data=input_data)
+        result = agent.run_functional_tests_tool.invoke({"test_data": input_data})
         result_data = json.loads(result)
 
     def test_analyze_bedrock_compatibility_tool(self, agent):
         """Test analyze_bedrock_compatibility_tool"""
         input_data = json.dumps({"mcaddon_path": "/fake/path/addon.mcaddon"})
-        result = agent.analyze_bedrock_compatibility_tool.run(compatibility_data=input_data)
+        result = agent.analyze_bedrock_compatibility_tool.invoke({"compatibility_data": input_data})
         result_data = json.loads(result)
 
     def test_assess_performance_metrics_tool(self, agent):
         """Test assess_performance_metrics_tool"""
         input_data = json.dumps({"mcaddon_path": "/fake/path/addon.mcaddon"})
-        result = agent.assess_performance_metrics_tool.run(performance_data=input_data)
+        result = agent.assess_performance_metrics_tool.invoke({"performance_data": input_data})
         result_data = json.loads(result)
 
     def test_generate_qa_report_tool(self, agent):
         """Test generate_qa_report_tool"""
         input_data = json.dumps({"mod_info": {"name": "Test Mod"}, "mcaddon_path": "test.mcaddon"})
-        result = agent.generate_qa_report_tool.run(report_data=input_data)
+        result = agent.generate_qa_report_tool.invoke({"report_data": input_data})
         result_data = json.loads(result)
         assert result_data.get("success") is True
 
