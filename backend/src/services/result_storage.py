@@ -99,7 +99,8 @@ class ResultStorage:
             if key:
                 job_id = result.job_id
                 data = await self._storage.get_file(
-                    job_id, f"{result_id}.mcaddon",
+                    job_id,
+                    f"{result_id}.mcaddon",
                     result.output_data.get("user_id", "default"),
                 )
                 if data:
@@ -167,12 +168,14 @@ class ResultStorage:
             for file in self.output_dir.glob("*.mcaddon"):
                 total_files += 1
                 total_size += file.stat().st_size
-            stats.update({
-                "total_results": total_files,
-                "total_size_bytes": total_size,
-                "total_size_mb": total_size / (1024 * 1024),
-                "output_directory": str(self.output_dir),
-            })
+            stats.update(
+                {
+                    "total_results": total_files,
+                    "total_size_bytes": total_size,
+                    "total_size_mb": total_size / (1024 * 1024),
+                    "output_directory": str(self.output_dir),
+                }
+            )
         return stats
 
 
