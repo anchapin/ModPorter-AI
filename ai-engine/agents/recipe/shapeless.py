@@ -11,9 +11,7 @@ class ShapelessRecipeConverter:
     def __init__(self, map_java_item_to_bedrock_fn):
         self._map_java_item = map_java_item_to_bedrock_fn
 
-    def convert_to_bedrock(
-        self, normalized_recipe: Dict, namespace: str, recipe_name: str
-    ) -> Dict:
+    def convert_to_bedrock(self, normalized_recipe: Dict, namespace: str, recipe_name: str) -> Dict:
         """Convert a shapeless recipe to Bedrock format."""
         ingredients = normalized_recipe.get("ingredients", [])
 
@@ -32,9 +30,7 @@ class ShapelessRecipeConverter:
 
                 bedrock_ingredients.append(ingredient_entry)
             elif isinstance(ingredient, str):
-                bedrock_ingredients.append(
-                    {"item": self._map_java_item(ingredient), "data": 0}
-                )
+                bedrock_ingredients.append({"item": self._map_java_item(ingredient), "data": 0})
 
         bedrock_result = {
             "item": self._map_java_item(normalized_recipe.get("result_item", "")),
