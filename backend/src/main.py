@@ -45,7 +45,7 @@ from services.rate_limiter import (
     close_rate_limiter,
     create_global_limiter,
 )
-from services.security_headers import SecurityHeadersMiddleware
+from services.security_headers import SecurityHeadersMiddleware, HTTPSRedirectMiddleware
 from services.logging_middleware import LoggingMiddleware, RequestContextMiddleware
 from services.sentry_config import (
     init_sentry,
@@ -199,6 +199,12 @@ if os.getenv("TESTING", "false").lower() != "true":
 
 # Security Headers Middleware
 app.add_middleware(SecurityHeadersMiddleware)
+
+# HTTPS Redirect Middleware - Issue #1535
+# Must be added first (outermost) to catch HTTP requests before processing
+# Only activates in production or when FORCE_HTTPS=true
+if os.getenv("TESTING", "false").lower() != "true":
+    app.add_middleware(HTTPSRedirectMiddleware)
 
 # Request/Response Logging Middleware
 app.add_middleware(LoggingMiddleware)

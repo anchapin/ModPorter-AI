@@ -30,7 +30,44 @@ BCRYPT_COST = 12
 SECRET_KEY = get_secret("SECRET_KEY")
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY must be set in the environment or secrets manager")
-ALGORITHM = "HS256"
+
+# JWT algorithm selection for enterprise scale
+# HS256: Symmetric - fast, simple key management (default for backwards compatibility)
+# RS256: Asymmetric (RSA) - recommended for enterprise/multi-service architectures
+#   - Private key for signing stays on auth server
+#   - Public key for verification can be distributed widely
+#   - Better key management: compromise of verifier doesn't allow token forgery
+# Configure via JWT_ALGORITHM env var (default: HS256)
+_JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+if _JWT_ALGORITHM not in ("HS256", "HS384", "HS512", "RS256", "RS384", "RS512"):
+    raise ValueError(f"Unsupported JWT_ALGORITHM: {_JWT_ALGORITHM}. Use HS256|HS384|HS512|RS256|RS384|RS512")
+ALGORITHM = _JWT_ALGORITHM
+
+# For RS256/RS384/RS512, load RSA keys from environment or files
+# RSA_PRIVATE_KEY: Base64-encoded PKCS#8 PEM (for signing)
+# RSA_PUBLIC_KEY: Base64-encoded public key PEM (for verification)
+_RSA_PRIVATE_KEY: Optional[str] = None
+_RSA_PUBLIC_KEY: Optional[str] = None
+
+if ALGORITHM.startswith("RS"):
+    _private_key = get_secret("RSA_PRIVATE_KEY")
+    _public_key = get_secret("RSA_PUBLIC_KEY")
+    if not _private_key or not _public_key:
+        # Try loading from files (for Kubernetes secrets / mounted certs)
+        _private_key_path = os.getenv("RSA_PRIVATE_KEY_FILE")
+        _public_key_path = os.getenv("RSA_PUBLIC_KEY_FILE")
+        if _private_key_path and _public_key_path:
+            try:
+                with open(_private_key_path, "r") as f:
+                    _private_key = f.read()
+                with open(_public_key_path, "r") as f:
+                    _public_key = f.read()
+            except OSError as e:
+                raise ValueError(f"RS256 requires RSA_PRIVATE_KEY/RSA_PUBLIC_KEY or RSA_PRIVATE_KEY_FILE/RSA_PUBLIC_KEY_FILE: {e}")
+        else:
+            raise ValueError("RS256 algorithm requires RSA_PRIVATE_KEY and RSA_PUBLIC_KEY environment variables or files")
+    _RSA_PRIVATE_KEY = _private_key
+    _RSA_PUBLIC_KEY = _public_key
 
 # JWT expiry times - configurable via environment for production hardening
 # Production: 5 minutes access, 1 day refresh (more secure)
@@ -97,6 +134,20 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
+def _get_signing_key() -> str:
+    """Return the key to use for signing (creating) tokens."""
+    if ALGORITHM.startswith("RS"):
+        return _RSA_PRIVATE_KEY  # type: ignore[return-value]
+    return SECRET_KEY
+
+
+def _get_verification_key() -> str:
+    """Return the key to use for verifying tokens."""
+    if ALGORITHM.startswith("RS"):
+        return _RSA_PUBLIC_KEY  # type: ignore[return-value]
+    return SECRET_KEY
+
+
 def create_access_token(
     user_id: str, expires_delta: Optional[timedelta] = None, extra_claims: Optional[dict] = None
 ) -> str:
@@ -127,7 +178,7 @@ def create_access_token(
     if extra_claims:
         to_encode.update(extra_claims)
 
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, _get_signing_key(), algorithm=ALGORITHM)
 
 
 def create_refresh_token(user_id: str, expires_delta: Optional[timedelta] = None) -> str:
@@ -154,7 +205,7 @@ def create_refresh_token(user_id: str, expires_delta: Optional[timedelta] = None
         "type": "refresh",
     }
 
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, _get_signing_key(), algorithm=ALGORITHM)
 
 
 def verify_token(token: str, token_type: str = "access") -> Optional[str]:
@@ -169,7 +220,7 @@ def verify_token(token: str, token_type: str = "access") -> Optional[str]:
         User ID if token is valid, None otherwise
     """
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, _get_verification_key(), algorithms=[ALGORITHM])
         token_type_payload = payload.get("type")
 
         if token_type_payload != token_type:
@@ -180,6 +231,26 @@ def verify_token(token: str, token_type: str = "access") -> Optional[str]:
             return None
 
         return user_id
+    except jwt.PyJWTError:
+        return None
+
+
+def get_token_expiry(token: str) -> Optional[datetime]:
+    """
+    Get the expiry time of a JWT token.
+
+    Args:
+        token: JWT token string
+
+    Returns:
+        Expiry datetime if token is valid, None otherwise
+    """
+    try:
+        payload = jwt.decode(token, _get_verification_key(), algorithms=[ALGORITHM])
+        exp = payload.get("exp")
+        if exp is None:
+            return None
+        return datetime.fromtimestamp(exp, tz=timezone.utc)
     except jwt.PyJWTError:
         return None
 

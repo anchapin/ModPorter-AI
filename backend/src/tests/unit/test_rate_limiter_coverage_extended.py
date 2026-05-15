@@ -72,17 +72,66 @@ class TestRateLimiterClientKey:
     def limiter(self):
         return RateLimiter()
 
-    def test_get_client_key_with_forwarded_header(self, limiter):
-        """Test client key extraction with X-Forwarded-For header."""
-        mock_request = MagicMock()
-        mock_request.headers = {"X-Forwarded-For": "192.168.1.1, 10.0.0.1"}
-        mock_request.client = MagicMock()
-        mock_request.client.host = "127.0.0.1"
-        mock_request.state = MagicMock()
-        mock_request.state.user_id = None  # Explicitly set to None
+    def test_get_client_key_with_forwarded_header_from_trusted_proxy(self, limiter):
+        """Test client key extraction with X-Forwarded-For header from trusted proxy.
 
-        client_key = limiter._get_client_key(mock_request)
-        assert client_key == "ip:192.168.1.1"
+        When X-Forwarded-For is set by a trusted proxy (127.0.0.1), the real client
+        IP is extracted from the header.
+        """
+        import security.client_ip as client_ip_module
+
+        # Save original extractor
+        original = client_ip_module._extractor
+
+        # Set up trusted proxy configuration - 127.0.0.1 is the direct client (trusted proxy)
+        client_ip_module._extractor = client_ip_module.ClientIPExtractor(
+            trusted_proxies=["127.0.0.1"]
+        )
+
+        try:
+            mock_request = MagicMock()
+            mock_request.headers = {"X-Forwarded-For": "192.168.1.1, 10.0.0.1"}
+            mock_request.client = MagicMock()
+            mock_request.client.host = "127.0.0.1"
+            mock_request.state = MagicMock()
+            mock_request.state.user_id = None  # Explicitly set to None
+
+            client_key = limiter._get_client_key(mock_request)
+            assert client_key == "ip:192.168.1.1"
+        finally:
+            # Restore original extractor
+            client_ip_module._extractor = original
+
+    def test_get_client_key_with_forwarded_header_from_untrusted_client(self, limiter):
+        """Test client key extraction ignores X-Forwarded-For from untrusted client.
+
+        When X-Forwarded-For is set by an untrusted client, it's ignored
+        to prevent IP spoofing attacks.
+        """
+        import security.client_ip as client_ip_module
+
+        # Save original extractor
+        original = client_ip_module._extractor
+
+        # Set up NO trusted proxies (empty allowlist)
+        client_ip_module._extractor = client_ip_module.ClientIPExtractor(
+            trusted_proxies=[]
+        )
+
+        try:
+            mock_request = MagicMock()
+            mock_request.headers = {"X-Forwarded-For": "192.168.1.1, 10.0.0.1"}
+            mock_request.client = MagicMock()
+            mock_request.client.host = "127.0.0.1"  # Direct client, not trusted
+            mock_request.state = MagicMock()
+            mock_request.state.user_id = None
+
+            client_key = limiter._get_client_key(mock_request)
+            # Should return direct client IP since no proxies are trusted
+            assert client_key == "ip:127.0.0.1"
+        finally:
+            # Restore original extractor
+            client_ip_module._extractor = original
 
     def test_get_client_key_without_forwarded_header(self, limiter):
         """Test client key extraction without X-Forwarded-For header."""

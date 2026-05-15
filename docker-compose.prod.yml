@@ -33,10 +33,14 @@ services:
       - S3_ENDPOINT_URL=${S3_ENDPOINT_URL:-}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - CLAMAV_HOST=clamav
+      - CLAMAV_PORT=3310
     depends_on:
       redis:
         condition: service_healthy
       postgres:
+        condition: service_healthy
+      clamav:
         condition: service_healthy
     networks:
       - portkit-network
@@ -47,6 +51,26 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  clamav:
+    image: clamav/clamav:1.3
+    ports:
+      - '3310:3310'
+    environment:
+      - CLAMD_CONF=/etc/clamav/clamd.conf
+      - CLAMAV_NO_CLAMD=0
+      - CLAMAV_NO_FRESHCLAMD=1
+    volumes:
+      - clamav-db:/var/lib/clamav
+    networks:
+      - portkit-network
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'clamdscan', '--ping']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
 
   ai-engine:
     build:
@@ -207,6 +231,8 @@ volumes:
   prometheus-data:
     driver: local
   grafana-data:
+    driver: local
+  clamav-db:
     driver: local
 
 networks:

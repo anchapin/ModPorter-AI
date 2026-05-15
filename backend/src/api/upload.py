@@ -7,6 +7,7 @@ Provides endpoints for:
 - Upload status tracking
 
 Issue: #973 - File upload security: sandboxing, validation, and virus scanning
+Issue: #1534 - security(backend): validate X-Forwarded-For against trusted proxy allowlist
 """
 
 import os
@@ -34,6 +35,7 @@ from core.storage import StorageManager
 from services.file_handler import FileHandler
 from services.audit_logger import get_audit_logger, AuditEventType
 from api.auth import get_current_user
+from security.client_ip import get_client_ip
 
 logger = logging.getLogger(__name__)
 
@@ -138,14 +140,10 @@ async def upload_jar_file(
     original_filename = file.filename
     start_time = time.time()
 
-    # Get client IP
+    # Get client IP using secure extraction (validates against trusted proxies)
     ip_address = None
     if request:
-        forwarded = request.headers.get("X-Forwarded-For")
-        if forwarded:
-            ip_address = forwarded.split(",")[0].strip()
-        elif request.client:
-            ip_address = request.client.host
+        ip_address = get_client_ip(request)
 
     # Log upload start
     audit.log_upload_started(
