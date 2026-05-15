@@ -1,0 +1,51 @@
+# fly.ai-engine.toml — Portkit AI Engine as a separate Fly.io app
+# Deploy with: flyctl deploy -c fly.ai-engine.toml
+#
+# Prerequisites:
+#   1. Create the app:    fly apps create portkit-ai-engine
+#   2. Create a Fly.io private network (6pn) for backend↔ai-engine communication
+#   3. Set secrets:       fly secrets set -a portkit-ai-engine OPENAI_API_KEY=... ANTHROPIC_API_KEY=...
+#   4. Deploy:            fly deploy -c fly.ai-engine.toml
+
+app = "portkit-ai-engine"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile.fly.ai-engine"
+
+[build.args]
+  PYTHON_VERSION = "3.12"
+
+[env]
+  PYTHONUNBUFFERED = "1"
+  PORT = "8001"
+
+[deploy]
+  strategy = "rolling"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 8001
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [[services.checks]]
+    grace_period = "60s"
+    interval = "30s"
+    method = "get"
+    path = "/health/liveness"
+    port = 8001
+    timeout = "10s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory_mb = 2048

@@ -1,5 +1,6 @@
 # Multi-stage Dockerfile optimized for Fly.io deployment
-# Builds all services in one container for simplified deployment
+# Builds backend + frontend services in one container
+# AI Engine can run in monolith mode or as a separate Fly.io app (portkit-ai-engine)
 
 # Frontend build stage
 FROM node:25-alpine AS frontend-builder
@@ -37,9 +38,9 @@ RUN pip install --no-cache-dir --upgrade "pip>=26.1" setuptools wheel && \
 FROM debian:bookworm-slim
 WORKDIR /app
 
-# Install Nginx, Python, and build dependencies
+# Install Nginx, Python, gettext (for envsubst), and build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    nginx curl postgresql-client redis python3 python3-pip python3-dev gcc g++ \
+    nginx curl postgresql-client redis python3 python3-pip python3-dev gcc g++ gettext-base \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf python3 /usr/bin/python
 
@@ -54,8 +55,8 @@ COPY ai-engine/ /app/ai-engine/
 COPY backend/src/alembic.ini /app/backend/alembic.ini
 COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
 
-# Copy nginx configuration
-COPY nginx-fly.conf /etc/nginx/nginx.conf
+# Copy nginx configuration template (envsubst renders it at startup)
+COPY nginx-fly.conf.template /etc/nginx/nginx.conf.template
 
 # Create non-root user and symlink app data directories to mounted volume
 RUN groupadd -g 1001 appuser && \
@@ -77,6 +78,6 @@ COPY scripts/fly-startup.sh /startup.sh
 COPY scripts/run-migrations.sh /app/scripts/run-migrations.sh
 RUN chmod +x /startup.sh /app/scripts/run-migrations.sh
 
-EXPOSE 80 443 8000 8001
+EXPOSE 80 443
 
 CMD ["/startup.sh"]

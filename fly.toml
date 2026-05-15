@@ -14,6 +14,8 @@ primary_region = 'iad'
 
 [env]
   PYTHONUNBUFFERED = '1'
+  AI_ENGINE_EXTRACTED = '1'
+  AI_ENGINE_UPSTREAM = 'portkit-ai-engine.internal:8001'
 
 [processes]
   app = '/startup.sh'

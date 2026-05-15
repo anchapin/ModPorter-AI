@@ -27,6 +27,8 @@ primary_region = "iad"
   PYTHONUNBUFFERED = "1"
   ENVIRONMENT = "staging"
   LOG_LEVEL = "DEBUG"
+  AI_ENGINE_EXTRACTED = "1"
+  AI_ENGINE_UPSTREAM = "portkit-ai-engine-staging.internal:8001"
 
 # Persistent volume for staging (smaller size)
 [mounts]
