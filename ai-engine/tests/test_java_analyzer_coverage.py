@@ -24,7 +24,9 @@ class TestJavaAnalyzerCoverage:
     def test_get_tools(self, analyzer):
         tools = analyzer.get_tools()
         assert len(tools) > 0
-        assert any("analyze_mod_structure_tool" in str(t) for t in tools)
+        # Typed BaseTool subclasses set name explicitly; str() yields a Pydantic
+        # repr that does not contain the snake_case name.
+        assert any(t.name == "analyze_mod_structure_tool" for t in tools)
 
     def test_get_file_size(self, analyzer):
         with tempfile.NamedTemporaryFile() as tmp:
