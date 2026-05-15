@@ -1,7 +1,18 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
+import DOMPurify from 'dompurify';
 import { ConversionAsset } from '../../types/api';
 import * as api from '../../services/api';
 import './ConversionAssets.css';
+
+/**
+ * Sanitize string for safe DOM insertion.
+ * Prevents XSS-through-DOM attacks by escaping HTML entities.
+ */
+const sanitizeString = (input: string): string => {
+  const div = document.createElement('div');
+  div.textContent = input;
+  return div.innerHTML;
+};
 
 interface ConversionAssetsUploadProps {
   conversionId: string;
@@ -177,7 +188,7 @@ export const ConversionAssetsUpload: React.FC<ConversionAssetsUploadProps> = ({
                     {getFilePreview(file) ? (
                       <img
                         src={getFilePreview(file)!}
-                        alt={file.name}
+                        alt={sanitizeString(file.name)}
                         className="file-preview-image"
                       />
                     ) : (
@@ -185,7 +196,7 @@ export const ConversionAssetsUpload: React.FC<ConversionAssetsUploadProps> = ({
                     )}
                   </div>
                   <div className="file-info">
-                    <p className="file-name" title={file.name}>
+                    <p className="file-name" title={sanitizeString(file.name)}>
                       {file.name}
                     </p>
                     <p className="file-size">{formatFileSize(file.size)}</p>
