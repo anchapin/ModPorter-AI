@@ -125,12 +125,15 @@ jobs:
 
   # Run staging deployment
   deploy-staging:
-    name: Deploy to Staging
+    name: Deploy to Staging (Kubernetes)
     runs-on: ubuntu-latest
     needs: build
     environment: staging
     timeout-minutes: 15
-    if: github.event_name != 'pull_request' # Skip deployment for PRs
+    # Opt-in: only runs when vars.ENABLE_K8S_DEPLOY == 'true' AND a STAGING_KUBECONFIG
+    # secret exists. Real prod deploy lives in fly-deploy.yml. K8s wiring is aspirational
+    # — if you re-enable, set the repo variable and add the secret first.
+    if: github.event_name != 'pull_request' && vars.ENABLE_K8S_DEPLOY == 'true' 
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -179,12 +182,13 @@ jobs:
 
   # Run production deployment
   deploy-production:
-    name: Deploy to Production
+    name: Deploy to Production (Kubernetes)
     runs-on: ubuntu-latest
     needs: [build, deploy-staging]
     environment: production
     timeout-minutes: 20
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    # Opt-in: see deploy-staging note. Real prod deploy is fly-deploy.yml.
+    if: vars.ENABLE_K8S_DEPLOY == 'true' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     steps:
       - name: Checkout code
         uses: actions/checkout@v6

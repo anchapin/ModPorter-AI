@@ -54,12 +54,33 @@ Each individual nightly job is independently dispatchable — the workflow
 inputs (`run_mutation`, `run_codeql`, `run_ollama`, `run_trivy_image`)
 let you skip pieces from the GitHub UI.
 
+## cd.yml Kubernetes deploys (opt-in)
+
+`cd.yml` builds Docker images for backend/ai-engine/frontend and pushes
+them to GHCR. The downstream `Deploy to Staging (Kubernetes)` and
+`Deploy to Production (Kubernetes)` jobs are **opt-in** — they only run
+when both:
+
+* `vars.ENABLE_K8S_DEPLOY` is set to `true`
+* `secrets.STAGING_KUBECONFIG` / `secrets.PRODUCTION_KUBECONFIG` are configured
+
+The real production deploy lives in `fly-deploy.yml`. The K8s wiring is
+preserved for future use; until you set the variable, those jobs cleanly
+skip and `cd.yml` ends green after a successful image build.
+
+To enable later:
+
+```bash
+gh variable set ENABLE_K8S_DEPLOY --body true
+gh secret set STAGING_KUBECONFIG    < /path/to/staging-kubeconfig
+gh secret set PRODUCTION_KUBECONFIG < /path/to/production-kubeconfig
+```
+
 ## Other workflows (unchanged scope)
 
 | File                      | When                              |
 | ------------------------- | --------------------------------- |
 | `cd.yml`                  | push to `main`, tags `v*`         |
-| `deploy.yml`              | push to `main` / `production`     |
 | `fly-deploy.yml`          | push to `main`                    |
 | `release.yml`             | push of tags                      |
 | `docker-publish.yml`      | release event                     |
@@ -90,6 +111,10 @@ The following workflows were folded into `pr.yml` / `nightly.yml`:
   faster than the old base-image trick and needs zero registry maintenance.
 * `test-optimization.yml` (173 lines) — **deleted**. Was a manual playground
   for the base-image system that no longer exists.
+* `deploy.yml` (453 lines) — **deleted** (2026-05-15). SSH+DockerHub deploy
+  that had been failing for days (no DOCKERHUB_USERNAME/SSH_PRIVATE_KEY
+  secrets). Real production deploy is `fly-deploy.yml` and image build is
+  `cd.yml`. The PR-test jobs in deploy.yml were already redundant with `pr.yml`.
 
 PR triggers were removed from:
 
