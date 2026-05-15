@@ -1,8 +1,9 @@
 /**
  * Results Page for portkit Beta
-import { sanitizeForLog } from '../utils/sanitizeLog';
  * Display conversion results and download options
  */
+
+import { sanitizeForLog } from '../utils/sanitizeLog';
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
