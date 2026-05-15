@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import DOMPurify from 'dompurify';
 import type {
   InteractiveReport,
   ModConversionStatus,
@@ -99,7 +100,8 @@ export const ConversionReport: React.FC<ConversionReportProps> = ({
 
   const handleDownloadReport = (event: React.MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
-    const pageHTML = document.documentElement.outerHTML;
+    const rawHTML = document.documentElement.outerHTML;
+    const pageHTML = DOMPurify.sanitize(rawHTML);
     const blob = new Blob([pageHTML], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
