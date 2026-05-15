@@ -1,0 +1,346 @@
+{
+  "session_id": "pm-20260515T081734",
+  "generated_by": "oma-pm",
+  "generated_at": "2026-05-15T08:17:34-04:00",
+  "repo": "anchapin/portkit",
+  "tasks": [
+    {
+      "id": 1,
+      "agent": "frontend",
+      "title": "security: bump dompurify >= 3.4.0 (4 open dependabot CVEs)",
+      "priority": 1,
+      "complexity": "Low",
+      "scope": ["frontend/"],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "frontend/pnpm-lock.yaml resolves dompurify to >= 3.4.0",
+        "Dependabot alerts #209-#212 close automatically after merge",
+        "Frontend `pnpm test` and `pnpm build` remain green"
+      ],
+      "security": "Closes CVE-2026-41238 / 41239 / 41240 + GHSA-39q2-94rc-95cp",
+      "testing": "Vitest + existing playwright suites must stay green"
+    },
+    {
+      "id": 2,
+      "agent": "backend",
+      "title": "security: bump wheel >= 0.46.2 in backend image (CVE-2026-24049)",
+      "priority": 1,
+      "complexity": "Low",
+      "scope": ["backend/Dockerfile", "backend/pyproject.toml", "backend/requirements*.txt"],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "Built backend image reports `wheel >= 0.46.2` from `pip show wheel`",
+        "Trivy nightly scan no longer flags CVE-2026-24049 (alerts #336, #337)"
+      ],
+      "security": "Privilege escalation via malicious wheel unpacking",
+      "testing": "pytest backend unit suite stays green"
+    },
+    {
+      "id": 3,
+      "agent": "backend",
+      "title": "security: bump jaraco.context >= 6.1.0 in backend image (CVE-2026-23949 Zip Slip)",
+      "priority": 1,
+      "complexity": "Low",
+      "scope": ["backend/Dockerfile", "backend/requirements*.txt"],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "Built backend image reports `jaraco.context >= 6.1.0`",
+        "Trivy alert #332 closes"
+      ],
+      "security": "Tar archive path traversal in setuptools vendor copy",
+      "testing": "Backend unit + integration suites stay green"
+    },
+    {
+      "id": 4,
+      "agent": "backend",
+      "title": "security: bump pip >= 25.3 in backend image (CVE-2025-8869, CVE-2026-1703, CVE-2026-6357)",
+      "priority": 2,
+      "complexity": "Low",
+      "scope": ["backend/Dockerfile"],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "Built backend image reports `pip >= 25.3`",
+        "Trivy alerts #333, #334, #335 close"
+      ],
+      "security": "Symlink + path-traversal + ACE during wheel install",
+      "testing": "Image build smoke test passes"
+    },
+    {
+      "id": 5,
+      "agent": "backend",
+      "title": "scalability: migrate conversion_jobs_db from in-memory dict to Redis/Postgres",
+      "priority": 1,
+      "complexity": "High",
+      "scope": ["backend/src/main.py", "backend/src/services/", "backend/src/db/", "backend/src/tests/"],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "`conversion_jobs_db` global dict is removed from backend/src/main.py",
+        "Job lookups (status, progress, download) read from Redis cache → Postgres fallback",
+        "Two-instance smoke test: job created on instance A is queryable from instance B",
+        "Existing single-instance tests continue to pass",
+        "Zero-downtime migration documented in `docs/runbook.md`"
+      ],
+      "security": "No new auth surface; reuses existing get_db dependency",
+      "testing": "Add backend integration test covering cross-instance lookup via mock Redis"
+    },
+    {
+      "id": 6,
+      "agent": "backend",
+      "title": "scalability: replace local Docker volumes with Tigris/S3 object storage",
+      "priority": 1,
+      "complexity": "High",
+      "scope": ["backend/src/", "ai-engine/", "docker-compose.prod.yml", "fly.toml"],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "`backend/src/core/storage.py` S3 backend stub implemented and wired",
+        "TEMP_UPLOADS_DIR / CONVERSION_OUTPUTS_DIR / conversion-cache writes go through StorageManager",
+        "fly.toml + docker-compose.prod.yml no longer mount `:/app/cache`, `:/app/data/temp_uploads`, `:/app/data/conversion_outputs` as local volumes in production",
+        "Existing local-disk path stays available behind `STORAGE_BACKEND=local` for dev"
+      ],
+      "security": "Use IAM-scoped Tigris keys; no public ACLs; signed URLs for downloads",
+      "testing": "Integration test that uploads → AI engine reads → backend serves download via S3 backend"
+    },
+    {
+      "id": 7,
+      "agent": "backend",
+      "title": "rate-limits: switch /api/v1/conversions to per-authenticated-user limits (smoke-test failure)",
+      "priority": 2,
+      "complexity": "Medium",
+      "scope": ["backend/src/security/", "backend/src/api/conversions.py"],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "Authenticated requests are keyed by `user.id`, not by client IP, in the redis sliding-window limiter",
+        "Anonymous requests retain per-IP limits (defense in depth)",
+        "scripts/beta_smoke_test.py passes 15/15 on three consecutive runs against staging",
+        "X-RateLimit-* response headers reflect the per-key counter actually used"
+      ],
+      "security": "Reduces risk of one CGNAT IP exhausting limits for many real users",
+      "testing": "Add backend test covering both auth & anon limiter key paths"
+    },
+    {
+      "id": 8,
+      "agent": "frontend",
+      "title": "security: fix CodeQL js/log-injection alerts in websocket.ts + ConversionProgress.tsx (#76, #77, #78)",
+      "priority": 2,
+      "complexity": "Low",
+      "scope": ["frontend/src/services/websocket.ts", "frontend/src/components/ConversionProgress/"],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "User-controlled values are stripped of `\\r\\n` (or HTML-escaped if rendered) before being passed to console.log/info/error",
+        "All three CodeQL alerts (#76, #77, #78) close in next nightly scan"
+      ],
+      "security": "CWE-117 log forgery",
+      "testing": "Add unit tests asserting newline stripping in the helper function"
+    },
+    {
+      "id": 9,
+      "agent": "frontend",
+      "title": "security: fix CodeQL js/xss-through-dom alert in ConversionAssetsUpload.tsx (#75)",
+      "priority": 1,
+      "complexity": "Medium",
+      "scope": ["frontend/src/components/ConversionAssets/"],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "DOM text is no longer reinterpreted as HTML at line 179 of ConversionAssetsUpload.tsx",
+        "If markup must be rendered, route through DOMPurify ≥ 3.4.0 (depends on issue #1)",
+        "CodeQL alert #75 closes"
+      ],
+      "security": "CWE-79 / CWE-116 stored DOM XSS",
+      "testing": "Add unit test confirming sanitization of attacker-controlled asset metadata"
+    },
+    {
+      "id": 10,
+      "agent": "frontend",
+      "title": "security: fix CodeQL js/tainted-format-string alert in services/api.ts (#74)",
+      "priority": 2,
+      "complexity": "Low",
+      "scope": ["frontend/src/services/api.ts"],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "Untrusted input is passed via the `%s` placeholder (or escaped) before being used as a format string",
+        "CodeQL alert #74 closes"
+      ],
+      "security": "CWE-134",
+      "testing": "Vitest run of the api service module"
+    },
+    {
+      "id": 11,
+      "agent": "infrastructure",
+      "title": "scaling: extract AI Engine to its own Fly.io app (portkit-ai-engine)",
+      "priority": 2,
+      "complexity": "High",
+      "scope": ["fly.toml", "Dockerfile.fly", "ai-engine/", "docker-compose.prod.yml", ".github/workflows/fly-deploy.yml"],
+      "depends_on": [6],
+      "acceptance_criteria": [
+        "New `fly.ai-engine.toml` (or app folder) deploys to `portkit-ai-engine` on `performance-cpu-2x`",
+        "Backend `AI_ENGINE_URL` points at the new internal Fly.io address",
+        "Backend image no longer co-runs the AI engine in the same VM in production",
+        "Conversion smoke test passes end-to-end against the extracted app"
+      ],
+      "security": "Internal Fly.io network only; no public ingress for AI Engine",
+      "testing": "scripts/beta_smoke_test.py --env staging passes after split"
+    },
+    {
+      "id": 12,
+      "agent": "infrastructure",
+      "title": "scaling: add Fly.io auto-scale config (concurrency block + max_machines_running)",
+      "priority": 2,
+      "complexity": "Low",
+      "scope": ["fly.toml", "fly-staging.toml"],
+      "depends_on": [5],
+      "acceptance_criteria": [
+        "[[services.concurrency]] block defined with type=requests, soft_limit=50, hard_limit=100 (tunable)",
+        "[http_service] sets `min_machines_running = 1` and `max_machines_running = 5`",
+        "k6 stress test scales from 1 → ≥3 machines and back down within 10 minutes"
+      ],
+      "security": "n/a",
+      "testing": "load-tests/k6 stress scenario covers the elastic range"
+    },
+    {
+      "id": 13,
+      "agent": "infrastructure",
+      "title": "scaling: replace Celery `--concurrency=4` with `--autoscale=8,2`",
+      "priority": 2,
+      "complexity": "Low",
+      "scope": ["fly.toml", "backend/src/services/celery_config.py"],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "Worker process command line uses `--autoscale=8,2`",
+        "Worker memory ceiling can sustain 8 concurrent conversions (or doc says otherwise and reduces ceiling)",
+        "Worker logs report scale-up / scale-down events under load"
+      ],
+      "security": "n/a",
+      "testing": "k6 load test confirms queue depth drops under sustained load"
+    },
+    {
+      "id": 14,
+      "agent": "ai-engine",
+      "title": "conversion-quality: close coverage gap on the 1,661 unconverted Create recipes (top B2B lever)",
+      "priority": 2,
+      "complexity": "High",
+      "scope": ["ai-engine/agents/recipe_converter.py", "ai-engine/converters/", "ai-engine/knowledge/patterns/"],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "Audit `conversion_outputs/` for the 8-mod baseline and report current Create recipe hit-rate",
+        "Add coverage for `create:compacting`, multi-output probability handling, and tag-based ingredient resolution (`#forge:ingots/iron` etc.)",
+        "Aggregate recipe coverage on the 8-mod baseline rises from 45.0% by ≥3pp",
+        "Document Bedrock approximations chosen for machine-mechanic-dependent recipes (RPM-gated deploying, etc.)"
+      ],
+      "security": "n/a — pure conversion logic",
+      "testing": "Add ai-engine unit tests for each newly handled Create recipe type"
+    },
+    {
+      "id": 15,
+      "agent": "ai-engine",
+      "title": "rag: upgrade embedding model text-embedding-ada-002 → text-embedding-3-large",
+      "priority": 3,
+      "complexity": "Medium",
+      "scope": ["ai-engine/search/", "ai-engine/services/rag_service.py", "backend/src/db/"],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "RAG retrieval uses `text-embedding-3-large` (or `-small` for cost) by default",
+        "pgvector dimension migration runs cleanly and is reversible",
+        "Retrieval-quality smoke test (top-5 hit rate on labeled Java→Bedrock pairs) improves vs ada-002 baseline",
+        "Cost-per-conversion is tracked in `docs/COST-OPTIMIZATION.md` after the change"
+      ],
+      "security": "n/a",
+      "testing": "Add `tests/rag/test_retrieval_quality.py` with labeled fixture set"
+    },
+    {
+      "id": 16,
+      "agent": "frontend",
+      "title": "scaling: deploy frontend SPA to a CDN (Vercel / Cloudflare Pages / Tigris)",
+      "priority": 3,
+      "complexity": "Medium",
+      "scope": ["frontend/", "nginx-fly.conf", "fly.toml", ".github/workflows/cd.yml"],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "Production frontend is served from a CDN with global PoPs (not from the Fly.io nginx container)",
+        "API requests still proxy correctly via the chosen CDN's edge config",
+        "Lighthouse perf score on the home page ≥90 from at least 3 geographies"
+      ],
+      "security": "Preserve existing CSP headers; do not loosen frame-ancestors",
+      "testing": "scripts/beta_smoke_test.py passes against the CDN host"
+    },
+    {
+      "id": 17,
+      "agent": "backend",
+      "title": "scaling: add Postgres read replica + route SELECT-only endpoints to readonly_database_url",
+      "priority": 3,
+      "complexity": "Medium",
+      "scope": ["backend/src/db/base.py", "backend/src/db/", "fly.toml"],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "`get_db()` accepts a read-only flag that returns a session bound to `READONLY_DATABASE_URL` when set",
+        "Analytics, history, and listing endpoints opt in to the read-only pool",
+        "Replica lag is exported as a Prometheus metric"
+      ],
+      "security": "Reuses existing connection-string secret patterns",
+      "testing": "Add an integration test that proves writes still hit primary when readonly DSN is set"
+    },
+    {
+      "id": 18,
+      "agent": "qa",
+      "title": "ci: ratchet backend coverage floor 40% → 50% (per documented M1 promotion criterion)",
+      "priority": 3,
+      "complexity": "Low",
+      "scope": [".github/workflows/pr.yml"],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "Confirm `main` has been ≥55% for ≥4 weeks (per `docs/ci/coverage-policy.md` M1 criterion); link the supporting Codecov runs",
+        "Set `COVERAGE_FLOOR_BACKEND=50` in `.github/workflows/pr.yml`",
+        "Update the Ratchet Milestones table in `docs/ci/coverage-policy.md`"
+      ],
+      "security": "n/a",
+      "testing": "PR pipeline must pass at the new floor on this PR itself"
+    },
+    {
+      "id": 19,
+      "agent": "qa",
+      "title": "ci: ratchet AI Engine coverage floor 65% → 70% (per documented M1 promotion criterion)",
+      "priority": 3,
+      "complexity": "Low",
+      "scope": [".github/workflows/pr.yml"],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "Confirm `main` has been ≥75% for ≥4 weeks; link the supporting runs",
+        "Set `COVERAGE_FLOOR_AI_ENGINE=70` in `.github/workflows/pr.yml`",
+        "Update the Ratchet Milestones table in `docs/ci/coverage-policy.md`"
+      ],
+      "security": "n/a",
+      "testing": "PR pipeline must pass at the new floor on this PR itself"
+    },
+    {
+      "id": 20,
+      "agent": "frontend",
+      "title": "ci: add an enforced frontend coverage gate (vitest currently runs without --coverage)",
+      "priority": 3,
+      "complexity": "Low",
+      "scope": [".github/workflows/pr.yml", "frontend/vitest.config.ts"],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "Frontend job runs `vitest run --coverage` and uploads to Codecov",
+        "Initial floor set just below current measured coverage (per repo's floor-and-ratchet policy)",
+        "Coverage policy doc updated to describe frontend ratchet plan"
+      ],
+      "security": "n/a",
+      "testing": "PR pipeline runs the new gate"
+    },
+    {
+      "id": 21,
+      "agent": "backend",
+      "title": "feat: add webhook notifications for batch conversion completion (Enterprise Phase 1)",
+      "priority": 3,
+      "complexity": "Medium",
+      "scope": ["backend/src/api/", "backend/src/services/", "backend/src/db/models.py", "backend/src/tests/"],
+      "depends_on": [5],
+      "acceptance_criteria": [
+        "Users can register a webhook URL per workspace, signed with HMAC SHA-256",
+        "On batch completion the backend POSTs `batch.completed` with retry/backoff and DLQ on permanent failure",
+        "Endpoint is documented in `docs/API.md` / `docs/api-reference.md`"
+      ],
+      "security": "Reject http:// in production unless allowlisted; SSRF guard on registered URLs",
+      "testing": "Backend integration test covers signature verification and retry behaviour"
+    }
+  ]
+}

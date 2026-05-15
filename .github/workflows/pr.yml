@@ -65,6 +65,7 @@ env:
   # ---------------------------------------------------------------------------
   COVERAGE_FLOOR_BACKEND: '50'      # ratchet milestones: 50 → 60 → 70 → 80
   COVERAGE_FLOOR_AI_ENGINE: '65'    # ratchet milestones: 65 → 70 → 75 → 80
+  COVERAGE_FLOOR_FRONTEND: '50'     # ratchet milestones: 50 → 55 → 60 → 70 → 80
 
 jobs:
   # ===========================================================================
@@ -388,7 +389,16 @@ jobs:
           test "$T" = 0 && test "$L" = 0
 
       - name: Unit tests (vitest)
-        run: cd frontend && pnpm run test:ci
+        run: cd frontend && pnpm vitest run --coverage --coverage-provider=v8 --coverage-threshold-fail-global=${{ env.COVERAGE_FLOOR_FRONTEND }} --reporter=verbose --passWithNoTests
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Production build
         run: cd frontend && pnpm run build

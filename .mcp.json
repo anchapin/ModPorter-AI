@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "plur": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@plur-ai/mcp@latest"
+      ]
+    }
+  }
+}
