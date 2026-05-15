@@ -70,15 +70,16 @@ async def _check_webhook_rate_limit(request: Request, user_id: str, user_tier: s
 
 class WebhookConfigRequest(BaseModel):
     """Request to configure webhook URL."""
+
     webhook_url: str = Field(..., description="Webhook endpoint URL")
     webhook_secret: Optional[str] = Field(
-        None,
-        description="Optional secret for HMAC signature verification"
+        None, description="Optional secret for HMAC signature verification"
     )
 
 
 class WebhookConfigResponse(BaseModel):
     """Webhook configuration response."""
+
     webhook_url: Optional[str] = None
     webhook_secret_set: bool = False
     message: str
@@ -86,11 +87,13 @@ class WebhookConfigResponse(BaseModel):
 
 class WebhookTestRequest(BaseModel):
     """Request to test webhook configuration."""
+
     webhook_url: str = Field(..., description="Webhook endpoint URL to test")
 
 
 class WebhookTestResponse(BaseModel):
     """Webhook test response."""
+
     success: bool
     status_code: Optional[int] = None
     message: str
@@ -98,6 +101,7 @@ class WebhookTestResponse(BaseModel):
 
 class WebhookDeliveryResponse(BaseModel):
     """Webhook delivery record response."""
+
     id: str
     webhook_url: str
     event_type: str
@@ -133,7 +137,9 @@ async def get_webhook_config(
     return WebhookConfigResponse(
         webhook_url=current_user.webhook_url,
         webhook_secret_set=current_user.webhook_secret is not None,
-        message="Webhook configuration retrieved" if current_user.webhook_url else "No webhook configured",
+        message="Webhook configuration retrieved"
+        if current_user.webhook_url
+        else "No webhook configured",
     )
 
 
@@ -261,7 +267,9 @@ async def test_webhook(
         return WebhookTestResponse(
             success=success,
             status_code=response.status_code,
-            message="Webhook endpoint responded successfully" if success else f"Webhook returned status {response.status_code}",
+            message="Webhook endpoint responded successfully"
+            if success
+            else f"Webhook returned status {response.status_code}",
         )
 
     except httpx.TimeoutException:

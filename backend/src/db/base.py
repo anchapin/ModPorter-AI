@@ -73,7 +73,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 async def get_readonly_db() -> AsyncGenerator[AsyncSession, None]:
     """Readonly database session - use for SELECT queries only.
-    
+
     Routes SELECT queries to the read replica when configured,
     falling back to primary if replica is unavailable.
     """

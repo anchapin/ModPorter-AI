@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 class WebhookDeliveryStatus(str):
     """Webhook delivery status"""
+
     PENDING = "pending"
     SUCCESS = "success"
     FAILED = "failed"
@@ -38,6 +39,7 @@ class WebhookDeliveryStatus(str):
 
 class WebhookPayload(BaseModel):
     """Webhook payload for batch completion"""
+
     event: str = "batch.completed"
     batch_id: str
     user_id: str
@@ -51,6 +53,7 @@ class WebhookPayload(BaseModel):
 
 class WebhookConfig(BaseModel):
     """Webhook configuration"""
+
     url: HttpUrl
     secret: Optional[str] = None
     timeout_seconds: int = 30
@@ -63,6 +66,7 @@ class WebhookDelivery(Base):
 
     Stores delivery status, attempts, and response data for debugging.
     """
+
     __tablename__ = "webhook_deliveries"
 
     id: Mapped[str] = mapped_column(
@@ -155,11 +159,8 @@ class WebhookService:
         """Generate HMAC-SHA256 signature for payload verification"""
         import hmac
         import hashlib
-        return hmac.new(
-            secret.encode(),
-            payload.encode(),
-            hashlib.sha256
-        ).hexdigest()
+
+        return hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
 
     async def send_webhook(
         self,
@@ -226,6 +227,7 @@ class WebhookService:
 
                 if secret:
                     import json
+
                     payload_str = json.dumps(payload, sort_keys=True)
                     headers["X-Webhook-Signature"] = self._generate_signature(payload_str, secret)
 
@@ -260,21 +262,15 @@ class WebhookService:
             except httpx.TimeoutException as e:
                 last_error = f"Timeout: {str(e)}"
                 delivery.error_message = last_error
-                logger.warning(
-                    f"Webhook timeout: {delivery.id} (attempt {attempt})"
-                )
+                logger.warning(f"Webhook timeout: {delivery.id} (attempt {attempt})")
             except httpx.ConnectError as e:
                 last_error = f"Connection error: {str(e)}"
                 delivery.error_message = last_error
-                logger.warning(
-                    f"Webhook connection error: {delivery.id} (attempt {attempt})"
-                )
+                logger.warning(f"Webhook connection error: {delivery.id} (attempt {attempt})")
             except Exception as e:
                 last_error = f"Unexpected error: {type(e).__name__}: {str(e)}"
                 delivery.error_message = last_error
-                logger.error(
-                    f"Webhook unexpected error: {delivery.id} (attempt {attempt}): {e}"
-                )
+                logger.error(f"Webhook unexpected error: {delivery.id} (attempt {attempt}): {e}")
 
             delivery.attempts = attempt
             delivery.last_attempt_at = datetime.now(timezone.utc)
@@ -290,8 +286,7 @@ class WebhookService:
         await self.db.commit()
 
         logger.error(
-            f"Webhook delivery exhausted all retries: {delivery.id}, "
-            f"final_error: {last_error}"
+            f"Webhook delivery exhausted all retries: {delivery.id}, final_error: {last_error}"
         )
         return delivery
 

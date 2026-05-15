@@ -40,7 +40,9 @@ if not SECRET_KEY:
 # Configure via JWT_ALGORITHM env var (default: HS256)
 _JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 if _JWT_ALGORITHM not in ("HS256", "HS384", "HS512", "RS256", "RS384", "RS512"):
-    raise ValueError(f"Unsupported JWT_ALGORITHM: {_JWT_ALGORITHM}. Use HS256|HS384|HS512|RS256|RS384|RS512")
+    raise ValueError(
+        f"Unsupported JWT_ALGORITHM: {_JWT_ALGORITHM}. Use HS256|HS384|HS512|RS256|RS384|RS512"
+    )
 ALGORITHM = _JWT_ALGORITHM
 
 # For RS256/RS384/RS512, load RSA keys from environment or files
@@ -63,9 +65,13 @@ if ALGORITHM.startswith("RS"):
                 with open(_public_key_path, "r") as f:
                     _public_key = f.read()
             except OSError as e:
-                raise ValueError(f"RS256 requires RSA_PRIVATE_KEY/RSA_PUBLIC_KEY or RSA_PRIVATE_KEY_FILE/RSA_PUBLIC_KEY_FILE: {e}")
+                raise ValueError(
+                    f"RS256 requires RSA_PRIVATE_KEY/RSA_PUBLIC_KEY or RSA_PRIVATE_KEY_FILE/RSA_PUBLIC_KEY_FILE: {e}"
+                )
         else:
-            raise ValueError("RS256 algorithm requires RSA_PRIVATE_KEY and RSA_PUBLIC_KEY environment variables or files")
+            raise ValueError(
+                "RS256 algorithm requires RSA_PRIVATE_KEY and RSA_PUBLIC_KEY environment variables or files"
+            )
     _RSA_PRIVATE_KEY = _private_key
     _RSA_PUBLIC_KEY = _public_key
 

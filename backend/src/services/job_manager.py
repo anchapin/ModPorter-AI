@@ -433,8 +433,7 @@ class JobManager:
         # SSRF protection: validate URL before making HTTP request
         if not is_safe_url(webhook_url):
             logger.error(
-                f"Webhook SSRF blocked for job {job.job_id}: "
-                f"URL targets private/blocked address"
+                f"Webhook SSRF blocked for job {job.job_id}: URL targets private/blocked address"
             )
             return
 

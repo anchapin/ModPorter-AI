@@ -63,7 +63,9 @@ class StorageManager:
 
         # S3 config - works with AWS, Tigris, MinIO, etc.
         self.s3_bucket = s3_bucket or os.getenv("S3_BUCKET", "")
-        self.s3_region = s3_region or os.getenv("AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "us-east-1"))
+        self.s3_region = s3_region or os.getenv(
+            "AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+        )
         self.s3_endpoint_url = s3_endpoint_url or os.getenv("S3_ENDPOINT_URL", "")
 
         self.default_ttl_days = default_ttl_days
@@ -86,8 +88,7 @@ class StorageManager:
             from aiobotocore.session import AioSession
         except ImportError:
             raise ImportError(
-                "aiobotocore is required for S3 storage. "
-                "Install it with: pip install aiobotocore"
+                "aiobotocore is required for S3 storage. Install it with: pip install aiobotocore"
             )
 
         session = AioSession()
@@ -109,7 +110,9 @@ class StorageManager:
             await self._s3_client.__aexit__(None, None, None)
             self._s3_client = None
 
-    def _s3_key(self, job_id: str, filename: str, user_id: str = "default", category: str = "original") -> str:
+    def _s3_key(
+        self, job_id: str, filename: str, user_id: str = "default", category: str = "original"
+    ) -> str:
         """Generate an S3 object key following the same directory structure."""
         key_templates = {
             "original": f"{self.UPLOADS_DIR}/{user_id}/{job_id}/{filename}",
@@ -232,7 +235,10 @@ class StorageManager:
             except client.exceptions.NoSuchKey:
                 continue
             except Exception as e:
-                if hasattr(e, "response") and e.response.get("Error", {}).get("Code") == "NoSuchKey":
+                if (
+                    hasattr(e, "response")
+                    and e.response.get("Error", {}).get("Code") == "NoSuchKey"
+                ):
                     continue
                 logger.error(f"S3 get_object error for {key}: {e}")
                 return None
@@ -346,7 +352,9 @@ class StorageManager:
         for prefix_base in [self.UPLOADS_DIR, self.PROCESSING_DIR, self.RESULTS_DIR]:
             try:
                 paginator = client.get_paginator("list_objects_v2")
-                async for page in paginator.paginate(Bucket=self.s3_bucket, Prefix=f"{prefix_base}/"):
+                async for page in paginator.paginate(
+                    Bucket=self.s3_bucket, Prefix=f"{prefix_base}/"
+                ):
                     for obj in page.get("Contents", []):
                         last_modified = obj["LastModified"]
                         if last_modified.tzinfo is None:

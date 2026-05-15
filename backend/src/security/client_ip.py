@@ -37,12 +37,12 @@ class ClientIPExtractor:
         """
         if trusted_proxies is not None:
             # Build comma-separated string from list
-            allowlist_str = ",".join(trusted_proxies) if isinstance(trusted_proxies, list) else trusted_proxies
+            allowlist_str = (
+                ",".join(trusted_proxies) if isinstance(trusted_proxies, list) else trusted_proxies
+            )
             self._trusted_proxies = self._parse_allowlist(allowlist_str)
         else:
-            self._trusted_proxies = self._parse_allowlist(
-                settings.trusted_proxy_allowlist
-            )
+            self._trusted_proxies = self._parse_allowlist(settings.trusted_proxy_allowlist)
 
     def _parse_allowlist(self, allowlist_str: str) -> List[ipaddress.IPv4Network]:
         """
@@ -123,9 +123,7 @@ class ClientIPExtractor:
                 # We take the FIRST IP as that's the original client
                 client_ip = forwarded.split(",")[0].strip()
                 if client_ip:
-                    logger.debug(
-                        f"Trusted proxy {direct_client_ip} forwarded for {client_ip}"
-                    )
+                    logger.debug(f"Trusted proxy {direct_client_ip} forwarded for {client_ip}")
                     return client_ip
             else:
                 # Direct client is NOT a trusted proxy - X-Forwarded-For could be spoofed
@@ -137,9 +135,7 @@ class ClientIPExtractor:
                     )
                     return direct_client_ip
                 else:
-                    logger.warning(
-                        f"X-Forwarded-For '{forwarded}' ignored - no direct client IP"
-                    )
+                    logger.warning(f"X-Forwarded-For '{forwarded}' ignored - no direct client IP")
 
         # Fall back to direct client IP or unknown
         return direct_client_ip or "unknown"

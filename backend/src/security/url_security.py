@@ -123,9 +123,7 @@ def is_safe_url(url: str, allowed_schemes: tuple = ("http", "https")) -> bool:
                 ip = sockaddr[0]
 
             if is_private_ip(ip):
-                logger.warning(
-                    f"Blocked private/loopback IP: {ip} for hostname: {hostname}"
-                )
+                logger.warning(f"Blocked private/loopback IP: {ip} for hostname: {hostname}")
                 return False
 
         return True
