@@ -111,13 +111,12 @@ class StorageManager:
 
     def _s3_key(self, job_id: str, filename: str, user_id: str = "default", category: str = "original") -> str:
         """Generate an S3 object key following the same directory structure."""
-        if category == "original":
-            return f"{self.UPLOADS_DIR}/{user_id}/{job_id}/{filename}"
-        elif category == "processing":
-            return f"{self.PROCESSING_DIR}/{job_id}/{filename}"
-        elif category == "result":
-            return f"{self.RESULTS_DIR}/{job_id}/{filename}"
-        return f"{category}/{job_id}/{filename}"
+        key_templates = {
+            "original": f"{self.UPLOADS_DIR}/{user_id}/{job_id}/{filename}",
+            "processing": f"{self.PROCESSING_DIR}/{job_id}/{filename}",
+            "result": f"{self.RESULTS_DIR}/{job_id}/{filename}",
+        }
+        return key_templates.get(category, f"{category}/{job_id}/{filename}")
 
     def _init_local_storage(self):
         """Initialize local storage directory structure"""
