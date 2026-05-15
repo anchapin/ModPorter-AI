@@ -44,7 +44,7 @@ class Config:
 
     # RAG Configuration
     RAG_EMBEDDING_MODEL: str = os.getenv(
-        "RAG_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"
+        "RAG_EMBEDDING_MODEL", "openai/text-embedding-3-large"
     )
     RAG_SIMILARITY_THRESHOLD: float = float(os.getenv("RAG_SIMILARITY_THRESHOLD", "0.7"))
     RAG_MAX_RESULTS: int = int(os.getenv("RAG_MAX_RESULTS", "10"))

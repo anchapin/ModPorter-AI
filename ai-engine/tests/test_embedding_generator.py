@@ -39,7 +39,7 @@ class TestEmbeddingCache:
     def test_cache_put_and_get(self):
         """Test storing and retrieving embeddings."""
         cache = EmbeddingCache()
-        test_embedding = np.random.rand(1536).astype(np.float32)
+        test_embedding = np.random.rand(3072).astype(np.float32)
 
         cache.put("test text", "test-model", test_embedding)
         result = cache.get("test text", "test-model")
@@ -57,7 +57,7 @@ class TestEmbeddingCache:
     def test_cache_stats(self):
         """Test cache statistics tracking."""
         cache = EmbeddingCache()
-        test_embedding = np.random.rand(1536).astype(np.float32)
+        test_embedding = np.random.rand(3072).astype(np.float32)
 
         cache.put("test text", "test-model", test_embedding)
         cache.get("test text", "test-model")  # hit
@@ -72,7 +72,7 @@ class TestEmbeddingCache:
     def test_cache_clear(self):
         """Test clearing cache resets all data."""
         cache = EmbeddingCache()
-        test_embedding = np.random.rand(1536).astype(np.float32)
+        test_embedding = np.random.rand(3072).astype(np.float32)
 
         cache.put("test text", "test-model", test_embedding)
         cache.clear()
@@ -88,26 +88,26 @@ class TestValidateEmbeddingDimensions:
 
     def test_valid_dimensions(self):
         """Test validation passes for correct dimensions."""
-        embedding = np.random.rand(1536).astype(np.float32)
-        assert validate_embedding_dimensions(embedding, 1536) is True
+        embedding = np.random.rand(3072).astype(np.float32)
+        assert validate_embedding_dimensions(embedding, 3072) is True
 
     def test_invalid_dimensions(self):
         """Test validation fails for incorrect dimensions."""
-        embedding = np.random.rand(1536).astype(np.float32)
+        embedding = np.random.rand(3072).astype(np.float32)
         assert validate_embedding_dimensions(embedding, 384) is False
 
     def test_none_embedding(self):
         """Test validation fails for None input."""
-        assert validate_embedding_dimensions(None, 1536) is False
+        assert validate_embedding_dimensions(None, 3072) is False
 
     def test_non_numpy_array(self):
         """Test validation fails for non-numpy arrays."""
-        assert validate_embedding_dimensions([1, 2, 3], 1536) is False
+        assert validate_embedding_dimensions([1, 2, 3], 3072) is False
 
     def test_empty_array(self):
         """Test validation fails for empty arrays."""
         embedding = np.array([])
-        assert validate_embedding_dimensions(embedding, 1536) is False
+        assert validate_embedding_dimensions(embedding, 3072) is False
 
 
 class TestGetEmbeddingConfig:
@@ -118,7 +118,7 @@ class TestGetEmbeddingConfig:
         config = get_embedding_config()
 
         assert config["provider"] == "auto"
-        assert config["openai_model"] == "text-embedding-3-small"
+        assert config["openai_model"] == "text-embedding-3-large"
         assert config["local_model"] == "all-MiniLM-L6-v2"
         assert config["dimensions"] == DEFAULT_DIMENSION
         assert config["cache_enabled"] is True
@@ -139,19 +139,19 @@ class TestEmbeddingResult:
 
     def test_embedding_result_creation(self):
         """Test creating EmbeddingResult objects."""
-        embedding = np.random.rand(1536).astype(np.float32)
+        embedding = np.random.rand(3072).astype(np.float32)
         result = EmbeddingResult(
-            embedding=embedding, model="test-model", dimensions=1536, token_count=10
+            embedding=embedding, model="test-model", dimensions=3072, token_count=10
         )
 
         assert result.model == "test-model"
-        assert result.dimensions == 1536
+        assert result.dimensions == 3072
         assert result.token_count == 10
 
     def test_embedding_result_without_token_count(self):
         """Test EmbeddingResult without token count."""
-        embedding = np.random.rand(1536).astype(np.float32)
-        result = EmbeddingResult(embedding=embedding, model="test-model", dimensions=1536)
+        embedding = np.random.rand(3072).astype(np.float32)
+        result = EmbeddingResult(embedding=embedding, model="test-model", dimensions=3072)
 
         assert result.token_count is None
 
@@ -161,7 +161,7 @@ class TestSupportedDimensions:
 
     def test_supported_dimensions_contains_standard(self):
         """Test that standard dimensions are supported."""
-        assert 1536 in SUPPORTED_DIMENSIONS  # OpenAI text-embedding-3-small/large
+        assert 3072 in SUPPORTED_DIMENSIONS  # OpenAI text-embedding-3-large
         assert 384 in SUPPORTED_DIMENSIONS  # MiniLM-L6-v2
         assert 768 in SUPPORTED_DIMENSIONS  # BERT base
 

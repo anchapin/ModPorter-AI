@@ -17,9 +17,9 @@ pytestmark = pytest.mark.skipif(
 )
 
 # Sample data
-SAMPLE_EMBEDDING_1 = [0.1] * 1536
-SAMPLE_EMBEDDING_2 = [0.2] * 1536
-SAMPLE_EMBEDDING_3 = [0.3] * 1536
+SAMPLE_EMBEDDING_1 = [0.1] * 3072
+SAMPLE_EMBEDDING_2 = [0.2] * 3072
+SAMPLE_EMBEDDING_3 = [0.3] * 3072
 SAMPLE_SOURCE_1 = "doc1.txt"
 SAMPLE_SOURCE_2 = "doc2.txt"
 SAMPLE_HASH_1 = "hash1"
@@ -89,7 +89,7 @@ async def test_update_document_embedding(test_db_session: AsyncSession):
     )
 
     updated_source = "updated_doc.txt"
-    updated_embedding_vector = [0.15] * 1536
+    updated_embedding_vector = [0.15] * 3072
 
     updated = await crud.update_document_embedding(
         db=test_db_session,
@@ -397,7 +397,7 @@ async def test_find_similar_embeddings_empty_db(
         pytest.skip("pgvector extension not available - requires PostgreSQL")
 
     results = await crud.find_similar_embeddings(
-        db=test_db_session, query_embedding=[0.1] * 1536, limit=5
+        db=test_db_session, query_embedding=[0.1] * 3072, limit=5
     )
 
     assert len(results) == 0
@@ -408,14 +408,14 @@ async def test_find_similar_embeddings_empty_db(
 async def test_find_similar_embeddings_high_dimension(
     test_db_session: AsyncSession, pgvector_extension_available
 ):
-    """Test similarity search with high-dimensional embeddings (1536 dims like OpenAI)."""
+    """Test similarity search with high-dimensional embeddings (3072 dims like OpenAI text-embedding-3-large)."""
     if not pgvector_extension_available:
         pytest.skip("pgvector extension not available - requires PostgreSQL")
 
-    # Create embeddings with 1536 dimensions (OpenAI embedding size)
-    embedding_a = [0.1] * 1536
-    embedding_b = [0.2] * 1536  # Similar
-    embedding_c = [0.9] * 1536  # Dissimilar
+    # Create embeddings with 3072 dimensions (OpenAI text-embedding-3-large size)
+    embedding_a = [0.1] * 3072
+    embedding_b = [0.2] * 3072  # Similar
+    embedding_c = [0.9] * 3072  # Dissimilar
 
     await crud.create_document_embedding(
         db=test_db_session,
