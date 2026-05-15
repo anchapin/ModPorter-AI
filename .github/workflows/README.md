@@ -14,7 +14,7 @@ Heavy validation runs nightly through **`nightly.yml`**.
 | `backend-tests`  | pytest unit + xdist + coverage         | `backend`                 | ~3–4 min           |
 | `ai-engine-tests`| pytest unit + xdist + coverage         | `ai_engine`               | ~5–7 min           |
 | `frontend`       | tsc + eslint + vitest + vite build     | `frontend`                | ~3–4 min           |
-| `integration`    | postgres + redis service containers    | `backend` or `ai_engine`  | ~3–5 min           |
+| `integration`    | sqlite + mocked services (matches old ci.yml) | `backend` or `ai_engine`  | ~2–3 min           |
 | `security`       | pip-audit + pnpm audit + Trivy fs      | `python` or `frontend`    | ~60–90 s           |
 | `workflow-lint`  | YAML validation                        | `.github/workflows/**`    | ~10 s              |
 | `pr-gates`       | aggregator (single status check)       | always                    | ~5 s               |
@@ -45,6 +45,9 @@ the single biggest free-runner saving.
 * `trivy-image` (build + scan Docker images for backend, ai-engine, frontend)
 * `ollama-integration` (pulls real `llama3.2`, only on Sundays or explicit
   dispatch with `run_ollama=true`)
+* `integration-real-services` (full backend + ai-engine integration suite
+  against real PostgreSQL + Redis service containers; covers the
+  `@pytest.mark.real_service` tests that PRs skip)
 * `nightly-summary`
 
 Each individual nightly job is independently dispatchable — the workflow

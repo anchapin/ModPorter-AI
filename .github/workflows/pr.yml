@@ -387,49 +387,24 @@ jobs:
 
   # ===========================================================================
   # 6. INTEGRATION TESTS — only when backend or ai-engine code changed.
-  # Postgres + Redis service containers (host-network mode, no inner container).
-  # NO Ollama (mocked); real-Ollama tests live in nightly.yml.
-  # (~3-5 min)
+  # Matches prior ci.yml contract: TESTING=true with the in-memory SQLite
+  # default (settings.database_url falls back to sqlite+aiosqlite:///:memory:).
+  # Real-PostgreSQL integration runs nightly (USE_REAL_SERVICES=1, see
+  # nightly.yml::integration-real-services). DISABLE_REDIS=true short-circuits
+  # the redis client in unit-style integration tests.
+  # (~2-3 min, no service containers needed)
   # ===========================================================================
   integration:
-    name: Integration tests (postgres + redis)
+    name: Integration tests (sqlite, mocked services)
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.ai_engine == 'true'
-    # Match prior ci.yml behaviour: integration suite has known pytest-asyncio
-    # event-loop / DB-fixture flakiness; advisory on PRs, blocking on push to main.
-    continue-on-error: ${{ github.event_name == 'pull_request' }}
-    timeout-minutes: 20
-    services:
-      postgres:
-        image: pgvector/pgvector:pg15
-        env:
-          POSTGRES_DB: modporter_test
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-        options: >-
-          --health-cmd "pg_isready -U postgres -d modporter_test"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-        ports: ['5434:5432']
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-        ports: ['6380:6379']
+    timeout-minutes: 15
     env:
-      USE_REAL_SERVICES: '1'
-      TEST_DATABASE_URL: 'postgresql+asyncpg://postgres:password@localhost:5434/modporter_test'
-      TEST_REDIS_URL: 'redis://localhost:6380/0'
-      DATABASE_URL: 'postgresql+asyncpg://postgres:password@localhost:5434/modporter_test'
-      REDIS_URL: 'redis://localhost:6380/0'
+      TESTING: 'true'
+      DISABLE_REDIS: 'true'
       OPENAI_API_KEY: test_key
       ANTHROPIC_API_KEY: test_key
-      TESTING: 'true'
     steps:
       - uses: actions/checkout@v6
 
@@ -460,11 +435,6 @@ jobs:
           [ -n "${BE_PID:-}" ] && wait $BE_PID
           [ -n "${AI_PID:-}" ] && wait $AI_PID
           uv pip install --system pytest pytest-asyncio pytest-timeout pytest-cov
-
-      - name: Wait for services
-        run: |
-          timeout 60 bash -c 'until nc -z localhost 5434; do sleep 1; done'
-          timeout 60 bash -c 'until nc -z localhost 6380; do sleep 1; done'
 
       - name: Backend integration tests
         if: needs.changes.outputs.backend == 'true'
@@ -614,9 +584,6 @@ jobs:
           R_WF:     ${{ needs.workflow-lint.result }}
         run: |
           fail=0
-          # On PRs, integration is advisory (matches prior ci.yml continue-on-error
-          # for flaky pytest-asyncio integration suite). On push to main, it blocks.
-          IS_PR='${{ github.event_name == 'pull_request' }}'
           for kv in \
             "lockfile-drift=$R_LOCK" \
             "lint=$R_LINT" \
@@ -627,20 +594,9 @@ jobs:
             "security=$R_SEC" \
             "workflow-lint=$R_WF"; do
             name=${kv%=*}; result=${kv#*=}
-            advisory=0
-            if [ "$name" = "integration" ] && [ "$IS_PR" = "true" ]; then
-              advisory=1
-            fi
             case "$result" in
               success|skipped) printf "  ✓ %-18s %s\n" "$name" "$result" ;;
-              *)
-                if [ $advisory -eq 1 ]; then
-                  printf "  ⚠ %-18s %s (advisory on PR)\n" "$name" "$result"
-                else
-                  printf "  ✗ %-18s %s\n" "$name" "$result"
-                  fail=1
-                fi
-                ;;
+              *)               printf "  ✗ %-18s %s\n" "$name" "$result"; fail=1 ;;
             esac
           done
           if [ $fail -ne 0 ]; then
