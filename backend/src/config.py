@@ -6,6 +6,15 @@ import os
 class Settings(BaseSettings):
     model_config = ConfigDict(env_file="../.env", extra="ignore")
 
+    # Trusted proxy allowlist for X-Forwarded-For validation
+    # Comma-separated list of IP addresses/CIDR ranges that are allowed to set X-Forwarded-For
+    # Empty means no proxies are trusted (X-Forwarded-For will be ignored)
+    # Example: "10.0.0.1,192.168.1.0/24,127.0.0.1"
+    trusted_proxy_allowlist: str = Field(
+        default="",
+        alias="TRUSTED_PROXY_ALLOWLIST",
+    )
+
     database_url_raw: str = Field(
         default="postgresql://INVALID_CONFIG",
         alias="DATABASE_URL",

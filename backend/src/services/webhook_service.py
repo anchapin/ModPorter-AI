@@ -22,6 +22,7 @@ from pydantic import BaseModel, HttpUrl
 
 from db.declarative_base import Base
 from db.models import JSONType
+from security.url_security import is_safe_url, SSRFProtectionError
 from services.retry import RetryConfig, retry_async
 
 logger = logging.getLogger(__name__)
@@ -193,6 +194,16 @@ class WebhookService:
         self.db.add(delivery)
         await self.db.commit()
         await self.db.refresh(delivery)
+
+        # SSRF protection: validate URL before making HTTP request
+        if not is_safe_url(webhook_url):
+            error_msg = f"Webhook URL targets blocked address: {webhook_url}"
+            delivery.status = WebhookDeliveryStatus.FAILED
+            delivery.error_message = error_msg
+            delivery.attempts = 0
+            await self.db.commit()
+            logger.error(f"Webhook SSRF blocked: {error_msg}")
+            return delivery
 
         retry_config = RetryConfig(
             max_attempts=max_retries,

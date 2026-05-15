@@ -18,6 +18,7 @@ from dataclasses import dataclass, field, asdict
 
 from core.redis import get_redis_client, JobQueue
 from core.storage import StorageManager
+from security.url_security import is_safe_url, SSRFProtectionError
 
 logger = logging.getLogger(__name__)
 
@@ -427,6 +428,14 @@ class JobManager:
 
         webhook_url = job.options.get("webhook_url")
         if not webhook_url:
+            return
+
+        # SSRF protection: validate URL before making HTTP request
+        if not is_safe_url(webhook_url):
+            logger.error(
+                f"Webhook SSRF blocked for job {job.job_id}: "
+                f"URL targets private/blocked address"
+            )
             return
 
         payload = {

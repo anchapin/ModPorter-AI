@@ -5,6 +5,7 @@ Provides per-user and global rate limiting for API endpoints.
 Implements token bucket algorithm for smooth rate limiting.
 
 Issue: #456 - Performance Optimization - Rate limiting for API endpoints
+Issue: #1534 - security(backend): validate X-Forwarded-For against trusted proxy allowlist
 """
 
 import time
@@ -26,6 +27,7 @@ from services.metrics import (
     update_active_rate_limit_clients,
 )
 from security.auth import verify_token
+from security.client_ip import get_client_ip_extractor
 
 logger = logging.getLogger(__name__)
 
@@ -88,13 +90,13 @@ class RateLimiter:
             await self._redis.close()
 
     def _get_client_key(self, request: Request) -> str:
-        """Get unique key for client (IP + optional user ID)"""
-        # Get IP address
-        forwarded = request.headers.get("X-Forwarded-For")
-        if forwarded:
-            ip = forwarded.split(",")[0].strip()
-        else:
-            ip = request.client.host if request.client else "unknown"
+        """Get unique key for client (IP + optional user ID)
+
+        Uses secure client IP extraction that validates X-Forwarded-For
+        against the trusted proxy allowlist.
+        """
+        # Get IP address using secure extraction
+        ip = get_client_ip_extractor().get_client_ip(request)
 
         # Check for authenticated user
         user_id = getattr(request.state, "user_id", None)
@@ -532,4 +534,8 @@ conversion_rate_limiter = RateLimiter(
 
 upload_rate_limiter = RateLimiter(
     config=RateLimitConfig(requests_per_minute=60, requests_per_hour=600, burst_size=10)
+)
+
+webhook_rate_limiter = RateLimiter(
+    config=RateLimitConfig(requests_per_minute=20, requests_per_hour=100, burst_size=5)
 )

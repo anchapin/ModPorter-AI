@@ -5,11 +5,12 @@ Provides endpoints for enterprise customers to configure webhook notifications
 for batch conversion completion events.
 
 Issue #1501 - Enterprise Phase 1: Webhook Notifications for Batch Completion
+Issue #1536 - Security: Rate limiting for webhook management endpoints
 """
 
 import logging
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from pydantic import BaseModel, Field, HttpUrl
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -17,10 +18,54 @@ from sqlalchemy import select
 from db.base import get_db
 from db.models import User
 from api._authz import get_current_user
+from services.rate_limiter import (
+    RateLimitConfig,
+    webhook_rate_limiter,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/webhooks", tags=["Webhook Management"])
+
+
+async def _check_webhook_rate_limit(request: Request, user_id: str, user_tier: str) -> None:
+    """
+    Check rate limit for webhook endpoints.
+    Raises HTTPException 429 if rate limit exceeded.
+    """
+    from starlette.datastructures import Headers
+
+    class MockRequest:
+        def __init__(self, uid: str, tier: str, client_host: str = "127.0.0.1"):
+            self.state = type("State", (), {"user_id": uid, "user_tier": tier})()
+            self.client = type("Client", (), {"host": client_host})()
+            self.headers = Headers()
+
+    base_config = RateLimitConfig(
+        requests_per_minute=20,
+        requests_per_hour=100,
+        burst_size=5,
+    )
+
+    mock_request = MockRequest(user_id, user_tier)
+    is_allowed, metadata = await webhook_rate_limiter.check_rate_limit(
+        mock_request, override_config=base_config
+    )
+
+    if not is_allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "error": "rate_limit_exceeded",
+                "message": f"Webhook rate limit exceeded for {user_tier} tier. Maximum {metadata['limit_minute']} requests per minute.",
+                "retry_after": metadata.get("retry_after", 60),
+                "rate_limit": {
+                    "limit": metadata["limit_minute"],
+                    "remaining": metadata["remaining_minute"],
+                    "reset_at": metadata["reset_at_minute"],
+                },
+            },
+        )
 
 
 class WebhookConfigRequest(BaseModel):
@@ -66,6 +111,7 @@ class WebhookDeliveryResponse(BaseModel):
 
 @router.get("/config", response_model=WebhookConfigResponse)
 async def get_webhook_config(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -82,6 +128,8 @@ async def get_webhook_config(
             detail="Webhook configuration is only available for enterprise customers",
         )
 
+    await _check_webhook_rate_limit(request, user_id, current_user.subscription_tier)
+
     return WebhookConfigResponse(
         webhook_url=current_user.webhook_url,
         webhook_secret_set=current_user.webhook_secret is not None,
@@ -91,7 +139,8 @@ async def get_webhook_config(
 
 @router.post("/config", response_model=WebhookConfigResponse)
 async def set_webhook_config(
-    request: WebhookConfigRequest,
+    request: Request,
+    request_body: WebhookConfigRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -108,30 +157,33 @@ async def set_webhook_config(
             detail="Webhook configuration is only available for enterprise customers",
         )
 
+    await _check_webhook_rate_limit(request, user_id, current_user.subscription_tier)
+
     # Validate URL format
-    if not request.webhook_url.startswith(("http://", "https://")):
+    if not request_body.webhook_url.startswith(("http://", "https://")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Webhook URL must start with http:// or https://",
         )
 
-    current_user.webhook_url = request.webhook_url
-    if request.webhook_secret:
-        current_user.webhook_secret = request.webhook_secret
+    current_user.webhook_url = request_body.webhook_url
+    if request_body.webhook_secret:
+        current_user.webhook_secret = request_body.webhook_secret
 
     await db.commit()
 
-    logger.info(f"Webhook configured for user {user_id}: {request.webhook_url}")
+    logger.info(f"Webhook configured for user {user_id}: {request_body.webhook_url}")
 
     return WebhookConfigResponse(
-        webhook_url=request.webhook_url,
-        webhook_secret_set=request.webhook_secret is not None,
+        webhook_url=request_body.webhook_url,
+        webhook_secret_set=request_body.webhook_secret is not None,
         message="Webhook configuration updated successfully",
     )
 
 
 @router.delete("/config", response_model=WebhookConfigResponse)
 async def delete_webhook_config(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -145,6 +197,8 @@ async def delete_webhook_config(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Webhook configuration is only available for enterprise customers",
         )
+
+    await _check_webhook_rate_limit(request, user_id, current_user.subscription_tier)
 
     current_user.webhook_url = None
     current_user.webhook_secret = None
@@ -162,7 +216,8 @@ async def delete_webhook_config(
 
 @router.post("/test", response_model=WebhookTestResponse)
 async def test_webhook(
-    request: WebhookTestRequest,
+    request: Request,
+    request_body: WebhookTestRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -177,6 +232,8 @@ async def test_webhook(
             detail="Webhook testing is only available for enterprise customers",
         )
 
+    await _check_webhook_rate_limit(request, str(current_user.id), current_user.subscription_tier)
+
     import httpx
     from datetime import datetime, timezone
 
@@ -190,7 +247,7 @@ async def test_webhook(
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.post(
-                request.webhook_url,
+                request_body.webhook_url,
                 json=test_payload,
                 headers={
                     "Content-Type": "application/json",
@@ -229,6 +286,7 @@ async def test_webhook(
 
 @router.get("/deliveries", response_model=list[WebhookDeliveryResponse])
 async def get_webhook_deliveries(
+    request: Request,
     limit: int = Query(default=50, le=100),
     status_filter: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
@@ -244,6 +302,8 @@ async def get_webhook_deliveries(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Webhook delivery history is only available for enterprise customers",
         )
+
+    await _check_webhook_rate_limit(request, str(current_user.id), current_user.subscription_tier)
 
     from services.webhook_service import WebhookDelivery, WebhookDeliveryStatus
     from sqlalchemy import desc

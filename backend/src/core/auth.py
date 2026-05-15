@@ -12,6 +12,7 @@ Provides high-level authentication functionality including:
 import hashlib
 import hmac
 import logging
+import os
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -27,9 +28,44 @@ logger = logging.getLogger(__name__)
 SECRET_KEY = get_secret("SECRET_KEY")
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY must be set in the environment or secrets manager")
-ALGORITHM = "HS256"
+
+# JWT algorithm selection for enterprise scale
+# HS256: Symmetric - fast, simple key management (default for backwards compatibility)
+# RS256: Asymmetric (RSA) - recommended for enterprise/multi-service architectures
+#   - Private key for signing stays on auth server
+#   - Public key for verification can be distributed widely
+#   - Better key management: compromise of verifier doesn't allow token forgery
+# Configure via JWT_ALGORITHM env var (default: HS256)
+_JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+if _JWT_ALGORITHM not in ("HS256", "HS384", "HS512", "RS256", "RS384", "RS512"):
+    raise ValueError(f"Unsupported JWT_ALGORITHM: {_JWT_ALGORITHM}. Use HS256|HS384|HS512|RS256|RS384|RS512")
+ALGORITHM = _JWT_ALGORITHM
+
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
 REFRESH_TOKEN_EXPIRE_DAYS = 7
+
+# For RS256/RS384/RS512, load RSA keys from environment or files
+_RSA_PRIVATE_KEY: Optional[str] = None
+_RSA_PUBLIC_KEY: Optional[str] = None
+
+if ALGORITHM.startswith("RS"):
+    _private_key = get_secret("RSA_PRIVATE_KEY")
+    _public_key = get_secret("RSA_PUBLIC_KEY")
+    if not _private_key or not _public_key:
+        _private_key_path = os.getenv("RSA_PRIVATE_KEY_FILE")
+        _public_key_path = os.getenv("RSA_PUBLIC_KEY_FILE")
+        if _private_key_path and _public_key_path:
+            try:
+                with open(_private_key_path, "r") as f:
+                    _private_key = f.read()
+                with open(_public_key_path, "r") as f:
+                    _public_key = f.read()
+            except OSError as e:
+                raise ValueError(f"RS256 requires RSA_PRIVATE_KEY/RSA_PUBLIC_KEY or RSA_PRIVATE_KEY_FILE/RSA_PUBLIC_KEY_FILE: {e}")
+        else:
+            raise ValueError("RS256 algorithm requires RSA_PRIVATE_KEY and RSA_PUBLIC_KEY environment variables or files")
+    _RSA_PRIVATE_KEY = _private_key
+    _RSA_PUBLIC_KEY = _public_key
 
 # ---------------------------------------------------------------------------
 # Legacy API-key migration support (issue #1428)
@@ -132,7 +168,7 @@ class AuthManager:
     def __init__(
         self,
         secret_key: Optional[str] = None,
-        algorithm: str = "HS256",
+        algorithm: Optional[str] = None,
         access_token_expire_minutes: int = 15,
         refresh_token_expire_days: int = 7,
     ):
@@ -141,14 +177,27 @@ class AuthManager:
 
         Args:
             secret_key: JWT secret key (defaults to env SECRET_KEY)
-            algorithm: JWT algorithm (default: HS256)
+            algorithm: JWT algorithm (defaults to env JWT_ALGORITHM or HS256)
             access_token_expire_minutes: Access token expiry in minutes
             refresh_token_expire_days: Refresh token expiry in days
         """
         self.secret_key = secret_key or SECRET_KEY
-        self.algorithm = algorithm
+        # Allow override, but default to module-level ALGORITHM for RS256 support
+        self.algorithm = algorithm or ALGORITHM
         self.access_token_expire_minutes = access_token_expire_minutes
         self.refresh_token_expire_days = refresh_token_expire_days
+
+    def _get_signing_key(self) -> str:
+        """Return the key to use for signing (creating) tokens."""
+        if self.algorithm.startswith("RS"):
+            return _RSA_PRIVATE_KEY  # type: ignore[return-value]
+        return self.secret_key
+
+    def _get_verification_key(self) -> str:
+        """Return the key to use for verifying tokens."""
+        if self.algorithm.startswith("RS"):
+            return _RSA_PUBLIC_KEY  # type: ignore[return-value]
+        return self.secret_key
 
     def hash_password(self, password: str) -> str:
         """
@@ -221,7 +270,7 @@ class AuthManager:
         if extra_claims:
             to_encode.update(extra_claims)
 
-        return jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
+        return jwt.encode(to_encode, self._get_signing_key(), algorithm=self.algorithm)
 
     def create_refresh_token(
         self,
@@ -251,7 +300,7 @@ class AuthManager:
             "type": "refresh",
         }
 
-        return jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
+        return jwt.encode(to_encode, self._get_signing_key(), algorithm=self.algorithm)
 
     def verify_token(self, token: str, token_type: str = "access") -> Optional[str]:
         """
@@ -265,7 +314,7 @@ class AuthManager:
             User ID if token is valid, None otherwise
         """
         try:
-            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
+            payload = jwt.decode(token, self._get_verification_key(), algorithms=[self.algorithm])
             token_type_payload = payload.get("type")
 
             if token_type_payload != token_type:
@@ -290,7 +339,7 @@ class AuthManager:
             Expiry datetime if token is valid, None otherwise
         """
         try:
-            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
+            payload = jwt.decode(token, self._get_verification_key(), algorithms=[self.algorithm])
             exp = payload.get("exp")
             if exp is None:
                 return None
