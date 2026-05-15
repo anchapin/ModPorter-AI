@@ -14,6 +14,8 @@ primary_region = 'iad'
 
 [env]
   PYTHONUNBUFFERED = '1'
+  # Set READONLY_DATABASE_URL as a secret for read replica:
+  # fly secrets set READONLY_DATABASE_URL="postgresql://user:pass@host:5432/portkit"
 
 [processes]
   app = '/startup.sh'
