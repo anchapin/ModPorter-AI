@@ -1,0 +1,78 @@
+# Ruleset drift detector (Issue #1472).
+#
+# Detects when someone has edited the `Main` repository ruleset directly in the
+# GitHub UI without updating .github/rulesets/main.json. Runs the same
+# `sync.py diff` you can run locally; surfaces drift as an annotation + a job
+# failure so it shows up in the Actions UI.
+#
+# Repo variables (Settings -> Secrets and variables -> Actions -> Variables)
+# * ENABLE_RULESET_DRIFT_CHECK   Set to "true" to run the scheduled weekly check.
+#                                Manual `workflow_dispatch` always runs regardless.
+#
+# Permissions: this workflow only needs *read* access to rulesets. The default
+# `GITHUB_TOKEN` does NOT include that scope, so the read is performed via
+# `${{ secrets.GH_RULESETS_READ_TOKEN }}` if set (PAT with `repo` admin scope).
+# If neither token works the job exits cleanly with a notice rather than failing
+# noisily — same pattern Issue #1468 established for load-test.yml.
+
+name: Ruleset drift
+
+on:
+  schedule:
+    # Weekly, Monday 14:00 UTC -- well after the nightly burst.
+    - cron: '0 14 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    name: Detect ruleset drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Same opt-in gate pattern as load-test.yml: scheduled runs are skipped at
+    # the job level unless the repo variable is set.
+    if: ${{ github.event_name != 'schedule' || vars.ENABLE_RULESET_DRIFT_CHECK == 'true' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Resolve auth token
+        id: auth
+        env:
+          DEDICATED_TOKEN: ${{ secrets.GH_RULESETS_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -n "${DEDICATED_TOKEN:-}" ]]; then
+            echo "token_kind=dedicated" >> "$GITHUB_OUTPUT"
+            echo "::add-mask::${DEDICATED_TOKEN}"
+            echo "token=${DEDICATED_TOKEN}" >> "$GITHUB_OUTPUT"
+          else
+            # Fall back to the default GITHUB_TOKEN. It probably can't read
+            # rulesets, but we let the diff step report that cleanly so a
+            # human can decide whether to provision a PAT.
+            echo "token_kind=default" >> "$GITHUB_OUTPUT"
+            echo "::notice::No GH_RULESETS_READ_TOKEN secret set; falling back to GITHUB_TOKEN. If the diff step reports a 403, provision a PAT with `repo` admin scope as the GH_RULESETS_READ_TOKEN secret."
+          fi
+
+      - name: Diff on-disk ruleset against live
+        env:
+          GH_TOKEN: ${{ steps.auth.outputs.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if ! python3 .github/rulesets/sync.py diff .github/rulesets/main.json; then
+            ec=$?
+            if [[ "$ec" == "2" ]]; then
+              echo "::error::ruleset 'Main' was not found on ${GITHUB_REPOSITORY}. Either it was deleted or the auth token has no read access."
+            else
+              echo "::error::Ruleset drift detected. Either roll back the UI edit or update .github/rulesets/main.json in a PR (and re-apply with sync.py apply after merge)."
+            fi
+            exit "$ec"
+          fi
