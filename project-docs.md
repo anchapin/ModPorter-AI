@@ -131,8 +131,8 @@ cd ai-engine
 # Run RAG-specific tests
 pytest tests/test_rag_crew.py tests/unit/test_embedding_generator.py tests/integration/test_rag_workflow.py -v
 
-# Run RAG evaluation suite
-python src/testing/rag_evaluator.py
+# Run RAG evaluation suite (unit tests)
+pytest tests/test_rag_evaluator.py -v
 
 # Check RAG code quality
 python check_code_quality.py
