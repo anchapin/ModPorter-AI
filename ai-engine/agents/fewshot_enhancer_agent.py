@@ -11,7 +11,6 @@ Usage:
     result = agent.enhance(java_source="public class MyMod {}", instruction="Custom sword mod")
 """
 
-import logging
 import os
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
