@@ -1053,11 +1053,12 @@ class UserCredits(Base):
         primary_key=True,
         default=uuid.uuid4,
     )
+    # user_id: explicit unique index defined below in __table_args__ (avoids
+    # SQLAlchemy auto-generating a duplicate index named "ix_user_credits_user_id")
     user_id: Mapped[str] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
     balance: Mapped[int] = mapped_column(
         Integer,
