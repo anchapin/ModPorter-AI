@@ -10,6 +10,10 @@ class Settings(BaseSettings):
         default="postgresql://INVALID_CONFIG",
         alias="DATABASE_URL",
     )
+    readonly_database_url_raw: str = Field(
+        default="",
+        alias="READONLY_DATABASE_URL",
+    )
     redis_url: str = Field(default="redis://localhost:6379", alias="REDIS_URL")
     skip_email_verification: bool = Field(default=False, alias="SKIP_EMAIL_VERIFICATION")
     admin_api_key: str = Field(default="", alias="ADMIN_API_KEY")
@@ -27,6 +31,18 @@ class Settings(BaseSettings):
         if url.startswith("postgresql://"):
             return url.replace("postgresql://", "postgresql+asyncpg://", 1)
         return url
+
+    @property
+    def readonly_database_url(self) -> str:
+        """Convert READONLY_DATABASE_URL to async format, falling back to primary for reads"""
+        raw = self.readonly_database_url_raw
+        if not raw:
+            # Fall back to primary if no replica configured
+            return self.database_url
+        # Convert postgresql:// to postgresql+asyncpg:// for async SQLAlchemy
+        if raw.startswith("postgresql://"):
+            return raw.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return raw
 
     @property
     def sync_database_url(self) -> str:
