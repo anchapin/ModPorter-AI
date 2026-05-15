@@ -51,6 +51,9 @@ rank_bm25>=0.2.2
 redis>=7.1.0
 async-timeout>=5.0.1
 
+# Security overrides for transitive dependencies (CVE-2026-23949, Issue #1483)
+jaraco.context>=6.1.0
+
 # Configuration Management - align with backend version
 pydantic~=2.13.3
 pydantic-settings~=2.14.0
