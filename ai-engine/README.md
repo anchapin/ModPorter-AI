@@ -65,10 +65,16 @@ pytest --cov=src --cov-report=html
 
 ### RAG Evaluation
 
+The production RAG evaluator lives at `evaluation/rag_evaluator.py` (class
+`RAGEvaluator`). Run its unit tests via:
+
 ```bash
-# Run RAG evaluation suite
-python testing/rag_evaluator.py
+pytest tests/test_rag_evaluator.py -v
 ```
+
+For end-to-end evaluation against a golden dataset, see
+`evaluation/rag_evaluator.py::RAGEvaluator.evaluate_rag_system` — invoked
+from `main.py` and the integration suite.
 
 ### Code Quality Check
 

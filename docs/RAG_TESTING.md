@@ -30,10 +30,12 @@ The RAG system consists of several key components:
    - Document retrieval and filtering
    - Integration with knowledge base agents
 
-5. **RAG Evaluator (`src/testing/rag_evaluator.py`)**
-   - Evaluation framework for RAG system quality
-   - Retrieval hit rate calculations
-   - Performance metrics and reporting
+5. **RAG Evaluator (`evaluation/rag_evaluator.py`)**
+   - Class `RAGEvaluator` — evaluation framework for RAG system quality
+   - Built-in `GoldenDatasetItem` Minecraft-domain corpus via
+     `create_sample_golden_dataset()`
+   - Retrieval hit rate, generation quality, and diversity metrics
+   - Performance metrics and JSON reporting
 
 ## Testing Framework
 
@@ -58,10 +60,7 @@ The testing suite is organized into several layers:
 
 #### 3. Evaluation Tests
 
-- **RAG Evaluation Set (`src/testing/scenarios/rag_evaluation_set.json`)**
-  - Curated queries and expected outcomes
-  - Performance benchmarks and quality metrics
-  - Retrieval quality assessment
+- **Golden dataset (in code)** — `evaluation/rag_evaluator.py::RAGEvaluator.create_sample_golden_dataset()` produces a Minecraft-domain corpus of `GoldenDatasetItem`s used by both `RAGEvaluator` and the integration tests. There is no separate JSON fixture file.
 
 ### Key Testing Features
 
@@ -108,8 +107,10 @@ pytest tests/integration/test_rag_workflow.py -v
 ### RAG Evaluation Suite
 ```bash
 cd ai-engine
-python src/testing/rag_evaluator.py
+pytest tests/test_rag_evaluator.py -v
 ```
+For end-to-end evaluation, see `RAGEvaluator.evaluate_rag_system` in
+`evaluation/rag_evaluator.py` (invoked from `main.py`).
 
 ### With Coverage
 ```bash
