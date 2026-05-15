@@ -20,7 +20,7 @@ primary_region = "iad"
 # Process groups
 [processes]
   app = "/startup.sh"
-  worker = "sh -c 'cd /app/backend && PYTHONPATH=/app/backend celery -A src.services.celery_config worker --loglevel=info'"
+  worker = "sh -c 'cd /app/backend && PYTHONPATH=/app/backend celery -A src.services.celery_config worker --loglevel=info --autoscale=4,1'"
 
 # Environment variables for staging
 [env]
@@ -42,11 +42,21 @@ primary_region = "iad"
   auto_stop_machines = "true"
   auto_start_machines = true
   min_machines_running = 0
+  max_machines_running = 3
 
   [[services.ports]]
     port = 80
     handlers = ["http"]
     force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [[services.concurrency]]
+    type = "requests"
+    soft_limit = 25
+    hard_limit = 50
 
   [[services.checks]]
     path = "/health"
