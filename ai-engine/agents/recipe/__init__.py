@@ -51,6 +51,9 @@ class RecipeConverterAgent:
     - Campfire and smoking recipes
     - Stonecutter recipes
     - Custom Forge recipe types (Farmer's Delight, Create, etc.)
+    - Create recipe types (mechanical_crafting, pressing, milling, crushing,
+      deploying, splashing, compacting, mixing, sequenced_assembly, filling,
+      emptying, cutting, haunting, sandpaper_polishing, item_application)
     """
 
     _instance = None
@@ -220,10 +223,9 @@ class RecipeConverterAgent:
                 normalized["ingredients"] = [ingredient]
         elif "create:sequenced_assembly" in recipe_type:
             normalized["recipe_category"] = "sequenced_assembly"
-            normalized["requires_manual_review"] = True
-            normalized["manual_review_reason"] = (
-                "Sequenced assembly requires multi-step crafting not supported in Bedrock"
-            )
+            normalized["transitions"] = recipe_data.get("sequence", [])
+            normalized["ingredient"] = recipe_data.get("ingredient")
+            normalized["intermediate"] = recipe_data.get("intermediate", "")
         elif "create:deploying" in recipe_type:
             normalized["recipe_category"] = "deploying"
             normalized["ingredients"] = recipe_data.get("ingredients", [])
@@ -261,27 +263,31 @@ class RecipeConverterAgent:
             normalized["heat_requirement"] = recipe_data.get("heatRequirement")
             normalized["min_rpm"] = recipe_data.get("minRPM")
             normalized["max_rpm"] = recipe_data.get("maxRPM")
-            fluid_ingredients = []
-            for ing in normalized.get("ingredients", []):
-                if (
-                    isinstance(ing, dict)
-                    and ing.get("tag")
-                    and ing["tag"].startswith("forge:fluids")
-                ):
-                    fluid_ingredients.append(ing)
-                elif isinstance(ing, str) and ing.startswith("forge:fluids"):
-                    fluid_ingredients.append(ing)
-            if fluid_ingredients:
-                normalized["requires_manual_review"] = True
-                normalized["manual_review_reason"] = (
-                    "Mixing recipes with fluid ingredients require Create's mixer block not available in Bedrock"
-                )
-        elif "create:filling" in recipe_type or "create:emptying" in recipe_type:
-            normalized["recipe_category"] = "fluid_interaction"
-            normalized["requires_manual_review"] = True
-            normalized["manual_review_reason"] = (
-                "Fluid interaction recipes require Create's fluid mechanisms not available in Bedrock"
-            )
+        elif "create:filling" in recipe_type:
+            normalized["recipe_category"] = "filling"
+            normalized["ingredients"] = recipe_data.get("ingredients", [])
+        elif "create:emptying" in recipe_type:
+            normalized["recipe_category"] = "emptying"
+            normalized["ingredients"] = recipe_data.get("ingredients", [])
+        elif "create:cutting" in recipe_type:
+            normalized["recipe_category"] = "cutting"
+            ingredient = recipe_data.get("ingredient")
+            if ingredient:
+                normalized["ingredients"] = [ingredient]
+            normalized["heat_requirement"] = recipe_data.get("heatRequirement")
+        elif "create:haunting" in recipe_type:
+            normalized["recipe_category"] = "haunting"
+            ingredient = recipe_data.get("ingredient")
+            if ingredient:
+                normalized["ingredients"] = [ingredient]
+        elif "create:sandpaper_polishing" in recipe_type:
+            normalized["recipe_category"] = "sandpaper_polishing"
+            ingredient = recipe_data.get("ingredient")
+            if ingredient:
+                normalized["ingredients"] = [ingredient]
+        elif "create:item_application" in recipe_type:
+            normalized["recipe_category"] = "item_application"
+            normalized["ingredients"] = recipe_data.get("ingredients", [])
         elif is_custom_recipe_type(recipe_type):
             normalized["recipe_category"] = "custom"
             normalized["requires_manual_review"] = True
@@ -418,6 +424,70 @@ class RecipeConverterAgent:
             normalized_recipe, namespace, recipe_name
         )
 
+    def _convert_mixing_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create mixing recipe to Bedrock format."""
+        return self._custom_converter.convert_mixing_to_bedrock(
+            normalized_recipe, namespace, recipe_name
+        )
+
+    def _convert_sequenced_assembly_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create sequenced assembly recipe to Bedrock format."""
+        return self._custom_converter.convert_sequenced_assembly_to_bedrock(
+            normalized_recipe, namespace, recipe_name
+        )
+
+    def _convert_filling_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create filling recipe to Bedrock format."""
+        return self._custom_converter.convert_filling_to_bedrock(
+            normalized_recipe, namespace, recipe_name
+        )
+
+    def _convert_emptying_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create emptying recipe to Bedrock format."""
+        return self._custom_converter.convert_emptying_to_bedrock(
+            normalized_recipe, namespace, recipe_name
+        )
+
+    def _convert_cutting_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create cutting recipe to Bedrock format."""
+        return self._custom_converter.convert_cutting_to_bedrock(
+            normalized_recipe, namespace, recipe_name
+        )
+
+    def _convert_haunting_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create haunting recipe to Bedrock format."""
+        return self._custom_converter.convert_haunting_to_bedrock(
+            normalized_recipe, namespace, recipe_name
+        )
+
+    def _convert_sandpaper_polishing_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create sandpaper polishing recipe to Bedrock format."""
+        return self._custom_converter.convert_sandpaper_polishing_to_bedrock(
+            normalized_recipe, namespace, recipe_name
+        )
+
+    def _convert_item_application_to_bedrock(
+        self, normalized_recipe: Dict, namespace: str, recipe_name: str
+    ) -> Dict:
+        """Convert a Create item application recipe to Bedrock format."""
+        return self._custom_converter.convert_item_application_to_bedrock(
+            normalized_recipe, namespace, recipe_name
+        )
+
     def _create_manual_review_result(self, namespace: str, recipe_name: str, reason: str) -> Dict:
         """Create a result indicating the recipe requires manual review."""
         return {
@@ -478,11 +548,22 @@ class RecipeConverterAgent:
             return self._convert_splashing_to_bedrock(normalized, namespace, recipe_name)
         elif category == "compacting":
             return self._convert_compacting_to_bedrock(normalized, namespace, recipe_name)
-        elif category in ("sequenced_assembly", "mixing", "fluid_interaction"):
-            reason = normalized.get(
-                "manual_review_reason", "Custom recipe type requires manual review"
-            )
-            return self._create_manual_review_result(namespace, recipe_name, reason)
+        elif category == "mixing":
+            return self._convert_mixing_to_bedrock(normalized, namespace, recipe_name)
+        elif category == "sequenced_assembly":
+            return self._convert_sequenced_assembly_to_bedrock(normalized, namespace, recipe_name)
+        elif category == "filling":
+            return self._convert_filling_to_bedrock(normalized, namespace, recipe_name)
+        elif category == "emptying":
+            return self._convert_emptying_to_bedrock(normalized, namespace, recipe_name)
+        elif category == "cutting":
+            return self._convert_cutting_to_bedrock(normalized, namespace, recipe_name)
+        elif category == "haunting":
+            return self._convert_haunting_to_bedrock(normalized, namespace, recipe_name)
+        elif category == "sandpaper_polishing":
+            return self._convert_sandpaper_polishing_to_bedrock(normalized, namespace, recipe_name)
+        elif category == "item_application":
+            return self._convert_item_application_to_bedrock(normalized, namespace, recipe_name)
         elif category == "custom":
             reason = normalized.get("manual_review_reason", "Unknown custom Forge recipe type")
             return self._create_manual_review_result(namespace, recipe_name, reason)

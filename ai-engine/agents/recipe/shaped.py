@@ -11,9 +11,7 @@ class ShapedRecipeConverter:
     def __init__(self, map_java_item_to_bedrock_fn):
         self._map_java_item = map_java_item_to_bedrock_fn
 
-    def convert_to_bedrock(
-        self, normalized_recipe: Dict, namespace: str, recipe_name: str
-    ) -> Dict:
+    def convert_to_bedrock(self, normalized_recipe: Dict, namespace: str, recipe_name: str) -> Dict:
         """Convert a shaped recipe to Bedrock format."""
         pattern = normalized_recipe.get("pattern", [])
         key = normalized_recipe.get("key", {})

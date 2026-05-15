@@ -437,7 +437,7 @@ class TestCustomForgeRecipeTypes:
         assert result["recipe_category"] == "pressing"
 
     def test_parse_create_sequenced_assembly(self, agent):
-        """Test parsing Create sequenced assembly (should require manual review)"""
+        """Test parsing Create sequenced assembly captures transitions"""
         java_recipe = {
             "type": "create:sequenced_assembly",
             "sequence": [],
@@ -446,8 +446,8 @@ class TestCustomForgeRecipeTypes:
         result = agent._parse_java_recipe(java_recipe)
 
         assert result["recipe_category"] == "sequenced_assembly"
-        assert result["requires_manual_review"] is True
-        assert "Sequenced assembly" in result["manual_review_reason"]
+        assert result["requires_manual_review"] is False
+        assert result["transitions"] == []
 
     def test_parse_create_mixing(self, agent):
         """Test parsing Create mixing recipe with fluid ingredients requires manual review"""
@@ -535,8 +535,8 @@ class TestCustomForgeRecipeTypes:
         assert "minecraft:recipe_shaped" in result
         assert "pressing" in result["minecraft:recipe_shaped"]["tags"]
 
-    def test_convert_sequenced_assembly_requires_manual_review(self, agent):
-        """Test that sequenced assembly requires manual review"""
+    def test_convert_sequenced_assembly_produces_recipe(self, agent):
+        """Test that sequenced assembly converts to a shaped recipe"""
         recipe = {
             "type": "create:sequenced_assembly",
             "sequence": [],
@@ -544,8 +544,8 @@ class TestCustomForgeRecipeTypes:
         }
         result = agent.convert_recipe(recipe, namespace="create", recipe_name="precision_mechanism")
 
-        assert result["manual_review_required"] is True
-        assert "Sequenced assembly" in result["reason"]
+        assert "minecraft:recipe_shaped" in result
+        assert result["minecraft:recipe_shaped"]["tags"] == ["crafting_table", "sequenced_assembly"]
 
     def test_convert_multi_output_recipe_uses_first_result(self, agent):
         """Test that multi-output recipes use the first result"""
@@ -598,6 +598,213 @@ class TestCustomForgeRecipeTypes:
         assert is_custom_recipe_type("create:mixing") is True
         assert is_custom_recipe_type("minecraft:crafting_shaped") is False
         assert is_custom_recipe_type("unknown:custom_type") is False
+
+    # --- New Create recipe type tests ---
+
+    def test_parse_create_mixing_non_fluid(self, agent):
+        """Test parsing Create mixing recipe without fluid ingredients"""
+        java_recipe = {
+            "type": "create:mixing",
+            "ingredients": [
+                {"item": "minecraft:wheat"},
+                {"item": "minecraft:egg"},
+            ],
+            "result": {"item": "minecraft:bread", "count": 1},
+        }
+        result = agent._parse_java_recipe(java_recipe)
+
+        assert result["recipe_category"] == "mixing"
+        assert result["requires_manual_review"] is False
+
+    def test_convert_create_mixing_non_fluid(self, agent):
+        """Test converting Create mixing recipe (non-fluid) to Bedrock"""
+        recipe = {
+            "type": "create:mixing",
+            "ingredients": [
+                {"item": "minecraft:wheat"},
+                {"item": "minecraft:egg"},
+            ],
+            "result": {"item": "minecraft:bread", "count": 1},
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="bread_from_mixing")
+
+        assert "minecraft:recipe_shapeless" in result
+        assert result["minecraft:recipe_shapeless"]["tags"] == ["crafting_table", "mixing"]
+
+    def test_convert_create_mixing_with_fluid_manual_review(self, agent):
+        """Test that Create mixing with fluid ingredients still requires manual review"""
+        recipe = {
+            "type": "create:mixing",
+            "ingredients": [
+                {"item": "minecraft:dirt"},
+                {"tag": "forge:fluids/water"},
+            ],
+            "result": {"item": "minecraft:mud", "count": 1},
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="mud_from_mixing")
+
+        assert result.get("manual_review_required") is True
+
+    def test_parse_create_cutting(self, agent):
+        """Test parsing Create cutting recipe"""
+        java_recipe = {
+            "type": "create:cutting",
+            "ingredient": {"item": "minecraft:oak_log"},
+            "result": {"item": "minecraft:stripped_oak_log", "count": 1},
+        }
+        result = agent._parse_java_recipe(java_recipe)
+
+        assert result["recipe_category"] == "cutting"
+        assert result["requires_manual_review"] is False
+
+    def test_convert_create_cutting(self, agent):
+        """Test converting Create cutting recipe to Bedrock"""
+        recipe = {
+            "type": "create:cutting",
+            "ingredient": {"item": "minecraft:oak_log"},
+            "result": {"item": "minecraft:stripped_oak_log", "count": 1},
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="oak_log_cutting")
+
+        assert "minecraft:recipe_shaped" in result
+        assert result["minecraft:recipe_shaped"]["tags"] == ["crafting_table", "cutting"]
+
+    def test_parse_create_haunting(self, agent):
+        """Test parsing Create haunting recipe"""
+        java_recipe = {
+            "type": "create:haunting",
+            "ingredient": {"item": "minecraft:cobblestone"},
+            "result": {"item": "minecraft:blackstone", "count": 1},
+        }
+        result = agent._parse_java_recipe(java_recipe)
+
+        assert result["recipe_category"] == "haunting"
+        assert result["requires_manual_review"] is False
+
+    def test_convert_create_haunting(self, agent):
+        """Test converting Create haunting recipe to Bedrock"""
+        recipe = {
+            "type": "create:haunting",
+            "ingredient": {"item": "minecraft:cobblestone"},
+            "result": {"item": "minecraft:blackstone", "count": 1},
+        }
+        result = agent.convert_recipe(
+            recipe, namespace="create", recipe_name="cobblestone_haunting"
+        )
+
+        assert "minecraft:recipe_shaped" in result
+        assert result["minecraft:recipe_shaped"]["tags"] == ["crafting_table", "haunting"]
+
+    def test_parse_create_sandpaper_polishing(self, agent):
+        """Test parsing Create sandpaper polishing recipe"""
+        java_recipe = {
+            "type": "create:sandpaper_polishing",
+            "ingredient": {"item": "minecraft:quartz_block"},
+            "result": {"item": "minecraft:smooth_quartz", "count": 1},
+        }
+        result = agent._parse_java_recipe(java_recipe)
+
+        assert result["recipe_category"] == "sandpaper_polishing"
+        assert result["requires_manual_review"] is False
+
+    def test_convert_create_sandpaper_polishing(self, agent):
+        """Test converting Create sandpaper polishing recipe to Bedrock"""
+        recipe = {
+            "type": "create:sandpaper_polishing",
+            "ingredient": {"item": "minecraft:quartz_block"},
+            "result": {"item": "minecraft:smooth_quartz", "count": 1},
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="quartz_polishing")
+
+        assert "minecraft:recipe_shaped" in result
+        assert result["minecraft:recipe_shaped"]["tags"] == [
+            "crafting_table",
+            "sandpaper_polishing",
+        ]
+
+    def test_parse_create_item_application(self, agent):
+        """Test parsing Create item application recipe"""
+        java_recipe = {
+            "type": "create:item_application",
+            "ingredients": [
+                {"item": "minecraft:diamond"},
+                {"item": "minecraft:stick"},
+            ],
+            "result": {"item": "create:diamond_saw", "count": 1},
+        }
+        result = agent._parse_java_recipe(java_recipe)
+
+        assert result["recipe_category"] == "item_application"
+        assert result["requires_manual_review"] is False
+
+    def test_convert_create_item_application(self, agent):
+        """Test converting Create item application recipe to Bedrock"""
+        recipe = {
+            "type": "create:item_application",
+            "ingredients": [
+                {"item": "minecraft:diamond"},
+                {"item": "minecraft:stick"},
+            ],
+            "result": {"item": "create:diamond_saw", "count": 1},
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="diamond_saw")
+
+        assert "minecraft:recipe_shaped" in result
+        assert result["minecraft:recipe_shaped"]["tags"] == ["crafting_table", "item_application"]
+
+    def test_parse_create_filling(self, agent):
+        """Test parsing Create filling recipe"""
+        java_recipe = {
+            "type": "create:filling",
+            "ingredients": [
+                {"item": "minecraft:glass_bottle"},
+                {"item": "minecraft:honey_block"},
+            ],
+            "result": {"item": "minecraft:honey_bottle", "count": 1},
+        }
+        result = agent._parse_java_recipe(java_recipe)
+
+        assert result["recipe_category"] == "filling"
+        assert result["requires_manual_review"] is False
+
+    def test_convert_create_filling(self, agent):
+        """Test converting Create filling recipe to Bedrock"""
+        recipe = {
+            "type": "create:filling",
+            "ingredients": [
+                {"item": "minecraft:glass_bottle"},
+                {"item": "minecraft:honey_block"},
+            ],
+            "result": {"item": "minecraft:honey_bottle", "count": 1},
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="honey_filling")
+
+        assert "minecraft:recipe_shaped" in result
+        assert result["minecraft:recipe_shaped"]["tags"] == ["crafting_table", "filling"]
+
+    def test_parse_create_emptying(self, agent):
+        """Test parsing Create emptying recipe"""
+        java_recipe = {
+            "type": "create:emptying",
+            "ingredients": [{"item": "minecraft:water_bucket"}],
+            "result": {"item": "minecraft:bucket", "count": 1},
+        }
+        result = agent._parse_java_recipe(java_recipe)
+
+        assert result["recipe_category"] == "emptying"
+        assert result["requires_manual_review"] is False
+
+    def test_convert_create_emptying(self, agent):
+        """Test converting Create emptying recipe to Bedrock"""
+        recipe = {
+            "type": "create:emptying",
+            "ingredients": [{"item": "minecraft:water_bucket"}],
+            "result": {"item": "minecraft:bucket", "count": 1},
+        }
+        result = agent.convert_recipe(recipe, namespace="create", recipe_name="water_bucket_empty")
+
+        assert "minecraft:recipe_shaped" in result
+        assert result["minecraft:recipe_shaped"]["tags"] == ["crafting_table", "emptying"]
 
 
 class TestCreateCustomRecipeTypes:
