@@ -157,7 +157,7 @@ jobs:
         include:
           - service: backend
             dockerfile: ./backend/Dockerfile
-            context: .
+            context: ./backend
           - service: ai-engine
             dockerfile: ./ai-engine/Dockerfile
             context: ./ai-engine
