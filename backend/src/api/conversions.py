@@ -717,50 +717,43 @@ async def create_conversion(
                     },
                 )
 
-    # Per-user rate limiting based on subscription tier (Issue #1151)
-    # Higher tiers get more conversions per minute
+    # Per-user rate limiting based on subscription tier (Issue #1151, #1486)
+    # Higher tiers get more conversions per minute.
+    # Use endpoint-specific base config and let _get_user_config scale by tier.
     tier = user.subscription_tier if user else "free"
-    tier_rate_limits = {
-        "free": (5, 20),  # 5/min, 20/hour
-        "payg": (10, 50),
-        "creator": (15, 100),
-        "creator_byok": (15, 100),
-        "pro": (30, 200),
-        "studio": (60, 500),
-        "studio_byok": (60, 500),
-        "enterprise": (120, 1000),
-    }
-    requests_per_minute, requests_per_hour = tier_rate_limits.get(tier, tier_rate_limits["free"])
+    from services.rate_limiter import RateLimitConfig, conversion_rate_limiter
 
-    # Use the rate limiter to check against Redis
-    rate_limiter = RateLimiter(
-        config=RateLimitConfig(
-            requests_per_minute=requests_per_minute,
-            requests_per_hour=requests_per_hour,
-            burst_size=min(3, requests_per_minute // 5),
-        )
+    # Base config for /api/v1/conversions (will be scaled by tier in check_rate_limit)
+    base_config = RateLimitConfig(
+        requests_per_minute=30,
+        requests_per_hour=300,
+        burst_size=5,
     )
-    await rate_limiter.initialize()
 
-    # Create a mock request for rate limiting check
+    # Use the shared conversion rate limiter
+    rate_limiter = conversion_rate_limiter
+
+    # Create a mock request with user context for rate limiting check
     from starlette.datastructures import Headers
-    from fastapi import Request as FastAPIRequest
 
     class MockRequest:
-        def __init__(self, user_id: Optional[str], client_host: str = "127.0.0.1"):
-            self.state = type("State", (), {"user_id": user_id, "user_tier": tier})()
+        def __init__(self, user_id: Optional[str], user_tier: str, client_host: str = "127.0.0.1"):
+            self.state = type("State", (), {"user_id": user_id, "user_tier": user_tier})()
             self.client = type("Client", (), {"host": client_host})()
             self.headers = Headers()
 
-    mock_request = MockRequest(str(user.id) if user else None)
-    is_allowed, metadata = await rate_limiter.check_rate_limit(mock_request)
+    user_id = str(user.id) if user else None
+    mock_request = MockRequest(user_id, tier)
+    is_allowed, metadata = await rate_limiter.check_rate_limit(
+        mock_request, base_config=base_config
+    )
 
     if not is_allowed:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail={
                 "error": "rate_limit_exceeded",
-                "message": f"Conversion rate limit exceeded for {tier} tier. Maximum {requests_per_minute} conversions per minute.",
+                "message": f"Conversion rate limit exceeded for {tier} tier. Maximum {metadata['limit_minute']} conversions per minute.",
                 "retry_after": metadata.get("retry_after", 60),
                 "rate_limit": {
                     "limit": metadata["limit_minute"],
@@ -769,8 +762,6 @@ async def create_conversion(
                 },
             },
         )
-
-    await rate_limiter.close()
 
     # Metering check for subscription tier limits (Issue #977)
     # Use API usage metering for API key auth, web usage metering for JWT
