@@ -396,6 +396,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.ai_engine == 'true'
+    # Match prior ci.yml behaviour: integration suite has known pytest-asyncio
+    # event-loop / DB-fixture flakiness; advisory on PRs, blocking on push to main.
+    continue-on-error: ${{ github.event_name == 'pull_request' }}
     timeout-minutes: 20
     services:
       postgres:
@@ -611,6 +614,9 @@ jobs:
           R_WF:     ${{ needs.workflow-lint.result }}
         run: |
           fail=0
+          # On PRs, integration is advisory (matches prior ci.yml continue-on-error
+          # for flaky pytest-asyncio integration suite). On push to main, it blocks.
+          IS_PR='${{ github.event_name == 'pull_request' }}'
           for kv in \
             "lockfile-drift=$R_LOCK" \
             "lint=$R_LINT" \
@@ -621,9 +627,20 @@ jobs:
             "security=$R_SEC" \
             "workflow-lint=$R_WF"; do
             name=${kv%=*}; result=${kv#*=}
+            advisory=0
+            if [ "$name" = "integration" ] && [ "$IS_PR" = "true" ]; then
+              advisory=1
+            fi
             case "$result" in
               success|skipped) printf "  ✓ %-18s %s\n" "$name" "$result" ;;
-              *)               printf "  ✗ %-18s %s\n" "$name" "$result"; fail=1 ;;
+              *)
+                if [ $advisory -eq 1 ]; then
+                  printf "  ⚠ %-18s %s (advisory on PR)\n" "$name" "$result"
+                else
+                  printf "  ✗ %-18s %s\n" "$name" "$result"
+                  fail=1
+                fi
+                ;;
             esac
           done
           if [ $fail -ne 0 ]; then
