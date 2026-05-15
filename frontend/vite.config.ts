@@ -60,5 +60,15 @@ export default defineConfig({
     exclude: ['e2e/**/*', 'node_modules/**/*', 'dist/**/*'],
     hookTimeout: 30000,
     testTimeout: 10000,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      thresholds: {
+        lines: 50,
+        functions: 50,
+        branches: 50,
+        statements: 50,
+      },
+    },
   },
 });
