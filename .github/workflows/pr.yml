@@ -93,6 +93,7 @@ jobs:
               - '**/*.py'
               - '**/pyproject.toml'
               - '**/requirements*.txt'
+              - '**/requirements.lock'
             docker:
               - '**/Dockerfile*'
               - 'docker/**'
@@ -101,6 +102,7 @@ jobs:
               - '.github/workflows/**'
             deps:
               - '**/requirements*.txt'
+              - '**/requirements.lock'
               - '**/pyproject.toml'
               - '**/uv.lock'
               - 'pnpm-lock.yaml'
@@ -439,15 +441,17 @@ jobs:
             backend/requirements.lock
             ai-engine/requirements.lock
 
-      - name: Install dependencies (parallel uv pip sync)
+      - name: Install dependencies (additive uv pip install)
+        # NOTE: 'uv pip install' is additive (sync would clobber the other
+        # project's deps when both run into the same shared interpreter).
         run: |
           set -e
           if [ "${{ needs.changes.outputs.backend }}" = "true" ]; then
-            (cd backend && uv pip sync --system requirements.lock) &
+            (cd backend && uv pip install --system -r requirements.lock) &
             BE_PID=$!
           fi
           if [ "${{ needs.changes.outputs.ai_engine }}" = "true" ]; then
-            (cd ai-engine && uv pip sync --system requirements.lock) &
+            (cd ai-engine && uv pip install --system -r requirements.lock) &
             AI_PID=$!
           fi
           [ -n "${BE_PID:-}" ] && wait $BE_PID
