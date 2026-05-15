@@ -49,7 +49,8 @@ celery_app.conf.update(
     task_track_started=True,
     task_time_limit=3600,
     task_soft_time_limit=3300,
-    worker_prefetch_multiplier=4,
+    worker_autoscale=(8, 2),
+    worker_prefetch_multiplier=1,
     worker_max_tasks_per_child=1000,
     result_expires=86400,
     task_routes={
