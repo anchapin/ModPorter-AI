@@ -5,16 +5,14 @@ from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
 
 
-from main import app, conversion_jobs_db
+from main import app
 from main import ConversionJob
 
 
 @pytest.fixture(autouse=True)
 def cleanup_storage():
-    """Clear in-memory storage between tests."""
-    conversion_jobs_db.clear()
+    """No-op — job status is now stored in Redis, no in-memory cleanup needed."""
     yield
-    conversion_jobs_db.clear()
 
 
 class TestHealthEndpoint:
