@@ -1,0 +1,302 @@
+# ---------------------------------------------------------------------------
+# nightly.yml — deep validation that's too slow / expensive for every PR.
+#
+# Runs:
+#   * On schedule (nightly).
+#   * On manual dispatch.
+#   * On push to main when relevant paths change (code, dependencies, Docker).
+#
+# Includes:
+#   * CodeQL (Python + JavaScript)
+#   * Mutation testing (mutmut for Python, stryker for frontend)
+#   * Trivy image scanning (full Docker image build + vuln scan)
+#   * Real-Ollama integration tests for ai-engine
+# ---------------------------------------------------------------------------
+name: Nightly
+
+on:
+  schedule:
+    - cron: '17 7 * * *'   # 07:17 UTC daily (off-peak)
+  workflow_dispatch:
+    inputs:
+      run_mutation:
+        description: 'Run mutation testing'
+        required: false
+        default: 'true'
+        type: boolean
+      run_codeql:
+        description: 'Run CodeQL'
+        required: false
+        default: 'true'
+        type: boolean
+      run_ollama:
+        description: 'Run real-Ollama integration tests'
+        required: false
+        default: 'false'
+        type: boolean
+      run_trivy_image:
+        description: 'Run Trivy image scan'
+        required: false
+        default: 'true'
+        type: boolean
+
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+  security-events: write
+
+env:
+  PYTHON_VERSION: '3.11'
+  AI_ENGINE_PYTHON_VERSION: '3.12'
+
+jobs:
+  # ===========================================================================
+  # CodeQL — security analysis for Python + JavaScript.
+  # ===========================================================================
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || inputs.run_codeql != 'false'
+    timeout-minutes: 45
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: +security-extended
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:${{ matrix.language }}'
+
+  # ===========================================================================
+  # Mutation testing — Python (mutmut) + frontend (stryker).
+  # Slow (~20 min total). Reports survival rate; non-blocking on schedule.
+  # ===========================================================================
+  mutation-python:
+    name: Mutation testing (${{ matrix.project }})
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || inputs.run_mutation != 'false'
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [backend, ai-engine]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.project == 'ai-engine' && env.AI_ENGINE_PYTHON_VERSION || env.PYTHON_VERSION }}
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: '${{ matrix.project }}/requirements.lock'
+      - name: Install + run mutmut
+        run: |
+          cd ${{ matrix.project }}
+          uv pip sync --system requirements.lock
+          uv pip install --system mutmut
+          mutmut run --no-cov || true
+          mutmut results | tee mutmut-results.txt
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: mutmut-${{ matrix.project }}
+          path: ${{ matrix.project }}/mutmut-results.txt
+          retention-days: 30
+
+  mutation-frontend:
+    name: Mutation testing (frontend stryker)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || inputs.run_mutation != 'false'
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with: { version: '9' }
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20.19.0'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: cd frontend && pnpm mutation || true
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: stryker-frontend
+          path: frontend/reports/mutation/
+          retention-days: 30
+          if-no-files-found: ignore
+
+  # ===========================================================================
+  # Trivy image scan — build + scan Docker images.
+  # ===========================================================================
+  trivy-image:
+    name: Trivy image scan (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || inputs.run_trivy_image != 'false'
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: backend
+            dockerfile: ./backend/Dockerfile
+            context: .
+          - service: ai-engine
+            dockerfile: ./ai-engine/Dockerfile
+            context: ./ai-engine
+          - service: frontend
+            dockerfile: ./frontend/Dockerfile
+            context: ./frontend
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" \
+                      /usr/share/doc /usr/share/man || true
+          docker system prune -af --volumes || true
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build image with cache
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          load: true
+          tags: portkit-${{ matrix.service }}:scan
+          cache-from: type=gha,scope=trivy-${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=trivy-${{ matrix.service }}
+
+      - name: Scan with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: portkit-${{ matrix.service }}:scan
+          format: 'sarif'
+          output: 'trivy-${{ matrix.service }}.sarif'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          exit-code: '0'
+
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: 'trivy-${{ matrix.service }}.sarif'
+          category: 'trivy-${{ matrix.service }}'
+
+  # ===========================================================================
+  # Real-Ollama integration — pulls llama3.2 (~2GB) and runs against it.
+  # Only on explicit dispatch or weekly schedule.
+  # ===========================================================================
+  ollama-integration:
+    name: Ollama integration (real LLM)
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'schedule' && contains(github.event.schedule, 'sunday')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.run_ollama == 'true')
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_DB: modporter_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd "pg_isready -U postgres -d modporter_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+        ports: ['5434:5432']
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+        ports: ['6380:6379']
+    env:
+      USE_REAL_SERVICES: '1'
+      TEST_DATABASE_URL: 'postgresql+asyncpg://postgres:password@localhost:5434/modporter_test'
+      TEST_REDIS_URL: 'redis://localhost:6380/0'
+      OLLAMA_HOST: 'http://localhost:11434'
+      MODEL_AVAILABLE: 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.AI_ENGINE_PYTHON_VERSION }}
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: ai-engine/requirements*.txt
+      - name: Install Ollama + pull model
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama serve &
+          sleep 10
+          # Retry-friendly pull
+          for i in 1 2 3; do
+            timeout 1200 ollama pull llama3.2 && break
+            echo "pull failed, retry $i"
+            sleep 30
+          done
+          ollama list
+      - name: Install ai-engine
+        run: |
+          cd ai-engine
+          uv pip install --system -r requirements.txt -r requirements-dev.txt
+          uv pip install --system pytest pytest-asyncio pytest-timeout pytest-xdist
+      - name: Run comprehensive integration suite
+        run: |
+          cd ai-engine
+          python -m pytest tests/integration/ \
+            -q --tb=short --timeout=600 --no-cov \
+            -m 'not slow'
+
+  # ===========================================================================
+  # Aggregate
+  # ===========================================================================
+  nightly-summary:
+    name: Nightly summary
+    runs-on: ubuntu-latest
+    needs: [codeql, mutation-python, mutation-frontend, trivy-image, ollama-integration]
+    if: always()
+    steps:
+      - name: Print summary
+        env:
+          R_CODEQL: ${{ needs.codeql.result }}
+          R_MUT_PY: ${{ needs.mutation-python.result }}
+          R_MUT_FE: ${{ needs.mutation-frontend.result }}
+          R_TRIVY:  ${{ needs.trivy-image.result }}
+          R_OLLAMA: ${{ needs.ollama-integration.result }}
+        run: |
+          echo "## Nightly Validation Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          for kv in "CodeQL=$R_CODEQL" "Mutation (Python)=$R_MUT_PY" \
+                    "Mutation (Frontend)=$R_MUT_FE" "Trivy image=$R_TRIVY" \
+                    "Ollama integration=$R_OLLAMA"; do
+            name=${kv%=*}; result=${kv#*=}
+            case "$result" in
+              success) icon='✅' ;;
+              skipped) icon='⏭️' ;;
+              failure) icon='❌' ;;
+              *)       icon='⚠️' ;;
+            esac
+            echo "- $icon **$name**: $result" >> "$GITHUB_STEP_SUMMARY"
+          done

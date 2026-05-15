@@ -1,0 +1,629 @@
+# ---------------------------------------------------------------------------
+# pr.yml — fast iterative PR CI for free GitHub-hosted runners.
+#
+# Goals (vs the previous ci.yml + ai-quality-gates + ci-backend-unit-tests
+# + ci-ai-engine-tests + deploy.yml-on-PR setup):
+#   * One workflow per PR (one branch-protection check needed: "PR Gates").
+#   * Concurrency cancellation: every new push to a PR cancels prior in-flight
+#     jobs immediately. Iterative pushes no longer queue up duplicate work.
+#   * uv for Python install (≈10× faster than pip + lockfile-aware cache).
+#   * Path-filtered fan-out: backend / ai-engine / frontend / integration jobs
+#     only run when their files change.
+#   * No Docker image builds on PRs (those run on push to main / on schedule).
+#   * No Ollama / mutation / CodeQL / Trivy-image on PRs (moved to nightly.yml).
+#
+# Push to main also runs this workflow (without cancellation) so we still get
+# a clean post-merge signal.
+# ---------------------------------------------------------------------------
+name: PR
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.txt'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.gitattributes'
+  push:
+    branches: [main, develop]
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.txt'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.gitattributes'
+  workflow_dispatch:
+
+# Cancel in-flight runs on PR pushes; do NOT cancel push-to-main runs.
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+  security-events: write
+
+env:
+  PYTHON_VERSION: '3.11'
+  AI_ENGINE_PYTHON_VERSION: '3.12'
+  NODE_VERSION: '20.19.0'
+  PNPM_VERSION: '9'
+  TESTING: 'true'
+  COVERAGE_THRESHOLD_BACKEND: '40'   # current honest baseline; raise gradually
+  COVERAGE_THRESHOLD_AI_ENGINE: '65'
+
+jobs:
+  # ===========================================================================
+  # 1. CHANGES — paths-filter to decide which jobs run (~10s)
+  # ===========================================================================
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      backend:    ${{ steps.f.outputs.backend }}
+      ai_engine:  ${{ steps.f.outputs.ai_engine }}
+      frontend:   ${{ steps.f.outputs.frontend }}
+      python:     ${{ steps.f.outputs.python }}
+      docker:     ${{ steps.f.outputs.docker }}
+      workflows:  ${{ steps.f.outputs.workflows }}
+      deps:       ${{ steps.f.outputs.deps }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: f
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'pyproject.toml'
+            ai_engine:
+              - 'ai-engine/**'
+            frontend:
+              - 'frontend/**'
+              - 'pnpm-lock.yaml'
+              - 'package.json'
+            python:
+              - '**/*.py'
+              - '**/pyproject.toml'
+              - '**/requirements*.txt'
+            docker:
+              - '**/Dockerfile*'
+              - 'docker/**'
+              - 'docker-compose*.yml'
+            workflows:
+              - '.github/workflows/**'
+            deps:
+              - '**/requirements*.txt'
+              - '**/pyproject.toml'
+              - '**/uv.lock'
+              - 'pnpm-lock.yaml'
+              - '**/package.json'
+
+
+  # ===========================================================================
+  # 1.5  LOCKFILE DRIFT — if requirements*.txt changed but the .lock didn't,
+  # tell the contributor exactly how to regenerate it. Non-blocking so that
+  # dependabot PRs don't get stuck; the maintainer regenerates on merge.
+  # ===========================================================================
+  lockfile-drift:
+    name: Lockfile drift check
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.deps == 'true'
+    timeout-minutes: 3
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: Recompile lockfiles to a temp location and diff
+        run: |
+          drift=0
+          for proj in backend ai-engine; do
+            pyv=3.11; [ "$proj" = "ai-engine" ] && pyv=3.12
+            ( cd "$proj" && uv pip compile requirements.txt requirements-dev.txt \
+                -o /tmp/$proj.lock --python-version $pyv --quiet ) || true
+            # Skip our 2-line autogen header before diff.
+            if ! diff <(tail -n +3 "$proj/requirements.lock") <(tail -n +3 /tmp/$proj.lock) > /dev/null; then
+              echo "::warning::$proj/requirements.lock is out of sync with $proj/requirements*.txt"
+              echo "  Regenerate with:"
+              echo "    cd $proj && uv pip compile requirements.txt requirements-dev.txt -o requirements.lock --python-version $pyv"
+              drift=1
+            else
+              echo "  ✓ $proj/requirements.lock is in sync"
+            fi
+          done
+          # Don't fail the gate (continue-on-error is set), but echo a summary.
+          if [ $drift -eq 1 ]; then
+            echo "::notice::Lockfile drift detected. PR can still merge; regenerate before next release."
+          fi
+
+  # ===========================================================================
+  # 2. LINT — ruff + prettier + bandit, all in ONE job, parallel processes.
+  # Single setup amortises checkout/setup-python/setup-node cost. (~60-90s)
+  # ===========================================================================
+  lint:
+    name: Lint (ruff + prettier + bandit)
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.python == 'true' || needs.changes.outputs.frontend == 'true'
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            **/requirements*.txt
+            **/pyproject.toml
+            **/uv.lock
+
+      - uses: pnpm/action-setup@v6
+        if: needs.changes.outputs.frontend == 'true'
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v6
+        if: needs.changes.outputs.frontend == 'true'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install lint tools
+        run: |
+          # Tiny, cached install. uv resolves and installs in a few seconds.
+          uv pip install --system ruff bandit
+
+      - name: Install frontend deps (only if frontend changed)
+        if: needs.changes.outputs.frontend == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ruff check (root + backend + ai-engine, parallel)
+        if: needs.changes.outputs.python == 'true'
+        run: |
+          set +e
+          ruff check . > /tmp/ruff-root.log 2>&1 &              PID_R=$!
+          (cd backend && ruff check src/) > /tmp/ruff-be.log 2>&1 &  PID_B=$!
+          (cd ai-engine && ruff check . || true) > /tmp/ruff-ai.log 2>&1 &  PID_A=$!
+          wait $PID_R; ROOT=$?
+          wait $PID_B; BE=$?
+          wait $PID_A;  # ai-engine ruff is non-blocking (matches existing pattern)
+          echo "::group::ruff (root)";    cat /tmp/ruff-root.log; echo "::endgroup::"
+          echo "::group::ruff (backend)"; cat /tmp/ruff-be.log;   echo "::endgroup::"
+          echo "::group::ruff (ai-engine)"; cat /tmp/ruff-ai.log; echo "::endgroup::"
+          test "$ROOT" = 0 && test "$BE" = 0
+
+      - name: Run ruff format check (backend)
+        if: needs.changes.outputs.backend == 'true'
+        run: cd backend && ruff format --check src/
+
+      - name: Run prettier (frontend)
+        if: needs.changes.outputs.frontend == 'true'
+        run: cd frontend && pnpm prettier --check .
+
+      - name: Bandit (high severity, fast)
+        if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.ai_engine == 'true'
+        run: |
+          bandit -r backend/src ai-engine \
+            --severity-level high --confidence-level high \
+            --exclude tests/,.venv/,node_modules/,frontend/ \
+            -q || true   # Non-blocking; security.yml gates pushes to main.
+
+  # ===========================================================================
+  # 3. BACKEND UNIT TESTS — uv + pytest-xdist, ONE job (no a-c/d-m/n-z split).
+  # (~3-4 min including coverage)
+  # ===========================================================================
+  backend-tests:
+    name: Backend unit tests + coverage
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/requirements.lock
+
+      - name: Install backend dependencies (uv pip sync, ~5s with cache hit)
+        run: |
+          cd backend
+          # uv pip sync is reproducible (locked versions) and ~10x faster than pip.
+          uv pip sync --system requirements.lock
+          uv pip install --system pytest pytest-asyncio pytest-cov pytest-xdist pytest-timeout
+
+      - name: Clear stale pytest cache
+        run: |
+          rm -rf backend/.pytest_cache backend/.coverage backend/coverage.json 2>/dev/null || true
+          find backend/src/tests -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null || true
+
+      - name: Run unit tests (parallel xdist + coverage)
+        run: |
+          cd backend
+          # pytest.ini already sets `-n auto --dist=loadscope`; we override flags
+          # for the perf-API tests (run separately) and stale module ignores.
+          python -m pytest src/tests/unit/ \
+            -n auto --dist=loadscope \
+            -q --tb=short --timeout=60 \
+            --cov=src --cov-report=xml --cov-report=term \
+            --cov-fail-under=${{ env.COVERAGE_THRESHOLD_BACKEND }} \
+            --ignore=src/tests/unit/test_task_worker_coverage.py \
+            --ignore=src/tests/unit/test_performance_api.py
+
+      - name: Run perf-API tests serially (module-level state)
+        run: |
+          cd backend
+          python -m pytest src/tests/unit/test_performance_api.py \
+            -q --tb=short --timeout=60 --no-cov
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: backend-coverage
+          path: backend/coverage.xml
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ===========================================================================
+  # 4. AI-ENGINE UNIT TESTS — uv + pytest-xdist, NO Ollama, NO real LLM keys.
+  # (~5-7 min)
+  # ===========================================================================
+  ai-engine-tests:
+    name: AI-engine unit tests + coverage
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.ai_engine == 'true'
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.AI_ENGINE_PYTHON_VERSION }}
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: ai-engine/requirements.lock
+
+      - name: Install ai-engine dependencies (uv pip sync)
+        run: |
+          cd ai-engine
+          uv pip sync --system requirements.lock
+          uv pip install --system pytest pytest-asyncio pytest-cov pytest-xdist pytest-timeout
+
+      - name: Run tests (excluding slow/ai/real-service)
+        env:
+          OPENAI_API_KEY: test_key
+          ANTHROPIC_API_KEY: test_key
+        run: |
+          cd ai-engine
+          python -m pytest tests/ \
+            -n 2 --dist=loadfile \
+            -q --tb=short --timeout=120 \
+            -m 'not slow and not ai and not real_service and not docker and not e2e' \
+            --cov=. --cov-report=xml \
+            --cov-fail-under=${{ env.COVERAGE_THRESHOLD_AI_ENGINE }}
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ai-engine-coverage
+          path: ai-engine/coverage.xml
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ===========================================================================
+  # 5. FRONTEND — typecheck + lint + test + build, ONE job.
+  # (~3-4 min)
+  # ===========================================================================
+  frontend:
+    name: Frontend (typecheck/test/build)
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    timeout-minutes: 12
+    env:
+      VITE_API_BASE_URL: http://localhost:8000
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck + lint (parallel)
+        run: |
+          cd frontend
+          set +e
+          pnpm exec tsc --noEmit > /tmp/tsc.log 2>&1 &     PID_T=$!
+          pnpm run lint                  > /tmp/lint.log 2>&1 &  PID_L=$!
+          wait $PID_T; T=$?
+          wait $PID_L; L=$?
+          echo "::group::tsc";  cat /tmp/tsc.log;  echo "::endgroup::"
+          echo "::group::lint"; cat /tmp/lint.log; echo "::endgroup::"
+          test "$T" = 0 && test "$L" = 0
+
+      - name: Unit tests (vitest)
+        run: cd frontend && pnpm run test:ci
+
+      - name: Production build
+        run: cd frontend && pnpm run build
+
+  # ===========================================================================
+  # 6. INTEGRATION TESTS — only when backend or ai-engine code changed.
+  # Postgres + Redis service containers (host-network mode, no inner container).
+  # NO Ollama (mocked); real-Ollama tests live in nightly.yml.
+  # (~3-5 min)
+  # ===========================================================================
+  integration:
+    name: Integration tests (postgres + redis)
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.ai_engine == 'true'
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_DB: modporter_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd "pg_isready -U postgres -d modporter_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports: ['5434:5432']
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports: ['6380:6379']
+    env:
+      USE_REAL_SERVICES: '1'
+      TEST_DATABASE_URL: 'postgresql+asyncpg://postgres:password@localhost:5434/modporter_test'
+      TEST_REDIS_URL: 'redis://localhost:6380/0'
+      DATABASE_URL: 'postgresql+asyncpg://postgres:password@localhost:5434/modporter_test'
+      REDIS_URL: 'redis://localhost:6380/0'
+      OPENAI_API_KEY: test_key
+      ANTHROPIC_API_KEY: test_key
+      TESTING: 'true'
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            backend/requirements.lock
+            ai-engine/requirements.lock
+
+      - name: Install dependencies (parallel uv pip sync)
+        run: |
+          set -e
+          if [ "${{ needs.changes.outputs.backend }}" = "true" ]; then
+            (cd backend && uv pip sync --system requirements.lock) &
+            BE_PID=$!
+          fi
+          if [ "${{ needs.changes.outputs.ai_engine }}" = "true" ]; then
+            (cd ai-engine && uv pip sync --system requirements.lock) &
+            AI_PID=$!
+          fi
+          [ -n "${BE_PID:-}" ] && wait $BE_PID
+          [ -n "${AI_PID:-}" ] && wait $AI_PID
+          uv pip install --system pytest pytest-asyncio pytest-timeout pytest-cov
+
+      - name: Wait for services
+        run: |
+          timeout 60 bash -c 'until nc -z localhost 5434; do sleep 1; done'
+          timeout 60 bash -c 'until nc -z localhost 6380; do sleep 1; done'
+
+      - name: Backend integration tests
+        if: needs.changes.outputs.backend == 'true'
+        run: |
+          cd backend
+          python -m pytest src/tests/integration/ \
+            -q --tb=short --timeout=180 --no-cov \
+            -o "addopts="
+
+      - name: AI-engine integration smoke
+        if: needs.changes.outputs.ai_engine == 'true'
+        run: |
+          cd ai-engine
+          # Only the lightweight imports + basic-integration smoke; heavy
+          # comprehensive-integration is reserved for nightly.yml.
+          python -m pytest \
+            tests/integration/test_imports.py \
+            tests/integration/test_basic_integration.py \
+            -q --tb=short --timeout=180 --no-cov
+
+  # ===========================================================================
+  # 7. SECURITY (lightweight) — Trivy fs scan + pip-audit + pnpm audit + secret
+  # detection + dependency review. NO Docker image build. (~60-90s)
+  # ===========================================================================
+  security:
+    name: Security (deps + secrets)
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.python == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.deps == 'true'
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      security-events: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        if: needs.changes.outputs.python == 'true'
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - uses: astral-sh/setup-uv@v7
+        if: needs.changes.outputs.python == 'true'
+        with:
+          enable-cache: true
+
+      - name: pip-audit (Python deps)
+        if: needs.changes.outputs.python == 'true'
+        run: |
+          uv pip install --system pip-audit
+          # Non-blocking: report only. Critical issues block via security.yml.
+          pip-audit -r backend/requirements.txt --skip-editable --no-deps || true
+          pip-audit -r ai-engine/requirements.txt --skip-editable --no-deps || true
+
+      - uses: pnpm/action-setup@v6
+        if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.deps == 'true'
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v6
+        if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.deps == 'true'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: pnpm audit (frontend)
+        if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.deps == 'true'
+        run: pnpm audit --audit-level=high || true
+
+      - name: Trivy fs scan (CRITICAL/HIGH only, vuln+secret)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: '.'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          exit-code: '0'
+          scanners: 'vuln,secret'
+          skip-dirs: 'node_modules,.venv,frontend/node_modules,**/dist,**/build,.worktrees,docs,backend/.venv,ai-engine/.venv'
+
+      - name: Dependency review (PR only)
+        if: github.event_name == 'pull_request' && needs.changes.outputs.deps == 'true'
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: critical
+          comment-summary-in-pr: on-failure
+
+  # ===========================================================================
+  # 8. WORKFLOW LINT — only when workflows change.
+  # ===========================================================================
+  workflow-lint:
+    name: Workflow lint
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.workflows == 'true'
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate YAML syntax
+        run: |
+          python3 - <<'PY'
+          import sys, glob, yaml
+          ok = True
+          for p in sorted(glob.glob('.github/workflows/*.yml')):
+              try:
+                  yaml.safe_load(open(p))
+                  print(f'  ✓ {p}')
+              except Exception as e:
+                  print(f'  ✗ {p}: {e}')
+                  ok = False
+          sys.exit(0 if ok else 1)
+          PY
+
+  # ===========================================================================
+  # 9. GATES — single aggregator status. Branch protection points here.
+  # All real jobs are either success or skipped (skipped == paths-filter said
+  # this PR didn't touch the relevant code).
+  # ===========================================================================
+  pr-gates:
+    name: PR Gates
+    runs-on: ubuntu-latest
+    needs:
+      - changes
+      - lockfile-drift
+      - lint
+      - backend-tests
+      - ai-engine-tests
+      - frontend
+      - integration
+      - security
+      - workflow-lint
+    if: always()
+    timeout-minutes: 2
+    steps:
+      - name: Verify all gates
+        env:
+          R_LOCK:   ${{ needs.lockfile-drift.result }}
+          R_LINT:   ${{ needs.lint.result }}
+          R_BE:     ${{ needs.backend-tests.result }}
+          R_AI:     ${{ needs.ai-engine-tests.result }}
+          R_FE:     ${{ needs.frontend.result }}
+          R_INT:    ${{ needs.integration.result }}
+          R_SEC:    ${{ needs.security.result }}
+          R_WF:     ${{ needs.workflow-lint.result }}
+        run: |
+          fail=0
+          for kv in \
+            "lockfile-drift=$R_LOCK" \
+            "lint=$R_LINT" \
+            "backend-tests=$R_BE" \
+            "ai-engine-tests=$R_AI" \
+            "frontend=$R_FE" \
+            "integration=$R_INT" \
+            "security=$R_SEC" \
+            "workflow-lint=$R_WF"; do
+            name=${kv%=*}; result=${kv#*=}
+            case "$result" in
+              success|skipped) printf "  ✓ %-18s %s\n" "$name" "$result" ;;
+              *)               printf "  ✗ %-18s %s\n" "$name" "$result"; fail=1 ;;
+            esac
+          done
+          if [ $fail -ne 0 ]; then
+            echo "::error::One or more PR gates failed."
+            exit 1
+          fi
+          echo "All PR gates green."
