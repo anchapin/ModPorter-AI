@@ -21,7 +21,7 @@ from main import (
     TEMP_UPLOADS_DIR,
     CONVERSION_OUTPUTS_DIR,
     MAX_UPLOAD_SIZE,
-    conversion_jobs_db,
+    cache,
 )
 
 
@@ -43,9 +43,9 @@ class TestAppConfiguration:
 class TestDatabaseConfiguration:
     """Test database configuration"""
 
-    def test_conversion_jobs_db_exists(self):
-        """Test in-memory job database exists"""
-        assert isinstance(conversion_jobs_db, dict)
+    def test_cache_service_exists(self):
+        """Test Redis-backed cache service exists"""
+        assert cache is not None
 
 
 class TestMiddleware:
