@@ -746,7 +746,7 @@ async def create_conversion(
     user_id = str(user.id) if user else None
     mock_request = MockRequest(user_id, tier)
     is_allowed, metadata = await rate_limiter.check_rate_limit(
-        mock_request, base_config=base_config
+        mock_request, override_config=base_config
     )
 
     if not is_allowed:
