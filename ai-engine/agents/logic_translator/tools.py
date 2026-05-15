@@ -1558,14 +1558,6 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {{
 
         return bedrock_properties
 
-    def get_block_generation_tools(self) -> List:
-        """Get block generation tools available to this agent."""
-        return [
-            LogicTranslatorAgent.generate_bedrock_block_tool,
-            LogicTranslatorAgent.validate_block_json_tool,
-            LogicTranslatorAgent.map_block_properties_tool,
-        ]
-
     # ========== Item Generation Methods (Issue #654) ==========
 
     def generate_bedrock_item_json(
@@ -2526,92 +2518,6 @@ world.beforeEvents.tick.subscribe((event) => {
 
         return assumptions
 
-    # ========== Tool Methods for Issue #654 ==========
-
-    @staticmethod
-    def generate_bedrock_item_tool(item_data: str) -> str:
-        """Generate Bedrock item JSON from Java item analysis."""
-        agent = LogicTranslatorAgent.get_instance()
-        try:
-            data = json.loads(item_data)
-            java_analysis = data.get("java_item_analysis", data)
-            namespace = data.get("namespace", "modporter")
-
-            result = agent.generate_bedrock_item_json(
-                java_item_analysis=java_analysis, namespace=namespace
-            )
-
-            return json.dumps(result, indent=2)
-        except Exception as e:
-            return json.dumps({"success": False, "error": str(e), "item_json": None})
-
-    @staticmethod
-    def generate_bedrock_entity_tool(entity_data: str) -> str:
-        """Generate Bedrock entity JSON from Java entity analysis."""
-        agent = LogicTranslatorAgent.get_instance()
-        try:
-            data = json.loads(entity_data)
-            java_analysis = data.get("java_entity_analysis", data)
-            namespace = data.get("namespace", "modporter")
-
-            result = agent.generate_bedrock_entity_json(
-                java_entity_analysis=java_analysis, namespace=namespace
-            )
-
-            return json.dumps(result, indent=2)
-        except Exception as e:
-            return json.dumps({"success": False, "error": str(e), "entity_json": None})
-
-    @staticmethod
-    def convert_recipe_tool(recipe_data: str) -> str:
-        """Convert a Java recipe to Bedrock format."""
-        agent = LogicTranslatorAgent.get_instance()
-        try:
-            data = json.loads(recipe_data)
-            java_recipe = data.get("java_recipe", data)
-            namespace = data.get("namespace", "modporter")
-
-            result = agent.convert_recipe(java_recipe=java_recipe, namespace=namespace)
-
-            return json.dumps(result, indent=2)
-        except Exception as e:
-            return json.dumps({"success": False, "error": str(e)})
-
-    @staticmethod
-    def translate_code_to_js_tool(java_code_data: str) -> str:
-        """Translate Java code to Bedrock JavaScript."""
-        agent = LogicTranslatorAgent.get_instance()
-        try:
-            data = json.loads(java_code_data)
-            java_code = data.get("java_code", "")
-            code_type = data.get("code_type", "generic")
-
-            result = agent.translate_java_code_to_javascript(
-                java_code=java_code, code_type=code_type
-            )
-
-            return json.dumps(result, indent=2)
-        except Exception as e:
-            return json.dumps({"success": False, "error": str(e)})
-
-    @staticmethod
-    def get_smart_assumptions_tool() -> str:
-        """Get documented smart assumptions for untranslatable features."""
-        return json.dumps({"success": True, "assumptions": SMART_ASSUMPTIONS}, indent=2)
-
-    def get_extended_tools(self) -> List:
-        """Get extended tools available to this agent."""
-        return [
-            LogicTranslatorAgent.generate_bedrock_block_tool,
-            LogicTranslatorAgent.validate_block_json_tool,
-            LogicTranslatorAgent.map_block_properties_tool,
-            LogicTranslatorAgent.generate_bedrock_item_tool,
-            LogicTranslatorAgent.generate_bedrock_entity_tool,
-            LogicTranslatorAgent.convert_recipe_tool,
-            LogicTranslatorAgent.translate_code_to_js_tool,
-            LogicTranslatorAgent.get_smart_assumptions_tool,
-        ]
-
     # ========== LLM-Powered Translation Pipeline (Issue #990) ==========
     # Implements AST → NL → Bedrock translation based on research:
     # - Chain-of-Thought with NL intermediates: 13.8% improvement on CodeNet
@@ -3043,31 +2949,3 @@ Generate ONLY the JSON, no explanations. The JSON must be valid and complete."""
                 "translation_pipeline": "AST→NL→Bedrock",
             }
 
-    @staticmethod
-    def translate_java_code_llm_tool(java_code_data: str) -> str:
-        """
-        LLM-powered Java to Bedrock translation tool.
-
-        Args:
-            java_code_data: JSON string containing:
-                - java_code: Java source code to translate
-                - target_type: Type of component (block, item, entity, recipe)
-                - context: Optional context dict
-
-        Returns:
-            JSON string with translation results
-        """
-        agent = LogicTranslatorAgent.get_instance()
-        try:
-            data = json.loads(java_code_data)
-            java_code = data.get("java_code", "")
-            target_type = data.get("target_type", "block")
-            context = data.get("context", {})
-
-            result = agent.translate_java_code_with_llm(
-                java_code=java_code, target_type=target_type, context=context
-            )
-
-            return json.dumps(result, indent=2)
-        except Exception as e:
-            return json.dumps({"success": False, "error": str(e)})
