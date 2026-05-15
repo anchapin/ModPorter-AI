@@ -8,7 +8,7 @@
 # See docs/ci-cd/webhook-setup.md for webhook notification setup.
 # ---------------------------------------------------------------------------
 
-name: Example: Mod Conversion Pipeline
+name: "Example: Mod Conversion Pipeline"
 
 on:
   push:
