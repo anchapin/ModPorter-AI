@@ -2,7 +2,7 @@ name: CD
 
 # Cancel in-progress builds for same branch (saves CI costs)
 concurrency:
-  group: deploy-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 'on':
@@ -40,7 +40,7 @@ jobs:
       matrix:
         include:
           - service: backend
-            path: .
+            path: ./backend
             dockerfile: ./backend/Dockerfile
             tag-suffix: backend
           - service: ai-engine
@@ -48,7 +48,7 @@ jobs:
             dockerfile: ./ai-engine/Dockerfile
             tag-suffix: ai-engine
           - service: frontend
-            path: .
+            path: ./frontend
             dockerfile: ./frontend/Dockerfile
             tag-suffix: frontend
     steps:

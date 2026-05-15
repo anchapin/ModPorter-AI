@@ -5,7 +5,7 @@ name: Deploy PortKit
 
 # Cancel in-progress builds for same branch (saves CI costs)
 concurrency:
-  group: deploy-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 'on':
@@ -406,7 +406,8 @@ jobs:
         with:
           status: ${{ job.status }}
           channel: '#deployments'
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
         if: always()
 
       - name: Record deployment time
