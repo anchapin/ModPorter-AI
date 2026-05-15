@@ -44,10 +44,28 @@ jobs:
             api_url: https://api.portkit.cloud
 
     steps:
+      - name: Determine whether this matrix target should deploy
+        id: should_deploy
+        run: |
+          deploy=false
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ matrix.environment }}" = "${{ inputs.environment }}" ]; then
+            deploy=true
+          elif [ "${{ github.event_name }}" != "workflow_dispatch" ] && [ "${{ matrix.environment }}" = "staging" ] && [ "${{ github.ref }}" = "refs/heads/staging" ]; then
+            deploy=true
+          elif [ "${{ github.event_name }}" != "workflow_dispatch" ] && [ "${{ matrix.environment }}" = "production" ] && { [ "${{ github.ref }}" = "refs/heads/main" ] || [[ "${{ github.ref }}" == refs/tags/* ]]; }; then
+            deploy=true
+          fi
+          echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
+          if [ "$deploy" != "true" ]; then
+            echo "Skipping ${{ matrix.environment }} for ${{ github.ref }} (${{ github.event_name }})"
+          fi
+
       - name: Checkout code
+        if: steps.should_deploy.outputs.deploy == 'true'
         uses: actions/checkout@v6
 
       - name: Initialize deployment performance tracking
+        if: steps.should_deploy.outputs.deploy == 'true'
         id: deploy_metrics
         run: |
           echo "DEPLOY_START=$(date +%s)" >> $GITHUB_ENV
@@ -55,6 +73,7 @@ jobs:
           echo "App: ${{ matrix.app_name }}"
 
       - name: Deploy to Fly.io
+        if: steps.should_deploy.outputs.deploy == 'true'
         uses: superfly/flyctl-actions@master
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
@@ -62,11 +81,13 @@ jobs:
           args: "deploy --app ${{ matrix.app_name }} --remote-only"
 
       - name: Wait for deployment to complete
+        if: steps.should_deploy.outputs.deploy == 'true'
         run: |
           echo "Waiting for Fly.io deployment to complete..."
           sleep 30
 
       - name: Health check
+        if: steps.should_deploy.outputs.deploy == 'true'
         env:
           API_URL: ${{ matrix.api_url }}
         run: |
@@ -85,7 +106,7 @@ jobs:
           exit 1
 
       - name: Run smoke tests
-        if: ${{ !inputs.skip_tests }}
+        if: steps.should_deploy.outputs.deploy == 'true' && !inputs.skip_tests
         env:
           API_URL: ${{ matrix.api_url }}
         run: |
@@ -106,7 +127,7 @@ jobs:
           echo "✓ Smoke tests passed"
 
       - name: Record deployment time
-        if: always()
+        if: always() && steps.should_deploy.outputs.deploy == 'true'
         run: |
           DEPLOY_END=$(date +%s)
           DEPLOY_START=${{ env.DEPLOY_START }}
@@ -119,7 +140,7 @@ jobs:
           fi
 
       - name: Notify deployment status
-        if: always()
+        if: always() && steps.should_deploy.outputs.deploy == 'true'
         uses: actions/github-script@v9
         with:
           script: |
