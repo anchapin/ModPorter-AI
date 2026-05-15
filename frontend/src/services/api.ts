@@ -36,6 +36,31 @@ class ApiError extends Error {
 }
 
 /**
+ * Validates that a string contains only safe characters for URL path segments.
+ * Prevents path traversal (../) and other injection attacks.
+ */
+const sanitizePathParam = (value: string, paramName: string): string => {
+  if (!value || typeof value !== 'string') {
+    throw new Error(`${paramName} must be a non-empty string`);
+  }
+  // Allow only alphanumeric, hyphens, underscores, and UUID-like segments
+  if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+    throw new Error(`${paramName} contains invalid characters`);
+  }
+  return value;
+};
+
+/**
+ * Validates format parameter against an allowlist of safe values.
+ */
+const sanitizeFormatParam = (format: string, allowlist: string[]): string => {
+  if (!allowlist.includes(format)) {
+    throw new Error(`Invalid format: ${format}`);
+  }
+  return format;
+};
+
+/**
  * Upload a file separately (legacy endpoint, kept for backward compatibility).
  */
 export const uploadFile = async (file: File): Promise<UploadResponse> => {
@@ -430,8 +455,9 @@ export const cancelJob = async (jobId: string): Promise<void> => {
 export const getAddonDetails = async (
   addonId: string
 ): Promise<AddonDetails> => {
-  console.log(`API: Fetching details for addonId: ${addonId}`);
-  const response = await fetch(`${API_BASE_URL}/addons/${addonId}`);
+  const safeAddonId = sanitizePathParam(addonId, 'addonId');
+  console.log(`API: Fetching details for addonId: ${safeAddonId}`);
+  const response = await fetch(`${API_BASE_URL}/addons/${safeAddonId}`);
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({
@@ -450,8 +476,9 @@ export const saveAddonDetails = async (
   addonId: string,
   data: AddonDataUpload
 ): Promise<AddonDetails> => {
-  console.log(`API: Saving details for addonId: ${addonId}`, data);
-  const response = await fetch(`${API_BASE_URL}/addons/${addonId}`, {
+  const safeAddonId = sanitizePathParam(addonId, 'addonId');
+  console.log(`API: Saving details for addonId: ${safeAddonId}`, data);
+  const response = await fetch(`${API_BASE_URL}/addons/${safeAddonId}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -508,11 +535,13 @@ export const replaceAddonAsset = async (
   assetId: string,
   file: File
 ): Promise<AddonAsset> => {
+  const safeAddonId = sanitizePathParam(addonId, 'addonId');
+  const safeAssetId = sanitizePathParam(assetId, 'assetId');
   const formData = new FormData();
   formData.append('file', file);
 
   const response = await fetch(
-    `${API_BASE_URL}/addons/${addonId}/assets/${assetId}`,
+    `${API_BASE_URL}/addons/${safeAddonId}/assets/${safeAssetId}`,
     {
       method: 'PUT',
       body: formData,
@@ -536,11 +565,13 @@ export const deleteAddonAssetAPI = async (
   addonId: string,
   assetId: string
 ): Promise<void> => {
+  const safeAddonId = sanitizePathParam(addonId, 'addonId');
+  const safeAssetId = sanitizePathParam(assetId, 'assetId');
   console.log(
-    `API: Deleting asset for addonId: ${addonId}, assetId: ${assetId}`
+    `API: Deleting asset for addonId: ${safeAddonId}, assetId: ${safeAssetId}`
   );
   const response = await fetch(
-    `${API_BASE_URL}/addons/${addonId}/assets/${assetId}`,
+    `${API_BASE_URL}/addons/${safeAddonId}/assets/${safeAssetId}`,
     {
       method: 'DELETE',
     }
@@ -620,7 +651,8 @@ export const performanceBenchmarkAPI = {
 
   // Get benchmark status
   getBenchmarkStatus: async (runId: string) => {
-    const response = await fetch(`${API_BASE_URL}/performance/status/${runId}`);
+    const safeRunId = sanitizePathParam(runId, 'runId');
+    const response = await fetch(`${API_BASE_URL}/performance/status/${safeRunId}`);
 
     if (!response.ok) {
       const errorData = await response
@@ -637,7 +669,8 @@ export const performanceBenchmarkAPI = {
 
   // Get benchmark report
   getBenchmarkReport: async (runId: string) => {
-    const response = await fetch(`${API_BASE_URL}/performance/report/${runId}`);
+    const safeRunId = sanitizePathParam(runId, 'runId');
+    const response = await fetch(`${API_BASE_URL}/performance/report/${safeRunId}`);
 
     if (!response.ok) {
       const errorData = await response
@@ -1293,8 +1326,10 @@ export const behaviorExportAPI = {
     conversionId: string,
     format: string = 'mcaddon'
   ): Promise<{ blob: Blob; filename: string }> => {
+    const safeConversionId = sanitizePathParam(conversionId, 'conversionId');
+    const safeFormat = sanitizeFormatParam(format, ['mcaddon', 'zip', 'json']);
     const response = await fetch(
-      `${API_BASE_URL}/behavior/export/behavior-pack/${conversionId}/download?format=${format}`
+      `${API_BASE_URL}/behavior/export/behavior-pack/${safeConversionId}/download?format=${safeFormat}`
     );
 
     if (!response.ok) {
@@ -1344,8 +1379,9 @@ export const behaviorExportAPI = {
 
   // Preview export
   previewExport: async (conversionId: string): Promise<any> => {
+    const safeConversionId = sanitizePathParam(conversionId, 'conversionId');
     const response = await fetch(
-      `${API_BASE_URL}/behavior/export/preview/${conversionId}`
+      `${API_BASE_URL}/behavior/export/preview/${safeConversionId}`
     );
 
     if (!response.ok) {
@@ -1647,8 +1683,10 @@ export const downloadConversionReport = async (
   conversionId: string,
   format: 'json' | 'html' | 'csv' = 'json'
 ): Promise<void> => {
+  const safeConversionId = sanitizePathParam(conversionId, 'conversionId');
+  const safeFormat = sanitizeFormatParam(format, ['json', 'html', 'csv']);
   const response = await fetch(
-    `${API_BASE_URL}/conversions/${conversionId}/report/download?format=${format}`
+    `${API_BASE_URL}/conversions/${safeConversionId}/report/download?format=${safeFormat}`
   );
 
   if (!response.ok) {
