@@ -1,3 +1,25 @@
+# Load Testing workflow
+#
+# Targets and gating
+# ------------------
+# * Manual dispatch (workflow_dispatch): always runs and honours the
+#   `base_url` input. Use this for ad-hoc smoke / load / stress / spike
+#   runs against any target you control (defaults to http://localhost:8080
+#   for developers running the workflow locally via `act`).
+# * Scheduled cron (nightly smoke): only runs when the repo variable
+#   `ENABLE_SCHEDULED_LOAD_TESTS` is set to `'true'`. If the variable is
+#   unset/false, scheduled invocations are cleanly skipped at the job
+#   level instead of failing against a non-existent target. See #1468.
+#
+# Repo variables (Settings -> Secrets and variables -> Actions -> Variables)
+# -------------------------------------------------------------------------
+# * ENABLE_SCHEDULED_LOAD_TESTS  Set to "true" to enable nightly load tests.
+# * STAGING_BASE_URL             Default base URL for scheduled smoke tests
+#                                (e.g. https://staging.portkit.example.com).
+#                                If unset for an enabled scheduled run, the
+#                                job exits 0 with a clear notice instead of
+#                                failing.
+
 name: Load Testing
 
 'on':
@@ -19,7 +41,8 @@ name: Load Testing
         default: 'http://localhost:8080'
         type: string
   schedule:
-    # Run smoke test nightly
+    # Nightly smoke run. Gated below at the job level on
+    # `vars.ENABLE_SCHEDULED_LOAD_TESTS` so disabled repos cleanly skip.
     - cron: '0 3 * * *'
 
 env:
@@ -30,12 +53,45 @@ jobs:
     name: "${{ inputs.test_type || 'smoke' }} load test"
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Gate scheduled runs on a repo variable so the nightly cron does not
+    # fail against a non-existent target. Manual dispatch is unaffected.
+    if: ${{ github.event_name != 'schedule' || vars.ENABLE_SCHEDULED_LOAD_TESTS == 'true' }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Resolve target base URL
+        id: resolve_url
+        env:
+          INPUT_BASE_URL: ${{ inputs.base_url }}
+          STAGING_BASE_URL: ${{ vars.STAGING_BASE_URL }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          # Resolution order:
+          #   1. workflow_dispatch -> inputs.base_url (always wins for manual)
+          #   2. schedule          -> vars.STAGING_BASE_URL
+          #   3. otherwise         -> exit 0 with a clear notice
+          if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
+            url="${INPUT_BASE_URL}"
+            echo "Manual dispatch: using base_url input."
+          else
+            url="${STAGING_BASE_URL}"
+            echo "Scheduled run: using vars.STAGING_BASE_URL."
+          fi
+
+          if [ -z "${url}" ]; then
+            echo "::notice::No base URL resolved for event=${EVENT_NAME}. Set repo variable STAGING_BASE_URL (and ENABLE_SCHEDULED_LOAD_TESTS=true) for scheduled runs, or pass base_url via workflow_dispatch. Skipping cleanly."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Resolved base URL: ${url}"
+          echo "base_url=${url}" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
       - name: Setup k6
+        if: ${{ steps.resolve_url.outputs.skip != 'true' }}
         run: |
           curl -sL https://github.com/grafana/k6/releases/download/${{ env.K6_VERSION }}/k6-${{ env.K6_VERSION }}-linux-amd64.tar.gz -o k6.tar.gz
           tar -xzf k6.tar.gz
@@ -44,7 +100,7 @@ jobs:
           k6 version
 
       - name: Run smoke test
-        if: ${{ (inputs.test_type == 'smoke' || github.event_name == 'schedule') }}
+        if: ${{ steps.resolve_url.outputs.skip != 'true' && (inputs.test_type == 'smoke' || github.event_name == 'schedule') }}
         run: |
           k6 run load-tests/api-load-test.js \
             --tag test_type=smoke \
@@ -53,10 +109,10 @@ jobs:
             --no-thresholds \
             --summary-export=results/smoke.json
         env:
-          BASE_URL: "${{ inputs.base_url || 'http://localhost:8080' }}"
+          BASE_URL: ${{ steps.resolve_url.outputs.base_url }}
 
       - name: Run load test
-        if: ${{ inputs.test_type == 'load' }}
+        if: ${{ steps.resolve_url.outputs.skip != 'true' && inputs.test_type == 'load' }}
         run: |
           k6 run load-tests/api-load-test.js \
             --tag test_type=load \
@@ -64,10 +120,10 @@ jobs:
             --no-thresholds \
             --summary-export=results/load.json
         env:
-          BASE_URL: '${{ inputs.base_url }}'
+          BASE_URL: ${{ steps.resolve_url.outputs.base_url }}
 
       - name: Run stress test
-        if: ${{ inputs.test_type == 'stress' }}
+        if: ${{ steps.resolve_url.outputs.skip != 'true' && inputs.test_type == 'stress' }}
         run: |
           k6 run load-tests/api-load-test.js \
             --tag test_type=stress \
@@ -75,10 +131,10 @@ jobs:
             --no-thresholds \
             --summary-export=results/stress.json
         env:
-          BASE_URL: '${{ inputs.base_url }}'
+          BASE_URL: ${{ steps.resolve_url.outputs.base_url }}
 
       - name: Run spike test
-        if: ${{ inputs.test_type == 'spike' }}
+        if: ${{ steps.resolve_url.outputs.skip != 'true' && inputs.test_type == 'spike' }}
         run: |
           k6 run load-tests/api-load-test.js \
             --tag test_type=spike \
@@ -86,10 +142,10 @@ jobs:
             --no-thresholds \
             --summary-export=results/spike.json
         env:
-          BASE_URL: '${{ inputs.base_url }}'
+          BASE_URL: ${{ steps.resolve_url.outputs.base_url }}
 
       - name: Upload results
-        if: always()
+        if: ${{ always() && steps.resolve_url.outputs.skip != 'true' }}
         uses: actions/upload-artifact@v7
         with:
           name: k6-results-${{ inputs.test_type || 'smoke' }}-${{ github.run_id }}
@@ -97,7 +153,7 @@ jobs:
           retention-days: 7
 
       - name: Check results
-        if: ${{ always() }}
+        if: ${{ always() && steps.resolve_url.outputs.skip != 'true' }}
         run: |
           if [ -f results/smoke.json ]; then
             echo "=== Smoke Test Results ==="
