@@ -5,6 +5,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.pool import NullPool
 
 # Add the src directory to the Python path
 src_dir = Path(__file__).parent.parent
@@ -93,14 +94,25 @@ engine_kwargs = {
     "echo": False,
 }
 
-# Only add pooling parameters for PostgreSQL
+# Only add pool config for PostgreSQL.
+#
+# NullPool fixes a pytest-asyncio bug: the module-level ``test_engine`` is
+# created at import time, then ``pytest_sessionstart`` opens a connection
+# on a throwaway event loop (loop.close() runs immediately after init).
+# A QueuePool would retain that asyncpg connection across tests; when a
+# later test's pytest-asyncio function-scoped loop tries to reuse it,
+# asyncpg fails with::
+#
+#     RuntimeError: Task ... got Future ... attached to a different loop
+#
+# NullPool opens a fresh connection on every acquire and disposes on
+# release, so no asyncpg connection ever outlives the loop it was opened
+# on. The cost is one extra connect per test, which is negligible against
+# a local Postgres in CI.
 if not db_url.startswith("sqlite"):
     engine_kwargs.update(
         {
-            "pool_size": 1,
-            "max_overflow": 0,
-            "pool_pre_ping": True,
-            "pool_recycle": 3600,
+            "poolclass": NullPool,
             "connect_args": {
                 "server_settings": {
                     "application_name": "portkit_test",
