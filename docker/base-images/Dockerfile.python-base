@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/tmp/*
 
 # Upgrade pip and install build tools
-RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel
+RUN python -m pip install --no-cache-dir --upgrade "pip>=26.1" setuptools wheel
 
 # Copy requirements from both services
 COPY ai-engine/requirements.txt /tmp/ai-engine-requirements.txt

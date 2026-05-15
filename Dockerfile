@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy and install backend dependencies
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+RUN pip install --no-cache-dir --upgrade "pip>=26.1" setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ============================================
@@ -37,7 +37,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy and install ai-engine dependencies
 COPY ai-engine/requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+RUN pip install --no-cache-dir --upgrade "pip>=26.1" setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ============================================
