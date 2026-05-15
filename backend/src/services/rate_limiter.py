@@ -103,14 +103,32 @@ class RateLimiter:
 
         return f"ip:{ip}"
 
+    def _apply_tier_to_base(
+        self,
+        base_config: RateLimitConfig,
+        user_tier: str,
+        tier_limits: Dict[str, RateLimitConfig],
+    ) -> RateLimitConfig:
+        """Scale an endpoint-specific base config by the user's tier."""
+        free_limits = tier_limits.get("free", RateLimitConfig())
+        tier_config = tier_limits.get(user_tier, free_limits)
+
+        if free_limits.requests_per_minute == 0:
+            return base_config
+
+        multiplier = tier_config.requests_per_minute / free_limits.requests_per_minute
+
+        return RateLimitConfig(
+            requests_per_minute=max(1, int(base_config.requests_per_minute * multiplier)),
+            requests_per_hour=max(1, int(base_config.requests_per_hour * multiplier)),
+            burst_size=max(1, int(base_config.burst_size * multiplier)),
+        )
+
     def _get_user_config(
         self, request: Request, base_config: Optional[RateLimitConfig] = None
     ) -> RateLimitConfig:
         """Get rate limit config for specific user (can be overridden per user/tier)"""
         user_tier = getattr(request.state, "user_tier", "free")
-
-        if base_config is not None:
-            return base_config
 
         tier_limits = {
             "free": RateLimitConfig(requests_per_minute=10, requests_per_hour=50, burst_size=3),
@@ -129,13 +147,16 @@ class RateLimiter:
                 requests_per_minute=300, requests_per_hour=5000, burst_size=50
             ),
             "payg": RateLimitConfig(requests_per_minute=30, requests_per_hour=200, burst_size=5),
+            "premium": RateLimitConfig(
+                requests_per_minute=300, requests_per_hour=10000, burst_size=50
+            ),
         }
+
+        if base_config is not None:
+            return self._apply_tier_to_base(base_config, user_tier, tier_limits)
 
         if user_tier in tier_limits:
             return tier_limits[user_tier]
-
-        if user_tier == "premium":
-            return RateLimitConfig(requests_per_minute=300, requests_per_hour=10000, burst_size=50)
 
         return self.config
 
