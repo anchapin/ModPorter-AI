@@ -11,8 +11,7 @@ concurrency:
 'on':
   push:
     branches: [main, production]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 env:
   DOCKER_BUILDKIT: 1
