@@ -107,8 +107,7 @@ TEMP_UPLOADS_DIR = "temp_uploads"
 CONVERSION_OUTPUTS_DIR = "conversion_outputs"  # Added
 MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB
 
-# In-memory database for conversion jobs (legacy mirror for test compatibility)
-conversion_jobs_db: Dict[str, "ConversionJob"] = {}
+# Conversion job status is stored in Redis via CacheService (scales across instances)
 
 
 @asynccontextmanager
@@ -517,7 +516,6 @@ async def simulate_ai_conversion(job_id: str):
                 job = await crud.update_job_status(session, job_id, "processing")
                 await crud.upsert_progress(session, job_id, 25)
                 mirror = mirror_dict_from_job(job, 25)
-                conversion_jobs_db[job_id] = mirror  # Keep legacy mirror for now
                 await cache.set_job_status(job_id, mirror.model_dump())
                 await cache.set_progress(job_id, 25)
                 logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: 25%")
@@ -548,7 +546,6 @@ async def simulate_ai_conversion(job_id: str):
                 job = await crud.update_job_status(session, job_id, "postprocessing")
                 await crud.upsert_progress(session, job_id, 50)
                 mirror = mirror_dict_from_job(job, 50)
-                conversion_jobs_db[job_id] = mirror
                 await cache.set_job_status(job_id, mirror.model_dump())
                 await cache.set_progress(job_id, 50)
                 logger.info(f"Job {job_id}: Status updated to {job.status}, Progress: 50%")
@@ -590,7 +587,6 @@ async def simulate_ai_conversion(job_id: str):
                 await crud.upsert_progress(session, job_id, 75)
                 await cache.set_progress(job_id, 75)
                 mirror = mirror_dict_from_job(job, 75)
-                conversion_jobs_db[job_id] = mirror
                 await cache.set_job_status(job_id, mirror.model_dump())
                 logger.info(f"Job {job_id}: Progress: 75%")
 
@@ -784,7 +780,6 @@ async def simulate_ai_conversion(job_id: str):
                 await crud.upsert_progress(session, job_id, 100)
 
                 mirror = mirror_dict_from_job(job, 100, result_url)
-                conversion_jobs_db[job_id] = mirror
                 await cache.set_job_status(job_id, mirror.model_dump())
                 await cache.set_progress(job_id, 100)
                 logger.info(
@@ -812,7 +807,6 @@ async def simulate_ai_conversion(job_id: str):
                 )
                 job = await crud.update_job_status(session, job_id, "failed")
                 mirror = mirror_dict_from_job(job, 0, None, str(e_inner))
-                conversion_jobs_db[job_id] = mirror
                 await cache.set_job_status(job_id, mirror.model_dump())
                 await cache.set_progress(job_id, 0)
                 logger.error(f"Job status updated to FAILED due to processing error: {job_id}")
@@ -833,19 +827,13 @@ async def simulate_ai_conversion(job_id: str):
             exc_info=True,
         )
         try:
-            # Attempt to update in-memory and cache status to failed if possible
-            if job_id in conversion_jobs_db:  # Check if job_id is string key
-                job_data = conversion_jobs_db[job_id]
-                job_data.status = "failed"
-                job_data.progress = 0
-                job_data.error_message = "Critical simulation error: " + str(e_outer)
-                await cache.set_job_status(job_id, job_data.model_dump())
-            elif job_id in conversion_jobs_db:
-                job_data_uuid_key = conversion_jobs_db[job_id]
-                job_data_uuid_key.status = "failed"
-                job_data_uuid_key.progress = 0
-                job_data_uuid_key.error_message = "Critical simulation error: " + str(e_outer)
-                await cache.set_job_status(job_id, job_data_uuid_key.model_dump())
+            # Update cache status to failed
+            failed_status = {
+                "status": "failed",
+                "progress": 0,
+                "error_message": "Critical simulation error: " + str(e_outer),
+            }
+            await cache.set_job_status(job_id, failed_status)
 
         except Exception as cache_error:
             logger.error(
@@ -949,7 +937,6 @@ async def call_ai_engine_conversion(job_id: str):
                     else:
                         mirror = mirror_dict_from_job(job, progress)
 
-                    conversion_jobs_db[job_id] = mirror
                     await cache.set_job_status(job_id, mirror.model_dump())
                     await cache.set_progress(job_id, progress)
 
@@ -966,7 +953,6 @@ async def call_ai_engine_conversion(job_id: str):
         except Exception as e:
             job = await crud.update_job_status(session, job_id, "failed")
             mirror = mirror_dict_from_job(job, 0, None, str(e))
-            conversion_jobs_db[job_id] = mirror
             await cache.set_job_status(job_id, mirror.model_dump())
             await cache.set_progress(job_id, 0)
 
@@ -1034,9 +1020,6 @@ async def start_conversion(
         created_at=job.created_at,
         updated_at=job.updated_at,
     )
-    conversion_jobs_db[str(job.id)] = mirror
-
-    # Write to Redis
     await cache.set_job_status(str(job.id), mirror.model_dump())
     await cache.set_progress(str(job.id), 0)
 
@@ -1149,8 +1132,6 @@ async def get_conversion_status(
         created_at=job.created_at,
         updated_at=job.updated_at,
     )
-    conversion_jobs_db[job_id] = mirror
-
     return ConversionStatus(
         job_id=job_id,
         status=status,
@@ -1198,7 +1179,6 @@ async def list_conversions(db: AsyncSession = Depends(get_db)):
             created_at=job.created_at,
             updated_at=job.updated_at,
         )
-        conversion_jobs_db[str(job.id)] = mirror
         statuses.append(
             ConversionStatus(
                 job_id=str(job.id),
@@ -1245,7 +1225,6 @@ async def cancel_conversion(
         created_at=job.created_at,
         updated_at=job.updated_at,
     )
-    conversion_jobs_db[job_id] = mirror
     await cache.set_job_status(job_id, mirror.model_dump())
     await cache.set_progress(job_id, 0)
     return {"message": f"Conversion job {job_id} has been cancelled."}
@@ -1266,7 +1245,8 @@ async def download_converted_mod(
     This endpoint allows downloading the output of a successfully completed conversion job.
     The job must have a status of "completed" and a valid result file available.
     """
-    job = conversion_jobs_db.get(job_id)
+    job_data = await cache.get_job_status(job_id)
+    job = ConversionJob(**job_data) if job_data else None
 
     if not job:
         raise HTTPException(status_code=404, detail=f"Conversion job with ID '{job_id}' not found.")
@@ -1360,8 +1340,8 @@ async def get_conversion_report(job_id: str):
         report = report_generator.create_interactive_report(mock_data_source, job_id)
         return report
 
-    job_mirror = conversion_jobs_db.get(job_id)
-    if job_mirror and job_mirror.status == "completed":
+    job_mirror_data = await cache.get_job_status(job_id)
+    if job_mirror_data and job_mirror_data.get("status") == "completed":
         from datetime import datetime, timezone
 
         return {
@@ -1380,7 +1360,7 @@ async def get_conversion_report(job_id: str):
             },
             "converted_mods": [
                 {
-                    "name": job_mirror.original_filename or "Unknown",
+                    "name": job_mirror_data.get("original_filename") or "Unknown",
                     "version": "1.0.0",
                     "status": "Converted",
                     "warnings": None,
