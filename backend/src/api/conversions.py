@@ -58,7 +58,7 @@ from services.rate_limiter import (
     RateLimitConfig,
     conversion_rate_limiter,
 )
-from security.file_security import FileSecurityScanner
+from security.file_security import FileSecurityScanner, SecurityScanResult
 from security.auth import verify_token, verify_api_key
 from security.path_sanitization import (  # issue #1429
     PathSanitizationError,
