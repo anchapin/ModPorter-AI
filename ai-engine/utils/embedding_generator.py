@@ -20,8 +20,8 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 # Constants for embedding validation
-SUPPORTED_DIMENSIONS = {1536, 384, 768, 512, 256}
-DEFAULT_DIMENSION = 1536
+SUPPORTED_DIMENSIONS = {3072, 1536, 384, 768, 512, 256}
+DEFAULT_DIMENSION = 3072
 CACHE_MAX_SIZE = 10000
 CACHE_TTL_SECONDS = 3600  # 1 hour
 
@@ -63,13 +63,13 @@ class EmbeddingGenerator(ABC):
 
 
 class OpenAIEmbeddingGenerator(EmbeddingGenerator):
-    """OpenAI embedding generator using text-embedding-3-small or text-embedding-3-large.
+    """OpenAI embedding generator using text-embedding-3-large.
 
-    Supports flexible dimensions (256-1536 for text-embedding-3-small, 256-3072 for text-embedding-3-large)
+    Supports flexible dimensions (256-3072 for text-embedding-3-large)
     for cost optimization - smaller dimensions reduce token usage and cost.
     """
 
-    def __init__(self, model: str = "text-embedding-3-small", dimensions: int = 1536):
+    def __init__(self, model: str = "text-embedding-3-large", dimensions: int = 3072):
         self.model = model
         self._dimensions = dimensions
         self._client = None
@@ -555,7 +555,7 @@ def validate_embedding_dimensions(embedding: np.ndarray, expected_dimensions: in
 def get_embedding_config() -> Dict[str, Any]:
     return {
         "provider": os.getenv("EMBEDDING_PROVIDER", "auto"),
-        "openai_model": os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small"),
+        "openai_model": os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-large"),
         "local_model": os.getenv("LOCAL_EMBEDDING_MODEL", "all-MiniLM-L6-v2"),
         "dimensions": int(os.getenv("EMBEDDING_DIMENSIONS", str(DEFAULT_DIMENSION))),
         "cache_enabled": os.getenv("EMBEDDING_CACHE_ENABLED", "true").lower() == "true",

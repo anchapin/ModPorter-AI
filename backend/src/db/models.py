@@ -524,7 +524,7 @@ class DocumentEmbedding(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     embedding = Column(
-        VECTOR(1536), nullable=True
+        VECTOR(3072), nullable=True
     )  # Nullable to support parent documents without embeddings
     document_source = Column(String, nullable=False, index=True)
     content_hash = Column(

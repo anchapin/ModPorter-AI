@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS patterns (
     description TEXT,
     category VARCHAR(100),
     content TEXT NOT NULL,
-    embedding VECTOR(1536),
+    embedding VECTOR(3072),
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS document_chunks (
     document_id UUID NOT NULL,
     chunk_index INTEGER NOT NULL,
     content TEXT NOT NULL,
-    embedding VECTOR(1536),
+    embedding VECTOR(3072),
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS document_chunks (
 CREATE TABLE IF NOT EXISTS search_index (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     chunk_id UUID NOT NULL REFERENCES document_chunks(id) ON DELETE CASCADE,
-    embedding VECTOR(1536),
+    embedding VECTOR(3072),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -149,7 +149,7 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
 -- Create vector similarity search function
 CREATE OR REPLACE FUNCTION match_patterns(
-    query_embedding VECTOR(1536),
+    query_embedding VECTOR(3072),
     match_threshold FLOAT = 0.7,
     match_count INT = 5
 )
@@ -182,7 +182,7 @@ $$;
 
 -- Create function to match document chunks
 CREATE OR REPLACE FUNCTION match_chunks(
-    query_embedding VECTOR(1536),
+    query_embedding VECTOR(3072),
     match_threshold FLOAT = 0.7,
     match_count INT = 5
 )

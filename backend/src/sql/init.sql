@@ -15,7 +15,7 @@ END $$;
 -- Create document embeddings table for vector storage
 CREATE TABLE IF NOT EXISTS document_embeddings (
     id UUID NOT NULL DEFAULT gen_random_uuid(),
-    embedding VECTOR(1536) NOT NULL,
+    embedding VECTOR(3072) NOT NULL,
     document_source VARCHAR NOT NULL,
     content_hash VARCHAR NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),

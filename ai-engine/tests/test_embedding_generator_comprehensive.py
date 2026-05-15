@@ -36,7 +36,7 @@ pytestmark = pytest.mark.skipif(not IMPORTS_AVAILABLE, reason="Required imports 
 @pytest.fixture
 def sample_embedding_vector():
     """Create a sample embedding vector."""
-    vec = np.random.randn(1536).astype(np.float32)
+    vec = np.random.randn(3072).astype(np.float32)
     return vec / np.linalg.norm(vec)
 
 
@@ -64,18 +64,18 @@ class TestEmbeddingResult:
     def test_embedding_result_creation(self, sample_embedding_vector):
         """Test creating EmbeddingResult."""
         result = EmbeddingResult(
-            embedding=sample_embedding_vector, model="test-model", dimensions=1536, token_count=100
+            embedding=sample_embedding_vector, model="test-model", dimensions=3072, token_count=100
         )
 
         assert result.embedding is not None
         assert result.model == "test-model"
-        assert result.dimensions == 1536
+        assert result.dimensions == 3072
         assert result.token_count == 100
 
     def test_embedding_result_without_token_count(self, sample_embedding_vector):
         """Test EmbeddingResult without token count."""
         result = EmbeddingResult(
-            embedding=sample_embedding_vector, model="test-model", dimensions=1536
+            embedding=sample_embedding_vector, model="test-model", dimensions=3072
         )
 
         assert result.token_count is None
@@ -83,7 +83,7 @@ class TestEmbeddingResult:
     def test_embedding_result_numpy_array(self, sample_embedding_vector):
         """Test EmbeddingResult with numpy array."""
         result = EmbeddingResult(
-            embedding=sample_embedding_vector, model="test-model", dimensions=1536
+            embedding=sample_embedding_vector, model="test-model", dimensions=3072
         )
 
         assert isinstance(result.embedding, np.ndarray)
@@ -97,15 +97,15 @@ class TestOpenAIEmbeddingGenerator:
         with patch("openai.OpenAI"):
             gen = OpenAIEmbeddingGenerator()
 
-            assert gen.model == "text-embedding-3-small"
-            assert gen._dimensions == 1536
+            assert gen.model == "text-embedding-3-large"
+            assert gen._dimensions == 3072
 
     def test_initialization_with_custom_model(self):
         """Test initialization with custom model."""
         with patch("openai.OpenAI"):
-            gen = OpenAIEmbeddingGenerator(model="text-embedding-3-small", dimensions=512)
+            gen = OpenAIEmbeddingGenerator(model="text-embedding-3-large", dimensions=512)
 
-            assert gen.model == "text-embedding-3-small"
+            assert gen.model == "text-embedding-3-large"
             assert gen._dimensions == 512
 
     def test_dimensions_property(self):
@@ -131,7 +131,7 @@ class TestOpenAIEmbeddingGenerator:
 
             # Mock response
             mock_response = MagicMock()
-            mock_response.data[0].embedding = [0.1] * 1536
+            mock_response.data[0].embedding = [0.1] * 3072
             mock_response.usage.total_tokens = 10
             mock_client.embeddings.create.return_value = mock_response
 
@@ -162,9 +162,9 @@ class TestOpenAIEmbeddingGenerator:
             # Mock batch response
             mock_response = MagicMock()
             mock_response.data = [
-                MagicMock(embedding=[0.1] * 1536),
-                MagicMock(embedding=[0.2] * 1536),
-                MagicMock(embedding=[0.3] * 1536),
+                MagicMock(embedding=[0.1] * 3072),
+                MagicMock(embedding=[0.2] * 3072),
+                MagicMock(embedding=[0.3] * 3072),
             ]
             mock_client.embeddings.create.return_value = mock_response
 
@@ -491,9 +491,9 @@ class TestValidationFunctions:
 
     def test_validate_embedding_dimensions_valid(self):
         """Test dimension validation with valid embedding."""
-        embedding = np.array([0.1] * 1536, dtype=np.float32)
+        embedding = np.array([0.1] * 3072, dtype=np.float32)
 
-        result = validate_embedding_dimensions(embedding, 1536)
+        result = validate_embedding_dimensions(embedding, 3072)
 
         assert result is True
 
@@ -501,19 +501,19 @@ class TestValidationFunctions:
         """Test dimension validation with invalid embedding."""
         embedding = np.array([0.1] * 384, dtype=np.float32)
 
-        result = validate_embedding_dimensions(embedding, 1536)
+        result = validate_embedding_dimensions(embedding, 3072)
 
         assert result is False
 
     def test_validate_embedding_dimensions_none(self):
         """Test dimension validation with None embedding."""
-        result = validate_embedding_dimensions(None, 1536)
+        result = validate_embedding_dimensions(None, 3072)
 
         assert result is False
 
     def test_validate_embedding_dimensions_wrong_type(self):
         """Test dimension validation with wrong type."""
-        result = validate_embedding_dimensions([0.1] * 1536, 1536)
+        result = validate_embedding_dimensions([0.1] * 3072, 3072)
 
         assert result is False
 
@@ -553,7 +553,7 @@ class TestEmbeddingDimensionValidation:
 
     def test_supported_dimensions(self):
         """Test that supported dimensions are validated correctly."""
-        supported = [1536, 384, 768, 512, 256]
+        supported = [3072, 1536, 384, 768, 512, 256]
 
         for dim in supported:
             embedding = np.random.randn(dim).astype(np.float32)
@@ -563,4 +563,4 @@ class TestEmbeddingDimensionValidation:
         """Test that unsupported dimensions are rejected."""
         embedding = np.random.randn(999).astype(np.float32)
 
-        assert validate_embedding_dimensions(embedding, 1536) is False
+        assert validate_embedding_dimensions(embedding_wrong, 3072) is False
