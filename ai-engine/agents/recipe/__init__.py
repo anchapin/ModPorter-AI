@@ -15,9 +15,10 @@ Public API re-exports RecipeConverterAgent to maintain backwards compatibility.
 
 import json
 import logging
-from typing import Dict, List
+from typing import ClassVar, Dict, List
 
-from langchain_core.tools import tool
+from langchain_core.tools import BaseTool
+from pydantic import BaseModel, ConfigDict, Field
 
 from agents.recipe.tag_resolver import (
     FORGE_TAG_MAPPINGS,
@@ -313,7 +314,9 @@ class RecipeConverterAgent:
         self, normalized_recipe: Dict, namespace: str, recipe_name: str
     ) -> Dict:
         """Convert a shapeless recipe to Bedrock format."""
-        return self._shapeless_converter.convert_to_bedrock(normalized_recipe, namespace, recipe_name)
+        return self._shapeless_converter.convert_to_bedrock(
+            normalized_recipe, namespace, recipe_name
+        )
 
     def _convert_smelting_to_bedrock(
         self,
@@ -331,67 +334,89 @@ class RecipeConverterAgent:
         self, normalized_recipe: Dict, namespace: str, recipe_name: str
     ) -> Dict:
         """Convert a stonecutter recipe to Bedrock format."""
-        return self._furnace_converter.convert_stonecutter_to_bedrock(normalized_recipe, namespace, recipe_name)
+        return self._furnace_converter.convert_stonecutter_to_bedrock(
+            normalized_recipe, namespace, recipe_name
+        )
 
     def _convert_smithing_to_bedrock(
         self, normalized_recipe: Dict, namespace: str, recipe_name: str
     ) -> Dict:
         """Convert a smithing recipe to Bedrock format."""
-        return self._furnace_converter.convert_smithing_to_bedrock(normalized_recipe, namespace, recipe_name)
+        return self._furnace_converter.convert_smithing_to_bedrock(
+            normalized_recipe, namespace, recipe_name
+        )
 
     def _convert_cooking_pot_to_bedrock(
         self, normalized_recipe: Dict, namespace: str, recipe_name: str
     ) -> Dict:
         """Convert a Farmer's Delight cooking pot recipe to Bedrock format."""
-        return self._custom_converter.convert_cooking_pot_to_bedrock(normalized_recipe, namespace, recipe_name)
+        return self._custom_converter.convert_cooking_pot_to_bedrock(
+            normalized_recipe, namespace, recipe_name
+        )
 
     def _convert_cutting_board_to_bedrock(
         self, normalized_recipe: Dict, namespace: str, recipe_name: str
     ) -> Dict:
         """Convert a Farmer's Delight cutting board recipe to Bedrock format."""
-        return self._custom_converter.convert_cutting_board_to_bedrock(normalized_recipe, namespace, recipe_name)
+        return self._custom_converter.convert_cutting_board_to_bedrock(
+            normalized_recipe, namespace, recipe_name
+        )
 
     def _convert_mechanical_crafting_to_bedrock(
         self, normalized_recipe: Dict, namespace: str, recipe_name: str
     ) -> Dict:
         """Convert a Create mechanical crafting recipe to Bedrock format."""
-        return self._custom_converter.convert_mechanical_crafting_to_bedrock(normalized_recipe, namespace, recipe_name)
+        return self._custom_converter.convert_mechanical_crafting_to_bedrock(
+            normalized_recipe, namespace, recipe_name
+        )
 
     def _convert_pressing_to_bedrock(
         self, normalized_recipe: Dict, namespace: str, recipe_name: str
     ) -> Dict:
         """Convert a Create pressing recipe to Bedrock format."""
-        return self._custom_converter.convert_pressing_to_bedrock(normalized_recipe, namespace, recipe_name)
+        return self._custom_converter.convert_pressing_to_bedrock(
+            normalized_recipe, namespace, recipe_name
+        )
 
     def _convert_milling_to_bedrock(
         self, normalized_recipe: Dict, namespace: str, recipe_name: str
     ) -> Dict:
         """Convert a Create milling recipe to Bedrock format."""
-        return self._custom_converter.convert_milling_to_bedrock(normalized_recipe, namespace, recipe_name)
+        return self._custom_converter.convert_milling_to_bedrock(
+            normalized_recipe, namespace, recipe_name
+        )
 
     def _convert_crushing_to_bedrock(
         self, normalized_recipe: Dict, namespace: str, recipe_name: str
     ) -> Dict:
         """Convert a Create crushing recipe to Bedrock format."""
-        return self._custom_converter.convert_crushing_to_bedrock(normalized_recipe, namespace, recipe_name)
+        return self._custom_converter.convert_crushing_to_bedrock(
+            normalized_recipe, namespace, recipe_name
+        )
 
     def _convert_deploying_to_bedrock(
         self, normalized_recipe: Dict, namespace: str, recipe_name: str
     ) -> Dict:
         """Convert a Create deploying recipe to Bedrock format."""
-        return self._custom_converter.convert_deploying_to_bedrock(normalized_recipe, namespace, recipe_name)
+        return self._custom_converter.convert_deploying_to_bedrock(
+            normalized_recipe, namespace, recipe_name
+        )
 
     def _convert_splashing_to_bedrock(
         self, normalized_recipe: Dict, namespace: str, recipe_name: str
     ) -> Dict:
         """Convert a Create splashing recipe to Bedrock format."""
-        return self._custom_converter.convert_splashing_to_bedrock(normalized_recipe, namespace, recipe_name)
+        return self._custom_converter.convert_splashing_to_bedrock(
+            normalized_recipe, namespace, recipe_name
+        )
 
     def _convert_compacting_to_bedrock(
         self, normalized_recipe: Dict, namespace: str, recipe_name: str
     ) -> Dict:
         """Convert a Create compacting recipe to Bedrock format."""
-        return self._custom_converter.convert_compacting_to_bedrock(normalized_recipe, namespace, recipe_name)
+        return self._custom_converter.convert_compacting_to_bedrock(
+            normalized_recipe, namespace, recipe_name
+        )
 
     def _create_manual_review_result(self, namespace: str, recipe_name: str, reason: str) -> Dict:
         """Create a result indicating the recipe requires manual review."""
@@ -469,9 +494,8 @@ class RecipeConverterAgent:
         """Add a custom Java to Bedrock item mapping."""
         self.custom_mappings[java_item_id] = bedrock_item_id
 
-    @tool
     @staticmethod
-    def convert_recipe_tool(recipe_json: str) -> str:
+    def _convert_recipe(recipe_json: str) -> str:
         """Convert a Java recipe to Bedrock format."""
         try:
             input_data = json.loads(recipe_json)
@@ -493,9 +517,8 @@ class RecipeConverterAgent:
         except Exception as e:
             return json.dumps({"success": False, "error": str(e)}, indent=2)
 
-    @tool
     @staticmethod
-    def convert_recipes_batch_tool(recipes_json: str) -> str:
+    def _convert_recipes_batch(recipes_json: str) -> str:
         """Convert multiple Java recipes to Bedrock format in batch."""
         try:
             recipes = json.loads(recipes_json)
@@ -523,9 +546,8 @@ class RecipeConverterAgent:
         except Exception as e:
             return json.dumps({"success": False, "error": str(e)}, indent=2)
 
-    @tool
     @staticmethod
-    def map_item_id_tool(item_mapping_json: str) -> str:
+    def _map_item_id(item_mapping_json: str) -> str:
         """Add custom Java to Bedrock item ID mappings."""
         try:
             mappings = json.loads(item_mapping_json)
@@ -544,9 +566,8 @@ class RecipeConverterAgent:
         except Exception as e:
             return json.dumps({"success": False, "error": str(e)}, indent=2)
 
-    @tool
     @staticmethod
-    def validate_recipe_tool(recipe_json: str) -> str:
+    def _validate_recipe(recipe_json: str) -> str:
         """Validate a Bedrock recipe for correctness."""
         try:
             recipe = json.loads(recipe_json)
@@ -614,6 +635,140 @@ class RecipeConverterAgent:
 
         except Exception as e:
             return json.dumps({"valid": False, "issues": [str(e)]}, indent=2)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Typed args_schema models — one per LangChain tool wrapper
+#
+# Phase 8 A5 (refs #1201). Each schema preserves the legacy single-string
+# JSON shape so chat models and existing call sites continue to invoke
+# ``RecipeConverterAgent.<tool_name>.invoke({...})`` (or the legacy
+# ``.run(<json_string>)``) without changes. ``extra="forbid"`` makes
+# hallucinated extra fields fail loud at validation, and ``min_length=1``
+# rejects empty strings.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class _ConvertRecipeInput(BaseModel):
+    """Args for :class:`_ConvertRecipeTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    recipe_json: str = Field(
+        min_length=1,
+        description=(
+            "JSON string describing a single Java recipe to convert. May contain "
+            "an optional ``recipe_data``, ``namespace``, and ``recipe_name``."
+        ),
+    )
+
+
+class _ConvertRecipesBatchInput(BaseModel):
+    """Args for :class:`_ConvertRecipesBatchTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    recipes_json: str = Field(
+        min_length=1,
+        description="JSON-encoded list of Java recipes to convert in a batch.",
+    )
+
+
+class _MapItemIdInput(BaseModel):
+    """Args for :class:`_MapItemIdTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    item_mapping_json: str = Field(
+        min_length=1,
+        description=(
+            "JSON-encoded list of {java, bedrock} mappings, or dict of "
+            "{java_id: bedrock_id} mappings, to register on the converter."
+        ),
+    )
+
+
+class _ValidateRecipeInput(BaseModel):
+    """Args for :class:`_ValidateRecipeTool`."""
+
+    model_config = ConfigDict(extra="forbid")
+    recipe_json: str = Field(
+        min_length=1,
+        description="JSON string describing the Bedrock recipe to validate.",
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Typed BaseTool subclasses — replace the previous @tool @staticmethod wrappers
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class _BaseRecipeTool(BaseTool):
+    """Common scaffolding for Recipe Converter typed tool wrappers."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+class _ConvertRecipeTool(_BaseRecipeTool):
+    name: str = "convert_recipe_tool"
+    description: str = (
+        "Convert a single Java recipe to Bedrock JSON. "
+        "Args: recipe_json (str, required) — JSON describing the Java recipe, "
+        "optionally wrapped in {recipe_data, namespace, recipe_name}."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _ConvertRecipeInput
+
+    def _run(self, recipe_json: str) -> str:  # type: ignore[override]
+        return RecipeConverterAgent._convert_recipe(recipe_json)
+
+
+class _ConvertRecipesBatchTool(_BaseRecipeTool):
+    name: str = "convert_recipes_batch_tool"
+    description: str = (
+        "Convert a batch of Java recipes to Bedrock JSON. "
+        "Args: recipes_json (str, required) — JSON list of Java recipes."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _ConvertRecipesBatchInput
+
+    def _run(self, recipes_json: str) -> str:  # type: ignore[override]
+        return RecipeConverterAgent._convert_recipes_batch(recipes_json)
+
+
+class _MapItemIdTool(_BaseRecipeTool):
+    name: str = "map_item_id_tool"
+    description: str = (
+        "Register custom Java→Bedrock item-ID mappings on the converter. "
+        "Args: item_mapping_json (str, required) — JSON list or dict of mappings."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _MapItemIdInput
+
+    def _run(self, item_mapping_json: str) -> str:  # type: ignore[override]
+        return RecipeConverterAgent._map_item_id(item_mapping_json)
+
+
+class _ValidateRecipeTool(_BaseRecipeTool):
+    name: str = "validate_recipe_tool"
+    description: str = (
+        "Validate a Bedrock recipe against expected structure. "
+        "Args: recipe_json (str, required) — JSON of the Bedrock recipe."
+    )
+    args_schema: ClassVar[type[BaseModel]] = _ValidateRecipeInput
+
+    def _run(self, recipe_json: str) -> str:  # type: ignore[override]
+        return RecipeConverterAgent._validate_recipe(recipe_json)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Module-level tool instances — preserved as class attributes on
+# RecipeConverterAgent so the existing access patterns
+# (``RecipeConverterAgent.<tool_name>`` and ``agent.<tool_name>``) both
+# continue to work unchanged for call sites and tests, including the
+# legacy ``tool_func.run(<json_string>)`` shape exercised by
+# ``tests/test_recipe_converter.py``.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+RecipeConverterAgent.convert_recipe_tool = _ConvertRecipeTool()
+RecipeConverterAgent.convert_recipes_batch_tool = _ConvertRecipesBatchTool()
+RecipeConverterAgent.map_item_id_tool = _MapItemIdTool()
+RecipeConverterAgent.validate_recipe_tool = _ValidateRecipeTool()
 
 
 __all__ = [

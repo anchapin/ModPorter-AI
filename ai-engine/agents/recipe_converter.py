@@ -6,11 +6,7 @@ DEPRECATED: Use agents.recipe package instead.
 This module is kept for backwards compatibility.
 """
 
-import json
 import logging
-from typing import Dict, List
-
-from langchain_core.tools import tool
 
 from agents.recipe import (
     FORGE_TAG_MAPPINGS,
