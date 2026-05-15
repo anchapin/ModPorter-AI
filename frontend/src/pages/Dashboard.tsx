@@ -28,7 +28,12 @@ export const Dashboard: React.FC = () => {
   // Handle conversion start with filename
   const handleConversionStart = useCallback(
     (jobId: string, filename: string) => {
-      console.log('Conversion started:', sanitizeForLog(jobId), 'File:', sanitizeForLog(filename));
+      console.log(
+        'Conversion started:',
+        sanitizeForLog(jobId),
+        'File:',
+        sanitizeForLog(filename)
+      );
 
       // Add to history with filename
       addConversion({
@@ -66,7 +71,12 @@ export const Dashboard: React.FC = () => {
   // Handle conversion failure
   const handleConversionFailed = useCallback(
     (jobId: string, error: string) => {
-      console.log('Conversion failed:', sanitizeForLog(jobId), 'Error:', sanitizeForLog(error));
+      console.log(
+        'Conversion failed:',
+        sanitizeForLog(jobId),
+        'Error:',
+        sanitizeForLog(error)
+      );
 
       // Update conversion status
       updateConversion(jobId, {

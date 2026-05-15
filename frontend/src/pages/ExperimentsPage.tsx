@@ -674,10 +674,7 @@ const ExperimentsPage: React.FC = () => {
             InputLabelProps={{ shrink: true }}
             value={
               experimentForm.end_date
-                ? safeFormatDate(
-                    experimentForm.end_date,
-                    "yyyy-MM-dd'T'HH:mm"
-                  )
+                ? safeFormatDate(experimentForm.end_date, "yyyy-MM-dd'T'HH:mm")
                 : ''
             }
             onChange={(e) =>

@@ -146,7 +146,9 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
-  transition: transform 0.2s, border-color 0.2s;
+  transition:
+    transform 0.2s,
+    border-color 0.2s;
 }
 
 .story-card:hover {
@@ -214,7 +216,9 @@
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--border);
-  transition: transform 0.2s, border-color 0.2s;
+  transition:
+    transform 0.2s,
+    border-color 0.2s;
 }
 
 .gallery-item:hover {
