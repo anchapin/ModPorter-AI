@@ -27,11 +27,12 @@ To run locally::
 """
 
 import os
+from pathlib import Path
 
 import httpx
 import pytest
 
-pytestmark = pytest.mark.real_service
+pytestmark = [pytest.mark.integration, pytest.mark.real_service]
 
 
 class TestAIEngineContract:
@@ -154,25 +155,21 @@ class TestRealFileProcessingWithAI:
             zf.writestr("mod.json", json.dumps({"name": "TestMod", "version": "1.0.0"}))
         return buffer.getvalue()
 
-    @pytest.mark.xfail(
-        reason=(
-            "Pre-existing latent bug surfaced by un-ignoring this file in nightly: "
-            "FileHandler does not expose a public detect_content_type() method. "
-            "Tracked separately from #1469 — fix or rework should land in a follow-up."
-        ),
-        strict=False,
-    )
-    def test_file_processor_handles_jar_bytes(self, sample_jar_bytes: bytes) -> None:
-        """FileHandler must classify JAR bytes as a known archive type."""
+    @pytest.mark.asyncio
+    async def test_file_processor_handles_jar_bytes(
+        self, sample_jar_bytes: bytes, tmp_path: Path
+    ) -> None:
+        """FileHandler must validate JAR bytes when written to disk."""
         from services.file_handler import FileHandler
 
+        jar_path = tmp_path / "test.jar"
+        jar_path.write_bytes(sample_jar_bytes)
+
         handler = FileHandler()
-        content_type = handler.detect_content_type(sample_jar_bytes)
-        assert content_type in (
-            "application/java-archive",
-            "application/zip",
-            "binary/octet-stream",
-        )
+        validation = await handler.validate_jar(str(jar_path))
+
+        assert validation.is_valid is True
+        assert validation.errors == []
 
     def test_mod_json_extraction_from_bytes(self, sample_jar_bytes: bytes) -> None:
         """``mod.json`` should round-trip through the JAR archive."""
