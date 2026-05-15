@@ -52,6 +52,9 @@ pytest-xdist>=3.8.0
 ruff==0.15.12
 black==26.3.1
 
+# Security overrides for transitive dependencies (CVE-2026-23949, Issue #1483)
+jaraco.context>=6.1.0
+
 # Utilities
 python-dotenv~=1.2.1
 PyJWT>=2.12.1
