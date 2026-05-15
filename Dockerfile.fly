@@ -43,8 +43,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf python3 /usr/bin/python
 
-# Copy Python packages from consolidated builder (NOT binaries - use production stage's Python)
-# Debian system Python looks in /usr/lib/python3.X/dist-packages, not site-packages
+# Copy Python packages from consolidated builder (NOT binaries - use production stage's Python).
+# fly-startup.sh sets PYTHONPATH=/usr/local/lib/python3.11/dist-packages, so packages
+# from the python:3.11-slim builder's site-packages must land at that exact path.
 COPY --from=python-builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/dist-packages
 
 # Copy application code
