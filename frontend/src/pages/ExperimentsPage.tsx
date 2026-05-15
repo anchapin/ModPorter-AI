@@ -302,11 +302,18 @@ const ExperimentsPage: React.FC = () => {
     }
   };
 
-  // Format date for display
-  /* const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'N/A';
-    return format(new Date(dateString), 'MMM dd, yyyy HH:mm');
-  }; */
+  // Format date for display - validates input before passing to format()
+  // to satisfy CodeQL js/tainted-format-string (user-controlled date strings
+  // must not reach format() without validation).
+  const safeFormatDate = (
+    dateString: string | null | undefined,
+    fmt: string
+  ): string => {
+    if (!dateString) return '';
+    const parsed = Date.parse(dateString);
+    if (Number.isNaN(parsed)) return '';
+    return format(new Date(parsed), fmt);
+  };
 
   // Get status chip color
   const getStatusColor = (status: string) => {
@@ -647,8 +654,8 @@ const ExperimentsPage: React.FC = () => {
             InputLabelProps={{ shrink: true }}
             value={
               experimentForm.start_date
-                ? format(
-                    new Date(experimentForm.start_date),
+                ? safeFormatDate(
+                    experimentForm.start_date,
                     "yyyy-MM-dd'T'HH:mm"
                   )
                 : ''
@@ -667,8 +674,8 @@ const ExperimentsPage: React.FC = () => {
             InputLabelProps={{ shrink: true }}
             value={
               experimentForm.end_date
-                ? format(
-                    new Date(experimentForm.end_date),
+                ? safeFormatDate(
+                    experimentForm.end_date,
                     "yyyy-MM-dd'T'HH:mm"
                   )
                 : ''
