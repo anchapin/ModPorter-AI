@@ -144,9 +144,9 @@ class TestJavaAnalyzerAgent:
 
     def test_analyze_mod_structure_tool(self, agent, mock_jar_path):
         """Test the analyze_mod_structure_tool"""
-        # Tools are LangChain `@tool`-decorated callables, invoke via .invoke or .func
+        # Tools are typed BaseTool subclasses (post-A6); invoke via .invoke({...}).
         tool = agent.analyze_mod_structure_tool
-        result = tool.func(str(mock_jar_path))
+        result = tool.invoke({"mod_data": str(mock_jar_path)})
         result_data = json.loads(result)
 
         assert result_data.get("success")
@@ -154,9 +154,9 @@ class TestJavaAnalyzerAgent:
 
     def test_extract_assets_tool(self, agent, mock_jar_path):
         """Test the extract_assets_tool"""
-        # Tools are LangChain `@tool`-decorated callables, invoke via .invoke or .func
+        # Tools are typed BaseTool subclasses (post-A6); invoke via .invoke({...}).
         tool = agent.extract_assets_tool
-        result = tool.func(str(mock_jar_path))
+        result = tool.invoke({"mod_data": str(mock_jar_path)})
         result_data = json.loads(result)
 
         assert result_data.get("success")

@@ -1,9 +1,7 @@
 import pytest
 import json
-import os
 import zipfile
-from pathlib import Path
-from unittest.mock import MagicMock, patch, mock_open
+from unittest.mock import patch
 from agents.java_analyzer import JavaAnalyzerAgent
 
 
@@ -24,7 +22,7 @@ class TestJavaAnalyzerAgentComprehensive:
         jar_data = json.dumps({"mod_path": str(jar_path)})
 
         # We need to bypass the Tool wrapper
-        result_json = agent.extract_mod_metadata_tool.func(jar_data)
+        result_json = agent.extract_mod_metadata_tool.invoke({"mod_data": jar_data})
         result = json.loads(result_json)
 
         assert result["success"] is True
@@ -40,7 +38,7 @@ class TestJavaAnalyzerAgentComprehensive:
 
         source_data = json.dumps({"mod_path": str(source_path)})
 
-        result_json = agent.extract_mod_metadata_tool.func(source_data)
+        result_json = agent.extract_mod_metadata_tool.invoke({"mod_data": source_data})
         result = json.loads(result_json)
 
         assert result["success"] is True
@@ -56,7 +54,7 @@ class TestJavaAnalyzerAgentComprehensive:
 
         mod_data = json.dumps({"mod_path": str(jar_path)})
 
-        result_json = agent.identify_features_tool.func(mod_data)
+        result_json = agent.identify_features_tool.invoke({"mod_data": mod_data})
         result = json.loads(result_json)
 
         assert result["success"] is True
@@ -72,7 +70,7 @@ class TestJavaAnalyzerAgentComprehensive:
         )
 
         with patch("agents.java_analyzer.Path.exists", return_value=True):
-            result_json = agent.analyze_dependencies_tool.func(mod_data)
+            result_json = agent.analyze_dependencies_tool.invoke({"mod_data": mod_data})
             result = json.loads(result_json)
 
             assert result["success"] is True
@@ -87,7 +85,7 @@ class TestJavaAnalyzerAgentComprehensive:
         output_dir = tmp_path / "extracted"
         mod_data = json.dumps({"mod_path": str(jar_path), "output_dir": str(output_dir)})
 
-        result_json = agent.extract_assets_tool.func(mod_data)
+        result_json = agent.extract_assets_tool.invoke({"mod_data": mod_data})
         result = json.loads(result_json)
 
         assert result["success"] is True
