@@ -54,10 +54,10 @@ from services.celery_config import get_conversion_timeout  # Issue #1151
 from services.celery_monitoring import get_celery_monitor  # Issue #1151: Queue depth monitoring
 from services.conversion_service import get_conversion_service
 from services.metering_service import MeteringService
-    from services.rate_limiter import (
-        RateLimitConfig,
-        conversion_rate_limiter,
-    )
+from services.rate_limiter import (
+    RateLimitConfig,
+    conversion_rate_limiter,
+)
 from security.auth import verify_token, verify_api_key
 from security.path_sanitization import (  # issue #1429
     PathSanitizationError,
