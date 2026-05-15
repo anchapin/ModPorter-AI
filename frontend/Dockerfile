@@ -1,31 +1,33 @@
-# Build stage
+# ---------- Build stage ----------
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy root package files
-COPY package*.json ./
-RUN npm install -g pnpm && pnpm install --no-frozen-lockfile
+# Pin pnpm to the version that generated the lockfile so that
+# --frozen-lockfile cannot drift between local dev and CI.
+RUN npm install -g pnpm@10.30.3
 
-# Copy frontend source
-COPY ./ ./
+# Copy manifest + lockfile first to maximise Docker layer caching:
+# dependency install only re-runs when one of these files changes.
+COPY package.json pnpm-lock.yaml ./
 
-# Set up frontend with its own dependencies
-WORKDIR /app
-RUN pnpm install --no-frozen-lockfile
+# Deterministic install. Fails the build if pnpm-lock.yaml is out of
+# sync with package.json -- which is the whole point of this fix.
+RUN pnpm install --frozen-lockfile
 
-# Build arguments for environment variables
+# Now bring in the rest of the source.
+COPY . .
+
+# Build-time configuration injected by docker build --build-arg
 ARG VITE_API_URL
 ARG VITE_API_BASE_URL
-
-# Set environment variables for build
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 # Build the application
 RUN pnpm run build
 
-# Production stage
+# ---------- Production stage ----------
 FROM nginx:alpine
 
 # Copy built assets from builder stage
