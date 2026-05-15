@@ -356,17 +356,17 @@ jobs:
         # The pytest-asyncio event-loop bug (NullPool fix) and the duplicate
         # ix_user_credits_user_id index were both resolved; this job is now
         # blocking. test_ai_engine_contract.py runs against the
-        # `mock-ai-engine.py` started above (issue #1469). One pre-existing
-        # test is still deselected because it has an unrelated FK-violation
-        # bug independent of this work:
-        #   * test_create_conversion_large_file_validation
+        # `mock-ai-engine.py` started above (issue #1469).
+        # test_create_conversion_large_file_validation FK violation fixed in
+        # #1470 (mock auth user is now seeded into the users table by the
+        # shared client fixture), so the previous --deselect is no longer
+        # needed.
         env:
           TEST_AI_ENGINE_URL: 'http://127.0.0.1:8080'
           AI_ENGINE_MOCK: '1'
         run: |
           cd backend
           python -m pytest src/tests/integration/ \
-            --deselect=src/tests/integration/test_conversions_api_v1.py::TestConversionsAPI::test_create_conversion_large_file_validation \
             -q --tb=short --timeout=180 --no-cov -o "addopts="
       - name: AI-engine integration (real services)
         run: |

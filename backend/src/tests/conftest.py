@@ -336,6 +336,87 @@ def reset_storage_env():
 # with explicit control over when environment is set vs when it's cleaned up
 
 
+def _run_async_in_sync_fixture(coro):
+    """Run an async coroutine from a sync pytest fixture without polluting
+    the global event loop (kept compatible with pytest-asyncio's
+    function-scoped loops).
+    """
+    import asyncio
+
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
+
+
+def _seed_mock_auth_user(session_maker, user_id):
+    """Idempotently insert the mocked auth user (Issue #1470).
+
+    The shared ``client`` fixture overrides ``get_current_user`` with a
+    MagicMock whose ``.id`` is a fixed UUID. Code paths that write
+    FK-constrained rows referencing ``users.id`` (e.g. ``usage_records``
+    via ``MeteringService.get_or_create_usage_record``) require this row
+    to actually exist when running against real PostgreSQL.
+    """
+    from sqlalchemy import select
+    from db.models import User
+
+    async def _seed():
+        async with session_maker() as session:
+            existing = await session.execute(select(User).where(User.id == user_id))
+            if existing.scalar_one_or_none() is not None:
+                return  # Pre-existing row from a prior run — reuse it.
+            session.add(
+                User(
+                    id=user_id,
+                    email="test@example.com",
+                    password_hash="$2b$12$test_hash_for_testing_only",
+                    is_verified=True,
+                    subscription_tier="free",
+                )
+            )
+            try:
+                await session.commit()
+            except Exception:
+                # Race with another fixture invocation seeding the same row,
+                # or a stale row left behind. Either way the row exists now,
+                # which is all the FK constraint cares about.
+                await session.rollback()
+
+    _run_async_in_sync_fixture(_seed())
+
+
+def _cleanup_mock_auth_user(session_maker, user_id):
+    """Remove the seeded mock auth user (Issue #1470).
+
+    The FK on ``usage_records.user_id`` is ``ON DELETE CASCADE``, so any
+    rows the test created via ``MeteringService`` are cleaned up
+    transitively. Best-effort: failures here must not mask the test
+    result, so we swallow exceptions.
+    """
+    from sqlalchemy import delete
+    from db.models import UsageRecord, User
+
+    async def _cleanup():
+        async with session_maker() as session:
+            try:
+                # Explicit delete of usage_records first — defensive against
+                # any DB whose FK does not honour ON DELETE CASCADE (e.g. a
+                # SQLite engine without PRAGMA foreign_keys=ON registered).
+                await session.execute(delete(UsageRecord).where(UsageRecord.user_id == user_id))
+                await session.execute(delete(User).where(User.id == user_id))
+                await session.commit()
+            except Exception:
+                await session.rollback()
+
+    try:
+        _run_async_in_sync_fixture(_cleanup())
+    except Exception:
+        # Swallow — cleanup must never fail a passing test.
+        pass
+
+
 @pytest.fixture
 def client():
     """Create a test client for the FastAPI app with clean database per test."""
@@ -373,6 +454,7 @@ def client():
         # exercise authentication. We auto-bypass ``get_current_user`` so they
         # keep working; tests that need to assert auth behaviour explicitly
         # remove this override.
+        _mock_user_id = None
         try:
             from api._authz import get_current_user as _authz_get_current_user
             import uuid as _uuid
@@ -380,20 +462,38 @@ def client():
             # Issue #1417: id must be a UUID instance (not str) so the SQLAlchemy
             # UUID column processor's ``.hex`` access works in code paths that
             # query by user_id (e.g. metering_service).
+            _mock_user_id = _uuid.UUID("11111111-1111-4111-a111-111111111111")
             _test_user = MagicMock()
-            _test_user.id = _uuid.UUID("11111111-1111-4111-a111-111111111111")
+            _test_user.id = _mock_user_id
             _test_user.email = "test@example.com"
             _test_user.subscription_tier = "free"
             app.dependency_overrides[_authz_get_current_user] = lambda: _test_user
         except ImportError:  # pragma: no cover - defensive
             pass
 
-        # Create TestClient - init_db will be mocked since we already initialized it
-        with TestClient(app) as test_client:
-            yield test_client
+        # Issue #1470: Seed the mocked auth user into the real database so
+        # FK-constrained writes (e.g. metering_service writing usage_records,
+        # which has ``user_id REFERENCES users.id``) don't blow up under
+        # real PostgreSQL. SQLite previously tolerated the dangling reference
+        # because PRAGMA foreign_keys=ON is defined in this conftest but
+        # never registered as an event listener — the nightly real-services
+        # job surfaced the bug. Idempotent: an existing row from a prior
+        # crashed run is reused. Teardown deletes the row (cascades to
+        # usage_records via ON DELETE CASCADE on the FK) to keep tests
+        # isolated.
+        if _mock_user_id is not None:
+            _seed_mock_auth_user(test_session_maker, _mock_user_id)
 
-        # Clean up dependency override
-        app.dependency_overrides.clear()
+        try:
+            # Create TestClient - init_db will be mocked since we already initialized it
+            with TestClient(app) as test_client:
+                yield test_client
+        finally:
+            if _mock_user_id is not None:
+                _cleanup_mock_auth_user(test_session_maker, _mock_user_id)
+
+            # Clean up dependency override
+            app.dependency_overrides.clear()
 
 
 @pytest.fixture(autouse=True)
