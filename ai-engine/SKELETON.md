@@ -449,7 +449,7 @@ It contains class/function signatures, type definitions, and docstrings — **no
 
 ### `ai-engine/agents/bedrock_architect.py`
 > Bedrock Architect Agent for conversion planning and smart assumption application.
-*deps: __future__, langchain_core.tools, models.smart_assumptions, utils.llm_agent_tools*
+*deps: __future__, langchain_core.tools, models.smart_assumptions, pydantic, utils.llm_agent_tools*
 
 **class BedrockArchitectAgent:**
   *Bedrock Architect Agent for optimal conversion strategies.*
@@ -459,38 +459,101 @@ It contains class/function signatures, type definitions, and docstrings — **no
     *Get singleton instance of BedrockArchitectAgent.*
   `def get_tools(self) -> List[Any]`
     *Get tools available to this agent.*
-  `def analyze_java_feature_tool(feature_data: str) -> str`
+  `def _analyze_java_feature(feature_data: str) -> str`
     *Analyze a Java mod feature to determine applicable smart assumptions.*
-  `def apply_smart_assumption_tool(assumption_data: str) -> str`
+  `def _apply_smart_assumption(assumption_data: str) -> str`
     *Apply smart assumption to a feature.*
-  `def create_conversion_plan_tool(plan_data: Any) -> str`
+  `def _create_conversion_plan(plan_data: Any) -> str`
     *Create a conversion plan for features.*
-  `def get_assumption_conflicts_tool(conflict_data: str) -> str`
+  `def _get_assumption_conflicts(conflict_data: str) -> str`
     *Get assumption conflicts for features.*
-  `def validate_bedrock_compatibility_tool(compatibility_data: str) -> str`
+  `def _validate_bedrock_compatibility(compatibility_data: str) -> str`
     *Validate Bedrock compatibility of features.*
   `def _get_conversion_recommendation(self, analysis_result: AssumptionResult) -> str`
     *Get conversion recommendation based on analysis result*
   `def _validate_component_compatibility(self, component: Dict[str, Any]) -> Dict[str, Any]`
     *Validate individual component compatibility with Bedrock*
-  `def generate_block_definitions_tool(block_data: str) -> str`
+  `def _generate_block_definitions(block_data: str) -> str`
     *Generate Bedrock block definition files (placeholder).*
-  `def generate_item_definitions_tool(item_data: str) -> str`
+  `def _generate_item_definitions(item_data: str) -> str`
     *Generate Bedrock item definition files (placeholder).*
-  `def generate_recipe_definitions_tool(recipe_data: str) -> str`
+  `def _generate_recipe_definitions(recipe_data: str) -> str`
     *Generate Bedrock recipe JSON files (placeholder).*
-  `def generate_entity_definitions_tool(entity_data: str) -> str`
+  `def _generate_entity_definitions(entity_data: str) -> str`
     *Generate Bedrock entity definition files (placeholder).*
   `def _generate_placeholder_definition(component_data_str: str, component_type: str) -> str`
     *Generic placeholder for generating Bedrock component definitions.*
-  `def create_llm_conversion_plan_tool(plan_data: str) -> str`
+  `def _create_llm_conversion_plan(plan_data: str) -> str`
     *Use LLM + RAG to generate conversion plans with Bedrock API context.*
+
+**class _AnalyzeJavaFeatureInput(BaseModel):**
+  *Args for :class:`_AnalyzeJavaFeatureTool`.*
+
+**class _ApplySmartAssumptionInput(BaseModel):**
+  *Args for :class:`_ApplySmartAssumptionTool`.*
+
+**class _CreateConversionPlanInput(BaseModel):**
+  *Args for :class:`_CreateConversionPlanTool`.*
+
+**class _GetAssumptionConflictsInput(BaseModel):**
+  *Args for :class:`_GetAssumptionConflictsTool`.*
+
+**class _ValidateBedrockCompatibilityInput(BaseModel):**
+  *Args for :class:`_ValidateBedrockCompatibilityTool`.*
+
+**class _GenerateBlockDefinitionsInput(BaseModel):**
+  *Args for :class:`_GenerateBlockDefinitionsTool`.*
+
+**class _GenerateItemDefinitionsInput(BaseModel):**
+  *Args for :class:`_GenerateItemDefinitionsTool`.*
+
+**class _GenerateRecipeDefinitionsInput(BaseModel):**
+  *Args for :class:`_GenerateRecipeDefinitionsTool`.*
+
+**class _GenerateEntityDefinitionsInput(BaseModel):**
+  *Args for :class:`_GenerateEntityDefinitionsTool`.*
+
+**class _CreateLlmConversionPlanInput(BaseModel):**
+  *Args for :class:`_CreateLlmConversionPlanTool`.*
+
+**class _BaseBedrockArchitectTool(BaseTool):**
+  *Common scaffolding for Bedrock Architect typed tool wrappers.*
+
+**class _AnalyzeJavaFeatureTool(_BaseBedrockArchitectTool):**
+  `def _run(self, feature_data: str) -> str`
+
+**class _ApplySmartAssumptionTool(_BaseBedrockArchitectTool):**
+  `def _run(self, assumption_data: str) -> str`
+
+**class _CreateConversionPlanTool(_BaseBedrockArchitectTool):**
+  `def _run(self, plan_data: Any) -> str`
+
+**class _GetAssumptionConflictsTool(_BaseBedrockArchitectTool):**
+  `def _run(self, conflict_data: str) -> str`
+
+**class _ValidateBedrockCompatibilityTool(_BaseBedrockArchitectTool):**
+  `def _run(self, compatibility_data: str) -> str`
+
+**class _GenerateBlockDefinitionsTool(_BaseBedrockArchitectTool):**
+  `def _run(self, block_data: str) -> str`
+
+**class _GenerateItemDefinitionsTool(_BaseBedrockArchitectTool):**
+  `def _run(self, item_data: str) -> str`
+
+**class _GenerateRecipeDefinitionsTool(_BaseBedrockArchitectTool):**
+  `def _run(self, recipe_data: str) -> str`
+
+**class _GenerateEntityDefinitionsTool(_BaseBedrockArchitectTool):**
+  `def _run(self, entity_data: str) -> str`
+
+**class _CreateLlmConversionPlanTool(_BaseBedrockArchitectTool):**
+  `def _run(self, plan_data: str) -> str`
 
 ---
 
 ### `ai-engine/agents/bedrock_builder.py`
 > Bedrock Builder Agent for generating Bedrock add-on files from Java mod analysis.
-*deps: PIL, jinja2, langchain_core.tools, models.smart_assumptions, templates.template_engine, utils.atlas_descriptor_parser, zipfile*
+*deps: PIL, jinja2, langchain_core.tools, models.smart_assumptions, pydantic, templates.template_engine, utils.atlas_descriptor_parser, zipfile*
 
 **class BedrockBuilderAgent:**
   *Bedrock Builder Agent responsible for generating Bedrock add-on files*
@@ -529,14 +592,41 @@ It contains class/function signatures, type definitions, and docstrings — **no
     *Legacy method for compatibility.*
   `def _copy_textures(self, analysis_data)`
     *Legacy method for compatibility.*
-  `def build_bedrock_structure_tool(structure_data: str) -> str`
+  `def _build_bedrock_structure(structure_data: str) -> str`
     *Build basic Bedrock addon structure.*
-  `def generate_block_definitions_tool(block_data: str) -> str`
+  `def _generate_block_definitions(block_data: str) -> str`
     *Generate Bedrock block definition files.*
-  `def convert_assets_tool(asset_data: str) -> str`
+  `def _convert_assets(asset_data: str) -> str`
     *Convert assets to Bedrock format.*
-  `def package_addon_tool(package_data: str) -> str`
+  `def _package_addon(package_data: str) -> str`
     *Package addon into .mcaddon file.*
+
+**class _BuildBedrockStructureInput(BaseModel):**
+  *Args for :class:`_BuildBedrockStructureTool`.*
+
+**class _GenerateBlockDefinitionsInput(BaseModel):**
+  *Args for :class:`_GenerateBlockDefinitionsTool`.*
+
+**class _ConvertAssetsInput(BaseModel):**
+  *Args for :class:`_ConvertAssetsTool`.*
+
+**class _PackageAddonInput(BaseModel):**
+  *Args for :class:`_PackageAddonTool`.*
+
+**class _BaseBedrockBuilderTool(BaseTool):**
+  *Common scaffolding for Bedrock Builder typed tool wrappers.*
+
+**class _BuildBedrockStructureTool(_BaseBedrockBuilderTool):**
+  `def _run(self, structure_data: str) -> str`
+
+**class _GenerateBlockDefinitionsTool(_BaseBedrockBuilderTool):**
+  `def _run(self, block_data: str) -> str`
+
+**class _ConvertAssetsTool(_BaseBedrockBuilderTool):**
+  `def _run(self, asset_data: str) -> str`
+
+**class _PackageAddonTool(_BaseBedrockBuilderTool):**
+  `def _run(self, package_data: str) -> str`
 
 ---
 
@@ -1281,23 +1371,62 @@ It contains class/function signatures, type definitions, and docstrings — **no
 
 ### `ai-engine/agents/java_analyzer/tools.py`
 > LangChain tool wrappers for Java Analyzer Agent
-*deps: agents.java_analyzer, langchain_core.tools, utils.llm_agent_tools, utils.logging_config, zipfile*
+*deps: agents.java_analyzer, langchain_core.tools, pydantic, utils.llm_agent_tools, utils.logging_config, zipfile*
 
 **class JavaAnalyzerTools:**
   *Collection of LangChain tools for Java mod analysis*
   `def __init__(self, agent_instance = None)`
-  `def analyze_mod_structure_tool(mod_data: Union[str, Dict]) -> str`
+  `def _analyze_mod_structure(mod_data: Union[str, Dict]) -> str`
     *Analyze the overall structure of a Java mod.*
-  `def extract_mod_metadata_tool(mod_data: Union[str, Dict]) -> str`
+  `def _extract_mod_metadata(mod_data: Union[str, Dict]) -> str`
     *Extract metadata from mod files.*
-  `def identify_features_tool(mod_data: Union[str, Dict]) -> str`
+  `def _identify_features(mod_data: Union[str, Dict]) -> str`
     *Identify features in the mod.*
-  `def analyze_dependencies_tool(mod_data: Union[str, Dict]) -> str`
+  `def _analyze_dependencies(mod_data: Union[str, Dict]) -> str`
     *Analyze mod dependencies.*
-  `def extract_assets_tool(mod_data: Union[str, Dict]) -> str`
+  `def _extract_assets(mod_data: Union[str, Dict]) -> str`
     *Extract assets from the mod.*
-  `def analyze_complexity_with_llm_tool(analysis_data: str) -> str`
+  `def _analyze_complexity_with_llm(analysis_data: str) -> str`
     *Use LLM to analyze Java mod complexity and identify Bedrock-incompatible patterns.*
+
+**class _AnalyzeModStructureInput(BaseModel):**
+  *Args for :class:`_AnalyzeModStructureTool`.*
+
+**class _ExtractModMetadataInput(BaseModel):**
+  *Args for :class:`_ExtractModMetadataTool`.*
+
+**class _IdentifyFeaturesInput(BaseModel):**
+  *Args for :class:`_IdentifyFeaturesTool`.*
+
+**class _AnalyzeDependenciesInput(BaseModel):**
+  *Args for :class:`_AnalyzeDependenciesTool`.*
+
+**class _ExtractAssetsInput(BaseModel):**
+  *Args for :class:`_ExtractAssetsTool`.*
+
+**class _AnalyzeComplexityWithLlmInput(BaseModel):**
+  *Args for :class:`_AnalyzeComplexityWithLlmTool`.*
+
+**class _BaseJavaAnalyzerTool(BaseTool):**
+  *Common scaffolding for Java Analyzer typed tool wrappers.*
+
+**class _AnalyzeModStructureTool(_BaseJavaAnalyzerTool):**
+  `def _run(self, mod_data: Any) -> str`
+
+**class _ExtractModMetadataTool(_BaseJavaAnalyzerTool):**
+  `def _run(self, mod_data: Any) -> str`
+
+**class _IdentifyFeaturesTool(_BaseJavaAnalyzerTool):**
+  `def _run(self, mod_data: Any) -> str`
+
+**class _AnalyzeDependenciesTool(_BaseJavaAnalyzerTool):**
+  `def _run(self, mod_data: Any) -> str`
+
+**class _ExtractAssetsTool(_BaseJavaAnalyzerTool):**
+  `def _run(self, mod_data: Any) -> str`
+
+**class _AnalyzeComplexityWithLlmTool(_BaseJavaAnalyzerTool):**
+  `def _run(self, analysis_data: str) -> str`
 
 ---
 
@@ -2422,38 +2551,119 @@ It contains class/function signatures, type definitions, and docstrings — **no
     *Build .mcaddon file from temp directory structure for MVP pipeline.*
   `def _validate_mcaddon_file(self, mcaddon_path)`
     *Validate a created .mcaddon file.*
-  `def analyze_conversion_components_tool(component_data: str) -> str`
+  `def _analyze_conversion_components(component_data: str) -> str`
     *Analyze conversion components for packaging.*
-  `def create_package_structure_tool(structure_data: str) -> str`
+  `def _create_package_structure(structure_data: str) -> str`
     *Create package structure for Bedrock addon.*
-  `def generate_manifests_tool(manifest_data: str) -> str`
+  `def _generate_manifests(manifest_data: str) -> str`
     *Generate manifest files for the addon.*
-  `def validate_package_tool(validation_data: str) -> str`
+  `def _validate_package(validation_data: str) -> str`
     *Validate the package structure.*
-  `def build_mcaddon_tool(build_data: str) -> str`
+  `def _build_mcaddon(build_data: str) -> str`
     *Build the final mcaddon package.*
-  `def generate_enhanced_manifests_tool(mod_data: str) -> str`
+  `def _generate_enhanced_manifests(mod_data: str) -> str`
     *Generate enhanced Bedrock manifests using the new manifest generator.*
-  `def generate_blocks_and_items_tool(conversion_data: str) -> str`
+  `def _generate_blocks_and_items(conversion_data: str) -> str`
     *Generate Bedrock blocks and items from Java conversion data.*
-  `def generate_entities_tool(entity_data: str) -> str`
+  `def _generate_entities(entity_data: str) -> str`
     *Generate Bedrock entities from Java entity data.*
-  `def package_enhanced_addon_tool(package_data: str) -> str`
+  `def _package_enhanced_addon(package_data: str) -> str`
     *Package addon using the enhanced file packager.*
-  `def validate_enhanced_addon_tool(addon_path: str) -> str`
+  `def _validate_enhanced_addon(addon_path: str) -> str`
     *Validate addon using the enhanced validator.*
-  `def validate_mcaddon_structure_tool(mcaddon_path: str) -> str`
+  `def _validate_mcaddon_structure(mcaddon_path: str) -> str`
     *Validate .mcaddon file structure using comprehensive validator.*
-  `def validate_manifest_schema_tool(manifest_data: str) -> str`
+  `def _validate_manifest_schema(manifest_data: str) -> str`
     *Validate a manifest.json against Bedrock JSON schema.*
-  `def generate_validation_report_tool(mcaddon_path: str) -> str`
+  `def _generate_validation_report(mcaddon_path: str) -> str`
     *Generate a human-readable validation report for .mcaddon file.*
+
+**class _AnalyzeConversionComponentsInput(BaseModel):**
+  *Args for :class:`_AnalyzeConversionComponentsTool`.*
+
+**class _CreatePackageStructureInput(BaseModel):**
+  *Args for :class:`_CreatePackageStructureTool`.*
+
+**class _GenerateManifestsInput(BaseModel):**
+  *Args for :class:`_GenerateManifestsTool`.*
+
+**class _ValidatePackageInput(BaseModel):**
+  *Args for :class:`_ValidatePackageTool`.*
+
+**class _BuildMcaddonInput(BaseModel):**
+  *Args for :class:`_BuildMcaddonTool`.*
+
+**class _GenerateEnhancedManifestsInput(BaseModel):**
+  *Args for :class:`_GenerateEnhancedManifestsTool`.*
+
+**class _GenerateBlocksAndItemsInput(BaseModel):**
+  *Args for :class:`_GenerateBlocksAndItemsTool`.*
+
+**class _GenerateEntitiesInput(BaseModel):**
+  *Args for :class:`_GenerateEntitiesTool`.*
+
+**class _PackageEnhancedAddonInput(BaseModel):**
+  *Args for :class:`_PackageEnhancedAddonTool`.*
+
+**class _ValidateEnhancedAddonInput(BaseModel):**
+  *Args for :class:`_ValidateEnhancedAddonTool`.*
+
+**class _ValidateMcaddonStructureInput(BaseModel):**
+  *Args for :class:`_ValidateMcaddonStructureTool`.*
+
+**class _ValidateManifestSchemaInput(BaseModel):**
+  *Args for :class:`_ValidateManifestSchemaTool`.*
+
+**class _GenerateValidationReportInput(BaseModel):**
+  *Args for :class:`_GenerateValidationReportTool`.*
+
+**class _BasePackagingTool(BaseTool):**
+  *Common scaffolding for Packaging Agent typed tool wrappers.*
+
+**class _AnalyzeConversionComponentsTool(_BasePackagingTool):**
+  `def _run(self, component_data: str) -> str`
+
+**class _CreatePackageStructureTool(_BasePackagingTool):**
+  `def _run(self, structure_data: str) -> str`
+
+**class _GenerateManifestsTool(_BasePackagingTool):**
+  `def _run(self, manifest_data: str) -> str`
+
+**class _ValidatePackageTool(_BasePackagingTool):**
+  `def _run(self, validation_data: str) -> str`
+
+**class _BuildMcaddonTool(_BasePackagingTool):**
+  `def _run(self, build_data: Any) -> str`
+
+**class _GenerateEnhancedManifestsTool(_BasePackagingTool):**
+  `def _run(self, mod_data: str) -> str`
+
+**class _GenerateBlocksAndItemsTool(_BasePackagingTool):**
+  `def _run(self, conversion_data: str) -> str`
+
+**class _GenerateEntitiesTool(_BasePackagingTool):**
+  `def _run(self, entity_data: str) -> str`
+
+**class _PackageEnhancedAddonTool(_BasePackagingTool):**
+  `def _run(self, package_data: str) -> str`
+
+**class _ValidateEnhancedAddonTool(_BasePackagingTool):**
+  `def _run(self, addon_path: str) -> str`
+
+**class _ValidateMcaddonStructureTool(_BasePackagingTool):**
+  `def _run(self, mcaddon_path: str) -> str`
+
+**class _ValidateManifestSchemaTool(_BasePackagingTool):**
+  `def _run(self, manifest_data: str) -> str`
+
+**class _GenerateValidationReportTool(_BasePackagingTool):**
+  `def _run(self, mcaddon_path: str) -> str`
 
 ---
 
 ### `ai-engine/agents/qa/__init__.py`
 > QA Validator Agent for validating conversion quality and generating comprehensive reports.
-*deps: langchain_core.tools, models.smart_assumptions, zipfile*
+*deps: langchain_core.tools, models.smart_assumptions, pydantic, zipfile*
 
 **class QAValidatorAgent:**
   *QA Validator Agent responsible for validating conversion quality and*
@@ -2498,18 +2708,45 @@ It contains class/function signatures, type definitions, and docstrings — **no
     *Assess performance metrics of the converted addon.*
   `def generate_qa_report(self, report_data: str) -> str`
     *Generate comprehensive QA report.*
-  `def validate_conversion_quality_tool(quality_data: str) -> str`
-    *Validate overall conversion quality.*
-  `def validate_mcaddon_tool(mcaddon_path: str) -> str`
-    *Validate a .mcaddon file and generate comprehensive QA report.*
-  `def run_functional_tests_tool(test_data: str) -> str`
-    *Run functional tests on the converted addon.*
-  `def analyze_bedrock_compatibility_tool(compatibility_data: str) -> str`
-    *Analyze Bedrock compatibility of the conversion.*
-  `def assess_performance_metrics_tool(performance_data: str) -> str`
-    *Assess performance metrics of the converted addon.*
-  `def generate_qa_report_tool(report_data: str) -> str`
-    *Generate comprehensive QA report.*
+
+**class _ValidateConversionQualityInput(BaseModel):**
+  *Args for :class:`_ValidateConversionQualityTool`.*
+
+**class _ValidateMcaddonInput(BaseModel):**
+  *Args for :class:`_ValidateMcaddonTool`.*
+
+**class _RunFunctionalTestsInput(BaseModel):**
+  *Args for :class:`_RunFunctionalTestsTool`.*
+
+**class _AnalyzeBedrockCompatibilityInput(BaseModel):**
+  *Args for :class:`_AnalyzeBedrockCompatibilityTool`.*
+
+**class _AssessPerformanceMetricsInput(BaseModel):**
+  *Args for :class:`_AssessPerformanceMetricsTool`.*
+
+**class _GenerateQaReportInput(BaseModel):**
+  *Args for :class:`_GenerateQaReportTool`.*
+
+**class _BaseQATool(BaseTool):**
+  *Common scaffolding for QA Validator typed tool wrappers.*
+
+**class _ValidateConversionQualityTool(_BaseQATool):**
+  `def _run(self, quality_data: str) -> str`
+
+**class _ValidateMcaddonTool(_BaseQATool):**
+  `def _run(self, mcaddon_path: str) -> str`
+
+**class _RunFunctionalTestsTool(_BaseQATool):**
+  `def _run(self, test_data: str) -> str`
+
+**class _AnalyzeBedrockCompatibilityTool(_BaseQATool):**
+  `def _run(self, compatibility_data: str) -> str`
+
+**class _AssessPerformanceMetricsTool(_BaseQATool):**
+  `def _run(self, performance_data: str) -> str`
+
+**class _GenerateQaReportTool(_BaseQATool):**
+  `def _run(self, report_data: str) -> str`
 
 ---
 
