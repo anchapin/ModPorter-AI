@@ -14,15 +14,12 @@ primary_region = 'iad'
 
 [env]
   PYTHONUNBUFFERED = '1'
+  STORAGE_BACKEND = 's3'
+  S3_ENDPOINT_URL = 'https://fly.storage.tigris.dev'
 
 [processes]
   app = '/startup.sh'
   worker = "sh -c 'cd /app/backend && PYTHONPATH=/usr/lib/python3.11/site-packages:/app/backend/src python -m celery -A src.services.celery_config worker --loglevel=info'"
-
-[[mounts]]
-  source = 'portkit_data'
-  destination = '/app/data'
-  initial_size = '1gb'
 
 [[services]]
   protocol = 'tcp'

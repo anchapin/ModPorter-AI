@@ -14,10 +14,10 @@ services:
 
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
-      - '8000:8000'
+      - '8080:8000'
     environment:
       - PYTHONPATH=/app/src
       - REDIS_URL=redis://redis:6379
@@ -27,13 +27,17 @@ services:
       - SKIP_EMAIL_VERIFICATION=true
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-jwt-secret-change-in-production}
+      - STORAGE_BACKEND=${STORAGE_BACKEND:-local}
+      - S3_BUCKET=${S3_BUCKET:-portkit-data}
+      - AWS_REGION=${AWS_REGION:-auto}
+      - S3_ENDPOINT_URL=${S3_ENDPOINT_URL:-}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
     depends_on:
       redis:
         condition: service_healthy
       postgres:
         condition: service_healthy
-    volumes:
-      - conversion-cache:/app/cache
     networks:
       - portkit-network
     restart: unless-stopped
@@ -54,11 +58,13 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - LOG_LEVEL=INFO
+      - STORAGE_BACKEND=${STORAGE_BACKEND:-local}
+      - S3_BUCKET=${S3_BUCKET:-portkit-data}
+      - AWS_REGION=${AWS_REGION:-auto}
+      - S3_ENDPOINT_URL=${S3_ENDPOINT_URL:-}
     depends_on:
       redis:
         condition: service_healthy
-    volumes:
-      - model-cache:/app/models
     networks:
       - portkit-network
     restart: unless-stopped
@@ -101,9 +107,6 @@ services:
       - POSTGRES_PASSWORD=password
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      # init.sql might not be needed if the image handles initialization
-      # or if you manage schema migrations separately for production
-      # - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - portkit-network
     restart: unless-stopped
@@ -119,17 +122,13 @@ services:
     ports:
       - '${PROMETHEUS_PORT:-9090}:9090'
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus-data:/prometheus
     networks:
       - portkit-network
     restart: unless-stopped
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--web.enable-lifecycle'
+    depends_on:
+      - backend
 
   grafana:
     image: grafana/grafana:latest
@@ -167,41 +166,11 @@ services:
       - '--path.sysfs=/host/sys'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
 
-  # Redis exporter for Redis metrics
+  # Redis exporter
   redis-exporter:
     image: oliver006/redis_exporter:latest
     ports:
       - '9121:9121'
-    environment:
-      - REDIS_ADDR=redis://redis:6379
-    networks:
-      - portkit-network
-    restart: unless-stopped
-    depends_on:
-      - redis
-
-  # Postgres exporter for PostgreSQL metrics
-  postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:latest
-    ports:
-      - '9187:9187'
-    environment:
-      - DATA_SOURCE_NAME=postgresql://postgres:password@postgres:5432/portkit?sslmode=disable
-    networks:
-      - portkit-network
-    restart: unless-stopped
-    depends_on:
-      - postgres
-
-  # Celery exporter for Celery queue monitoring
-  celery-exporter:
-    image: danihodovic/celery-exporter:latest
-    ports:
-      - '9540:9540'
-    environment:
-      - REDIS_URL=redis://redis:6379
-      - BROKER_URL=redis://redis:6379
-      - METRICS_PORT=9540
     networks:
       - portkit-network
     restart: unless-stopped
@@ -232,12 +201,8 @@ services:
 
 volumes:
   redis-data:
-    driver: local # Consider using managed Redis in production
-  postgres-data:
-    driver: local # Consider using managed PostgreSQL in production
-  conversion-cache:
     driver: local
-  model-cache:
+  postgres-data:
     driver: local
   prometheus-data:
     driver: local

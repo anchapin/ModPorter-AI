@@ -14,6 +14,23 @@ from datetime import datetime, timedelta
 from core.storage import StorageManager, storage_manager, StorageBackend
 
 
+class AsyncPageIterator:
+    """Helper to create async iterables for S3 paginator mock."""
+    def __init__(self, pages):
+        self._pages = pages
+        self._index = 0
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if self._index >= len(self._pages):
+            raise StopAsyncIteration
+        page = self._pages[self._index]
+        self._index += 1
+        return page
+
+
 class TestStorageBackend:
     """Tests for StorageBackend enum."""
 
@@ -396,21 +413,20 @@ class TestS3Fallback:
             assert os.path.exists(path)
 
     @pytest.mark.asyncio
-    async def test_s3_delete_falls_back(self):
-        """Test S3 delete falls back to local."""
+    async def test_s3_delete_with_mock(self):
+        """Test S3 delete uses S3 client for deletion."""
         with tempfile.TemporaryDirectory() as tmpdir:
             manager = StorageManager(
                 backend=StorageBackend.S3, base_path=tmpdir, s3_bucket="test-bucket"
             )
-            # Save directly using local method
-            content = b"content"
-            path = await manager._save_local(
-                content, "s3_del_fallback", "test.jar", "user1", "original"
-            )
-            # Delete uses _delete_s3 which returns False for S3
-            # But the file was saved to local, so it won't be found by _get_s3
-            result = await manager.delete_job_files(job_id="s3_del_fallback", user_id="user1")
-            assert result is False  # S3 delete is not implemented
+            mock_paginator = MagicMock()
+            mock_paginator.paginate.side_effect = lambda **kwargs: AsyncPageIterator([{}])
+            mock_client = MagicMock()
+            mock_client.get_paginator.return_value = mock_paginator
+            mock_client.delete_objects = AsyncMock()
+            manager._s3_client = mock_client
+            result = await manager.delete_job_files(job_id="test-job", user_id="user1")
+            assert result is False  # No objects found to delete
 
 
 class TestLocalStoragePaths:
@@ -478,11 +494,13 @@ class TestS3Config:
                 "STORAGE_BACKEND": "s3",
                 "S3_BUCKET": "my-bucket",
                 "AWS_REGION": "eu-west-1",
+                "S3_ENDPOINT_URL": "https://fly.storage.tigris.dev",
             },
         ):
             manager = StorageManager()
             assert manager.s3_bucket == "my-bucket"
             assert manager.s3_region == "eu-west-1"
+            assert manager.s3_endpoint_url == "https://fly.storage.tigris.dev"
 
     def test_s3_config_defaults(self, monkeypatch):
         """Test S3 config default values."""
@@ -567,28 +585,51 @@ class TestEdgeCases:
         assert count >= 0
 
     @pytest.mark.asyncio
-    async def test_s3_cleanup_not_implemented(self):
-        """Test S3 cleanup returns 0."""
+    async def test_s3_cleanup_with_mock_client(self):
+        """Test S3 cleanup deletes expired objects."""
         with tempfile.TemporaryDirectory() as tmpdir:
             manager = StorageManager(backend=StorageBackend.S3, base_path=tmpdir)
-            count = await manager._cleanup_s3(datetime.now())
-            assert count == 0
+            expired_page = {"Contents": [{"Key": "old/file.jar", "LastModified": datetime(2020, 1, 1, tzinfo=None), "Size": 100}]}
+            mock_paginator = MagicMock()
+            mock_paginator.paginate.side_effect = lambda **kwargs: AsyncPageIterator([expired_page])
+            mock_client = MagicMock()
+            mock_client.get_paginator.return_value = mock_paginator
+            mock_client.delete_object = AsyncMock()
+            manager._s3_client = mock_client
+            count = await manager._cleanup_s3(datetime(2025, 1, 1, tzinfo=None))
+            assert count == 3  # One expired object per prefix (uploads, processing, results)
 
     @pytest.mark.asyncio
-    async def test_s3_get_not_implemented(self):
-        """Test S3 get returns None."""
+    async def test_s3_get_with_mock_client(self):
+        """Test S3 get returns file content via mock client."""
         with tempfile.TemporaryDirectory() as tmpdir:
             manager = StorageManager(backend=StorageBackend.S3, base_path=tmpdir)
+            mock_body = AsyncMock()
+            mock_body.read = AsyncMock(return_value=b"test content")
+            mock_body.__aenter__ = AsyncMock(return_value=mock_body)
+            mock_body.__aexit__ = AsyncMock(return_value=None)
+            mock_client = AsyncMock()
+            mock_client.get_object = AsyncMock(return_value={"Body": mock_body})
+            mock_client.exceptions = MagicMock()
+            mock_client.exceptions.NoSuchKey = type("NoSuchKey", (Exception,), {})
+            manager._s3_client = mock_client
             result = await manager._get_s3("job", "file.jar", "user")
-            assert result is None
+            assert result == b"test content"
 
     @pytest.mark.asyncio
-    async def test_s3_delete_not_implemented(self):
-        """Test S3 delete returns False."""
+    async def test_s3_delete_with_mock_client(self):
+        """Test S3 delete removes objects via mock client."""
         with tempfile.TemporaryDirectory() as tmpdir:
             manager = StorageManager(backend=StorageBackend.S3, base_path=tmpdir)
+            delete_page = {"Contents": [{"Key": "uploads/user/job/file.jar"}]}
+            mock_paginator = MagicMock()
+            mock_paginator.paginate.side_effect = lambda **kwargs: AsyncPageIterator([delete_page])
+            mock_client = MagicMock()
+            mock_client.get_paginator.return_value = mock_paginator
+            mock_client.delete_objects = AsyncMock()
+            manager._s3_client = mock_client
             result = await manager._delete_s3("job", "user")
-            assert result is False
+            assert result is True
 
 
 class TestDefaultConstants:
