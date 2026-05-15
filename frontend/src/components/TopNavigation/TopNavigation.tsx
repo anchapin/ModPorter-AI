@@ -26,6 +26,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
     { to: '/experiments', label: 'Experiments' },
     { to: '/experiment-results', label: 'Results' },
     { to: '/docs', label: 'Documentation' },
+    { to: '/showcase', label: 'Showcase' },
     {
       to: '/settings',
       label: <span aria-hidden="true">⚙️</span>,

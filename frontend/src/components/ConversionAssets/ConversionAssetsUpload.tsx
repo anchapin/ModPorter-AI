@@ -1,5 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import DOMPurify from 'dompurify';
+import React, { useState, useCallback } from 'react';
 import { ConversionAsset } from '../../types/api';
 import * as api from '../../services/api';
 import './ConversionAssets.css';

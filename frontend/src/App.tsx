@@ -47,6 +47,7 @@ const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
 const CookiesPage = lazy(() => import('./pages/CookiesPage'));
 const IPPolicyPage = lazy(() => import('./pages/IPPolicyPage'));
 const StatusPage = lazy(() => import('./pages/StatusPage'));
+const ShowcasePage = lazy(() => import('./pages/ShowcasePage'));
 
 function App() {
   console.log('App component is rendering...');
@@ -266,6 +267,14 @@ function App() {
                   element={
                     <Suspense fallback={<div>Loading...</div>}>
                       <StatusPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/showcase"
+                  element={
+                    <Suspense fallback={<div>Loading...</div>}>
+                      <ShowcasePage />
                     </Suspense>
                   }
                 />

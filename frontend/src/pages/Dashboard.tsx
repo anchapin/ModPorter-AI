@@ -1,8 +1,9 @@
 /**
  * Dashboard Page - Day 5 Enhancement
-import { sanitizeForLog } from '../utils/sanitizeLog';
  * Comprehensive dashboard with conversion, history, and management features
  */
+
+import { sanitizeForLog } from '../utils/sanitizeLog';
 
 import React, { useState, useCallback } from 'react';
 import { ConversionUploadEnhanced } from '../components/ConversionUpload/ConversionUploadEnhanced';
