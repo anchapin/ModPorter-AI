@@ -329,19 +329,44 @@ jobs:
         run: |
           timeout 60 bash -c 'until nc -z localhost 5434; do sleep 1; done'
           timeout 60 bash -c 'until nc -z localhost 6380; do sleep 1; done'
+      - name: Start mock AI engine (#1469)
+        # Spin up the in-repo `mock-ai-engine.py` (FastAPI + uvicorn — both
+        # already in backend/requirements.lock) so test_ai_engine_contract.py
+        # has a deterministic HTTP target. The mock validates request shape
+        # and returns canned responses, so no external or paid model call is
+        # ever made. The real ai-engine is not used here because its API is
+        # mounted at /api/v1/convert (versioned) while the contract tests
+        # POST to /convert (unversioned) — see Dockerfile.mock-ai for the
+        # original intent of this mock.
+        run: |
+          nohup python -m uvicorn mock-ai-engine:app \
+            --host 127.0.0.1 --port 8080 > "$RUNNER_TEMP/mock-ai.log" 2>&1 &
+          echo "MOCK_AI_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/health >/dev/null 2>&1; then
+              echo "mock ai-engine ready after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::mock ai-engine failed to become healthy in 30s"
+          tail -n 100 "$RUNNER_TEMP/mock-ai.log" >&2 || true
+          exit 1
       - name: Backend integration (real postgres + redis)
         # The pytest-asyncio event-loop bug (NullPool fix) and the duplicate
         # ix_user_credits_user_id index were both resolved; this job is now
-        # blocking. Two pre-existing tests are excluded because they require
-        # services we do not run in CI:
-        #   * test_ai_engine_contract.py — needs the ai-engine HTTP service
-        #   * test_create_conversion_large_file_validation — pre-existing
-        #     FK-violation bug independent of this work
+        # blocking. test_ai_engine_contract.py runs against the
+        # `mock-ai-engine.py` started above (issue #1469).
+        # test_create_conversion_large_file_validation FK violation fixed in
+        # #1470 (mock auth user is now seeded into the users table by the
+        # shared client fixture), so the previous --deselect is no longer
+        # needed.
+        env:
+          TEST_AI_ENGINE_URL: 'http://127.0.0.1:8080'
+          AI_ENGINE_MOCK: '1'
         run: |
           cd backend
           python -m pytest src/tests/integration/ \
-            --ignore=src/tests/integration/test_ai_engine_contract.py \
-            --deselect=src/tests/integration/test_conversions_api_v1.py::TestConversionsAPI::test_create_conversion_large_file_validation \
             -q --tb=short --timeout=180 --no-cov -o "addopts="
       - name: AI-engine integration (real services)
         run: |
@@ -349,6 +374,19 @@ jobs:
           python -m pytest tests/integration/ \
             -q --tb=short --timeout=300 --no-cov \
             -m 'not slow and not ai' || true
+      - name: Stop mock AI engine (#1469)
+        if: always()
+        run: |
+          if [ -n "${MOCK_AI_PID:-}" ]; then
+            kill "$MOCK_AI_PID" 2>/dev/null || true
+          fi
+          # Best-effort cleanup of any stragglers.
+          pkill -f "uvicorn mock-ai-engine:app" 2>/dev/null || true
+          if [ -f "$RUNNER_TEMP/mock-ai.log" ]; then
+            echo "::group::mock-ai-engine log tail"
+            tail -n 200 "$RUNNER_TEMP/mock-ai.log" || true
+            echo "::endgroup::"
+          fi
 
   # ===========================================================================
   # Aggregate
