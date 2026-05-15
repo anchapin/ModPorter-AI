@@ -1,5 +1,6 @@
 /**
  * Results Page for portkit Beta
+import { sanitizeForLog } from '../utils/sanitizeLog';
  * Display conversion results and download options
  */
 
@@ -81,7 +82,7 @@ export const ResultsPage: React.FC = () => {
   const handleFeedback = async (type: 'thumbs_up' | 'thumbs_down') => {
     setFeedback(type);
     // TODO: Submit feedback to API
-    console.log('Feedback submitted:', type, jobId);
+    console.log('Feedback submitted:', type, sanitizeForLog(jobId));
   };
 
   if (loading) {

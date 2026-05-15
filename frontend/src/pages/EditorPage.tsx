@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react'; // Added useCallback
 import { useParams, useLocation } from 'react-router-dom';
+import { sanitizeForLog } from '../utils/sanitizeLog';
 import { EditorProvider, useEditorContext } from '../context/EditorContext';
 import * as api from '../services/api'; // Added api import
 import {
@@ -38,7 +39,7 @@ const EditorPageContent: React.FC = () => {
   useEffect(() => {
     if (addonId && !isBehaviorEditorMode) {
       console.log(
-        `EditorPage: useEffect detected addonId: ${addonId}, calling loadAddon.`
+        `EditorPage: useEffect detected addonId: ${sanitizeForLog(addonId)}, calling loadAddon.`
       );
       loadAddon(addonId);
     }

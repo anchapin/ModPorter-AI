@@ -1,5 +1,6 @@
 /**
  * Dashboard Page - Day 5 Enhancement
+import { sanitizeForLog } from '../utils/sanitizeLog';
  * Comprehensive dashboard with conversion, history, and management features
  */
 
@@ -26,7 +27,7 @@ export const Dashboard: React.FC = () => {
   // Handle conversion start with filename
   const handleConversionStart = useCallback(
     (jobId: string, filename: string) => {
-      console.log('Conversion started:', jobId, 'File:', filename);
+      console.log('Conversion started:', sanitizeForLog(jobId), 'File:', sanitizeForLog(filename));
 
       // Add to history with filename
       addConversion({
@@ -46,7 +47,7 @@ export const Dashboard: React.FC = () => {
   // Handle conversion completion
   const handleConversionComplete = useCallback(
     (jobId: string) => {
-      console.log('Conversion completed:', jobId);
+      console.log('Conversion completed:', sanitizeForLog(jobId));
 
       // Update conversion status
       updateConversion(jobId, {
@@ -64,7 +65,7 @@ export const Dashboard: React.FC = () => {
   // Handle conversion failure
   const handleConversionFailed = useCallback(
     (jobId: string, error: string) => {
-      console.log('Conversion failed:', jobId, 'Error:', error);
+      console.log('Conversion failed:', sanitizeForLog(jobId), 'Error:', sanitizeForLog(error));
 
       // Update conversion status
       updateConversion(jobId, {
