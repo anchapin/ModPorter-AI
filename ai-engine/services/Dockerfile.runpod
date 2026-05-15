@@ -30,6 +30,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install vLLM, transformers, huggingface libs
+RUN pip install --no-cache-dir --upgrade "pip>=26.1" setuptools wheel
 RUN pip install --no-cache-dir \
         vllm>=0.6.0 \
         transformers>=4.44.0 \

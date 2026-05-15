@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy requirements and install dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+RUN pip install --no-cache-dir --upgrade "pip>=26.1" setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Production stage

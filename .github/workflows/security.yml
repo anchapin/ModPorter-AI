@@ -30,7 +30,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install Bandit
-        run: pip install --timeout=300 bandit
+        run: pip install --upgrade "pip>=26.1" && pip install --timeout=300 bandit
 
       - name: Run Bandit SAST
         run: |
