@@ -67,7 +67,7 @@ pnpm run format:backend       # Ruff format + lint --fix
 
 **Framework**: pytest with pytest-asyncio
 
-**Coverage**: 80%+ required for PR merges
+**Coverage**: enforced floor of 40% backend / 65% ai-engine (CI-blocking, set in `.github/workflows/pr.yml` as `COVERAGE_FLOOR_BACKEND` / `COVERAGE_FLOOR_AI_ENGINE`). Target 80% per ratchet plan in [`docs/ci/coverage-policy.md`](docs/ci/coverage-policy.md). PRs should maintain or improve coverage on changed code.
 
 **Test Database**: Use `./scripts/test-db.sh {start|stop|reset}`
 

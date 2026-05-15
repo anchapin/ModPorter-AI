@@ -55,8 +55,16 @@ env:
   NODE_VERSION: '20.19.0'
   PNPM_VERSION: '9'
   TESTING: 'true'
-  COVERAGE_THRESHOLD_BACKEND: '40'   # current honest baseline; raise gradually
-  COVERAGE_THRESHOLD_AI_ENGINE: '65'
+  # ---------------------------------------------------------------------------
+  # Coverage floors (CI-blocking minimums, NOT aspirational targets).
+  # Enforced floor as of 2026-05. Aspirational target: 80%.
+  # See docs/ci/coverage-policy.md for the ratchet plan + how to raise/lower.
+  # Raising a floor: PR that bumps the value here AND updates
+  # docs/ci/coverage-policy.md, with green CI. Lowering: rare; requires
+  # explicit justification + reviewer sign-off (see policy doc).
+  # ---------------------------------------------------------------------------
+  COVERAGE_FLOOR_BACKEND: '40'      # ratchet milestones: 40 → 50 → 60 → 70 → 80
+  COVERAGE_FLOOR_AI_ENGINE: '65'    # ratchet milestones: 65 → 70 → 75 → 80
 
 jobs:
   # ===========================================================================
@@ -271,7 +279,7 @@ jobs:
             -n auto --dist=loadscope \
             -q --tb=short --timeout=60 \
             --cov=src --cov-report=xml --cov-report=term \
-            --cov-fail-under=${{ env.COVERAGE_THRESHOLD_BACKEND }} \
+            --cov-fail-under=${{ env.COVERAGE_FLOOR_BACKEND }} \
             --ignore=src/tests/unit/test_task_worker_coverage.py \
             --ignore=src/tests/unit/test_performance_api.py
 
@@ -328,7 +336,7 @@ jobs:
             -q --tb=short --timeout=120 \
             -m 'not slow and not ai and not real_service and not docker and not e2e' \
             --cov=. --cov-report=xml \
-            --cov-fail-under=${{ env.COVERAGE_THRESHOLD_AI_ENGINE }}
+            --cov-fail-under=${{ env.COVERAGE_FLOOR_AI_ENGINE }}
 
       - uses: actions/upload-artifact@v7
         if: always()
