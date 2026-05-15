@@ -50,3 +50,8 @@ CHANGELOG*
 *.db
 *.sqlite
 *.json (for data)
+
+# Issue #1472: ruleset JSON is the canonical output of `.github/rulesets/sync.py
+# normalize`. Prettier collapses short arrays which would break the round-trip
+# and make every drift check fail. The file is human-readable as-is.
+.github/rulesets/*.json
