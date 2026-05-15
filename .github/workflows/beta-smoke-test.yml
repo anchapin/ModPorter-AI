@@ -14,11 +14,10 @@ on:
   schedule:
     # Run daily at 6 AM UTC
     - cron: '0 6 * * *'
-  pull_request:
-    paths:
-      - 'backend/src/api/**'
-      - 'backend/src/services/**'
-      - '.github/workflows/beta-smoke-test.yml'
+
+concurrency:
+  group: beta-smoke-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   PYTHON_VERSION: '3.12'
