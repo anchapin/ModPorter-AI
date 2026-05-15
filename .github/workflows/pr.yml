@@ -63,7 +63,7 @@ env:
   # docs/ci/coverage-policy.md, with green CI. Lowering: rare; requires
   # explicit justification + reviewer sign-off (see policy doc).
   # ---------------------------------------------------------------------------
-  COVERAGE_FLOOR_BACKEND: '40'      # ratchet milestones: 40 → 50 → 60 → 70 → 80
+  COVERAGE_FLOOR_BACKEND: '50'      # ratchet milestones: 50 → 60 → 70 → 80
   COVERAGE_FLOOR_AI_ENGINE: '65'    # ratchet milestones: 65 → 70 → 75 → 80
 
 jobs:
