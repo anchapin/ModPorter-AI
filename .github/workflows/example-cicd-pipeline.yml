@@ -1,0 +1,91 @@
+# ---------------------------------------------------------------------------
+# Example CI/CD pipeline using PortKit mod conversion
+#
+# This is a demonstration workflow showing how to integrate
+# ci-cd-integration.yml into a real CI/CD pipeline.
+#
+# Copy and adapt this to your project's workflows directory.
+# See docs/ci-cd/webhook-setup.md for webhook notification setup.
+# ---------------------------------------------------------------------------
+
+name: "Example: Mod Conversion Pipeline"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/mods/**'
+      - 'mods/**'
+
+jobs:
+  build-mod:
+    name: Build and convert mod
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Build mod JAR
+        run: |
+          # Example: Build your mod
+          ./gradlew jar --no-daemon
+
+          # Find the built JAR
+          JAR_PATH=$(find build/libs -name "*.jar" | head -1)
+          echo "Built mod: $JAR_PATH"
+
+          # Upload as artifact for next job
+          mv "$JAR_PATH" built-mod.jar
+
+      - name: Upload mod artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mod-source
+          path: built-mod.jar
+
+  convert-mod:
+    name: Convert mod
+    needs: build-mod
+    uses: anchapin/portkit/.github/workflows/ci-cd-integration.yml@main
+    with:
+      mod_file: built-mod.jar
+      conversion_timeout: 600
+    secrets:
+      api_key: ${{ secrets.PORTKIT_API_KEY }}
+
+  publish-mod:
+    name: Publish to registry
+    needs: convert-mod
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download converted artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: portkit-converted-mod
+          path: .
+
+      - name: Publish to Modrinth
+        run: |
+          echo "Publishing converted-mod.mcaddon to mod registry..."
+
+          # Example: Upload to Modrinth
+          # curl -X POST https://api.modrinth.com/v2/version \
+          #   -H "Authorization: ${{ secrets.MODRINTH_TOKEN }}" \
+          #   -F "file=@converted-mod.mcaddon"
+
+  notify-on-failure:
+    name: Notify failure
+    needs: [convert-mod, publish-mod]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify team
+        run: |
+          echo "::error::Mod conversion pipeline failed!"
+          echo "Check the conversion job at: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
