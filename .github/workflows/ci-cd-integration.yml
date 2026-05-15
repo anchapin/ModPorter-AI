@@ -1,0 +1,192 @@
+# ---------------------------------------------------------------------------
+# ci-cd-integration.yml — GitHub Action for CI/CD pipeline integration
+#
+# This workflow enables enterprise teams to integrate PortKit's mod conversion
+# directly into their CI/CD pipelines. It:
+#   1. Uploads a mod file on trigger
+#   2. Polls for conversion completion (with configurable timeout)
+#   3. Downloads the resulting .mcaddon artifact on success
+#   4. Fails the pipeline if conversion fails or times out
+#
+# Usage:
+#   - Trigger on demand (workflow_dispatch) for manual testing
+#   - Call from another workflow via `workflow_call` trigger
+#   - Or include as a reusable workflow in your pipeline:
+#       jobs:
+#         convert-mod:
+#           uses: anchapin/portkit/.github/workflows/ci-cd-integration.yml@main
+#           with:
+#             mod_file: ./path/to/mod.jar
+#             api_key: ${{ secrets.PORTKIT_API_KEY }}
+#
+# For webhook notifications for CI completion, see docs/ci-cd/webhook-setup.md
+# ---------------------------------------------------------------------------
+name: CI/CD Mod Conversion
+
+on:
+  workflow_call:
+    inputs:
+      mod_file:
+        description: Path to the mod file (.jar or .zip) to convert
+        required: true
+        type: string
+      conversion_timeout:
+        description: Maximum seconds to wait for conversion (default: 600)
+        required: false
+        type: number
+        default: 600
+      poll_interval:
+        description: Seconds between status polls (default: 10)
+        required: false
+        type: number
+        default: 10
+      api_base_url:
+        description: PortKit API base URL
+        required: false
+        type: string
+        default: https://api.portkit.cloud
+    secrets:
+      api_key:
+        description: PortKit API key for authentication
+        required: true
+
+jobs:
+  convert-mod:
+    name: Convert mod file
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      conversion_id: ${{ steps.start_conversion.outputs.conversion_id }}
+      download_url: ${{ steps.download_result.outputs.download_url }}
+      conversion_status: ${{ steps.poll_completion.outputs.final_status }}
+    env:
+      MOD_FILE: ${{ inputs.mod_file }}
+      API_BASE_URL: ${{ inputs.api_base_url }}
+      CONVERSION_TIMEOUT: ${{ inputs.conversion_timeout }}
+      POLL_INTERVAL: ${{ inputs.poll_interval }}
+      API_KEY: ${{ secrets.api_key }}
+    steps:
+      - name: Validate inputs
+        run: |
+          if [ ! -f "$MOD_FILE" ]; then
+            echo "::error::Mod file not found: $MOD_FILE"
+            exit 1
+          fi
+          echo "✓ Mod file found: $MOD_FILE"
+          SIZE=$(stat -c%s "$MOD_FILE")
+          echo "  Size: $SIZE bytes"
+
+      - name: Start conversion
+        id: start_conversion
+        run: |
+          echo "Starting conversion for: $MOD_FILE"
+
+          RESPONSE=$(curl -s -X POST "$API_BASE_URL/api/v1/conversions" \
+            -H "Authorization: Bearer $API_KEY" \
+            -F "file=@$MOD_FILE")
+
+          echo "Raw response: $RESPONSE"
+
+          CONVERSION_ID=$(echo "$RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin).get('conversion_id', ''))" 2>/dev/null)
+
+          if [ -z "$CONVERSION_ID" ]; then
+            echo "::error::Failed to start conversion. Response: $RESPONSE"
+            exit 1
+          fi
+
+          echo "conversion_id=$CONVERSION_ID" >> $GITHUB_OUTPUT
+          echo "✓ Conversion started with ID: $CONVERSION_ID"
+
+      - name: Poll for completion
+        id: poll_completion
+        run: |
+          CONVERSION_ID="${{ steps.start_conversion.outputs.conversion_id }}"
+          STATUS_URL="$API_BASE_URL/api/v1/conversions/$CONVERSION_ID"
+          ELAPSED=0
+          FINAL_STATUS=""
+
+          echo "Polling for completion (timeout: $CONVERSION_TIMEOUT seconds)..."
+
+          while [ $ELAPSED -lt $CONVERSION_TIMEOUT ]; do
+            RESPONSE=$(curl -s -H "Authorization: Bearer $API_KEY" "$STATUS_URL")
+
+            STATUS=$(echo "$RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin).get('status', 'unknown'))" 2>/dev/null)
+            PROGRESS=$(echo "$RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin).get('progress_percentage', 0))" 2>/dev/null)
+
+            echo "  Status: $STATUS | Progress: ${PROGRESS}% | Elapsed: ${ELAPSED}s"
+
+            case "$STATUS" in
+              complete)
+                echo "✓ Conversion completed successfully!"
+                FINAL_STATUS="complete"
+                break
+                ;;
+              failed)
+                ERROR=$(echo "$RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin).get('error_message', 'Unknown error'))" 2>/dev/null)
+                echo "::error::Conversion failed: $ERROR"
+                FINAL_STATUS="failed"
+                exit 1
+                ;;
+              *)
+                sleep $POLL_INTERVAL
+                ELAPSED=$((ELAPSED + POLL_INTERVAL))
+                ;;
+            esac
+          done
+
+          if [ -z "$FINAL_STATUS" ]; then
+            echo "::error::Conversion timed out after ${CONVERSION_TIMEOUT}s"
+            exit 1
+          fi
+
+          echo "final_status=$FINAL_STATUS" >> $GITHUB_OUTPUT
+
+      - name: Download result
+        id: download_result
+        run: |
+          CONVERSION_ID="${{ steps.start_conversion.outputs.conversion_id }}"
+          DOWNLOAD_URL="$API_BASE_URL/api/v1/conversions/$CONVERSION_ID/download"
+          OUTPUT_FILE="converted_mod.mcaddon"
+
+          echo "Downloading converted artifact from: $DOWNLOAD_URL"
+
+          HTTP_CODE=$(curl -s -o "$OUTPUT_FILE" -w "%{http_code}" -H "Authorization: Bearer $API_KEY" "$DOWNLOAD_URL")
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::Download failed with HTTP status: $HTTP_CODE"
+            exit 1
+          fi
+
+          echo "✓ Artifact downloaded: $OUTPUT_FILE"
+          SIZE=$(stat -c%s "$OUTPUT_FILE")
+          echo "  Size: $SIZE bytes"
+
+          # Upload as workflow artifact for downstream jobs
+          echo "download_url=$OUTPUT_FILE" >> $GITHUB_OUTPUT
+
+          # Create artifact for the run
+          echo "::notice::Artifact available as: $OUTPUT_FILE"
+
+      - name: Upload converted artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: portkit-converted-mod
+          path: converted_mod.mcaddon
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # Webhook notification step (optional, uncomment to enable)
+  # See docs/ci-cd/webhook-setup.md for setup instructions
+  # ---------------------------------------------------------------------------
+  # - name: Send webhook notification
+  #   if: always()
+  #   run: |
+  #     curl -X POST ${{ vars.PIPELINE_WEBHOOK_URL }} \
+  #       -H "Content-Type: application/json" \
+  #       -d '{
+  #         "conversion_id": "${{ steps.start_conversion.outputs.conversion_id }}",
+  #         "status": "${{ steps.poll_completion.outputs.final_status }}",
+  #         "workflow": "ci-cd-integration",
+  #         "run_id": "${{ github.run_id }}",
+  #         "run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+  #       }'
