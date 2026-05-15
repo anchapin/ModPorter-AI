@@ -19,13 +19,15 @@ primary_region = 'iad'
 
 [processes]
   app = '/startup.sh'
-  worker = "sh -c 'cd /app/backend && PYTHONPATH=/usr/lib/python3.11/site-packages:/app/backend/src python -m celery -A src.services.celery_config worker --loglevel=info'"
+  worker = "sh -c 'cd /app/backend && PYTHONPATH=/usr/lib/python3.11/site-packages:/app/backend/src python -m celery -A src.services.celery_config worker --loglevel=info --autoscale=8,2'"
 
 [[services]]
   protocol = 'tcp'
   internal_port = 80
   auto_start_machines = true
+  auto_stop_machines = true
   min_machines_running = 1
+  max_machines_running = 5
   processes = ['app']
 
   [[services.ports]]
@@ -36,6 +38,11 @@ primary_region = 'iad'
   [[services.ports]]
     port = 443
     handlers = ['tls', 'http']
+
+  [[services.concurrency]]
+    type = 'requests'
+    soft_limit = 50
+    hard_limit = 100
 
 [[vm]]
   size = 'shared-cpu-1x'
