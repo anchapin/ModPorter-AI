@@ -64,7 +64,7 @@ env:
   # explicit justification + reviewer sign-off (see policy doc).
   # ---------------------------------------------------------------------------
   COVERAGE_FLOOR_BACKEND: '50'      # ratchet milestones: 50 → 60 → 70 → 80
-  COVERAGE_FLOOR_AI_ENGINE: '65'    # ratchet milestones: 65 → 70 → 75 → 80
+  COVERAGE_FLOOR_AI_ENGINE: '70'    # ratchet milestones: 70 → 75 → 80
   COVERAGE_FLOOR_FRONTEND: '50'     # ratchet milestones: 50 → 55 → 60 → 70 → 80
 
 jobs:
