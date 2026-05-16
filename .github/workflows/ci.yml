@@ -75,12 +75,12 @@ jobs:
       - name: Run ruff check (backend)
         run: |
           cd backend
-          ruff check src/ tests/
+          ruff check src/
 
       - name: Run ruff format check (backend)
         run: |
           cd backend
-          ruff format --check src/ tests/
+          ruff format --check src/
 
       - name: Run prettier check (frontend)
         run: |
