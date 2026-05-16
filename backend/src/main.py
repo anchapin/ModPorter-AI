@@ -84,6 +84,7 @@ from api import (
     version_info,
     status,
     plugins,
+    pre_conversion_scan,
 )
 from api.rate_limit_dashboard import router as rate_limit_dashboard_router
 
@@ -263,6 +264,9 @@ app.include_router(status.router, prefix="/api/v1", tags=["status"])
 
 # Plugin endpoints
 app.include_router(plugins.router, prefix="/api/v1/plugins", tags=["plugins"])
+
+# Pre-conversion scan endpoint
+app.include_router(pre_conversion_scan.router, prefix="/api/v1/pre-conversion-scan", tags=["pre-conversion-scan"])
 
 # Register exception handlers for comprehensive error handling
 register_exception_handlers(app)
