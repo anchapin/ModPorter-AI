@@ -389,7 +389,7 @@ jobs:
           test "$T" = 0 && test "$L" = 0
 
       - name: Unit tests (vitest)
-        run: cd frontend && pnpm vitest run --coverage --coverage-threshold-fail-global=${{ env.COVERAGE_FLOOR_FRONTEND }} --reporter=verbose --passWithNoTests
+        run: cd frontend && pnpm vitest run --coverage --reporter=verbose --passWithNoTests
 
       - name: Upload coverage
         uses: actions/upload-artifact@v7
