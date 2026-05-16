@@ -344,13 +344,15 @@ async def batch_scan(
                 scanner = PreConversionScanner()
                 result = await scanner.scan_file(file_path, file.filename)
 
-                results.append({
-                    "scan_id": result.scan_id,
-                    "filename": file.filename,
-                    "risk_level": result.overall_risk_level.value,
-                    "can_proceed": result.can_proceed,
-                    "total_issues": result.total_issues,
-                })
+                results.append(
+                    {
+                        "scan_id": result.scan_id,
+                        "filename": file.filename,
+                        "risk_level": result.overall_risk_level.value,
+                        "can_proceed": result.can_proceed,
+                        "total_issues": result.total_issues,
+                    }
+                )
 
             finally:
                 if os.path.exists(file_path):
@@ -360,17 +362,21 @@ async def batch_scan(
                         pass
 
         except HTTPException as e:
-            results.append({
-                "filename": file.filename,
-                "error": e.detail,
-                "can_proceed": False,
-            })
+            results.append(
+                {
+                    "filename": file.filename,
+                    "error": e.detail,
+                    "can_proceed": False,
+                }
+            )
         except Exception as e:
-            results.append({
-                "filename": file.filename,
-                "error": "Scan failed",
-                "can_proceed": False,
-            })
+            results.append(
+                {
+                    "filename": file.filename,
+                    "error": "Scan failed",
+                    "can_proceed": False,
+                }
+            )
 
     return {
         "batch_id": str(uuid.uuid4()),

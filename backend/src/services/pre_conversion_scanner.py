@@ -277,7 +277,12 @@ class PreConversionScanner:
         """Scan for mod manifest and metadata issues"""
         risks: List[RiskItem] = []
 
-        manifest_paths = ["META-INF/mods.toml", "META-INF/neoforge.mods.toml", "fabric.mod.json", "mcmod.info"]
+        manifest_paths = [
+            "META-INF/mods.toml",
+            "META-INF/neoforge.mods.toml",
+            "fabric.mod.json",
+            "mcmod.info",
+        ]
         manifest_found = None
 
         for path in manifest_paths:
@@ -301,7 +306,10 @@ class PreConversionScanner:
                                 suggestion="Add version information to the manifest for better tracking.",
                             )
                         )
-                    if "mcversion" not in content.lower() and "minecraftversion" not in content.lower():
+                    if (
+                        "mcversion" not in content.lower()
+                        and "minecraftversion" not in content.lower()
+                    ):
                         risks.append(
                             RiskItem(
                                 risk_id="missing_mc_version",
@@ -418,7 +426,11 @@ class PreConversionScanner:
     def _scan_assets(self, zf: zipfile.ZipFile) -> List[RiskItem]:
         """Scan asset files for potential issues"""
         risks: List[RiskItem] = []
-        asset_files = [f for f in zf.namelist() if any(f.endswith(ext) for ext in [".png", ".ogg", ".mcmeta", ".json"])]
+        asset_files = [
+            f
+            for f in zf.namelist()
+            if any(f.endswith(ext) for ext in [".png", ".ogg", ".mcmeta", ".json"])
+        ]
 
         texture_count = len([f for f in asset_files if f.endswith(".png")])
 
@@ -463,7 +475,14 @@ class PreConversionScanner:
                         else:
                             version_str = str(version)
 
-                        if version_str.startswith("1.") and not version_str.startswith("1.16") and not version_str.startswith("1.17") and not version_str.startswith("1.18") and not version_str.startswith("1.19") and not version_str.startswith("1.20"):
+                        if (
+                            version_str.startswith("1.")
+                            and not version_str.startswith("1.16")
+                            and not version_str.startswith("1.17")
+                            and not version_str.startswith("1.18")
+                            and not version_str.startswith("1.19")
+                            and not version_str.startswith("1.20")
+                        ):
                             risks.append(
                                 RiskItem(
                                     risk_id="old_format_version",
@@ -586,16 +605,24 @@ class PreConversionScanner:
         categories_present = set(risk.category for risk in risks)
 
         if RiskCategory.ARCHITECTURE in categories_present:
-            recommendations.append("This mod uses advanced Java patterns. Review the conversion report carefully after completion.")
+            recommendations.append(
+                "This mod uses advanced Java patterns. Review the conversion report carefully after completion."
+            )
 
         if RiskCategory.DEPENDENCY in categories_present:
-            recommendations.append("Some dependencies are not compatible with Bedrock. Identify alternatives before conversion.")
+            recommendations.append(
+                "Some dependencies are not compatible with Bedrock. Identify alternatives before conversion."
+            )
 
         if RiskCategory.COMPATIBILITY in categories_present:
-            recommendations.append("Version compatibility issues detected. Ensure your Bedrock target version is appropriate.")
+            recommendations.append(
+                "Version compatibility issues detected. Ensure your Bedrock target version is appropriate."
+            )
 
         if RiskCategory.ASSET in categories_present:
-            recommendations.append("Asset file issues detected. Verify texture and sound files after conversion.")
+            recommendations.append(
+                "Asset file issues detected. Verify texture and sound files after conversion."
+            )
 
         if not recommendations:
             recommendations.append("No major issues detected. Proceed with standard conversion.")
