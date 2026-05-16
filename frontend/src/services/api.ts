@@ -652,7 +652,9 @@ export const performanceBenchmarkAPI = {
   // Get benchmark status
   getBenchmarkStatus: async (runId: string) => {
     const safeRunId = sanitizePathParam(runId, 'runId');
-    const response = await fetch(`${API_BASE_URL}/performance/status/${safeRunId}`);
+    const response = await fetch(
+      `${API_BASE_URL}/performance/status/${safeRunId}`
+    );
 
     if (!response.ok) {
       const errorData = await response
@@ -670,7 +672,9 @@ export const performanceBenchmarkAPI = {
   // Get benchmark report
   getBenchmarkReport: async (runId: string) => {
     const safeRunId = sanitizePathParam(runId, 'runId');
-    const response = await fetch(`${API_BASE_URL}/performance/report/${safeRunId}`);
+    const response = await fetch(
+      `${API_BASE_URL}/performance/report/${safeRunId}`
+    );
 
     if (!response.ok) {
       const errorData = await response
