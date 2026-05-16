@@ -21,6 +21,9 @@ This directory contains all project documentation organized by category.
 ### [legal/](./legal/)
 - `PRIVACY.md` - Privacy policy and data handling practices
 
+### [policy/](./)
+- `DATA-PRIVACY-IP-POLICY.md` - Comprehensive data privacy and IP handling policy for commercial developers
+
 ### [project-management/](./project-management/)
 - `RELEASE_NOTES_v0.1.0.md` - v0.1.0 release notes and changelog
 
@@ -71,8 +74,10 @@ Key documentation files remain in the project root:
 3. Reference [ARCHITECTURE.md](./ARCHITECTURE.md) for system design
 
 ### For Legal/Compliance
-1. Review [legal/PRIVACY.md](./legal/PRIVACY.md) for privacy policies
-2. Check [PRD.md](./PRD.md) for product requirements
+1. Review [DATA-PRIVACY-IP-POLICY.md](./DATA-PRIVACY-IP-POLICY.md) for data privacy and IP handling
+2. Review [legal/PRIVACY.md](./legal/PRIVACY.md) for privacy policies
+3. Check [ip-policy.md](./ip-policy.md) for DMCA and copyright
+4. Check [PRD.md](./PRD.md) for product requirements
 
 ---
 
