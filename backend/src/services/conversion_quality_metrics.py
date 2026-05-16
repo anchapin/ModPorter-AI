@@ -87,10 +87,7 @@ class ConversionQualityMetricsService:
         conditions = [ConversionJob.created_at >= start_date]
         if target_version:
             conditions.append(
-                func.json_extract(
-                    ConversionJob.input_data, "$.target_version"
-                )
-                == target_version
+                func.json_extract(ConversionJob.input_data, "$.target_version") == target_version
             )
 
         query = select(ConversionJob).where(and_(*conditions))
