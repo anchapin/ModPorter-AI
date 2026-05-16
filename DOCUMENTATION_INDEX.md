@@ -32,6 +32,7 @@ This directory contains all project documentation organized by category.
 - `API.md` - API documentation
 - `ARCHITECTURE.md` - System architecture overview
 - `ASYNC_TESTING_GUIDE.md` - Async testing guidelines
+- `bedrock-versions.md` - Bedrock Edition version compatibility and cross-version support
 - `DIAGRAMS.md` - System diagrams
 - `GITHUB_ISSUES_PLAN.md` - GitHub issues management plan
 - `GITHUB_SETUP_SUMMARY.md` - GitHub setup summary
