@@ -1,0 +1,229 @@
+# ---------------------------------------------------------------------------
+# ci.yml — GitHub Action for CI/CD pipeline integration
+#
+# This workflow provides continuous integration for the portkit project:
+#   1. Runs on push/PR to main branches
+#   2. Runs linting (ruff, prettier, bandit)
+#   3. Runs tests (backend: pytest, frontend: vitest)
+#   4. Runs build verification
+#   5. Posts status to PRs
+#
+# Project: AI-powered Java to Bedrock Minecraft mod converter
+# ---------------------------------------------------------------------------
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20.19.0'
+  PNPM_VERSION: '9'
+
+jobs:
+  # ===========================================================================
+  # LINT — ruff + prettier + bandit
+  # ===========================================================================
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            **/requirements*.txt
+            **/pyproject.toml
+            **/uv.lock
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install lint tools
+        run: uv pip install --system ruff bandit prettier
+
+      - name: Install frontend deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ruff check (backend)
+        run: |
+          cd backend
+          ruff check src/
+
+      - name: Run ruff format check (backend)
+        run: |
+          cd backend
+          ruff format --check src/
+
+      - name: Run prettier check (frontend)
+        run: |
+          cd frontend
+          pnpm prettier --check .
+
+      - name: Run bandit security check
+        run: |
+          bandit -r backend/src \
+            --severity-level high --confidence-level high \
+            --exclude tests/,.venv/,node_modules/,frontend/ \
+            -q || true
+
+  # ===========================================================================
+  # BACKEND TESTS
+  # ===========================================================================
+  backend-test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/requirements.lock
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          uv pip sync --system requirements.lock
+          uv pip install --system pytest pytest-asyncio pytest-cov pytest-xdist pytest-timeout
+
+      - name: Run backend tests
+        run: |
+          cd backend
+          python -m pytest src/tests/unit/ \
+            -n auto --dist=loadscope \
+            -q --tb=short --timeout=60 \
+            --cov=src --cov-report=xml --cov-report=term \
+            --ignore=src/tests/unit/test_task_worker_coverage.py \
+            --ignore=src/tests/unit/test_performance_api.py
+
+  # ===========================================================================
+  # FRONTEND TESTS
+  # ===========================================================================
+  frontend-test:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      VITE_API_BASE_URL: http://localhost:8000
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: |
+          cd frontend
+          pnpm exec tsc --noEmit
+
+      - name: Run frontend tests
+        run: |
+          cd frontend
+          pnpm vitest run --reporter=verbose --passWithNoTests
+
+  # ===========================================================================
+  # BUILD VERIFICATION
+  # ===========================================================================
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          pnpm run build
+
+  # ===========================================================================
+  # PR STATUS GATE
+  # ===========================================================================
+  pr-gate:
+    name: PR Status
+    runs-on: ubuntu-latest
+    needs: [lint, backend-test, frontend-test, build]
+    if: always()
+    timeout-minutes: 2
+    steps:
+      - name: Verify all checks
+        env:
+          R_LINT:  ${{ needs.lint.result }}
+          R_BE:    ${{ needs.backend-test.result }}
+          R_FE:    ${{ needs.frontend-test.result }}
+          R_BUILD: ${{ needs.build.result }}
+        run: |
+          fail=0
+          for kv in \
+            "lint=$R_LINT" \
+            "backend-test=$R_BE" \
+            "frontend-test=$R_FE" \
+            "build=$R_BUILD"; do
+            name=${kv%=*}; result=${kv#*=}
+            case "$result" in
+              success|skipped) printf "  ✓ %-18s %s\n" "$name" "$result" ;;
+              *)               printf "  ✗ %-18s %s\n" "$name" "$result"; fail=1 ;;
+            esac
+          done
+          if [ $fail -ne 0 ]; then
+            echo "::error::One or more CI checks failed."
+            exit 1
+          fi
+          echo "All CI checks green."
