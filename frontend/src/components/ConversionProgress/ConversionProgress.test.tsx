@@ -352,9 +352,7 @@ describe('ConversionProgress', () => {
 
     // Verify WebSocket was instantiated (even though it's mocked)
     expect(MockWebSocket.instances).toHaveLength(1);
-    // API_BASE_URL is empty in tests, so WebSocket URL uses relative path
-    expect(MockWebSocket.instances[0].url).toBe(
-      '/ws/v1/convert/test-job-123/progress'
-    );
+    // In CI, VITE_API_BASE_URL is set, so check URL ends with expected path
+    expect(MockWebSocket.instances[0].url).toMatch(/\/ws\/v1\/convert\/test-job-123\/progress$/);
   });
 });

@@ -41,7 +41,7 @@ describe('API Service - Feedback', () => {
 
       const result = await submitFeedback(mockPayload);
       expect(result).toEqual(mockSuccessResponse);
-      expect(mockFetch).toHaveBeenCalledWith('/api/v1/feedback', {
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringMatching(/\/api\/v1\/feedback$/), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
