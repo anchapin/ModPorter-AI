@@ -7,6 +7,15 @@ describe('API Service - Feedback', () => {
     // Reset all mocks to ensure clean state
     vi.restoreAllMocks();
 
+    // Mock import.meta.env to simulate no environment variables set
+    // This ensures API_BASE_URL defaults to '/api/v1' in tests
+    vi.stubGlobal('import.meta', {
+      env: {
+        VITE_API_BASE_URL: undefined,
+        VITE_API_URL: undefined,
+      },
+    });
+
     // Set up a fresh mock for each test
     global.fetch = vi.fn();
   });
